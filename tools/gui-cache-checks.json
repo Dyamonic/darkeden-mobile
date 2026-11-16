@@ -1,0 +1,36 @@
+{
+  "openMs": {
+    "UIWndInventory": [
+      155.59399999999,
+      31.122000000003,
+      29.671999999998,
+      29.330999999999,
+      29.236000000004,
+      30.427000000003
+    ],
+    "UIWndRoleEquip": [
+      2.4510000000006,
+      8.5139999999981,
+      7.7550000000031,
+      8.3589999999987,
+      7.6430000000016,
+      8.4030000000013
+    ],
+    "UIWndRoleInfo": [
+      4.0710000000033,
+      4.1049999999956,
+      4.2860000000005,
+      3.1070000000071,
+      3.9720000000045,
+      3.4649999999985
+    ]
+  },
+  "checks": "prepared windows; same instance; hidden on close; one cache per class; HP refresh; lazy magic tab; original HP restored",
+  "warmupMs": {
+    "UIWndInventory": 200.273,
+    "UIWndRoleEquip": 232.567,
+    "UIWndRoleInfo": 1446.584
+  },
+  "pass": true,
+  "clock": "Lua os.clock CPU milliseconds on emulator-5554; after map loading and GUI preparation"
+}

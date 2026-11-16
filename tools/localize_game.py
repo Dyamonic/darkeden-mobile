@@ -220,6 +220,12 @@ def patch():
     for module in ['app.scene.gameTL.layers.WndLayer','app.scene.role.RoleLayerTL']:
         target=overlays/'emag'/module
         src=target.read_text(encoding='utf-8') if target.exists() else (ROOT/'reverse-engineering/unpacked/emag'/module).read_text(encoding='utf-8')
+        if module.endswith('WndLayer'):
+            needle='    for k,v in ipairs(self._viewArray) do\n        if v:getParam().layerName == layerName then\n            table.remove(self._viewArray, k)'
+            assert needle in src
+            src=src.replace(needle,'    if _G_OFFLINE_BRIDGE and (layerName=="UIWndRoleInfo" or layerName=="UIWndInventory" or layerName=="UIWndRoleEquip") then return end\n'+needle)
+            prepare='function WndLayer:prepareCommonViews()\n    if not _G_OFFLINE_BRIDGE then return end\n    self._offlineWarmMs=self._offlineWarmMs or {}\n    for _,name in ipairs({"UIWndRoleInfo","UIWndInventory","UIWndRoleEquip"}) do\n        local exists=false\n        for _,view in ipairs(self._viewArray) do if view:getParam().layerName==name then exists=true;break end end\n        if not exists then\n            local start=os.clock()\n            local view=lt[name].new({class=name,layerName=name})\n            view:setDialogSystem(self)\n            if name=="UIWndRoleInfo" then view:onEnter() end\n            view:initWindow()\n            require("app.offline.EnglishUI").fit(view)\n            table.insert(self._viewArray,view)\n            self._offlineWarmMs[name]=(os.clock()-start)*1000\n        end\n    end\nend\n\n'
+            src=src.replace('return WndLayer',prepare+'return WndLayer')
         src=src.replace('view:show()', 'view:show()\n            require("app.offline.EnglishUI").fit(view)')
         src=src.replace('view:onShown() --', 'view:onShown()\n                    require("app.offline.EnglishUI").fit(view) --')
         target.write_text(src,encoding='utf-8')
@@ -230,6 +236,20 @@ def patch():
     needle='            local bgNameTable = {'
     assert needle in src
     src=src.replace(needle,'            require("app.offline.EnglishUI").fitRow(infoAttr)\n'+needle)
+    # Identical rich-text details need no native text rebuild on reopen.
+    needle='    local detailT = content:getChild("detail")'
+    assert needle in src
+    src=src.replace(needle,'    if self._offlineRightDetails==contentStr then return end\n    self._offlineRightDetails=contentStr\n'+needle)
+    # Build only the selected stats tab; hidden skill panels are expensive.
+    src=src.replace('    if not self._clsCom then','    if not self._clsCom and (self._selectIndex == btnType.lowCls or self._selectIndex == btnType.superCls) then')
+    src=src.replace('    if self._selectIndex == btnType.lowCls or self._selectIndex == btnType.superCls then','    if self._clsCom and (self._selectIndex == btnType.lowCls or self._selectIndex == btnType.superCls) then')
+    src=src.replace('        self._clsCom:setVisible(false)','        if self._clsCom then self._clsCom:setVisible(false) end')
+    src=src.replace('    if not self._transferCom then','    if not self._transferCom and self._selectIndex == btnType.transfer then')
+    src=src.replace('    self._transferCom:setVisible(self._selectIndex == btnType.transfer)','    if self._transferCom then self._transferCom:setVisible(self._selectIndex == btnType.transfer) end')
+    src=src.replace('    if self._transferCom:isVisible() then','    if self._transferCom and self._transferCom:isVisible() then')
+    src=src.replace('    if not self._magicCom then','    if not self._magicCom and self._selectIndex == btnType.magic then')
+    src=src.replace('    self._magicCom:setVisible(self._selectIndex == btnType.magic)','    if self._magicCom then self._magicCom:setVisible(self._selectIndex == btnType.magic) end')
+    src=src.replace('    if self._magicCom:isVisible() then','    if self._magicCom and self._magicCom:isVisible() then')
     target.write_text(src,encoding='utf-8')
     # Zone names also arrive after the HUD package is constructed. Reserve the
     # original minimap expand-arrow area even for longer English zone names.
@@ -268,6 +288,13 @@ def patch():
     src=(ROOT/'reverse-engineering/unpacked/emag'/module).read_text(encoding='utf-8')
     src=src.replace('    self._reviveBtn:setText(data.name)','    self._reviveBtn:setText(data.name)\n    require("app.offline.EnglishUI").fitRevive(self)')
     src=src.replace('self._lastLabel:setText(self._remainTs.."s")','self._lastLabel:setText(self._remainTs.."s")\n        require("app.offline.EnglishUI").fitCountdown(self._lastLabel)')
+    target.write_text(src,encoding='utf-8')
+    module='app.scene.widget.window.UIWndInventory'
+    target=overlays/'emag'/module
+    src=target.read_text(encoding='utf-8')
+    needle='    self._btnBelt:setText(GReadText["KEY_BELT_"..race])'
+    assert needle in src
+    src=src.replace(needle,needle+'\n    require("app.offline.EnglishUI").fitPocketButton(self._btnBelt)')
     target.write_text(src,encoding='utf-8')
     # State-map names are assigned by the original tile refresh, after creation.
     module='app.scene.widget.component.UICompStateMap'

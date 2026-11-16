@@ -873,6 +873,7 @@ end
 function UIWndInventory:refreshBeltBtn(isShow)
     local race = GameModule:getHeroRace()
     self._btnBelt:setText(GReadText["KEY_BELT_"..race])
+    require("app.offline.EnglishUI").fitPocketButton(self._btnBelt)
     local pocketCount = ItemModule:getPocketCount()
     local btnBg = self._btnBelt:getChild("bg")
     local btnBgHui = self._btnBelt:getChild("bgHui")

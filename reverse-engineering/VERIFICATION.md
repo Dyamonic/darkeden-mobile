@@ -325,3 +325,49 @@ Perona, matching the requested trip.
 
 Evidence: tools/foley-travel-dialogue.png, tools/foley-perona-arrival.png and
 tools/foley-perona-reloaded.png; app-private npc-travel-pass.txt.
+
+## Common GUI opening performance and centered pocket caption - 2026-11-16
+
+The baseline profile measured Stats opening work at 929.764, 590.332 and 585.024
+milliseconds of process CPU time. Every close cleared the window, so each opening
+recreated it, constructed hidden skill panels and repeated text-layout work. The
+profile observed 54 package object creations and 1,746 row-fit calls over 3 opens.
+
+Stats, Inventory and Equipment now keep one scene-owned offline instance each.
+Their normal hide/exit/show/enter callbacks remain active, and opening refreshes
+live data. Native initWindow prepares them during map loading without showing
+them. Skill/class panels are created only on selection. Unchanged right-side
+rich text, text bounds and row layouts avoid repeated native rebuilding. The
+cache is limited to these three windows and released by original scene cleanup.
+The one-time preparation cost is paid during loading (about 1.88 seconds of CPU
+work for all three in the recorded cold run).
+
+On the final installed APK after a cold launch and completed map loading, Stats
+opening work measured 11.993, 5.425 and 5.635 ms. No Stats onInit or package object
+creation occurred on those clicks. These os.clock measurements cover synchronous
+Lua/native opening work, rather than display-refresh latency. Run check-gui-ready
+before profiling; GL-thread instrumentation can otherwise enter while map startup
+is still in progress. Results are in tools/gui-open-baseline.json and
+ tools/gui-open-after.json.
+
+The native lifecycle regression opened/closed each common window six times,
+checked object identity and one cached instance per class, confirmed hidden
+windows leave the screen, changed HP to verify the displayed value refreshes,
+and selected/closed the lazily created Magic panel. Original HP was restored.
+The cached Stats samples in that check were 3.1-4.3 ms; Inventory was 156 ms on
+its first item-grid population and 29-31 ms thereafter; Equipment was 2.5-8.5 ms.
+Recorded results: tools/gui-cache-checks.json. Data refresh remains enabled.
+
+The pocket-button caption now centers on both axes, with a gap before the
+separately centered lock icon. Its dynamic refresh and general English fitting
+both retain that layout. Native geometry checks passed; visual evidence is
+ tools/bag-centered-final.png. The original font and artwork remain unchanged.
+
+Existing real-widget checks passed for 3 race panels/20 stat rows, 29 map tiles
+and surface/underground/name toggles, plus 22 Settings rows and 26 race fixtures.
+Original level-unlock thresholds remain. Offline simulation, locations, roster,
+movement/death, NPC travel and localization suites passed. Signature and packaged
+source comparisons passed for Bridge, EnglishUI, WndLayer, RoleInfo and Inventory.
+Both build APK names, repository artifact and checksum are current. No offline
+runtime error file remained. Albion was closed at the user's request; tests target
+emulator-5554 explicitly and leave DarkEden running.

@@ -312,6 +312,9 @@ function Bridge:loadWorld()
     end,0.1)
     self:save()
     self.entering=false
+    -- Prepare the three frequently used windows once while the map loads.
+    -- The scene owns their bounded cache; opening them still refreshes live data.
+    display.getRunningScene():getLayerManager():getWndLayer():prepareCommonViews()
     if s.hp<=0 then self:showDeath() end
 end
 function Bridge:spawnMonsters(only)

@@ -1,5 +1,7 @@
 -- Keep the original typefaces and fit English labels inside existing controls.
 local EnglishUI={}
+local fittedBounds=setmetatable({},{__mode="k"})
+local rowLayouts=setmetatable({},{__mode="k"})
 local function textField(object)
     local kind=object and tolua.type(object)
     return kind=="fgui.GTextField" or kind=="fgui.GBasicTextField" or kind=="fgui.GRichTextField"
@@ -12,21 +14,38 @@ end
 local function constrain(object,x,width)
     if width<8 then return end
     local size=object:getSize()
+    local caption=object:getText()
+    local fitted=fittedBounds[object]
+    if fitted and fitted.text==caption and fitted.x==x and fitted.width==width
+        and fitted.height==size.height and size.width==width
+        and left(object)==x and object:getAutoSize()==fgui.AutoSizeType.SHRINK then return end
     -- Clear native shrink state so a later shorter label becomes readable again.
     object:setAutoSize(fgui.AutoSizeType.NONE)
     object:setSize(width,size.height,true)
     object:setX(x+(object:isPivotAsAnchor() and width*object:getPivot().x or 0))
     object:applyTextFormat()
     object:setAutoSize(fgui.AutoSizeType.SHRINK)
+    fittedBounds[object]={text=caption,x=x,width=width,height=size.height}
 end
 function EnglishUI.fitRow(row)
     if not row or not row.getChild then return end
+    local layout=rowLayouts[row]
+    if layout==false then return end
+    if layout then
+        local name,value=layout.name,layout.value
+        local caption=name:getText():lower()
+        if caption=="experience" then name:setText("EXP")
+        elseif caption=="attribute point" or caption=="attribute points" then name:setText("Points") end
+        constrain(name,layout.nx,layout.nameWidth)
+        constrain(value,layout.vx,layout.valueWidth)
+        return
+    end
     local name,value=row:getChild("name"),row:getChild("value")
-    if not textField(name) or not textField(value) then return end
+    if not textField(name) or not textField(value) then rowLayouts[row]=false;return end
     local ns,vs=name:getSize(),value:getSize()
-    if ns.height<12 or vs.height<12 or ns.height>48 or vs.height>48 or math.abs(name:getY()-value:getY())>24 then return end
+    if ns.height<12 or vs.height<12 or ns.height>48 or vs.height>48 or math.abs(name:getY()-value:getY())>24 then rowLayouts[row]=false;return end
     local nx,vx=left(name),left(value)
-    if vx<=nx+12 then return end
+    if vx<=nx+12 then rowLayouts[row]=false;return end
     local caption=name:getText():lower()
     if caption=="experience" then name:setText("EXP")
     elseif caption=="attribute point" or caption=="attribute points" then name:setText("Points") end
@@ -47,6 +66,7 @@ function EnglishUI.fitRow(row)
     end
     constrain(name,nx,nameRight-nx)
     constrain(value,vx,right-vx)
+    rowLayouts[row]={name=name,value=value,nx=nx,vx=vx,nameWidth=nameRight-nx,valueWidth=right-vx}
 end
 function EnglishUI.fitHeader(object,rightInset)
     if not textField(object) then return end
@@ -86,6 +106,12 @@ local function centerLabel(object,text,center,y,width,height,font,multiline)
 end
 function EnglishUI.fitCountdown(object)
     centerLabel(object,nil,0,-66,140,56,42)
+end
+function EnglishUI.fitPocketButton(button)
+    local size=button:getSize()
+    centerLabel(button:getTextField(),nil,size.width/2,(size.height-24)/2,size.width-38,24,16)
+    local lock=button:getChild("lock")
+    if lock then lock:setPosition(size.width-16,(size.height-lock:getSize().height)/2) end
 end
 function EnglishUI.fitStateMapTile(tile)
     local title=tile:getChild("name")
@@ -255,6 +281,7 @@ function EnglishUI.fit(object)
             elseif size.width>20 and size.height<50 then
                 local parent=object:getParent()
                 if parent and tolua.type(parent)=="fgui.GButton" then
+                    if parent.name=="btnBelt" then EnglishUI.fitPocketButton(parent);return end
                     local bounds=parent:getSize()
                     local limit=bounds.width-20
                     if bounds.width>=48 and bounds.width<=80 and object:getY()>bounds.height*.55 then

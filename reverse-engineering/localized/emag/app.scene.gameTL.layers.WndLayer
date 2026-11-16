@@ -296,6 +296,7 @@ function WndLayer:closeView(layerName)
             end
         end
     end
+    if _G_OFFLINE_BRIDGE and (layerName=="UIWndRoleInfo" or layerName=="UIWndInventory" or layerName=="UIWndRoleEquip") then return end
     for k,v in ipairs(self._viewArray) do
         if v:getParam().layerName == layerName then
             table.remove(self._viewArray, k)
@@ -362,5 +363,24 @@ function WndLayer:reloadDebug()
     -- lt.GameFGUI:registCommonExtend()
 end
 
+
+function WndLayer:prepareCommonViews()
+    if not _G_OFFLINE_BRIDGE then return end
+    self._offlineWarmMs=self._offlineWarmMs or {}
+    for _,name in ipairs({"UIWndRoleInfo","UIWndInventory","UIWndRoleEquip"}) do
+        local exists=false
+        for _,view in ipairs(self._viewArray) do if view:getParam().layerName==name then exists=true;break end end
+        if not exists then
+            local start=os.clock()
+            local view=lt[name].new({class=name,layerName=name})
+            view:setDialogSystem(self)
+            if name=="UIWndRoleInfo" then view:onEnter() end
+            view:initWindow()
+            require("app.offline.EnglishUI").fit(view)
+            table.insert(self._viewArray,view)
+            self._offlineWarmMs[name]=(os.clock()-start)*1000
+        end
+    end
+end
 
 return WndLayer

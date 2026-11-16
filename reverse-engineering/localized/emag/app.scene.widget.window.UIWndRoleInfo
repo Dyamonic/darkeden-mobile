@@ -295,36 +295,36 @@ function UIWndRoleInfo:showCurPanel()
     infoCom:setVisible(self._selectIndex == btnType.role)
 
     -- 阶级技能界面
-    if not self._clsCom then
+    if not self._clsCom and (self._selectIndex == btnType.lowCls or self._selectIndex == btnType.superCls) then
         self._clsCom = fgui.UIPackage:createObject("RoleInfo", "ClsCom");--self:getChild("clsCom")
         self._clsCom:setPosition(46,33)
         self._clsCom:initUI()
         self._clsCom:insertObjectToFactory(self)
         self:addChild(self._clsCom)
     end
-    if self._selectIndex == btnType.lowCls or self._selectIndex == btnType.superCls then
+    if self._clsCom and (self._selectIndex == btnType.lowCls or self._selectIndex == btnType.superCls) then
         self._clsCom:setVisible(true)
         self._clsCom:refreshPanelByCls(self._selectIndex,true)
     else
-        self._clsCom:setVisible(false)
+        if self._clsCom then self._clsCom:setVisible(false) end
     end
 
     -- 转职界面
-    if not self._transferCom then
+    if not self._transferCom and self._selectIndex == btnType.transfer then
         self._transferCom = fgui.UIPackage:createObject("RoleInfo", "TransferCom");--self:getChild("clsCom")
         self._transferCom:setPosition(46,33)
         self._transferCom:initUI()
         self._transferCom:insertObjectToFactory(self)
         self:addChild(self._transferCom)
     end
-    self._transferCom:setVisible(self._selectIndex == btnType.transfer)
-    if self._transferCom:isVisible() then
+    if self._transferCom then self._transferCom:setVisible(self._selectIndex == btnType.transfer) end
+    if self._transferCom and self._transferCom:isVisible() then
         self._transferCom:refreshCurInfo(true)
     end
 
     local race = GameModule:getHeroRace()
     -- 魔法界面
-    if not self._magicCom then
+    if not self._magicCom and self._selectIndex == btnType.magic then
         local magicComName = nil
         if race == RaceType.Ousters then
             magicComName = "MagicOCom"
@@ -339,8 +339,8 @@ function UIWndRoleInfo:showCurPanel()
         self._magicCom:insertObjectToFactory(self)
         self:addChild(self._magicCom)
     end
-    self._magicCom:setVisible(self._selectIndex == btnType.magic)
-    if self._magicCom:isVisible() then
+    if self._magicCom then self._magicCom:setVisible(self._selectIndex == btnType.magic) end
+    if self._magicCom and self._magicCom:isVisible() then
         if race == RaceType.Ousters then
             if self._type == 1 then
                 self._type = Constant.ENTER_TYPES.LEARN
@@ -786,6 +786,8 @@ function UIWndRoleInfo:refreshAttrRight()
  
     ------------------------------------------------------------------------------------------------------
 
+    if self._offlineRightDetails==contentStr then return end
+    self._offlineRightDetails=contentStr
     local detailT = content:getChild("detail")
     detailT:setText(contentStr)
     

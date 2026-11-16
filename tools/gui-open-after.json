@@ -1,0 +1,60 @@
+{
+  "openMs": [
+    11.993000000004,
+    5.4250000000025,
+    5.6349999999981
+  ],
+  "methods": {
+    "Stats.refreshAttrLeft": {
+      "total": 1.6549999999995,
+      "self": 1.6549999999995,
+      "calls": 3
+    },
+    "English.row": {
+      "total": 2.9320000000297,
+      "self": 2.9320000000297,
+      "calls": 630
+    },
+    "Stats.fixReview": {
+      "total": 0.0049999999944816,
+      "self": 0.0049999999944816,
+      "calls": 3
+    },
+    "English.fit": {
+      "total": 38.23100000006,
+      "self": 7.864999999974,
+      "calls": 606
+    },
+    "Stats.refreshAttrRight": {
+      "total": 0.3420000000034,
+      "self": 0.3420000000034,
+      "calls": 3
+    },
+    "Stats.onShown": {
+      "total": 6.6020000000009,
+      "self": 2.0030000000162,
+      "calls": 3
+    },
+    "classLoad": {
+      "total": 0.014000000000181,
+      "self": 0.016999999999712,
+      "calls": 1
+    },
+    "Stats.showCurPanel": {
+      "total": 0.056999999998197,
+      "self": 0.056999999998197,
+      "calls": 3
+    },
+    "Stats.refreshHeroInfo": {
+      "total": 4.536999999992,
+      "self": 0.068999999982111,
+      "calls": 3
+    },
+    "Stats.refreshRoleInfo": {
+      "total": 2.471000000007,
+      "self": 2.1350000000027,
+      "calls": 3
+    }
+  },
+  "clock": "Lua os.clock CPU milliseconds on emulator-5554; after map loading and GUI preparation"
+}
