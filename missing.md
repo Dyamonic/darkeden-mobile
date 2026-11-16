@@ -155,6 +155,58 @@ Sources: [HeroData](reverse-engineering/unpacked/emag/app.data.model.HeroData)
 (`assignAttributePoint`), and
 [allocation window](reverse-engineering/unpacked/emag/app.scene.widget.window.UIWndUsePoints).
 
+## GM access and original GM interface
+
+**The original GM UI and assets are recovered.** They do not need to be
+recreated from scratch:
+
+- `UIWndGM` opens `ui://GM/GMPanel`: a GM command console and a network/debug tab.
+- `UIWndGMNew` opens `ui://GM3/GMNew`: categorized player attributes, props,
+  equipment, monster spawning and map transfer.
+- `GMCommand` contains **57 definitions** across those five categories; item,
+  equipment, map and monster catalogs supply additional selectable entries.
+- Both `GM.fui` / `GM3.fui` and their atlases are bundled in
+  `editable-apk/assets/win32/res/fairygui/`.
+- `MainUILayer:btnGMClick` / `btnGMNewClick` open the windows. Its initialization
+  hides both buttons when `tonumber(ConfigLoader:isDev()) == 1`. `isDev` reads
+  `game.plist`'s `DEVELOPER` value, defaulting to 1. This is a client visibility
+  condition, **not evidence of an account receiving GM authority**.
+- `ConfigLoader:isDeveloper()` separately checks for a file named `developer`;
+  no consumer of that method was found in the audited gameplay Lua. It should
+  not be presented as a confirmed account-promotion switch.
+
+The newer panel constructs commands including `@test setprop`, `@skillpoint`,
+`@make`, `@mon`, and `@goto`, then calls `ChatModule:sendGMChat`. Most commands
+are wrapped in `CS_ChatReq` and sent to the server. A few commands such as
+`@fps` have local debug effects. Showing the window alone does not execute the
+server commands or grant permission to use them.
+
+- [ ] No original account/character GM promotion procedure, permission database
+  schema, or authoritative command authorization implementation was found in
+  the audited client. These need matching server code/data or a new private-
+  server implementation; the client cannot establish how the old server granted
+  or verified GM status.
+- [ ] Offline character GM roles/permissions and a deliberate UI entry point are
+  not implemented. No character was promoted by this audit.
+- [ ] Local handlers for GM commands are not implemented in `Bridge:request`.
+  The old UI's server chat commands will not create items/mobs, change stats or
+  teleport through the current local backend.
+- [ ] Connect supported GM actions to the same local validation, derived stats,
+  world state, inventory and save routines used by normal gameplay.
+- [ ] For a future online private server, grant/check privileges on the server;
+  client developer flags only control presentation.
+- [ ] Playtest the recovered windows and English layout after enabling them.
+  This audit inspected source/assets; it did not run or enable the GM UI.
+
+Sources:
+
+- [GM console](reverse-engineering/unpacked/emag/app.scene.widget.window.UIWndGM)
+- [Categorized GM panel](reverse-engineering/unpacked/emag/app.scene.widget.window.UIWndGMNew)
+- [GM actions](reverse-engineering/unpacked/emag/app.scene.widget.component.UICompGmCmdCell)
+- [Command transport](reverse-engineering/unpacked/emag/app.module.ChatModule)
+- [GM button visibility/entry points](reverse-engineering/unpacked/emag/app.scene.gameTL.layers.MainUILayer)
+- [Developer configuration](reverse-engineering/unpacked/emag/app.common.ConfigLoader)
+
 ## Other known offline gaps
 
 - [ ] Full quest acceptance/progress/completion and reward transactions.
