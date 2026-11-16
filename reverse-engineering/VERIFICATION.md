@@ -387,3 +387,14 @@ The final installed APK passed a native Lua-to-Java call to the old collector
 launches and instrumentation attachment kept AppActivity foreground with no
 permission dialog or app-UID logcat process. Original gameplay/save data is kept.
 Static patch integrity checks and APK signature verification passed.
+
+## Inventory side-tab centering
+
+All, Items and Gear now center on the visible tab artwork (43 px wide in the
+Vampire skin), rather than the 79 px invisible button bounds. The rotated labels
+retain the original font and padded text bounds. The same helper runs after
+skin setup whenever Inventory is shown, and general text fitting preserves it.
+On the final installed APK all three real widgets passed center/padding and
+repeat-fitting checks. Native taps selected Items, Gear and All; closing/reopening
+Inventory retained the layout with no runtime error. Evidence:
+tools/bag-tabs-centered.png and test-bag-tabs-live.lua. Localization checks passed.

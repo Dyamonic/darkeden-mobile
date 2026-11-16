@@ -199,6 +199,7 @@ function UIWndInventory:onHide()
 end
 
 function UIWndInventory:onShown()
+    for i=1,3 do require("app.offline.EnglishUI").fitInventoryTab(self:getChild("btnFiter"..i)) end
     self:enableUpdateEvent(true)
 
     self:addUIListenerEvent()

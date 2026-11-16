@@ -107,6 +107,21 @@ end
 function EnglishUI.fitCountdown(object)
     centerLabel(object,nil,0,-66,140,56,42)
 end
+function EnglishUI.fitInventoryTab(button)
+    local title=button:getTextField()
+    local art=button:getChild("n0") or button
+    local bounds=art:getSize()
+    local font=title:getFontSize()
+    local width=math.min(bounds.height-20,textWidth(title:getText(),font))
+    title:setAutoSize(fgui.AutoSizeType.NONE)
+    title:setPivot(0.5,0.5,true)
+    title:setSize(width,math.min(bounds.width-8,font*1.5),true)
+    title:setSingleLine(true)
+    title:setRotation(90)
+    title:setPosition(left(art)+bounds.width/2,art:getY()+bounds.height/2)
+    title:applyTextFormat()
+    title:setAutoSize(fgui.AutoSizeType.SHRINK)
+end
 function EnglishUI.fitPocketButton(button)
     local size=button:getSize()
     centerLabel(button:getTextField(),nil,size.width/2,(size.height-24)/2,size.width-38,24,16)
@@ -261,6 +276,10 @@ function EnglishUI.fit(object)
     if not object then return end
     local kind=tolua.type(object)
     if kind=="fgui.GTextField" or kind=="fgui.GBasicTextField" or kind=="fgui.GRichTextField" then
+        local parent=object:getParent()
+        if parent and tolua.type(parent)=="fgui.GButton" and parent.name:match("^btnFiter[123]$") and parent:getTextField()==object then
+            EnglishUI.fitInventoryTab(parent);return
+        end
         local size=object:getSize()
         local text=object:getText() or ""
         if #text>0 and text:find('%a') and not text:find('[\228-\233][\128-\191][\128-\191]') then
