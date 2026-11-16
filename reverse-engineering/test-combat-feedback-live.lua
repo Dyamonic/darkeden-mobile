@@ -3,7 +3,7 @@ local real=_G_OFFLINE_BRIDGE;local world=lt.AgentManager:getWorldAgent()
 local hero=lt.AgentManager:getHeroAgent();local x,y=hero:getPosition();local id=990001
 if world:getAgent(id) then world:deleteAgent(id) end
 local function clone(t)return (json.decode(json.encode(t))) end
-local mob={objID=id,id=970001,monster=5,model=6,name='Combat verification',level=5,
+local mob={objID=id,id=970001,monster=7,model=5,name='Combat verification',level=5,
     x=x+192,y=y+96,hp=10,maxHP=10,moveInterval=.7,attackInterval=.775}
 real:spawnMonsters(mob)
 local actor=assert(world:getAgent(id));actor:changeState(lt.MonsterStateIdle.new(actor))
@@ -36,7 +36,7 @@ require('cocos.framework.scheduler').performWithDelayGlobal(function()
         world:deleteAgent(id)
         assert(passed,'Native mob death animation did not advance')
         local f=assert(io.open(device.writablePath..'combat-native-feedback-pass.txt','w'))
-        f:write('PASS real Remote snapshots: native HP 10 -> 6 -> 0, original -4 bitmap label, completed hit reaction, and native death animation; fixture removed; no player/server progress changed')
+        f:write('PASS level-5 Turning Soul / real Remote snapshots: native HP 10 -> 6 -> 0, original -4 bitmap label, completed hit reaction, and native death animation; fixture removed; no player/server progress changed')
         f:close()
     end,1.5)
 end,1)
