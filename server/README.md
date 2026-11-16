@@ -71,3 +71,7 @@ Authority tests use isolated in-memory databases and real recovered catalogs.
 HTTP tests need the running server and exercise read/invalid actions without
 spending points or changing inventory. See [port status](PORT_STATUS.md) for
 adaptations, verification and incomplete systems.
+
+## Resurrection points
+
+Choose the original NPC resurrection-location option. The server checks the NPC, race and distance, then saves the mobile map table destination for that character. Reviving returns there, including across maps. Until a point is set, the character uses its race home. Setting a point never teleports a living character.

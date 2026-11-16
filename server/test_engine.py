@@ -42,6 +42,41 @@ class AuthorityTests(unittest.TestCase):
         self.s['hp']=0
         self.e.command(self.session,'revive',{});self.assertEqual(self.s['hp'],self.s['stats']['maxHP'])
         self.s['hp']=1;self.e.command(self.session,'revive',{});self.assertEqual(self.s['hp'],1)
+    def test_resurrection_binding_persists_and_returns_from_another_map(self):
+        npc=self.catalog.npcs[309]
+        self.s['map']=str(npc['MapResId']);self.s['x'],self.s['y']=pixel(npc['Xpot'],npc['Ypot'])
+        self.e.step(self.s['name'],{'commands':[{'seq':1,'kind':'bindResurrection','args':{'npc':309,'map':'12','m':1,'n':1}}]})
+        point=copy.deepcopy(self.s['resurrection'])
+        self.assertEqual((point['map'],point['m'],point['n'],point['npc']),('61',102,220,309))
+        self.assertEqual(self.session['events'][-1]['kind'],'resurrectionBound')
+        self.e.sessions.clear();self.e.enter(self.s['name']);self.session=self.e.sessions['test vampire'];self.s=self.session['state']
+        self.assertEqual(self.s['resurrection'],point)
+        self.s['map']='12';self.s['hp']=0;generation=self.session['generation']
+        self.e.command(self.session,'revive',{})
+        self.assertEqual((self.s['map'],self.s['x'],self.s['y']),('61',*pixel(102,220)))
+        self.assertEqual(self.s['hp'],self.s['stats']['maxHP']);self.assertNotEqual(self.session['generation'],generation)
+        before=copy.deepcopy(self.s)
+        self.e.command(self.session,'revive',{});self.assertEqual(self.s,before)
+    def test_resurrection_binding_rejects_wrong_npc_race_distance_and_death(self):
+        for npcid in [999999,302,309]:
+            with self.assertRaises(ValueError):self.e.command(self.session,'bindResurrection',{'npc':npcid})
+        npc=self.catalog.npcs[302];self.s['map']=str(npc['MapResId']);self.s['x'],self.s['y']=pixel(npc['Xpot'],npc['Ypot'])
+        self.s['hp']=0
+        with self.assertRaises(ValueError):self.e.command(self.session,'bindResurrection',{'npc':302})
+        self.s['hp']=1
+        npc=next(n for n in self.catalog.npcs.values() if n['Contem']==1 and str(n['MapResId']) in self.catalog.grids)
+        self.s['map']=str(npc['MapResId']);self.s['x'],self.s['y']=pixel(npc['Xpot'],npc['Ypot'])
+        with self.assertRaises(ValueError):self.e.command(self.session,'bindResurrection',{'npc':npc['NpcIndex']})
+        self.s['appearance']['byRace']=1
+        with self.assertRaises(ValueError):self.e.command(self.session,'bindResurrection',{'npc':npc['NpcIndex']})
+    def test_same_map_resurrection_and_default_for_each_race(self):
+        for race,appearance in [(1,{'byRace':1,'wSTR':10,'wDEX':10,'wINT':10}),(3,{'byRace':3,'wSTR':15,'wDEX':15,'wINT':15})]:
+            s=self.e.create('Race '+str(race),appearance);self.e.enter(s['name']);session=self.e.sessions[s['name'].casefold()]
+            state=session['state'];state['hp']=0;self.e.command(session,'revive',{})
+            self.assertEqual((state['x'],state['y']),pixel(state['resurrection']['m'],state['resurrection']['n']))
+        self.s['map']='61';self.s['resurrection']={'map':'61','m':102,'n':220};self.s['hp']=0
+        mobs=self.session['mobs'];self.e.command(self.session,'revive',{})
+        self.assertIs(self.session['mobs'],mobs);self.assertEqual((self.s['x'],self.s['y']),pixel(102,220))
     def test_persistence_and_single_import(self):
         self.s['points']=3;self.e.allocate(self.s,{'int':3});self.e.persist(self.s)
         self.e.sessions.clear();saved=self.e.enter(self.s['name'])['state']

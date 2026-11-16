@@ -3,6 +3,7 @@ from pathlib import Path
 import collections,csv,gzip,hashlib,heapq,json,math,random,re,secrets,sqlite3,struct,time
 from quests import Quests
 from skills import Skills
+from resurrection import Resurrection
 
 ROOT=Path(__file__).resolve().parents[1]
 def parse(value,default=None):
@@ -140,6 +141,7 @@ class Engine:
         self.sessions={};self.events=collections.defaultdict(list)
         self.quests=Quests(self)
         self.skills=Skills(self)
+        self.resurrection=Resurrection(self)
         self.mapping_skips=collections.Counter()
     def persist(self,s):
         payload={k:v for k,v in s.items() if k not in ['stats','serverTime']}
@@ -194,6 +196,7 @@ class Engine:
             s.setdefault('domainLevels',{'Blade':s['level'],'Sword':1,'Gun':1,'Heal':1,'Bless':1})
             s.setdefault('domainXP',{'Blade':s['xp'],'Sword':0,'Gun':0,'Heal':0,'Bless':0})
         self.pack_bag(s);self.quests.init(s);self.skills.init(s)
+        s.setdefault('resurrection',self.resurrection.default(s))
         return s
     def roster(self):return [self.migrate(json.loads(r[0])) for r in self.db.execute('SELECT state FROM characters ORDER BY rowid')]
     def create(self,name,appearance):
@@ -387,8 +390,9 @@ class Engine:
         if kind=='learn':self.skills.learn(session,args);return
         if kind=='travel':self.travel(session,args);return
         if kind=='allocate':self.allocate(s,args);return
+        if kind=='bindResurrection':self.resurrection.bind(session,args);return
         if kind=='revive':
-            if s['hp']<=0:s['hp']=s['stats']['maxHP'];session['attackAt']=now+2;self.emit(session,'revive')
+            self.resurrection.revive(session)
             return
         if s['hp']<=0:raise ValueError('Your character is dead')
         if kind=='attack':

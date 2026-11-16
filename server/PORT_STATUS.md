@@ -8,6 +8,7 @@ External source is unchanged. Audit: `reverse-engineering/PC-SERVER-REFERENCE.md
 | Saves | SQLite authority, three characters, one-time backed-up roster import | Production accounts and concurrent-device ownership |
 | Mobs | 583 PC/mobile mappings; V2 population counts/event delays; 183 mobile grids; safe/portal exclusion, bounded A* pursuit, respawn | Unmapped mobs/zones, complete boss/event scripts and cross-version differences |
 | Mob stats | V2 attributes/enhancement/HP exceptions and delays; mobile levels/models retained | Exact mobile balance, night/party/global modifiers, resistances and complex AI |
+| Resurrection | NPC option saves per-character map/tile from mobile ResurrectionAddress; same/cross-map respawn; race-home default | Castle inside/outside options share the original NPC-only request, so distinct castle rules remain future work |
 | Combat | Server range/LOS, hit chance, damage, HP, death/revive and cooldowns | Protection reduction is adapted; complete magic/critical/resistance rules |
 | Loot | Race treasure groups, 100000 modulus, weighted class/type rolls, 848 item mappings, native ground pickup | Unmapped rolls skipped/counted; option affixes, luck, complete gold and party rules |
 | Attributes | V2 racial formulas with mobile ratios/equipment; Vampire/Ousters three points per level; Slayer domain/use-based growth | Slayer cap redistribution and complete domain EXP modifiers |
@@ -20,7 +21,7 @@ External source is unchanged. Audit: `reverse-engineering/PC-SERVER-REFERENCE.md
 
 ## Evidence and limits
 
-- 19 isolated authority tests cover forged stats/teleport, movement budget,
+- 22 isolated authority tests cover forged stats/teleport, movement budget,
   command retries, native empty-argument encodings, points/progression, saves,
   collision/populations, death/revive, pickup, quest reward-once, GM permissions,
   equipment, stack rollback and basic skill validation.
@@ -39,3 +40,5 @@ External source is unchanged. Audit: `reverse-engineering/PC-SERVER-REFERENCE.md
 Backend tests do not establish that every mission, skill, vendor or GM operation
 has been exercised through native UI. The remaining systems above are unfinished;
 importing reference data does not implement them automatically.
+
+Resurrection tests cover NPC/race/proximity/death validation, forged destination rejection, persistence, same-map and cross-map respawn, all racial defaults and living-character retry safety. Native validation covers the original NPC request reaching the adapter. A complete native death-to-another-map playthrough remains unverified.

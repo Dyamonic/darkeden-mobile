@@ -16,7 +16,8 @@ Exported gameplay data is in `reverse-engineering/data-audit/pc-server/`.
 
 The private server in [`server/`](server/README.md) now implements mapped V2
 populations/stats/loot, progression, inventory/equipment, basic main missions,
-supported skills and local administrator-controlled GM permissions. It backs up
+supported skills, persistent NPC resurrection points with return teleport, and
+local administrator-controlled GM permissions. It backs up
 and imports the original roster once, then persists progress in external SQLite.
 The native game retains its original UI, fonts, maps and effects.
 

@@ -73,6 +73,7 @@ function Remote:handle(id,msg)
         return code and (id==code or (type(code)=='string' and id==lt.CommonModule:GetNetCmdEnum(code)))
     end
     if named('C_TASK_LIST_REQ') then self.taskSignature=nil;return true end
+    if named('C_SET_RELIVE_POINT_REQ') then self:queue('bindResurrection',{npc=tonumber(msg.npcId)});return true end
     local quests={C_TASK_LEADING_REQ='accept',C_TASK_COMMIT_REQ='commit',C_TASK_RECEIVE_REWARD_REQ='claim',C_TASK_GIVE_UP_REQ='abandon',C_TALK_NPC_REQ='talk'}
     for name,action in pairs(quests) do if named(name) then
         self:queue('quest',{action=action,id=tonumber(msg.taskId),npc=tonumber(msg.npcId),talk=tonumber(msg.talkId)});return true
@@ -149,6 +150,13 @@ function Remote:apply(result,initial)
     local b=self.bridge;if not b.world then return end
     local old=b.state;local previousHP=old.hp;local previousLevel=old.level
     b.state=result.state;b.world.state=b.state
+    local revived=previousHP<=0 and b.state.hp>0
+    for _,event in ipairs(result.events or {}) do if event.seq>self.after and event.kind=='revive' then revived=true end end
+    if revived then
+        lt.AutoFightManager:endAutoFight()
+        b.deathShown=false;lt.GameModule._bufferTable=nil
+        lt.GameModule:onReliveAck({param={ret=0}})
+    end
     if old.map~=b.state.map then
         b.transferring=true;lt.AutoFightManager:endAutoFight()
         require('cocos.framework.scheduler').performWithDelayGlobal(function()
@@ -191,9 +199,9 @@ function Remote:apply(result,initial)
     if math.abs(x-b.state.x)>96 or math.abs(y-b.state.y)>48 then a:setPosition(b.state.x,b.state.y) end
     b:syncHero()
     if previousHP>0 and b.state.hp<=0 then b:showDeath()
-    elseif previousHP<=0 and b.state.hp>0 then
+    elseif revived then
         b.deathShown=false;a:changeHeroStatus(lt.Constant.HeroStatus.ALIVE);a:changeState(lt.HeroStateIdle.new(a));a:getActor():clearDead()
-        lt.GameModule._bufferTable=nil;lt.GameModule:onReliveAck({param={ret=0}})
+        a:setPosition(b.state.x,b.state.y)
     end
     local upgraded=not initial and b.state.level>previousLevel
     for _,event in ipairs(result.events or {}) do if not initial and event.seq>self.after and event.kind=='domainLevel' then upgraded=true end end
@@ -229,6 +237,7 @@ function Remote:apply(result,initial)
     for _,event in ipairs(result.events or {}) do
         if event.seq>self.after then
             if event.kind=='message' then b:message(event.text)
+            elseif event.kind=='resurrectionBound' then lt.NpcModule:onSetRelivePoint({param={ret=0}})
             elseif event.kind=='purchase' then lt.NpcModule:onBuyItem({param={ret=0}})
             elseif event.kind=='sale' then lt.NpcModule:onSellItem({param={ret=0,changeNum=event.amount}})
             elseif event.kind=='questReward' then lt.TaskModule:onTaskReward({param={ret=0,taskId=event.taskId}}) end
