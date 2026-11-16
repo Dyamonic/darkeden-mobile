@@ -1,5 +1,24 @@
 # Missing data and offline gameplay systems
 
+## New reference found: DarkEden-v2 PC server
+
+The 2026-11-16 audit of `C:/Users/nasse/Desktop/DarkEden-v2/server-master`
+found server references for mob combat formulas, zone populations/spawn selection,
+race-specific loot, three-point Vampire/Ousters leveling, Slayer use-based stat
+growth, derived player stats and GM authority. See the detailed
+[PC server reference audit](reverse-engineering/PC-SERVER-REFERENCE.md).
+
+Recovered evidence: **635 PC monster rows, 148 zones, 3,278 population entries,
+249 fully decoded treasure binaries**, and 130 same-ID/dimension map candidates.
+Exported gameplay data is in `reverse-engineering/data-audit/pc-server/`.
+
+These systems are now **available as PC reference implementations**, but remain
+unimplemented in the mobile offline backend. Earlier “not recovered” statements
+below describe the Android client alone. Exact mobile-authoritative balance and
+cross-version mob/map/item mappings are still unresolved. For example, Turning
+Dead is level 1 / sprite 8 in the PC seed, versus level 2 / model 6 in mobile.
+Nothing was imported into live gameplay or saves by this reference audit.
+
 Audit date: 2026-11-16. This records findings in the recovered Android client,
 its bundled SQLite database, and the current offline implementation. It is an
 audit of mobs, loot, progression, and known offline gaps—not a claim that every
