@@ -16,7 +16,7 @@ External source is unchanged. Audit: `reverse-engineering/PC-SERVER-REFERENCE.md
 | Missions | Persistent main chains, NPC/kill/collection goals, once-only rewards | Branch/daily/weekly unlock/reset rules, advanced goals and choice rewards |
 | Skills | 189 arithmetic programs extracted, 167 normalized name matches, 85 basic/direct/healing handlers; learning, points, resource/CD checks | Conditional effects, passive skills, status effects, summons, AoE, all weapon constraints; drain/corpse effects are adaptations |
 | GM | Original console, local administrator role, validated item/mob creation, teleport and selected properties | Other original commands and production audit log |
-| Presentation | Original UI/font/actors, quest/skill lists, stats, death UI and racial level effects | English layout polish in rarely opened windows |
+| Presentation | Original UI/font/actors, quest/skill lists, stats, damage numbers, hit reactions, live mob HP bars, death UI and racial level effects | English layout polish in rarely opened windows |
 | Network | Native HTTP, sequenced retry-safe commands, snapshots and restart reconnect over loopback/ADB | Public accounts/TLS, shared world, PvP, parties/guilds/trading/market/events |
 
 ## Evidence and limits
@@ -42,3 +42,5 @@ has been exercised through native UI. The remaining systems above are unfinished
 importing reference data does not implement them automatically.
 
 Resurrection tests cover NPC/race/proximity/death validation, forged destination rejection, persistence, same-map and cross-map respawn, all racial defaults and living-character retry safety. Native validation covers the original NPC request reaching the adapter. Native playtest with a temporary character: bound Murphy, died on map 12, and revived to map 61 at X102 Y220 with full HP and cleared death UI.
+
+Combat presentation fix: server hit events now use the original GameModule HP/effect path, with complete cast targets, zero-damage miss feedback, HP-bar refresh, final-hit-before-death ordering and retry of stalled idle movement. Native fixture verified HP 10 -> 6 -> 0, original bitmap damage label, completed hit reaction and death animation without changing player/server progress.

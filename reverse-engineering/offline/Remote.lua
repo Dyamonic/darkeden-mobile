@@ -171,22 +171,21 @@ function Remote:apply(result,initial)
         for id in pairs(self.dropAgents) do world:deleteAgent(id) end
         oldMobs={};self.dropAgents={};self.moveTargets={};self.generation=result.generation
     end
-    local seen={}
+    local seen={};local deaths={}
     for _,mob in ipairs(result.mobs) do
         seen[mob.objID]=true
         local before=oldMobs[mob.objID];local actor=world:getAgent(mob.objID)
         if actor and before and before.hp<=0 and mob.hp>0 then world:deleteAgent(mob.objID);actor=nil end
         if not actor and mob.hp>0 then b:spawnMonsters(mob);actor=world:getAgent(mob.objID) end
         if actor then
-            actor:getMonsterData():setValue(lt.ServerClientEnum.CreatureValueDef.Attr_CurHp,mob.hp)
             if before and before.hp>0 and mob.hp<=0 then
-                local m,n=lt.MapUtil:calcMN(mob.x,mob.y)
-                lt.GameModule:onObjDie({param={objID=mob.objID,x=m,y=n,direction=mob.direction or 0,killerID=1}})
+                deaths[#deaths+1]=mob
             elseif mob.hp>0 then
                 local m,n=actor:getMN();local tm,tn=lt.MapUtil:calcMN(mob.x,mob.y)
                 local target=tm..':'..tn
                 self.moveTargets=self.moveTargets or {}
-                if (m~=tm or n~=tn) and self.moveTargets[mob.objID]~=target then
+                local stalled=actor:getCurStateId()==lt.Constant.MONSTER_STATE_IDLE and not actor:getCmdSystem():hasCmd()
+                if (m~=tm or n~=tn) and (self.moveTargets[mob.objID]~=target or stalled) then
                     self.moveTargets[mob.objID]=target
                     lt.GameModule:onObjMove({param={objID=mob.objID,newX=tm,newY=tn,direction=lt.MapUtil:calcDirectionMN(m,n,tm,tn),moveType=lt.Constant.MOVE_RUN}})
                 end
@@ -195,6 +194,20 @@ function Remote:apply(result,initial)
     end
     for id in pairs(oldMobs) do if not seen[id] then world:deleteAgent(id) end end
     b.world.enemies=result.mobs
+    local feedback=require('app.offline.CombatFeedback')
+    feedback.apply(result,self.after,initial)
+    for _,mob in ipairs(result.mobs) do
+        local actor=world:getAgent(mob.objID)
+        if actor then
+            local data=actor:getMonsterData()
+            if data:getCurHp()~=mob.hp or data:getMaxHp()~=mob.maxHP then actor:changeHp(mob.hp,mob.maxHP) end
+        end
+    end
+    -- Deliver the final hit before entering the native death animation.
+    for _,mob in ipairs(deaths) do
+        local m,n=lt.MapUtil:calcMN(mob.x,mob.y)
+        lt.GameModule:onObjDie({param={objID=mob.objID,x=m,y=n,direction=mob.direction or 0,killerID=1}})
+    end
     local a=lt.AgentManager:getHeroAgent();local x,y=a:getPosition()
     if math.abs(x-b.state.x)>96 or math.abs(y-b.state.y)>48 then a:setPosition(b.state.x,b.state.y) end
     b:syncHero()
@@ -234,14 +247,14 @@ function Remote:apply(result,initial)
         end
         lt.SkillModule:onSkillList({param={skills=skills}})
     end
-    for _,event in ipairs(result.events or {}) do
+    for index,event in ipairs(result.events or {}) do
         if event.seq>self.after then
             if event.kind=='message' then b:message(event.text)
             elseif event.kind=='resurrectionBound' then lt.NpcModule:onSetRelivePoint({param={ret=0}})
             elseif event.kind=='purchase' then lt.NpcModule:onBuyItem({param={ret=0}})
             elseif event.kind=='sale' then lt.NpcModule:onSellItem({param={ret=0,changeNum=event.amount}})
             elseif event.kind=='questReward' then lt.TaskModule:onTaskReward({param={ret=0,taskId=event.taskId}}) end
-            if event.kind=='cast' then lt.GameModule:onAttackAck({param={ret=0,skillID=event.skill,cdRemain=event.cd or 0}}) end
+            if event.kind=='cast' and not initial then feedback.attackAck(event,result.events[index-1]) end
             if event.kind=='hurt' and world:getAgent(event.objID) then
                 local mob=world:getAgent(event.objID);local m,n=mob:getMN();local hm,hn=a:getMN()
                 lt.GameModule:onObjAttack({param={objID=event.objID,skillCode=17001,skillLevel=1,targetID=1,targetX=hm,targetY=hn,
