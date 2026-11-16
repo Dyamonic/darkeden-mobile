@@ -393,5 +393,6 @@
  "角色信息": "Character",
  "选项": "Settings",
  "魔法值低于({value})%自动使用({table})": "MP below ({value})%: use ({table})",
- "默认": "Defaults"
+ "默认": "Defaults",
+ "大尉，我想去配罗那。": "I want to go to Perona."
 }

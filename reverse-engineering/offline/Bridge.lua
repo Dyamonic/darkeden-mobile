@@ -422,6 +422,9 @@ function Bridge:transfer(target)
     if not allowed then return end
     local code,tm,tn=Locations.destination(self.state.map,target,m,n)
     if not code then self:message("This passage has no local destination data yet.");return end
+    self:changeMap(code,tm,tn)
+end
+function Bridge:changeMap(code,tm,tn)
     self:save()
     self.transferring=true
     lt.AutoFightManager:endAutoFight()
@@ -432,9 +435,27 @@ function Bridge:transfer(target)
         self.transferring=false
     end)
 end
+function Bridge:npcTravel(msg)
+    if self.transferring or not self.world then return end
+    local npcId,talkId=tonumber(msg.npcId),tonumber(msg.id)
+    if not npcId or not talkId or tostring(lt.NpcModule:getNpcId())~=tostring(npcId) then return end
+    local npc=lt.CacheManager:queryNpc(npcId)
+    local talk=lt.CacheManager:queryNpcTalk(talkId)
+    if not npc or not talk then return end
+    local nm,nn=npc:getNpcPos()
+    local m,n=lt.AgentManager:getHeroAgent():getMN()
+    local code,tm,tn=Locations.npcDestination(self.state,{
+        NpcIndex=npcId,MapResId=npc:getMapResId(),Contem=npc:getContem(),
+        Xpot=nm,Ypot=nn,DialogueDistance=npc:getDialogueDistance()
+    },{NPCId=talk:getNpcId(),NPCTalkGoto=talk:getNpcTalkGoto()},m,n)
+    if not code then self:message(tm);return end
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_DLG_MAIN_VIEW,{class="UIWndTalkNpc",close=true})
+    self:changeMap(code,tm,tn)
+end
 function Bridge:request(id,msg)
     local C=lt.ClientCmdDef
     if id==C.CS_TRANSFER_REQ and self.world then self:transfer(msg.mapCode);return end
+    if id==C.NpcOperation_JumpMap then self:npcTravel(msg);return end
     if id==C.CONFIRM_ON_LOGIN then return end
     if id==C.MOVE then return end -- Original client predicts local movement.
     if id==C.RELIVE then self:revive();return end

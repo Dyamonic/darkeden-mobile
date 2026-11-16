@@ -57,7 +57,7 @@ function DbManager:getDb()
         end
 
         local dir = uroot.."res/data"
-        local dataPath = dir.."/data-en-d62dc35723dc.bin"
+        local dataPath = dir.."/data-en-5dd5ae87fa02.bin"
         print("dbPath:", dbPath)
         print("dataPath:", dataPath)
 

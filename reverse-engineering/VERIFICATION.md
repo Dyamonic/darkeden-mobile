@@ -295,3 +295,33 @@ suites passed. Localization hooks are reproducible. APK signature verification
 passed and the encrypted archive matches all current localization overlays and
 EnglishUI. Both build APK filenames and the repository artifact/checksum were
 refreshed.
+
+## Foley Colagas NPC travel - 2026-11-16
+
+The original dialogue sends NpcOperation_JumpMap (107), which the offline Bridge
+previously discarded. Portal requests use a separate message and standing-on-
+portal validation. Original NPCTalk row 302105 defines 2|61,110,208: Perona
+Northeast at tile 110,208. The handler now resolves that row, validates the NPC,
+selected speaker, race, map, dialogue distance, alive state and destination bounds,
+then closes the dialogue and uses the existing deferred map-loading/save path.
+The caption now reads "I want to go to Perona." in both localization caches.
+
+The data-backed regression failed before implementation and now passes. It checks
+the original destination and rejects dead/far/wrong-map/wrong-race/wrong-NPC,
+non-travel, unknown-map and out-of-bounds requests. Offline simulation, locations,
+roster, movement/death and localization suites passed. Signature verification
+passed; packaged Bridge, Locations, database and DbManager cache revision match
+current source. Both build APK filenames and repository artifact/checksum updated.
+
+On the final installed APK, cold launch resumed the existing Vampire in its
+village at tile 89,65, inside Foley's original dialogue distance. A GL-thread
+helper opened the original NPC window; an actual screen tap selected option
+302105. The original handler and transport delivered the request without runtime
+backend replacements. The visible map and hero arrived at map 61, tile 110,208.
+The dialogue closed and HP, level, XP, gold, potions, kills and appearance stayed
+unchanged. Force-stop/app-icon relaunch retained the Perona arrival and the same
+progress. No offline runtime error file was generated. The character is left in
+Perona, matching the requested trip.
+
+Evidence: tools/foley-travel-dialogue.png, tools/foley-perona-arrival.png and
+tools/foley-perona-reloaded.png; app-private npc-travel-pass.txt.

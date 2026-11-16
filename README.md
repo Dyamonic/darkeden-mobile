@@ -56,3 +56,5 @@ See [the Android project instructions](android-studio-project/README.md),
 Regular mob locations use recovered quest destinations as local population
 centers. Exact original server populations and combat balance were not recovered.
 Online quests, multiplayer and the original server economy are not implemented.
+
+NPC dialogue travel uses original bundled destinations, including Foley Colagas to Perona Northeast. Travel closes the original dialogue, loads the destination locally and saves the arrival.
