@@ -398,3 +398,13 @@ On the final installed APK all three real widgets passed center/padding and
 repeat-fitting checks. Native taps selected Items, Gear and All; closing/reopening
 Inventory retained the layout with no runtime error. Evidence:
 tools/bag-tabs-centered.png and test-bag-tabs-live.lua. Localization checks passed.
+
+## EXP label size
+
+The EXP caption now uses Level's font size without native SHRINK scaling. The
+native renderer retained a smaller scale from the longer Experience caption even
+when getFontSize reported the same size; disabling shrink and refreshing the
+format restores the visible size. Role-info refresh reapplies the fixed caption.
+The final installed APK passed repeated refresh and close/reopen checks for font
+equality, no shrink and no overflow; visual evidence: tools/exp-matches-level.png.
+Original font/localization integrity and APK signature checks passed.

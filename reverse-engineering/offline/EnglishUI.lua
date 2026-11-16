@@ -68,6 +68,19 @@ function EnglishUI.fitRow(row)
     constrain(value,vx,right-vx)
     rowLayouts[row]={name=name,value=value,nx=nx,vx=vx,nameWidth=nameRight-nx,valueWidth=right-vx}
 end
+function EnglishUI.fitRoleExperience(panel)
+    local exp,level=panel:getChild("exp"),panel:getChild("level")
+    if not exp or not level then return end
+    local caption,reference=exp:getChild("name"),level:getChild("name")
+    local font=reference:getFontSize()
+    -- The native SHRINK renderer retains the scale used for "Experience".
+    -- EXP fits the existing cell at Level's size; force a format refresh and
+    -- leave this fixed caption unscaled after every role-info refresh.
+    caption:setText("EXP")
+    caption:setAutoSize(fgui.AutoSizeType.NONE)
+    caption:setFontSize(font+1);caption:setFontSize(font)
+    caption:applyTextFormat()
+end
 function EnglishUI.fitHeader(object,rightInset)
     if not textField(object) then return end
     local parent=object:getParent()

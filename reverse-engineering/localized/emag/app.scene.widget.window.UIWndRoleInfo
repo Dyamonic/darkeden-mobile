@@ -585,6 +585,7 @@ function UIWndRoleInfo:refreshRoleInfo()
             end
         end
     end
+    require("app.offline.EnglishUI").fitRoleExperience(curJobPanel)
 end
 
 function UIWndRoleInfo:addInfoAttrClick()
