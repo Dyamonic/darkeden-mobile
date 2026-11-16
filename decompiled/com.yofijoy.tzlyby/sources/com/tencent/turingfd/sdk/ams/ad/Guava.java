@@ -1,0 +1,15 @@
+package com.tencent.turingfd.sdk.ams.ad;
+
+import com.tencent.turingfd.sdk.ams.ad.Cprotected;
+import java.util.concurrent.Callable;
+
+/* loaded from: classes2.dex */
+public class Guava implements Callable<Cprotected.Cdo> {
+    public Guava(Herbaceous herbaceous) {
+    }
+
+    @Override // java.util.concurrent.Callable
+    public Cprotected.Cdo call() throws Exception {
+        return Cprotected.a();
+    }
+}

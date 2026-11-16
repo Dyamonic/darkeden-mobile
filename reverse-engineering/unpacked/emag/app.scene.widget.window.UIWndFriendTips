@@ -1,0 +1,217 @@
+--- 好友tips
+---@class UIWndFriendTips:UIWindowBase
+
+local UIWndFriendTips          = class("UIWndFriendTips", lt.UIWindowBase)
+
+local NtfManager               = lt.NtfManager
+local FriendModule             = lt.FriendModule
+local CacheManager             = lt.CacheManager
+local TeamModule               = lt.TeamModule
+local Constant                 = lt.Constant
+local ChatModule               = lt.ChatModule
+local RaceSkinRes              = Constant.RaceSkinRes
+local PrefManager              = lt.PrefManager
+local CommonUtil               = lt.CommonUtil
+
+UIWndFriendTips.ChangeSkinConf = {
+    ["Friend"] = {
+        ["bg"] = "bg_haoyou_beijingban1",
+        ["btn_del"] = { icon = "bth_haoyou_anniu" },
+        ["img_di"] = "bg_haoyou_di",
+    },
+    ["CommonTL"] = {
+        ["frame"] = {
+            closeButton = { bg = "bg_beibao_anniu01", bgup = "bg_beibao_anniu02" },
+        },
+        ["btn_chat"] = { loaderdown = "bg_beibao_ren_anniu" },
+        ["btn_team"] = { loaderdown = "bg_beibao_ren_anniu" },
+    }
+}
+
+function UIWndFriendTips:ctor(param)
+    UIWndFriendTips.super.ctor(self, param)
+end
+
+function UIWndFriendTips:onClear()
+    self._btnChat  = nil
+    self._btnTeam  = nil
+    self._btnDel   = nil
+    self._lblName  = nil
+    self._lblLv    = nil
+    self._lblJieji = nil
+    self._lblGuild = nil
+    self._lblQx    = nil
+    self._lblGx    = nil
+    self._lblMap   = nil
+    self._bgHead   = nil
+    self._bgKuang  = nil
+    self._nameBg   = nil
+    self._inputTxt = nil
+    self._lblNotes = nil
+    self._Input    = nil
+    UIWndFriendTips.super.onClear(self)
+end
+
+function UIWndFriendTips:onInit()
+    UIWndFriendTips.super.onInit(self, _GURL.FriendTipsPanel)
+    self._btnChat = self:getChild("btn_chat")
+    self._btnTeam = self:getChild("btn_team")
+    self._btnDel = self:getChild("btn_del")
+    self._lblName = self:getChild("lbl_name")
+    self._lblLv = self:getChild("lbl_lv")
+    self._lblJieji = self:getChild("lbl_jieji")
+    self._lblGuild = self:getChild("lbl_guild")
+    self._lblQx = self:getChild("lbl_qx") --倾向
+    self._lblGx = self:getChild("lbl_gx") --名声
+    self._lblMap = self:getChild("lbl_map")
+    self._bgHead = self:getChild("bg_head")
+    self._bgKuang = self:getChild("bg_kuang")
+    self._nameBg = self:getChild("bg_note")
+    self._inputTxt = self:getChild("lbl_note")
+    self._lblNotes = self:getChild("lbl_notes")
+    self:initCocosInputUI()
+end
+
+function UIWndFriendTips:onShown()
+    self._btnChat:addClickListener(handler(self, self.onBtnFncChatClick))
+    self._btnTeam:addClickListener(handler(self, self.onBtnFncTeamClick))
+    self._btnDel:addClickListener(handler(self, self.onBtnFncDelClick))
+
+    self:onFreshUI()
+end
+
+function UIWndFriendTips:onHide()
+    self._btnChat:removeClickListener()
+    self._btnTeam:removeClickListener()
+    self._btnDel:removeClickListener()
+    UIWndFriendTips.super.onHide(self)
+end
+
+function UIWndFriendTips:onFreshUI()
+    local playerInfo = self:getParam().data._playerInfo
+    if playerInfo then
+        local playerName = playerInfo.playerName
+        local keySetting = PrefManager:getUserValueByKey(FriendModule.NOTE_SETTING .. playerName) or ""
+        self._inputTxt:setText(keySetting)
+        if keySetting == "" then
+            self._lblNotes:setVisible(true)
+        else
+            self._lblNotes:setVisible(false)
+        end
+        self._lblName:setText(playerInfo.playerName)
+        local level = playerInfo.level
+        local advState = playerInfo.advanceState
+        if advState == Constant.AdvState.Adv then
+            level = string.format(GReadText.KET_EXP_TIPS5, playerInfo.advanceLv)
+        end
+        self._lblLv:setText(level)
+        self._lblGuild:setText(playerInfo.guildName)                                    -- 公会
+        self._lblQx:setText(CacheManager:getTendencyNameByValue(playerInfo.tendencies)) --倾向
+        self._lblGx:setText(playerInfo.repute)                                          --名声
+        local targetMapMeta = CacheManager:getMapMeta(playerInfo.curMapCode)
+        if targetMapMeta then
+            self._lblMap:setText(targetMapMeta:getMapName())
+        end
+        local gradeLevel = playerInfo.gradeLevel <= 0 and 1 or playerInfo.gradeLevel
+        local rankData = CacheManager:getRoleRankByRaceAndLvl(playerInfo.race, gradeLevel)
+        self._lblJieji:setText(rankData and rankData:getName() or "")
+        local headUrl = ChatModule:getHeadUrl(playerInfo.race, playerInfo.sex, playerInfo.faceShape)
+        self._bgHead:setURL(headUrl)
+        local kuangUrl = string.format(_GURL.GetCompChatHeadKuang, RaceSkinRes[playerInfo.race])
+        self._bgKuang:setURL(kuangUrl)
+    end
+end
+
+-- 私聊
+function UIWndFriendTips:onBtnFncChatClick(target)
+    local playerName = self:getParam().data._playerInfo.playerName
+    ChatModule:openChatUI(playerName)
+    self:onCloseTips()
+end
+
+-- 组队
+function UIWndFriendTips:onBtnFncTeamClick(target)
+    -- NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndTeam", param = { index = 2 } })
+    local heroData = lt.GameModule:getHeroData()
+    --自己没队伍先创建队伍
+    if heroData:getTeamId() == 0 then
+        TeamModule:fastCreateTeam(self:getParam().data._playerInfo.playerId)
+    else
+        TeamModule:sendInviteTeam(self:getParam().data._playerInfo.playerId)
+    end
+    self:onCloseTips()
+end
+
+-- 删除好友
+function UIWndFriendTips:onBtnFncDelClick(target)
+    local playerid = self:getParam().data._playerInfo.playerId
+    FriendModule:sendFriendDeleteReq(playerid)
+end
+
+function UIWndFriendTips:onCloseTips()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndFriendTips", close = true })
+end
+
+function UIWndFriendTips:initCocosInputUI()
+    if not self._Input then
+        local bgsize = self._nameBg:getSize()
+        self._Input = ccui.EditBox:create(cc.size(bgsize.width, bgsize.height), "", ccui.TextureResType.localType)
+        self._Input:setAnchorPoint(cc.p(0, 0))
+        self._Input:setFontName(lt.Constant.FONT_4)
+        self._Input:setFontSize(24)
+        self._Input:setReturnType(cc.KEYBOARD_RETURNTYPE_SEND)
+        self._Input:setInputMode(cc.EDITBOX_INPUT_MODE_ANY)
+        self._Input:registerScriptEditBoxHandler(handler(self, self.editBoxEvent))
+        self._nameBg:displayObject():addChild(self._Input)
+    end
+end
+
+function UIWndFriendTips:editBoxEvent(eventType, sender)
+    if eventType == "began" then
+        self._Input:setText(self._inputTxt:getText())
+        self._inputTxt:setText("")
+        self._lblNotes:setVisible(false)
+    elseif eventType == "ended" then
+        local text = sender:getText()
+        self._inputTxt:setText(text)
+        if text ~= "" then
+            local playerInfo = self:getParam().data._playerInfo
+            if playerInfo then
+                local playerName = playerInfo.playerName
+                PrefManager:setUserValueByKey(FriendModule.NOTE_SETTING .. playerName, text)
+            end
+            self._lblNotes:setVisible(false)
+        else
+            self._lblNotes:setVisible(true)
+        end
+        self._Input:setText("")
+    elseif eventType == "changed" then
+        local str = sender:getText()
+        -- str = string.gsub(str, " ", "") --过滤掉空格
+        str = CommonUtil:rmSpecChars(str)
+        local count = string.len(str)
+        local reCount = 0
+        local beginIndex = -1
+        local reString = ""
+        for i = 1, count do
+            local s = string.sub(str, i, i)
+            local t = string.byte(s)
+            if t < 128 then
+                reCount = reCount + 1 --1字节文字，长度加1
+            elseif t >= 192 then
+                reCount = reCount + 2 --1字节以上文字，长度加2
+            end
+            if reCount > 60 then
+                beginIndex = i - 1
+                break
+            end
+            beginIndex = i
+        end
+        reString = string.sub(str, 1, beginIndex)
+        sender:setText("")
+        self._Input:setText(reString)
+    elseif eventType == "return" then
+    end
+end
+
+return UIWndFriendTips

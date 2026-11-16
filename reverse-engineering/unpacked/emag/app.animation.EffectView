@@ -1,0 +1,9 @@
+local EffectView = class("EffectView", lt.EffectBase)
+
+EffectView.TAG = "effect"
+
+function EffectView:ctor(effectId, direction, step, loop, bltType)
+    EffectView.super.ctor(self, self.TAG, effectId, direction, step, loop, bltType)
+end
+
+return EffectView

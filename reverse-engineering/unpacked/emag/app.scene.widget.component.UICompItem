@@ -1,0 +1,552 @@
+---@class UICompItem 基础物品Item 组件
+---
+local UICompItem = class("UICompItem", lt.UIGButtonBase)
+
+local Constant = lt.Constant
+local ItemModule = lt.ItemModule
+local CacheManager = lt.CacheManager
+local NtfManager = lt.NtfManager
+local WndLockManager = lt.WndLockManager
+local StrengthenModule = lt.StrengthenModule
+local ScheduleUtil = lt.ScheduleUtil
+
+local LONG_PRESS_TIME = 0.25  -- 长按时间设定为0.25秒
+
+function UICompItem:ctor()
+    UICompItem.super.ctor(self)
+    self._itemIdx = 0  --物品id
+    self._powerLevel = CacheManager:getVariableById(Constant.Variable.DefaultEqiupColorSet) or Constant.BaseColorRatio 
+    self._itemInfo = {}
+    self._fromWndName = "" --来源窗口
+
+    self._sprite = nil
+    self._red = nil
+    self._aColor = nil
+    self._clickCallback = nil
+    self._longCallback = nil
+end
+
+function UICompItem:onConstruct()
+    self._iconNode = self:getChild("iconNode")
+    self._num = self:getChild("num")
+    self._btn = self:getChild("btn")
+    self._sizeControl = self:getController("btnType")
+    self._select = self:getChild("select")
+    self._needLabel = self:getChild("neednum")
+    self._new = self:getChild("new")
+    self._equip = self:getChild("isEquip")
+    self._bind = self:getChild("isBind")
+end
+
+function UICompItem:onClear()
+    self._iconNode = nil
+    self._num = nil
+    self._btn = nil
+    self._sizeControl = nil
+    self._select = nil
+    self._needLabel = nil
+    self._new = nil
+    self._itemInfo = nil
+    self._sprite = nil
+    self._icon = nil
+    self._originPos = nil
+    self._fromWnd = nil
+
+    self._red = nil
+    self._aColor = nil
+    self._clickCallback = nil
+    self._longCallback = nil
+    UICompItem.super.onClear(self)
+end
+
+function UICompItem:onEnter()
+    self:addClickListener(handler(self, self.onClick))
+    self:addEventListener(fgui.UIEventType.TouchBegin, handler(self, self.onTouchBegain))
+    self:addEventListener(fgui.UIEventType.TouchEnd, handler(self, self.onTouchEnd))
+end
+
+function UICompItem:onExit()
+    self:removeClickListener()
+    self:removeEventListener(fgui.UIEventType.TouchBegin)
+    self:removeEventListener(fgui.UIEventType.TouchEnd)
+end
+
+function UICompItem:onUpdate(dt)
+    self:checkLongPress(dt)
+end
+
+function UICompItem:checkLongPress(dt)
+    if self._beginLongPress then
+        self._beginLongPress = self._beginLongPress + dt
+        if self._beginLongPress > LONG_PRESS_TIME then
+            self._beginLongPress = nil
+            self:onBeginLongPressEvent()
+        end
+    end
+end
+
+function UICompItem:startBeginLongPress() 
+    self._beginLongPress = 0
+end
+
+function UICompItem:resetBeganLongPress()
+    self._beginLongPress = nil
+end
+
+-- began 长按
+function UICompItem:onBeginLongPressEvent()
+    if self._fromWndName == "UIWndStrengthen" then
+        self:onLongPressCommon()
+    elseif self._fromWndName == "UICompTransactionSell" then
+        self:onLongPressCommon()
+    end
+end
+
+function UICompItem:onClick()
+    if self._fromWndName == "UIWndInventory" then
+        self:onClickOfInventory()
+    end
+end
+
+function UICompItem:onTouchBegain()
+    self:startBeginLongPress()
+end
+
+function UICompItem:onTouchEnd()
+    if self._beginLongPress == nil then
+        return
+    end
+    self:resetBeganLongPress()
+    if self._fromWndName == "UIWndStrengthen" then
+        self:onTouchEndCommon()
+    elseif self._fromWndName == "UICompTransactionSell" then
+        self:onTouchEndCommon()
+    end
+end
+
+function UICompItem:onClickOfInventory()
+    if WndLockManager:getWarehouseQuick() then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_WEARHOUSE_REFRESH_BY_POS,{itemInfo = self._itemInfo})
+    elseif WndLockManager:getWndLockType() == Constant.WndLockType.Trade and WndLockManager:getTradeType() == Constant.FiterType.Exchange then
+        local transformMeta = StrengthenModule:checkEquipAdvance(self._itemInfo:getItemId())
+        if transformMeta then
+            local canChange = StrengthenModule:checkEquipAdvanceNum(self._itemInfo:getItemId())
+            if canChange then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {type = 2, content = GReadText.KEY_DUNGEON_TIPS4, confirmCallback = function()
+                    --转换转职装备
+                    StrengthenModule:sendEquipTransform(self._itemInfo:getItemUid(), transformMeta:getId())
+                end})
+            else
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_DUNGEON_TIPS2})
+            end
+        else
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_DUNGEON_TIPS3})
+        end
+    else
+        if WndLockManager:getWndLockType() == Constant.WndLockType.Trade or 
+            WndLockManager:getWndLockType() == Constant.WndLockType.AutoRecycle then
+            --出售模式切换选中状态
+            local oldTarget = WndLockManager:getTradeItemInfo()
+            if oldTarget and oldTarget.setItemSelect then
+                oldTarget:setItemSelect(false)
+            end
+            self:setItemSelect(true)
+            WndLockManager:setTradeItemInfo(self)
+        elseif WndLockManager:getWndLockType() == Constant.WndLockType.Repair then
+            --维修模式切换选中状态
+            local oldTarget = WndLockManager:getRepairItemInfo()
+            if oldTarget and oldTarget.setItemSelect then
+                oldTarget:setItemSelect(false)
+            end
+            self:setItemSelect(true)
+            WndLockManager:setRepairItemInfo(self)
+        end
+
+        self._fromWnd:setPreSelectNode(self)
+
+        self:loadShader(true)
+        self._itemInfo:setNew(false)
+        self:setNew()
+        ItemModule:showTips(self._itemInfo)
+    end
+end
+
+function UICompItem:onLongPressCommon()
+    self._longCallback()
+end
+
+function UICompItem:onTouchEndCommon()
+    self._clickCallback()
+end
+
+function UICompItem:setClickCallback(clickCallback)
+    self._clickCallback = clickCallback
+end
+
+function UICompItem:setLongCallback(longCallback)
+    self._longCallback = longCallback
+end
+
+------------------------- tips ---------------------------------
+
+
+--- 设置来源
+function UICompItem:setFromWnd(wnd)
+    self._fromWnd = wnd
+    self._fromWndName = wnd:getParam().layerName
+end
+
+function UICompItem:setFromComponent(component)
+    self._fromWnd = component
+    local className = component.class and component.class.__cname or component.__cname
+    self._fromWndName = className
+end
+
+
+function UICompItem:getGridWidth()
+    return self.gridWidth
+end
+function UICompItem:getGridHeight()
+    return self.gridHeight
+end
+
+function UICompItem:getGridX()
+    return self.gridX
+end
+function UICompItem:getGridY()
+    return self.gridY
+end
+
+--- 设置物品起始格子坐标
+function UICompItem:setGridXY(gridX, gridY)
+    self.gridX = gridX
+    self.gridY = gridY
+end
+
+---------------------event-------------------------------------
+function UICompItem:onClickCallback()
+    print("TODO 物品信息弹窗1")
+end
+
+function UICompItem:size()
+    return self._icon:getSize()
+end
+
+function UICompItem:getSpriteSize()
+    return self._sprite:getContentSize()
+end
+
+function UICompItem:getID()
+    return self._itemIdx
+end
+
+--- 镂空特效使用
+function UICompItem:getURL()
+    return string.format("ui://Item/item_%s", self._itemIdx)
+end
+
+function UICompItem:isInventoryItem()
+    return true
+end
+
+
+function UICompItem:setInfo(respath)
+    if self._icon then
+        self._icon:removeFromParent()
+    end
+    if respath ~= nil then
+        self._icon = fgui.UIPackage:createObjectFromURL(respath)
+        
+        if not self._icon then
+            -- 创建失败给默认道具icon防止报错
+            self._icon = fgui.UIPackage:createObjectFromURL("ui://Item/prop_101001")
+        end
+        self._icon:setPivot(0.5, 0.5, true)
+        self._iconNode:addChild(self._icon)
+    end
+
+    if self._sprite then
+        self._sprite:setVisible(false)
+    end
+end
+
+function UICompItem:setEquipInfo(respath,affixId,affixLevel)
+    if not affixLevel then
+        affixLevel = 0
+    end
+
+    if self._icon then
+        self._icon:removeFromParent()
+    end
+    
+    if affixId then
+        self._tColor = ItemModule:getAffixColor(affixId)
+    else
+        self._tColor = nil
+    end
+
+    self._powerLevel = CacheManager:getPowerColorSet(affixLevel or 0) or Constant.BaseColorRatio
+
+    local iconId = string.match(respath or "", "ui://Item/equip_(%d+)$")
+    if iconId then
+        if self._sprite then
+            self._sprite:removeFromParent()
+        end
+        local cocosResUrl = string.format("icon/itemTL/bag/%s/%s.png", "equip",iconId)
+        self._icon = fgui.UIPackage:createObjectFromURL(respath)
+        self._icon:setVisible(false)
+        self._iconNode:addChild(self._icon)
+        local sprite = display.newSprite(cocosResUrl)
+        local texture = sprite:getTexture()
+        texture:setAliasTexParameters()
+        self._iconNode:displayObject():addChild(sprite)
+        self._sprite = sprite
+        self:loadShader(false)
+    end
+end
+
+function UICompItem:setCocosResInfo(respath, cocosResUrl)
+    if self._icon then
+        self._icon:removeFromParent()
+    end
+    self._icon = fgui.UIPackage:createObjectFromURL(respath)
+    if not self._icon then
+        -- 创建失败给默认道具icon防止报错
+        self._icon = fgui.UIPackage:createObjectFromURL("ui://Item/prop_101001")
+        cocosResUrl = "icon/itemTL/bag/prop/101001.png"
+    end
+    self._icon:setPivot(0.5, 0.5, true)
+    self._iconNode:addChild(self._icon)
+    self._icon:setVisible(false)
+    if cocosResUrl ~= nil then
+        if self._sprite then
+            self._sprite:removeFromParent()
+        end
+        local sprite = display.newSprite(cocosResUrl)
+        local texture = sprite:getTexture()
+        texture:setAliasTexParameters()
+        self._iconNode:displayObject():addChild(sprite)
+        self._sprite = sprite
+        self:loadShader(false, cc.vec3(0, 0, 0))
+        if self._itemInfo then
+            local scale = 1
+            if self._itemInfo:getItemType() == Constant.ItemType.ITEM_TYPE_EQUIP then
+                scale = CacheManager:getVariableById(Constant.Variable.EquipIconScale)
+            elseif self._itemInfo:getItemType() == Constant.ItemType.ITEM_TYPE_PROP then
+                scale = CacheManager:getVariableById(Constant.Variable.ItemIconScale)
+            end
+            if not scale or scale == 0 then 
+                scale = 1 
+            end
+            self._sprite:setScale(scale)
+        end
+    end
+end
+
+function UICompItem:isEquip()
+    return self._itemInfo:getItemType() == Constant.ItemType.ITEM_TYPE_EQUIP
+end
+
+function UICompItem:isProp()
+    return self._itemInfo:getItemType() == Constant.ItemType.ITEM_TYPE_PROP
+end
+
+
+function UICompItem:loadShader(isBorder, allColor)
+    local isBorderFlag = isBorder and 1 or 0
+    if allColor then
+        self._aColor = allColor
+    end
+    local param = {
+        node = self._sprite, --self._icon:displayObject(), 
+        isBorder = isBorderFlag,
+        bColor = cc.vec3(1.0, 1.0, 1.0),
+        tColor =  self._tColor;
+        allColor = allColor or self._aColor,
+        isBlink = false,
+        outLineWidth = 1,
+        objId = self._itemObjId or math.random(1, 99),
+        colorOffset = tonumber(self._powerLevel)
+    }
+    lt.ShaderBackendUtil:makeBorderEffect(param.node, param)
+
+end
+
+
+function UICompItem:setItemInfo(item,showtype,isbox)
+    self._itemInfo = item
+    if item then
+        local itemConfig = item:getItemMeta()
+        if not itemConfig then
+            print("没有物品配置信息")
+            return
+        end
+        local iconId = itemConfig:getIconId()
+        local itemType = item:getItemType()
+        self._itemIdx = item:getItemId()
+        self._itemObjId = item:getObjId()
+
+        local iconPath = ""
+        if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+            iconPath = "prop"
+            if Constant.ONLY_CHANGE_COLOR_PROP_IDS[self._itemIdx] then
+                local affixId = item:getFirstAffixId() 
+                self._tColor = ItemModule:getAffixColor(affixId)
+            end
+        elseif itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+            local affixId = item:getFirstAffixId() 
+            local isChangeColor = itemConfig:isChangeColor()
+            if isChangeColor then
+                self._tColor = ItemModule:getAffixColor(affixId)
+                local affixLevel = item:getFirstAffixLevel()
+                self._powerLevel = CacheManager:getPowerColorSet(affixLevel) or Constant.BaseColorRatio
+            end
+            iconPath = "equip"
+        end
+        local resUrl = string.format("ui://Item/%s_%s", iconPath,iconId)
+        local cocosResUrl = string.format("icon/itemTL/bag/%s/%s.png", iconPath,iconId)
+        self:setCocosResInfo(resUrl, cocosResUrl)
+        local gridX = item:getItemX() + 1
+        local gridY = item:getItemY() + 1
+        if showtype and (showtype == 2  or showtype == 3) then
+            gridX, gridY = item:getFiterXY()
+        end
+        local iconObj = fgui.UIPackage:createObjectFromURL(resUrl)
+        if not iconObj then
+            -- 创建失败给默认道具icon防止报错
+            iconObj = fgui.UIPackage:createObjectFromURL("ui://Item/prop_101001")
+        end
+        self.iconSize = iconObj:getSize()
+        self:setGridXY(gridX, gridY)
+
+        local gridSizeIndex = itemConfig:getItemSize()
+
+
+        local size = lt.Constant.ITEMSIZE[gridSizeIndex or 1]
+        
+        self:setGridSize(gridSizeIndex)
+
+        self._originPos = cc.p((size.width - 1) * 2, size.height * 2)
+        self._sprite:setPosition(self._originPos)
+
+        self:setItemNum(item, showtype)
+
+        if isbox then
+            self:setNew()
+        end
+    end
+end
+
+function UICompItem:getItemInfo()
+    return self._itemInfo
+end
+
+function UICompItem:setNew()
+    if self._itemInfo:getNew() then
+        self._new:setVisible(true)
+    else
+        self._new:setVisible(false)
+    end
+end
+
+function UICompItem:setItemNum(item,showtype)
+    local itemConfig = item:getItemMeta()
+    local maxNum = itemConfig:getAddLimit()
+    local effectParam = itemConfig:getEffectParamJson()
+    if effectParam and effectParam["Use"] and effectParam["Maintain"] then
+        --对讲机/风精灵石单独走剩余次数逻辑
+        self._num:setText(item:getUseCount())
+    else
+        if maxNum and maxNum > 0 then
+            local num = item:getNum()
+            self._num:setText(num)
+        else
+            self._num:setText("")
+        end
+    end
+    local itemNum = tonumber(self._num:getText())
+    self._num:setColor(itemNum == 0 and Constant.COLOR_TEXT_RED or Constant.COLOR_TEXT_WHITE_PURE)
+end
+
+function UICompItem:setItemNums(num)
+    self._num:setText(num)
+    self._num:setColor(num == 0 and Constant.COLOR_TEXT_RED or Constant.COLOR_TEXT_WHITE_PURE)
+end
+
+function UICompItem:setNeedNum(havenum, neednum)
+    self._needLabel:setText(havenum.."/"..neednum)
+    self._needLabel:setColor(havenum < neednum and Constant.COLOR_TEXT_RED or Constant.COLOR_GREEN_H)
+    self._needLabel:setVisible(true)
+    self:setGrayed(havenum < neednum)
+end
+
+function UICompItem:setGridSize(gridSizeIndex)
+    local size = lt.Constant.ITEMSIZE[gridSizeIndex or 1]
+    self._sizeControl:setSelectedIndex(gridSizeIndex)
+    self.gridWidth = size.width
+    self.gridHeight = size.height
+    local size = self._btn:getSize()
+    self._icon:setSize(self.iconSize.width, self.iconSize.height)
+    self:setSize(size.width, size.height)
+end
+
+function UICompItem:setItemSelect(select)
+    self._select:setVisible(select)
+    self:loadShader(select)
+end
+
+--图标置灰
+function UICompItem:setGrayed(gray)
+    --置红不置灰
+    if self._red then
+        return
+    end
+    self._icon:setGrayed(gray)
+    if gray then
+        self:loadShader(false, cc.vec3(0.5, 0.5, 0.5))
+    else
+        self:loadShader(false, cc.vec3(0, 0, 0))
+    end
+end
+
+--图标置红
+function UICompItem:setRed(red)
+    self._red = red
+    self._icon:setColor(self._red and Constant.COLORS.red or Constant.COLORS.white)
+    if self._red then
+        self:loadShader(false, cc.vec3(1.0, 0.0, 0.0))
+    else
+        self:loadShader(false, cc.vec3(0, 0, 0))
+    end
+end
+
+--图标缩放
+function UICompItem:setIconScale(scalex, scaley)
+    self._icon:setScale(scalex, scaley)
+end
+
+function UICompItem:setIconSize(sizex, sizey)
+    self._icon:setSize(sizex, sizey)
+end
+
+function UICompItem:setSpritePos(x, y)
+    self._sprite:setPosition(self._originPos.x + x, self._originPos.y + y)
+end
+
+function UICompItem:getItemObjId()
+    return self._itemObjId
+end
+
+function UICompItem:getItemSize()
+    return self._itemInfo:getItemMeta():getItemSize()
+end
+
+function UICompItem:setIsEquip(isEquip)
+    self._equip:setVisible(isEquip)
+end
+
+function UICompItem:setIsBind(isBind)
+    self._bind:setVisible(isBind)
+end
+
+return UICompItem

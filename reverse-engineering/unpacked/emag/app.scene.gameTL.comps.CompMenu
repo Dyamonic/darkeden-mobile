@@ -1,0 +1,345 @@
+---@class CompMenu 主界面-右下角功能菜单
+local CompMenu = class("CompMenu", lt.UICompBase)
+
+local Constant = lt.Constant
+local NtfManager = lt.NtfManager
+local SocketApi = lt.SocketApi
+local GameModule = lt.GameModule
+local GuildModule = lt.GuildModule
+local GuideModule = lt.GuideModule
+local ItemModule = lt.ItemModule
+local FunctionToggleModule = lt.FunctionToggleModule
+
+local btnGroups = {
+    [1] = {btn = "bagBtn", class = "UIWndInventory", param = nil,Id = FunctionToggleModule.FunctionHelpId.Bag},
+    [2] = {btn = "roleEquipBtn",class = "UIWndRoleEquip", param = nil,Id = FunctionToggleModule.FunctionHelpId.Equipment},
+    [3] = {btn = "roleInfoBtn",class = "UIWndRoleInfo", param = nil,Id = FunctionToggleModule.FunctionHelpId.Character},
+    [4] = {btn = "wareHouseBtn",class = "UIWndLock",
+        param = { 
+            [1] = { class = "UIWndWareHouse"},
+            [2] = { class = "UIWndInventory", reopen = true }, 
+            WndLockType = Constant.WndLockType.WareHouse,
+        },Id = FunctionToggleModule.FunctionHelpId.Warehouse},
+    [5] = {btn = "teamBtn",class = "UIWndTeam", param = nil,Id = FunctionToggleModule.FunctionHelpId.Team},
+    [6] = {btn = "taskBtn",class = "UIWndTask", param = nil,Id = FunctionToggleModule.FunctionHelpId.Task},
+    [7] = {btn = "mailBtn",class = "UIWndMail", param = nil,Id = FunctionToggleModule.FunctionHelpId.Mail},
+    [8] = {btn = "transactionBtn", class = "UIWndTransactionMain", param = nil,Id = FunctionToggleModule.FunctionHelpId.TradingPost},
+    
+    --功能页签从51开始
+    [51] = {btn = "strengthenBtn",class = "UIWndStrengthen", param = nil,Id = FunctionToggleModule.FunctionHelpId.EnhancementSystem},
+    [52] = {btn = "petBtn", class = "UIWndPet", param = nil,Id = FunctionToggleModule.FunctionHelpId.Pet},
+    [53] = {btn = "mountBtn", class = "UIWndMountMain", param = nil,Id = FunctionToggleModule.FunctionHelpId.Mount},
+    [54] = {btn = "transformBtn", class = "UIWndMountMain", param = {index = Constant.FITER_MOUNT_TYPE.HALO},Id = FunctionToggleModule.FunctionHelpId.Aura},
+    [55] = {btn = "guildBtn", class = nil, param = nil,Id = FunctionToggleModule.FunctionHelpId.Guild},
+    [56] = {btn = "friendBtn", class = "UIWndFriend", param = nil, Id = FunctionToggleModule.FunctionHelpId.Friend},
+    [57] = {btn = "appearanceBtn", class = nil, param = nil},
+    [58] = {btn = "rechargeBtn", class = nil, param = nil},
+
+    --系统页签从71开始
+    [71] = {btn = "settingsBtn", class = "UIWndSetting", param = nil,Id = FunctionToggleModule.FunctionHelpId.SystemSettings},
+    [72] = {btn = "btn_help", class = "UIWndHelp", param = nil,Id = FunctionToggleModule.FunctionHelpId.Help},
+    [73] = {btn = "strongBtn", class = "UIWndStrong", param = nil,Id = FunctionToggleModule.FunctionHelpId.BecomeStrong},
+    [74] = {btn = "exitBtn", class = "UIWndExit", param = nil},
+    [75] = {btn = "btn_achievement", class = nil, param = nil},
+    [76] = {btn = "blankBtn1", class = nil, param = nil},
+    [77] = {btn = "dungeonBtn", class = nil, param = nil},
+    [78] = {btn = "blankBtn2", class = nil, param = nil},
+
+    --特殊功能
+    [101] = {btn = "GMBtn",class = "UIWndGM", param = nil},
+}
+
+function CompMenu:ctor(view)
+    CompMenu.super.ctor(self)
+    self._btnGroups = {}
+
+    self._view = view
+    self:initUI()
+end
+
+function CompMenu:onClear()
+    self._view = nil
+    for i, btn in ipairs(self._btnGroups) do
+        self._btnGroups[i] = nil
+    end
+
+    self._bagBtn = nil
+    self._imgBagFull = nil
+    self._petBtn   = nil
+    self._guildBtn = nil
+    self._strengthenBtn = nil
+    self._teamBtn  = nil
+    self._roleInfoBtn = nil
+    self._achievementBtn = nil
+    self._friendBtn = nil
+    self._transactionBtn = nil
+    self._mountBtn = nil
+    self._transformBtn = nil
+    CompMenu.super.onClear(self)
+end
+
+function CompMenu:onEnter()
+    for i, btn in ipairs(self._btnGroups) do
+        btn:addClickListener(handler(self, self.onBtnClick));
+    end
+    self:buttonRefreshGray()
+end
+
+function CompMenu:onExit()
+    for i, btn in ipairs(self._btnGroups) do
+        btn:removeClickListener();
+    end
+end
+
+function CompMenu:addAllListener()
+    if self._addAllListener then return end
+    self._addAllListener = true
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_VIP_REFRESH_BY_LEVEL, handler(self, self.buttonRefreshGray), "CompMenu:buttonRefreshGray")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_RED_DOT_EVENT, handler(self, self.uptRedDotEvt), "CompMenu:uptRedDotEvt")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_BAG_FULL, handler(self, self.refreshBagFull), "CompMenu:refreshBagFull")
+end
+
+function CompMenu:removeAllListener()
+    NtfManager:removeNtfListenerByTag("CompMenu:buttonRefreshGray")
+    NtfManager:removeNtfListenerByTag("CompMenu:uptRedDotEvt")
+    NtfManager:removeNtfListenerByTag("CompMenu:refreshBagFull")
+    self._addAllListener = false
+end
+
+function CompMenu:initUI()
+    for index, btnInfo in pairs(btnGroups) do
+        local btn = self._view:getChild(btnInfo.btn)
+        if btn then
+            table.insert(self._btnGroups, btn)
+            btn.index = index
+        end
+    end
+    
+    self._bagBtn = self._view:getChild("bagBtn")
+    self._imgBagFull = self._view:getChild("img_full")
+    self._petBtn   = self._view:getChild("petBtn")
+    self._guildBtn = self._view:getChild("guildBtn")
+    self._strengthenBtn = self._view:getChild("strengthenBtn")
+    self._teamBtn  = self._view:getChild("teamBtn")
+    self._roleInfoBtn = self._view:getChild("roleInfoBtn")
+    self._achievementBtn = self._view:getChild("btn_achievement")
+    self._friendBtn = self._view:getChild("friendBtn")
+    self._transactionBtn = self._view:getChild("transactionBtn")
+    self._mountBtn = self._view:getChild("mountBtn")
+    self._transformBtn = self._view:getChild("transformBtn")
+end
+
+function CompMenu:buttonRefreshGray()
+    for i, btn in ipairs(self._btnGroups) do
+        local btnid = btn.index
+        if btnGroups[btnid].Id then
+            local open,tips = FunctionToggleModule:checkOpen(btnGroups[btnid].Id)
+            if open then
+                --正常
+                btn:setGrayed(false)
+                btn:getChild("lock"):setVisible(false)
+            else
+                --灰色+锁
+                btn:setGrayed(true)
+                btn:getChild("lock"):setVisible(true)
+            end
+        else
+            btn:setGrayed(false)
+            btn:getChild("lock"):setVisible(false)
+        end
+    end
+end
+
+function CompMenu:onBtnClick(context)
+    local index = context:getSender().index
+    local btnInfo = btnGroups[index]
+    if btnInfo.Id then
+        local open,tips = FunctionToggleModule:checkOpen(btnInfo.Id) 
+        if not open then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = tips})
+            return
+        end
+    end
+    if btnInfo.btn == "guildBtn" then
+        local heroData = GameModule:getHeroData()
+        local myGuildId = heroData:getGuildId()
+        if myGuildId ~= 0 and myGuildId ~= "0" then 
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndGuildMain", param = btnInfo.param})
+        else
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndGuildList", param = btnInfo.param})
+        end
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = btnInfo.class, param = btnInfo.param})
+    end
+end
+
+--刷新背包已满
+function CompMenu:refreshBagFull(event)
+    local param = event.param
+    local isFull = param.isFull
+    self._imgBagFull:setVisible(isFull)
+end
+
+--刷新红点
+function CompMenu:uptRedDotEvt(event)
+    local param = event.param
+    if param.name == "TeamApplyRedTips" then
+        --组队红点
+        local isShowRedDot = lt.TeamModule:getRedPoint()
+        local btn = self._teamBtn
+        btn:getChild("reddot"):setVisible(isShowRedDot)
+    elseif string.find(param.name, "SkillRedTips") then
+        --角色红点
+        local isShowRedDot = lt.SkillModule:getRedPoint()
+        local btn = self._roleInfoBtn
+        btn:getChild("reddot"):setVisible(isShowRedDot)
+    elseif string.find(param.name, "AchievementRedTips") then
+        local btn = self._achievementBtn
+        local isShowRedDot = lt.AchievementModule:getRedPointAll()
+        local reddot = btn:getChild("reddot")
+        reddot:setVisible(isShowRedDot)
+    elseif param.name == "GuildApplyRedTips" then
+        local isShowRedDot = GuildModule:getRedPoint()
+        local btn = self._guildBtn
+        btn:getChild("reddot"):setVisible(isShowRedDot)
+    elseif param.name == "FriendRedTips" then
+        local isShowRedDot = #lt.FriendModule:getFriendApplyList() > 0
+        local btn = self._friendBtn
+        btn:getChild("reddot"):setVisible(isShowRedDot)
+    elseif param.name == "PetModule_checkPetUp" or param.name =="PetModule_checkPetFunction" then
+        local isShowRedDot = lt.RedDotModule:checkPetAllRed()
+        local btn = self._petBtn
+        btn:getChild("reddot"):setVisible(isShowRedDot)
+    elseif param.name == "MountRedTips" then
+        local isShowRedDot = lt.MountModule:getRedByType(Constant.FITER_MOUNT_TYPE.MOUNT)
+        local btn = self._mountBtn
+        btn:getChild("reddot"):setVisible(isShowRedDot)
+    elseif param.name == "HaloRedTips" then
+        local isShowRedDot = lt.MountModule:getRedByType(Constant.FITER_MOUNT_TYPE.HALO)
+        local btn = self._transformBtn
+        btn:getChild("reddot"):setVisible(isShowRedDot)
+    end
+end
+
+--检查引导
+function CompMenu:checkGuide()
+    local index = self._view.parent._switchMenu:getSelectedIndex()
+    --了解宠物引导
+    if index == 0 and GuideModule:checkCanGuide(Constant.GUIDE_ID.PETFIGHT3) then 
+        local btn = self._bagBtn
+        local pos = self._view:displayObject():convertToWorldSpace(btn:getPosition())
+        pos = cc.p(pos.x, display.height - pos.y - self._view:getSize().height)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.PETFIGHT3, btn, pos, function()
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndInventory"})
+        end)
+        return
+    end
+
+    --宠物出战引导
+    if index == 1 and GuideModule:checkCanGuide(Constant.GUIDE_ID.PETFIGHT13) then 
+        local btn = self._petBtn
+        local pos = self._view:displayObject():convertToWorldSpace(btn:getPosition())
+        pos = cc.p(pos.x, display.height - pos.y - self._view:getSize().height)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.PETFIGHT13, btn, pos, function()
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndPet"})
+        end)
+        return
+    end
+
+    --宠物喂养引导
+    if index == 1 and GuideModule:checkCanGuide(Constant.GUIDE_ID.PETFEED3) then 
+        local btn = self._petBtn
+        local pos = self._view:displayObject():convertToWorldSpace(btn:getPosition())
+        pos = cc.p(pos.x, display.height - pos.y - self._view:getSize().height)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.PETFEED3, btn, pos, function()
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndPet"})
+        end)
+        return
+    end
+
+    --了解公会引导
+    if index == 1 and GuideModule:checkCanGuide(Constant.GUIDE_ID.GUILD3) then
+        local btn = self._guildBtn
+        local pos = self._view:displayObject():convertToWorldSpace(btn:getPosition())
+        pos = cc.p(pos.x, display.height - pos.y)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.GUILD3, btn, pos, function()
+            local heroData = GameModule:getHeroData()
+            local myGuildId = heroData:getGuildId()
+            if myGuildId ~= 0 and myGuildId ~= "0" then 
+                GuideModule:directEndGuide({Constant.GUIDE_ID.GUILD4})
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndGuildMain"})
+            else
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndGuildList"})
+            end
+        end)
+        return
+    end
+
+    --了解交易行引导
+    if index == 0 and GuideModule:checkCanGuide(Constant.GUIDE_ID.TRANSACTION3) then
+        local btn = self._transactionBtn
+        local pos = self._view:displayObject():convertToWorldSpace(btn:getPosition())
+        pos = cc.p(pos.x, display.height - pos.y)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.TRANSACTION3, btn, pos, function()
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndTransactionMain"})
+        end)
+        return
+    end
+
+    --装备传承引导
+    if index == 1 and GuideModule:checkCanGuide(Constant.GUIDE_ID.INHERIT3) then
+        local btn = self._strengthenBtn
+        local pos = self._view:displayObject():convertToWorldSpace(btn:getPosition())
+        pos = cc.p(pos.x, display.height - pos.y - self._view:getSize().height)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.INHERIT3, btn, pos, function()
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrengthen"})
+        end)
+        return
+    end
+
+    --装备转换引导
+    if index == 1 and GuideModule:checkCanGuide(Constant.GUIDE_ID.TRANSFORM3) then
+        local btn = self._strengthenBtn
+        local pos = self._view:displayObject():convertToWorldSpace(btn:getPosition())
+        pos = cc.p(pos.x, display.height - pos.y - self._view:getSize().height)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.TRANSFORM3, btn, pos, function()
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrengthen"})
+        end)
+        return
+    end
+
+    --装备洗炼引导
+    if index == 1 and GuideModule:checkCanGuide(Constant.GUIDE_ID.PURIFY3) then
+        local btn = self._strengthenBtn
+        local pos = self._view:displayObject():convertToWorldSpace(btn:getPosition())
+        pos = cc.p(pos.x, display.height - pos.y - self._view:getSize().height)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.PURIFY3, btn, pos, function()
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrengthen"})
+        end)
+        return
+    end
+
+    --装备升级引导
+    if index == 1 and GuideModule:checkCanGuide(Constant.GUIDE_ID.LEVELUP3) then
+        local btn = self._strengthenBtn
+        local pos = self._view:displayObject():convertToWorldSpace(btn:getPosition())
+        pos = cc.p(pos.x, display.height - pos.y - self._view:getSize().height)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.LEVELUP3, btn, pos, function()
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrengthen"})
+        end)
+        return
+    end
+
+    --装备附魔引导
+    if index == 1 and GuideModule:checkCanGuide(Constant.GUIDE_ID.ENCHANT3) then
+        local btn = self._strengthenBtn
+        local pos = self._view:displayObject():convertToWorldSpace(btn:getPosition())
+        pos = cc.p(pos.x, display.height - pos.y - self._view:getSize().height)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.ENCHANT3, btn, pos, function()
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrengthen"})
+        end)
+        return
+    end
+end
+
+return CompMenu

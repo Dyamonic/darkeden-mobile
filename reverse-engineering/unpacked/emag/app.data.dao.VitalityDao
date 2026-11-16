@@ -1,0 +1,14 @@
+--精力系统
+local VitalityDao = {}
+
+function VitalityDao:queryAll()
+    local mapTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM Vitality") do
+        local mapMeta = lt.VitalityMeta.new(row)
+        mapTable[#mapTable+1] = mapMeta
+    end
+    return mapTable
+end
+
+return VitalityDao

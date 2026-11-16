@@ -1,0 +1,292 @@
+
+local HeroStateSkill = class("HeroStateSkill", lt.HeroStateBase)
+local Constant = lt.Constant
+local CacheManager = lt.CacheManager
+local ActionManager = lt.ActionManager
+local SkillModule = lt.SkillModule
+local SkillEnum = lt.SkillEnum
+local AutoFightManager = lt.AutoFightManager
+
+HeroStateSkill._skillCode = nil
+HeroStateSkill._mTouch    = nil
+HeroStateSkill._nTouch    = nil
+
+HeroStateSkill._isWaitting  = nil
+HeroStateSkill._isAttacking = nil
+HeroStateSkill._timeTrigger = nil
+HeroStateSkill._timeTriggerPickUp = nil
+
+function HeroStateSkill:ctor(heroAgent, skillCode, mTouch, nTouch, targetAgentId)
+    HeroStateSkill.super.ctor(self, heroAgent)
+
+    self._skillCode     = skillCode
+    self._mTouch        = mTouch
+    self._nTouch        = nTouch
+    self._targetAgentId = targetAgentId
+
+    self._isWaitting  = false
+    self._isAttacking = false
+    local action = CacheManager:getStartActionBySkillId(self._skillCode)
+    action = lt.SkillManager:getSlayerAction(heroAgent, self._skillCode, action)
+    if action == nil then
+        action = Constant.ROLE_ACTION_IDLE
+    end
+    
+
+    local count, step = ActionManager:getActorFrameCount(self._heroAgent:getHeroData():getModelName(), action, self._heroAgent:getDirection(),self._heroAgent:getTransformId(),self._heroAgent:getCurStepMultiple(skillCode))
+
+    if self._skillCode == SkillEnum.SKILL_FLASH_SLIDING then
+       count = 0 
+    end
+    
+    self._totalTime = (count) * step
+
+    self._timeTrigger = lt.TimeTrigger.new(self._totalTime)
+    self._timeTriggerPickUp = lt.TimeTrigger.new(1)
+end
+
+function HeroStateSkill:onClear()
+    self._timeTrigger = nil
+    self._timeTriggerPickUp = nil
+                    
+    HeroStateSkill.super.onClear(self)
+end
+
+function HeroStateSkill:onEnter()
+    local attackElapse, attackInterval = self._heroAgent:getAttackCd()
+
+    if attackElapse > 0 then
+        -- 还处于之前的攻击状态
+        -- print("还处于之前的攻击状态")
+        self._isWaitting = true
+
+        self._timeTrigger:reset(attackElapse)
+
+        -- 动作
+        self._heroAgent:playAction(Constant.ROLE_ACTION_ATTACK_IDLE)
+
+
+        -- 方向
+        if self._mTouch and self._nTouch then
+            local mHero, nHero = self._heroAgent:getMNExactly()
+            local targetAgent = lt.AgentManager:getAgent(self._targetAgentId)
+            local mTarget, nTarget
+
+            if self._mTouch and not SkillModule:isLongPress() or not targetAgent  then
+                mTarget, nTarget = self._mTouch, self._nTouch
+            else
+                if targetAgent then
+                    mTarget, nTarget = targetAgent:getMNExactly()
+                end
+            end
+
+        
+            if mTarget then
+                local direction = lt.MapUtil:getDirectionToPosition(mHero, nHero, mTarget, nTarget)
+                self._heroAgent:setDirection(direction)
+            end
+        end
+    else
+        if self._mTouch and self._nTouch then
+            local mHero, nHero = self._heroAgent:getMNExactly()
+            local targetAgent = lt.AgentManager:getAgent(self._targetAgentId)
+            local mTarget, nTarget
+
+            if self._mTouch and not SkillModule:isLongPress() or not targetAgent  then
+                mTarget, nTarget = self._mTouch, self._nTouch
+            else
+                if targetAgent then
+                    mTarget, nTarget = targetAgent:getMNExactly()
+                end
+            end
+
+        
+            if mTarget then
+                local direction = lt.MapUtil:getDirectionToPosition(mHero, nHero, mTarget, nTarget)
+                self._heroAgent:setDirection(direction)
+            end
+        end
+
+        self:exec()
+    end
+end
+
+function HeroStateSkill:exec()
+    self._isAttacking = true
+    -- if self._heroAgent:getIsSelf() then
+    --     lt.SkillCdManager:setCd(self._skillCode)
+    -- end
+
+    self._heroAgent:playSkill(self._skillCode, self._mTouch, self._nTouch, self._targetAgentId)
+end
+
+function HeroStateSkill:onExit()
+    -- yflog:Info("HeroStateSkill:onExit skillCode %s", self._skillCode)
+end
+
+function HeroStateSkill:onUpdate()
+    local deltaTime = lt.GameBoard:getDeltaTime()
+    if self._isWaitting then
+        if self._timeTrigger:tick(deltaTime) then
+            self._isWaitting = false
+
+            self:exec()
+        end
+    else
+        if self._isAttacking then
+            if self._timeTrigger:tick(deltaTime) then
+                self._isAttacking = false
+                if self._heroAgent:getIsSelf() then
+                    if self._needStop then
+                        if self._routeMsg then
+                            self._heroAgent:handleRouteMsg(self._routeMsg)
+                            self._routeMsg = nil
+                            return
+                        end
+                    end
+
+                    -- 自动释放下一个技能 不停顿继续释放技能
+                    AutoFightManager:checkNextSkill(self._heroAgent)
+                    local skillId,level = self:getCurUseSkillId(self._heroAgent)
+
+                    if skillId and self:handleSkill(skillId, {level = level}) then
+                        if self._handleSkillRet then
+                            lt.GameModule:clearAttackCd()
+                            self._timeTrigger:reset(self._totalTime)
+                            return
+                        end
+                    end
+                end
+
+                self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+            end
+        else
+            if self._timeTrigger:tick(deltaTime) then
+                self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+                return
+            end
+        end
+    end
+end
+
+function HeroStateSkill:onMessage(msg)
+    if msg.msgId == Constant.MSG_MOVE_JOYSTICK then
+        -- 无法移动
+        if not self._heroAgent:canMove() then
+            return
+        end
+
+        self._heroAgent:setIsSkillIdUsed(true)
+
+        -- 摇杆控制移动
+        if not self._isWaitting and not self._isAttacking then
+            self._heroAgent:changeState(lt.HeroStateMove.new(self._heroAgent, msg.moveType, msg.moveDirection, msg.mNext, msg.nNext))
+            return
+        end
+
+    elseif msg.msgId == Constant.MSG_MOVE_TOUCH then
+        -- 无法移动
+        if not self._heroAgent:canMove() then
+            return
+        end
+
+        self._heroAgent:setIsSkillIdUsed(true)
+
+        if self._isWaitting or self._isAttacking then
+            -- 停止攻击
+            self._needStop = true
+
+        else
+            if msg.moveType == Constant.MOVE_NONE then
+                self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+            else
+                self._heroAgent:changeState(lt.HeroStateMove.new(self._heroAgent, msg.moveType, msg.moveDirection, msg.mNext, msg.nNext))
+            end
+            return
+        end
+
+    elseif msg.msgId == Constant.MSG_ROUTE then
+        if self._isWaitting or self._isAttacking then
+            -- 停止攻击
+            self._needStop = true
+            self._routeMsg = msg
+        end
+
+        -- 无法移动
+        if not self._heroAgent:canMove() then
+            return
+        end
+
+        self._heroAgent:setIsSkillIdUsed(true)
+
+        if not self._isWaitting and not self._isAttacking then
+            -- 寻路
+            self._heroAgent:handleRouteMsg(msg)
+        end
+
+    elseif msg.msgId == Constant.MSG_SKILL then
+        -- 技能
+        self._heroAgent:handleSkillMsg(msg)
+    end
+end
+
+function HeroStateSkill:getStateId()
+    return Constant.HERO_STATE_SKILL
+end
+
+function HeroStateSkill:getStateName()
+    return "HeroStateSkill"
+end
+
+function HeroStateSkill:handleSkill(skillId, params)
+    params = params or {}
+    params.showTips = self._handleSkillRet
+    self._handleSkillRet = self._heroAgent:handleSkill(skillId, params)
+    return self._handleSkillRet
+end
+
+function HeroStateSkill:checkRoute()
+    if self._heroAgent:getIsSelf() then
+        if self._needStop then
+            if self._routeMsg then
+                self._heroAgent:handleRouteMsg(self._routeMsg)
+                self._routeMsg = nil
+                return
+            end
+        end
+    end
+    self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+end
+
+
+function HeroStateSkill:getCurUseSkillId(heroAgent)
+    local skillId, level = heroAgent:getSkillId()
+    if not skillId then
+        return nil, nil
+    end
+
+    -- 等级为0 不释放技能
+    if level == 0 then
+        return nil, nil
+    end
+
+    -- 技能Cd完毕
+    if not lt.SkillCdManager:isReady(skillId) then
+        return nil, nil
+    end
+
+    -- 验证技能是否已使用
+    local canUse = not heroAgent:getIsSkillIdUsed(skillId)
+    if not canUse then
+        return nil, nil
+    end
+
+    return skillId,level
+end
+
+function HeroStateSkill:getSkillId()
+    return self._skillCode
+end
+
+
+return HeroStateSkill

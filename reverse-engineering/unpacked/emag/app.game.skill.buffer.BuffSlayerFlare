@@ -1,0 +1,19 @@
+local BuffSlayerFlare = class("BuffSlayerFlare", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+local ScheduleUtil  = lt.ScheduleUtil
+
+--[[
+    光耀之环
+]]
+function BuffSlayerFlare:ctor(time, actor, skilllevel)    
+    BuffSlayerFlare.super.ctor(self, BuffEnum.EFFECT_SLAYER_FLARE, time, actor)
+    actor:playParallelEffect(SkillEnum.SKILL_SLAYER_FLARE, 2, true) 
+end
+
+function BuffSlayerFlare:onClear()
+    self._actor:stopParallelEffect(SkillEnum.SKILL_SLAYER_FLARE)
+    BuffSlayerFlare.super.onClear(self)
+end
+
+return BuffSlayerFlare

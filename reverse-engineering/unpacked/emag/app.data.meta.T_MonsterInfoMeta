@@ -1,0 +1,188 @@
+
+local MonsterInfoMeta = class("MonsterInfoMeta")
+
+MonsterInfoMeta._id      = nil -- 怪物ID
+MonsterInfoMeta._name    = nil -- 怪物名称
+MonsterInfoMeta._level   = nil -- 怪物等级
+MonsterInfoMeta._modelId = nil -- 模型ID
+MonsterInfoMeta._boss    = nil -- boss
+MonsterInfoMeta._elite   = nil -- Elite 精英
+MonsterInfoMeta._scale   = nil -- 尺寸
+MonsterInfoMeta._color   = nil -- 颜色
+MonsterInfoMeta._grade   = nil -- 怪物类型
+MonsterInfoMeta._capture = nil -- 可捕获
+MonsterInfoMeta._nameLastNum = nil -- 怪物名最后的数字1-10
+MonsterInfoMeta._roleModel   = nil -- 角色模型
+MonsterInfoMeta._destClothColor   = nil -- 特殊染色
+MonsterInfoMeta._weaponModelId = nil -- 武器模型ID
+MonsterInfoMeta._digLastFrame  = nil -- 挖掘尸体是否播放最后帧
+MonsterInfoMeta._attackInterval = nil -- 攻击间隔
+
+
+
+-- 隐形参数 RegenInvisible
+-- 变身蝙蝠参数 RegenBat
+-- 从地下钻出地面参数 UnburrowChance
+-- 出现方式 MMode
+local DEFAULT_COLOR = cc.vec4(1.0, 1.0, 1.0, 1.0)
+local DEFAULT_CLOTH_COLOR = cc.vec3(1.0, 1.0, 1.0)
+function MonsterInfoMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function MonsterInfoMeta:initWithRow(row)
+    self._id            = row.ID
+    self._modelId       = row.ModelId
+    self._name          = row.Name
+    self._level         = row.Level
+    self._boss          = row.Boss
+    self._elite         = row.Elite
+    self._color         = row.Color
+    self._grade         = row.Grade
+    self._capture       = row.Capture
+    -- self._nameLastNum   = self:isLastDigit1To10(row.Name)
+    self._actionCombId  = row.ActionCombId
+    self._destClothColor = row.ClothColor
+    self._weaponModelId = row.Weapon
+    self._digLastFrame  = row.DigLastFrame == 1
+
+    if row.RoleModel and row.RoleModel ~= "" then
+        self._roleModel = self:splitRoleModel(row.RoleModel)
+    end
+    self._attackInterval = tonumber(row.AttackInterval) / 1000
+end
+
+function MonsterInfoMeta:dump()
+    lt.LogUtil:debug(">>>>>>>>>>>>>>>>>>>> MonsterMeta >>>>>>>>>>>>>>>>>>>>")
+    lt.LogUtil:debug("_id:" .. self._id)
+    lt.LogUtil:debug("_modelId:" .. self._modelId)
+    lt.LogUtil:debug("<<<<<<<<<<<<<<<<<<<< MonsterMeta <<<<<<<<<<<<<<<<<<<<")
+end
+
+-- Setter && Getter
+function MonsterInfoMeta:getId()
+    return self._id
+end
+
+function MonsterInfoMeta:getModelId()
+    return self._modelId
+end
+
+function MonsterInfoMeta:getWeaponModelId()
+    return self._weaponModelId
+end
+
+function MonsterInfoMeta:getDigLastFrame()
+    return self._digLastFrame
+end
+
+function MonsterInfoMeta:getName()
+    return self._name or ""
+end
+
+function MonsterInfoMeta:getScale()
+    if self._scale then
+        return self._scale / 10000
+    end
+
+    return 1
+end
+
+function MonsterInfoMeta:IsBoss()
+    return self._grade == 2
+end
+
+function MonsterInfoMeta:IsPet()
+    return self._grade == 5
+end
+
+function MonsterInfoMeta:IsElite()
+    return self._elite == 1
+end
+
+function MonsterInfoMeta:getLevel()
+    return self._level
+end
+
+function MonsterInfoMeta:getColor()
+    if self._color == "" or not self._color then
+        return DEFAULT_COLOR
+    else
+        local color = string.split(self._color, ",")
+        if #color ~= 3 then
+            return DEFAULT_COLOR
+        end
+        return cc.vec4(tonumber(color[1]) / 255, tonumber(color[2]) / 255, tonumber(color[3]) / 255, 1.0)
+    end
+end
+function MonsterInfoMeta:getDestClothColor()
+    if self._destClothColor == "" or not self._destClothColor then
+        return DEFAULT_CLOTH_COLOR
+    else
+        local clothcolor = string.split(self._destClothColor, ",")
+        if #clothcolor ~= 3 then
+            return DEFAULT_CLOTH_COLOR
+        end
+        return cc.vec3(tonumber(clothcolor[1]) / 255, tonumber(clothcolor[2]) / 255, tonumber(clothcolor[3]) / 255)
+    end
+end
+
+function MonsterInfoMeta:getCapture()
+    return self._capture
+end
+
+function MonsterInfoMeta:canCapture()
+    return self._capture ~= 0
+end
+
+function MonsterInfoMeta:isLastDigit1To10(str)
+    if not str then
+        return
+    end
+
+    local last1 = str:sub(-1)
+    local last2 = str:sub(-2, -1)
+
+    -- 检查 "10"
+    if last2 == "10" then
+        return 10
+    end
+
+    -- 检查 1-9
+    local num = tonumber(last1)
+    if num and num >= 1 and num <= 9 then
+        return num
+    end
+end
+
+function MonsterInfoMeta:GetNameLastNum()
+    return self._nameLastNum
+end
+
+function MonsterInfoMeta:splitRoleModel(roleModel)
+    local modelInfo = {}
+    local roleModelList = roleModel:split(",")
+    
+    modelInfo.race     = tonumber(roleModelList[1]) or 0
+    modelInfo.gender   = tonumber(roleModelList[2]) or 0
+    modelInfo.helmet   = tonumber(roleModelList[3]) or 0
+    modelInfo.bodyAppr = tonumber(roleModelList[4]) or 0
+    modelInfo.trousers = tonumber(roleModelList[5]) or 0
+    modelInfo.weapon   = tonumber(roleModelList[6]) or 0
+
+    return modelInfo
+end
+
+function MonsterInfoMeta:getRoleModel()
+    return self._roleModel
+end
+function MonsterInfoMeta:getActionCombId()
+    return self._actionCombId
+end
+
+function MonsterInfoMeta:getAttackInterval()
+    return self._attackInterval
+end
+    
+
+return MonsterInfoMeta

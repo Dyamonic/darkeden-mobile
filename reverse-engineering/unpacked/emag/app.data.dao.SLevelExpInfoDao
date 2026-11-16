@@ -1,0 +1,20 @@
+
+local SLevelExpInfoDao = {}
+
+function SLevelExpInfoDao:queryAll()
+    local sLevelExpInfoMap = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM SlayerLevelExpInfo;") do
+    	local sLevelExpMeta = lt.SLevelExpInfoMeta.new(row)
+        local domainType = sLevelExpMeta:getDomainType()
+        if not sLevelExpInfoMap[domainType] then
+            sLevelExpInfoMap[domainType] = {}
+        end
+        local level = sLevelExpMeta:getLevel()
+        sLevelExpInfoMap[domainType][level] = sLevelExpMeta
+    end
+
+    return sLevelExpInfoMap
+end
+
+return SLevelExpInfoDao

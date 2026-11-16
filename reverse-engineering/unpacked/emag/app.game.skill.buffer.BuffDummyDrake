@@ -1,0 +1,35 @@
+local BuffDummyDrake = class("BuffDummyDrake", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+local ScheduleUtil  = lt.ScheduleUtil
+local CacheManager = lt.CacheManager
+local Constant = lt.Constant
+
+--[[
+    德雷克傀儡
+]]
+function BuffDummyDrake:ctor(time, actor, skilllevel, source, buffId)   
+    BuffDummyDrake.super.ctor(self, buffId, time, actor)
+    -- 被攻击播特效即可
+    self._skillId = SkillEnum.SKILL_DUMMY_DRAKE
+    if source.isExist then
+        return 
+    end
+    local buffMetas = nil
+    if buffId == BuffEnum.EFFECT_CLASS_DUMMY_DRAKE then
+        buffMetas = CacheManager:getHitMetas(self._skillId, 0)
+       
+    elseif buffId == BuffEnum.EFFECT_CLASS_DUMMY_DRAKE_BOMB then
+        buffMetas = CacheManager:getBuffMetas(self._skillId, 0)
+        -- actor:playQueueEffectByLv(self._skillId, 0, Constant.EFFECT.SELF)
+    end
+    actor:playParallelEffectSpecial(self._skillId, buffMetas)
+end
+
+function BuffDummyDrake:onClear()
+    self._actor:stopParallelEffect(self._skillId)
+    BuffDummyDrake.super.onClear(self)
+end
+
+
+return BuffDummyDrake

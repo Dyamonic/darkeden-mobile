@@ -1,0 +1,11 @@
+﻿boss_entry,monster,english,map,zone,tile_x,tile_y,refresh_seconds,source
+101,40765,GreatRuffianSkull,1013,Asylion Dungeon Low,60,74,7200,WorldBoss.MonsterRefreshesCoordinates
+102,50765,GreatRuffianSkull,74,Adam New C North,70,52,7200,WorldBoss.MonsterRefreshesCoordinates
+201,40573,Chief Mutant2,1105,Tunnel Ghorgova,111,133,7200,WorldBoss.MonsterRefreshesCoordinates
+202,40577,Chief Estroider2,51,Timore Northeast,146,172,7200,WorldBoss.MonsterRefreshesCoordinates
+203,40581,Chief Blood Warlock2,41,Rodin Northeast,172,158,7200,WorldBoss.MonsterRefreshesCoordinates
+204,40582,Chief Golemer2,54,Timore Southwest,141,109,7200,WorldBoss.MonsterRefreshesCoordinates
+205,40583,Chief Shadow Wing2,44,Rodin Southwest,197,164,7200,WorldBoss.MonsterRefreshesCoordinates
+206,40586,Chief Chaos Knight3,1008,Kali Cave,81,139,7200,WorldBoss.MonsterRefreshesCoordinates
+207,40588,Chief Dark Screamer2,1112,Castle Rasen 1 2,61,36,7200,WorldBoss.MonsterRefreshesCoordinates
+208,40589,Chief Chaos Guardian2,31,Drobeta Northeast,190,112,7200,WorldBoss.MonsterRefreshesCoordinates

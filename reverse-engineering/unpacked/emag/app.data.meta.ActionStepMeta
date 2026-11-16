@@ -1,0 +1,28 @@
+
+local ActionStepMeta = class("ActionStepMeta")
+
+function ActionStepMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function ActionStepMeta:initWithRow(row)
+    self._race      = row.Race
+    self._actionId  = row.ActionId
+    self._step      = row.Step
+    self._delayTime = row.DelayTime
+    self._floorDelay= row.FloorDelay
+    self._actionLimit = row.ActionLimit
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function ActionStepMeta:getRace() return self._race end
+function ActionStepMeta:getActionId() return self._actionId end
+function ActionStepMeta:getStep() return self._step end
+function ActionStepMeta:getDelayTime() return self._delayTime end
+function ActionStepMeta:getFloorDelay() return self._floorDelay end
+function ActionStepMeta:getActionLimit() return self._actionLimit end
+
+-- AUTO GENERATED GETTERS END
+return ActionStepMeta

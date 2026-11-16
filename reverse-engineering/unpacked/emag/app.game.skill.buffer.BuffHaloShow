@@ -1,0 +1,39 @@
+local BuffHaloShow = class("BuffHaloShow", lt.BufferBase)
+local CacheManager = lt.CacheManager
+local MountModule = lt.MountModule
+local Constant = lt.Constant
+local SkillEnum = lt.SkillEnum
+--[[
+    光环buff
+]]
+function BuffHaloShow:ctor(time, actor, skilllevel,source,bufferId)    
+    BuffHaloShow.super.ctor(self, bufferId, time, actor)
+    local bufftype = source.srcId
+    self._skillId = MountModule:getHaloMetasByKey(bufftype):getSkill()
+    local actionInfoMetas = CacheManager:getBuffMetas(self._skillId, 0)
+    if SkillEnum.IS_HALO_WINGS_OR_TAIL_SKILL[self._skillId] then
+        actor:playRotateEffect(actionInfoMetas,self._skillId)
+    elseif self._skillId == SkillEnum.SKILL_ACID_HALO_FANFAN then
+        actor:playSoleEffectByMetas({actionInfoMetas[1]})
+        actor:playParallelEffectSpecial(self._skillId,{actionInfoMetas[2]})
+    elseif SkillEnum.IS_HALO_HONOR_SKILL[self._skillId] then
+        actor:playSoleEffectByMetas({actionInfoMetas[1]})
+        actor:playSoleEffectByMetas({actionInfoMetas[2]})
+        actor:playParallelEffectSpecial(self._skillId,{actionInfoMetas[3]})
+    else
+        actor:playSoleEffectByMetas(actionInfoMetas)
+    end
+end
+
+function BuffHaloShow:onClear()
+    if SkillEnum.IS_HALO_HONOR_SKILL[self._skillId] then
+        --荣耀光环两个特效在底部需要经过两次释放
+        self._actor:removeSoleEffect(self._skillId,false)
+    end
+    self._actor:removeParalEffect(self._skillId)
+    self._actor:removeSoleEffect(self._skillId,false)
+    self._actor:removeRotateEffect(self._skillId)
+    BuffHaloShow.super.onClear(self)
+end
+
+return BuffHaloShow

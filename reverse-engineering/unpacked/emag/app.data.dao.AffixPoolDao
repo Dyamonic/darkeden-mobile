@@ -1,0 +1,22 @@
+
+local AffixPoolDao = {}
+
+function AffixPoolDao:query(type, subType)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM AffixPool WHERE Kind=%d and Type=%d;", type, subType)) do
+        local affixPool = lt.AffixPoolMeta.new(row)
+        return affixPool
+    end
+end
+
+function AffixPoolDao:queryAll()
+    local enchantingAffixTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM AffixPool") do
+        local affixPool = lt.AffixPoolMeta.new(row)
+        enchantingAffixTable[affixPool:getKind().."_"..affixPool:getType()] = affixPool
+    end
+    return enchantingAffixTable
+end
+
+return AffixPoolDao

@@ -1,0 +1,280 @@
+---@class ControlLayer 控制层
+
+local ControlLayer = class("ControlLayer", lt.UICompBase)
+local OPERATE_RADIUS = 84 --操作盘半径
+local Constant = lt.Constant
+local MOVE_SMALL_RADIUS = 34 --小圆半径
+local HandlerManager = lt.HandlerManager
+
+function ControlLayer:ctor()
+    ControlLayer.super.ctor(self)
+    self:registerComponent("CompSkillOperateItem","CompSkillOperate")
+
+    self._view = fgui.UIPackage:createObject("Main", "ControlLayer")
+    self._view:makeFullScreen()
+    self._view:center()
+    self:addChild(self._view)
+    self._showSkillControl = self._view:getController("showSkill");
+    self._compSkill = self._view:getChild("compSkill")
+    self._compSkill:insertObjectToFactory(self)
+
+
+    self._button = self._view:getChild("joystick");
+    self._button:setChangeStateOnClick(false);
+
+    self._touchArea = self._view:getChild("joystick_touch");
+    self._center = self._view:getChild("joystick_center");
+
+
+    self._touchId = -1;
+    self._touchDelta = cc.p(0, 0);
+            
+    self._InitX = self._center:getX()
+    self._InitY = self._center:getY()
+
+    self._lastStageX = 0
+    self._lastStageY = 0
+    self._startStageX = 0;
+    self._startStageY = 0;
+
+    self._keyboardTable = nil
+    self._controlParam = nil
+    self._preControlParam = nil
+end
+
+
+function ControlLayer:onEnter()
+    self:initSkillSlot()
+
+    self._touchArea:addEventListener(fgui.UIEventType.TouchBegin, handler(self, self.onTouchBegin));
+    self._touchArea:addEventListener(fgui.UIEventType.TouchMove, handler(self, self.onTouchMove));
+    self._touchArea:addEventListener(fgui.UIEventType.TouchEnd, handler(self, self.onTouchEnd));
+end
+
+function ControlLayer:onExit()
+    self._touchArea:removeEventListener(fgui.UIEventType.TouchBegin)
+    self._touchArea:removeEventListener(fgui.UIEventType.TouchMove)
+    self._touchArea:removeEventListener(fgui.UIEventType.TouchEnd)
+end
+
+function ControlLayer:onClear()
+    self:unregisterAllComponent()
+    self._view = nil
+    self._showSkillControl = nil
+    self._compSkill = nil
+    self._button = nil
+    self._touchArea = nil
+    self._center = nil
+    self._keyboardTable = nil
+    self._controlParam = nil
+    self._preControlParam = nil
+    ControlLayer.super.onClear(self)
+end
+
+function ControlLayer:onUpdate(dt)
+    if self._compSkill then
+        self._compSkill:onUpdate(dt)
+    end
+end
+
+
+function ControlLayer:initSkillSlot()
+    self._compSkill:setOpMode(lt.Constant.SkillOperate.Battle)
+    self:setSkillShowControl(1)
+end
+
+function ControlLayer:onTouchBegin(context)
+
+    if (self._touchId == -1) then--First touch
+        HandlerManager:getHandler():stopTouchType(false)
+        local evt = context:getInput();
+        self._touchId = evt:getTouchId();
+
+        if (self._tweener ~= nil) then
+            self._tweener:kill();
+            self._tweener = nil;
+        end
+
+        local pt = fgui.GRoot:getInstance():globalToLocal(evt:getPosition());
+        local bx = pt.x;
+        local by = pt.y;
+        self._button:setSelected(true);
+
+
+        if (bx - OPERATE_RADIUS < 0) then
+            bx = OPERATE_RADIUS;
+        end
+        if (by + OPERATE_RADIUS > display.height) then
+            by = display.height - OPERATE_RADIUS
+        end
+
+        self._lastStageX = bx;
+        self._lastStageY = by;
+        self._startStageX = bx;
+        self._startStageY = by;
+
+        self._center:setVisible(true);
+        self._center:setPosition(bx, by);
+        self._button:setPosition(bx, by);
+        lt.SkillModule:setTouchMoving(true)
+        context:captureTouch();
+    end
+end
+
+function ControlLayer:onTouchMove(context)
+    local evt = context:getInput();
+    if (self._touchId ~= -1 and evt:getTouchId() == self._touchId) then
+        HandlerManager:getHandler():stopTouchType(true)
+        local pt = fgui.GRoot:getInstance():globalToLocal(evt:getPosition());
+        local bx = pt.x;
+        local by = pt.y;
+        local moveX = bx - self._lastStageX;
+        local moveY = by - self._lastStageY;
+        self._lastStageX = bx;
+        self._lastStageY = by;
+        local buttonX = self._button:getX() + moveX;
+        local buttonY = self._button:getY() + moveY;
+
+        local offsetX = buttonX - self._startStageX;
+        local offsetY = buttonY - self._startStageY;
+
+        local rad = math.atan2(offsetY, offsetX);
+        local degree = rad * 180 / math.pi;
+
+        local subRadius = OPERATE_RADIUS - MOVE_SMALL_RADIUS
+        local distance = cc.pGetLength(cc.p(offsetX, offsetY))
+     
+        local maxX = subRadius * math.cos(rad);
+        local maxY = subRadius * math.sin(rad);
+        if (math.abs(offsetX) > math.abs(maxX)) then
+            offsetX = maxX;
+        end
+        if (math.abs(offsetY) > math.abs(maxY)) then
+            offsetY = maxY;
+        end
+
+        buttonX = self._startStageX + offsetX;
+        buttonY = self._startStageY + offsetY;
+
+        if distance <= subRadius then
+            self._touchDelta = cc.pSub(cc.p(buttonX, buttonY), self._button:getPosition())
+        else
+            self._touchDelta = cc.pSub(self._button:getPosition(), cc.p(self._startStageX, self._startStageY))
+        end
+        self._button:setPosition(buttonX, buttonY);
+        lt.SkillModule:setTouchMoving(true)
+    end
+end
+
+function ControlLayer:onTouchEnd(context)
+    lt.SkillModule:setTouchMoving(false)
+    local evt = context:getInput();
+    if (self._touchId ~= -1 and evt:getTouchId() == self._touchId) then
+        HandlerManager:getHandler():stopTouchType(false)
+        self._touchId = -1;
+        self._center:setVisible(false);
+        local srcPos = self._button:getPosition()
+        local destPos = {x = self._InitX, y = self._InitY}
+        fgui.GTween:to(srcPos, destPos, 0.01)
+        :setTarget(self._button, fgui.TweenPropType.Position)
+        :onComplete(function ()
+            self._button:setSelected(false);
+            self._center:setVisible(true);
+            self._center:setPosition(self._InitX, self._InitY);
+        end);
+        self._touchDelta = cc.p(0, 0)
+        self._startStageX, self._startStageY = 0, 0
+    end
+end
+
+function ControlLayer:setKeyboardTable(keyboardTable)
+    self._keyboardTable = keyboardTable
+end
+
+function ControlLayer:getControlParam()
+    local param = nil
+    local heroAgent = lt.AgentManager:getHeroAgent()
+    if heroAgent and (not heroAgent:canMove() and not heroAgent:hasBuffer(lt.BuffEnum.EFFECT_INSTALL_TURRET)) then
+        return 
+    end
+ 
+    while true do
+        if self._keyboardTable and next(self._keyboardTable) ~= nil then
+            lt.SkillModule:setTouchMoving(true)
+
+            local x, y = 0, 0
+            for code,_ in pairs(self._keyboardTable) do
+                local v = Constant.KEY_VALUE[code]
+                if v then
+                    x = x + v.x
+                    y = y + v.y
+                end
+            end
+
+            if x ~= 0 or y ~= 0 then
+                param = {}
+
+                if math.abs(x) > 1 or math.abs(y) > 1 then
+                    param.moveType = lt.Constant.MOVE_RUN
+                else
+                    param.moveType = lt.Constant.MOVE_WALK
+                end
+                param.moveDirection = lt.MapUtil:calcDirectionXY(x, y)
+                break
+            end
+        end
+
+        local touchDelta = cc.pSub(self._button:getPosition(), cc.p(self._startStageX, self._startStageY))
+        if cc.pGetLength(touchDelta) == 0  or ( self._startStageX == 0 and self._startStageY == 0) then
+            break 
+        end
+
+        param = {}
+
+        -- 移动方式
+        param.moveType = lt.Constant.MOVE_RUN
+
+        local cocosY =  display.cy - touchDelta.y - display.cy 
+        -- 方向
+        param.moveDirection = lt.MapUtil:calcDirectionXY(touchDelta.x, cocosY)
+        break
+    end
+
+
+    local checkInterval = 0.001
+    if not self._preControlParam then
+        self._preControlParam = param
+
+        if self._preControlParam then
+            self._elapse = 0
+        else
+            self._elapse = (self._elapse or 0) + lt.GameBoard:getDeltaTime()
+            if self._elapse > checkInterval then
+                self._controlParam = nil
+                self._elapse = 0
+            end
+        end
+    else
+        if param and self._preControlParam.moveType == param.moveType and self._preControlParam.moveDirection == param.moveDirection then
+            self._elapse = (self._elapse or 0) + lt.GameBoard:getDeltaTime()
+            if self._elapse > checkInterval then
+                self._controlParam = self._preControlParam
+                self._preControlParam = nil
+                self._elapse = 0
+            end
+        else
+            self._preControlParam = param
+            self._elapse = 0
+        end
+    end
+
+    return self._controlParam
+end
+
+
+function ControlLayer:setSkillShowControl(controlIdx)
+    self._showSkillControl:setSelectedIndex(controlIdx)
+end
+
+
+return ControlLayer

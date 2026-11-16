@@ -1,0 +1,66 @@
+
+local ResUtil = {}
+
+--[[
+    地图安全区和跳转点json文件
+]]
+function ResUtil:loadMapSafeProtalData(path)
+    local mapPath = cc.FileUtils:getInstance():fullPathForFilename(path)
+    local content = cc.FileUtils:getInstance():getStringFromFile(mapPath)
+    return content
+end
+
+function ResUtil:loadUIConfigString()
+    local playerId = lt.GameModule:getHeroData():getPlayerId()
+    local path = string.format("%suiconfig_%s.json", cc.FileUtils:getInstance():getWritablePath(), playerId)
+    lt.LogUtil:debugTable("loadUIConfigString path = "..tostring(path))
+    return cc.FileUtils:getInstance():getStringFromFile(path)
+end
+
+function ResUtil:saveUIConfigString(text)
+    local playerId = lt.GameModule:getHeroData():getPlayerId()
+    local path = string.format("%suiconfig_%s.json", cc.FileUtils:getInstance():getWritablePath(), playerId)
+    return cc.FileUtils:getInstance():writeStringToFile(text, path)
+end
+
+function ResUtil:saveUIConfigTableInDb()
+    local playerId = lt.GameModule:getHeroData():getPlayerId()
+    local tableName = string.format("uiconfig_%s", playerId)
+
+end
+
+
+-- action cfpk
+function  ResUtil:loadCFPKString(model)
+    local pathName = string.format("tlmodel/%s.json", model)
+
+    local cfpkPath = cc.FileUtils:getInstance():fullPathForFilename(pathName)
+    local cfpkString = cc.FileUtils:getInstance():getStringFromFile(cfpkPath)
+    return cfpkString
+end
+
+function  ResUtil:getCFPKFullPath(path)
+	-- local writablePath = device.writablePath
+    local path = string.format("%sres/%s", cc.FileUtils:getInstance():getWritablePath(), path)
+
+    return path
+end
+
+-- 计算像素宽高（在UV空间内）
+function ResUtil:getPlistPixelSize(spriteFrame)
+    local rect = spriteFrame:getRect() 
+    local originalSize = spriteFrame:getOriginalSize() 
+    local texture = spriteFrame:getTexture()
+    local atlasSize = texture:getContentSize()
+
+    local u_uvMin_x = rect.x / atlasSize.width
+    local u_uvMin_y = rect.y / atlasSize.height
+    local u_uvMax_x = (rect.x + rect.width) / atlasSize.width
+    local u_uvMax_y = (rect.y + rect.height) / atlasSize.height
+
+    local pixelWidth = (u_uvMax_x - u_uvMin_x) / originalSize.width;
+    local pixelHeight = (u_uvMax_y - u_uvMin_y) / originalSize.height;
+    return cc.p(pixelWidth, pixelHeight)
+end
+
+return ResUtil

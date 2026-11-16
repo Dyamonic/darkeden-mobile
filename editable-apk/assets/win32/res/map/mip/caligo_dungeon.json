@@ -1,0 +1,276 @@
+{
+    "Height": 128,
+    "MPortals": [
+        {
+            "Bottom": 11,
+            "Left": 10,
+            "M_Type": 1,
+            "M_ZoneID": [
+                14
+            ],
+            "Right": 15,
+            "Top": 7
+        },
+        {
+            "Bottom": 10,
+            "Left": 115,
+            "M_Type": 2,
+            "M_ZoneID": [
+                23
+            ],
+            "Right": 119,
+            "Top": 6
+        },
+        {
+            "Bottom": 113,
+            "Left": 7,
+            "M_Type": 7,
+            "M_ZoneID": [
+                81
+            ],
+            "Right": 12,
+            "Top": 109
+        }
+    ],
+    "SafeRects": [
+        {
+            "Bottom": 4,
+            "Flag": 1,
+            "Left": 9,
+            "Right": 16,
+            "Top": 4
+        },
+        {
+            "Bottom": 5,
+            "Flag": 1,
+            "Left": 7,
+            "Right": 16,
+            "Top": 5
+        },
+        {
+            "Bottom": 10,
+            "Flag": 1,
+            "Left": 6,
+            "Right": 16,
+            "Top": 6
+        },
+        {
+            "Bottom": 11,
+            "Flag": 1,
+            "Left": 6,
+            "Right": 15,
+            "Top": 11
+        },
+        {
+            "Bottom": 12,
+            "Flag": 1,
+            "Left": 7,
+            "Right": 14,
+            "Top": 12
+        },
+        {
+            "Bottom": 13,
+            "Flag": 1,
+            "Left": 8,
+            "Right": 13,
+            "Top": 13
+        },
+        {
+            "Bottom": 14,
+            "Flag": 1,
+            "Left": 9,
+            "Right": 12,
+            "Top": 14
+        },
+        {
+            "Bottom": 15,
+            "Flag": 1,
+            "Left": 10,
+            "Right": 11,
+            "Top": 15
+        },
+        {
+            "Bottom": 2,
+            "Flag": 2,
+            "Left": 115,
+            "Right": 116,
+            "Top": 2
+        },
+        {
+            "Bottom": 3,
+            "Flag": 2,
+            "Left": 113,
+            "Right": 118,
+            "Top": 3
+        },
+        {
+            "Bottom": 4,
+            "Flag": 2,
+            "Left": 113,
+            "Right": 119,
+            "Top": 4
+        },
+        {
+            "Bottom": 5,
+            "Flag": 2,
+            "Left": 112,
+            "Right": 120,
+            "Top": 5
+        },
+        {
+            "Bottom": 6,
+            "Flag": 2,
+            "Left": 112,
+            "Right": 121,
+            "Top": 6
+        },
+        {
+            "Bottom": 10,
+            "Flag": 2,
+            "Left": 112,
+            "Right": 123,
+            "Top": 7
+        },
+        {
+            "Bottom": 11,
+            "Flag": 2,
+            "Left": 113,
+            "Right": 122,
+            "Top": 11
+        },
+        {
+            "Bottom": 12,
+            "Flag": 2,
+            "Left": 114,
+            "Right": 121,
+            "Top": 12
+        },
+        {
+            "Bottom": 13,
+            "Flag": 2,
+            "Left": 115,
+            "Right": 120,
+            "Top": 13
+        },
+        {
+            "Bottom": 14,
+            "Flag": 2,
+            "Left": 116,
+            "Right": 119,
+            "Top": 14
+        },
+        {
+            "Bottom": 15,
+            "Flag": 2,
+            "Left": 117,
+            "Right": 118,
+            "Top": 15
+        },
+        {
+            "Bottom": 104,
+            "Flag": 16,
+            "Left": 7,
+            "Right": 10,
+            "Top": 104
+        },
+        {
+            "Bottom": 105,
+            "Flag": 16,
+            "Left": 7,
+            "Right": 11,
+            "Top": 105
+        },
+        {
+            "Bottom": 106,
+            "Flag": 16,
+            "Left": 7,
+            "Right": 12,
+            "Top": 106
+        },
+        {
+            "Bottom": 107,
+            "Flag": 16,
+            "Left": 7,
+            "Right": 13,
+            "Top": 107
+        },
+        {
+            "Bottom": 108,
+            "Flag": 16,
+            "Left": 5,
+            "Right": 14,
+            "Top": 108
+        },
+        {
+            "Bottom": 109,
+            "Flag": 16,
+            "Left": 4,
+            "Right": 15,
+            "Top": 109
+        },
+        {
+            "Bottom": 113,
+            "Flag": 16,
+            "Left": 4,
+            "Right": 16,
+            "Top": 110
+        },
+        {
+            "Bottom": 114,
+            "Flag": 16,
+            "Left": 4,
+            "Right": 15,
+            "Top": 114
+        },
+        {
+            "Bottom": 115,
+            "Flag": 16,
+            "Left": 4,
+            "Right": 14,
+            "Top": 115
+        },
+        {
+            "Bottom": 116,
+            "Flag": 16,
+            "Left": 4,
+            "Right": 13,
+            "Top": 116
+        },
+        {
+            "Bottom": 117,
+            "Flag": 16,
+            "Left": 4,
+            "Right": 12,
+            "Top": 117
+        },
+        {
+            "Bottom": 118,
+            "Flag": 16,
+            "Left": 5,
+            "Right": 11,
+            "Top": 118
+        },
+        {
+            "Bottom": 119,
+            "Flag": 16,
+            "Left": 7,
+            "Right": 10,
+            "Top": 119
+        },
+        {
+            "Bottom": 120,
+            "Flag": 16,
+            "Left": 8,
+            "Right": 9,
+            "Top": 120
+        },
+        {
+            "Bottom": 121,
+            "Flag": 16,
+            "Left": 8,
+            "Right": 8,
+            "Top": 121
+        }
+    ],
+    "Width": 128
+}

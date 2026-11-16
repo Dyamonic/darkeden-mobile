@@ -1,0 +1,808 @@
+--- 宠物
+---@class UIWndPet:UIWindowBase
+local UIWndPet = class("UIWndPet", lt.UIWindowBase)
+
+local FITER_TYPES = {
+    ATTRIBUTE = 1,  --属性
+    TAME      = 2,  --驯养 合成 在一个界面
+    SKILL     = 3,  --胶囊（技能）  
+    SKIN      = 4,  -- 皮肤
+}
+
+local BTNFITERNAME = {
+    [FITER_TYPES.ATTRIBUTE] = "btnFiter1",
+    [FITER_TYPES.TAME]      = "btnFiter2",
+    [FITER_TYPES.SKILL]     = "btnFiter3",
+    [FITER_TYPES.SKIN]      = "btnFiter4",
+}
+
+local BTNFITERISOPEN = {
+    [FITER_TYPES.ATTRIBUTE] = true,
+    [FITER_TYPES.TAME]      = true,
+    [FITER_TYPES.SKILL]     = true,
+    [FITER_TYPES.SKIN]      = true,
+}
+
+local NtfManager   = lt.NtfManager
+local PetModule    = lt.PetModule
+local CacheManager = lt.CacheManager
+local Constant     = lt.Constant
+local GuideModule  = lt.GuideModule
+
+UIWndPet.ChangeSkinConf = {
+    ["Pet"] = {
+        ["frame"] = {n1 = "bg_zhuangbei_beijinban"},
+        ["bg"] = "bg_cwxxjm_neibiankuang",
+        ["btnFiter1"] = {n0 = "bg_cwxxjm_yeqianweixuanzhong", n1 = "bg_cwxxjm_yeqianxuanzhong", n2 = "bg_cwxxjm_yeqianxuanzhong", n3 = "bg_cwxxjm_yeqianxuanzhong"},
+        ["btnFiter2"] ={n0 = "bg_cwxxjm_yeqianweixuanzhong", n1 = "bg_cwxxjm_yeqianxuanzhong", n2 = "bg_cwxxjm_yeqianxuanzhong", n3 = "bg_cwxxjm_yeqianxuanzhong"},
+        ["btnFiter3"] = {n0 = "bg_cwxxjm_yeqianweixuanzhong", n1 = "bg_cwxxjm_yeqianxuanzhong", n2 = "bg_cwxxjm_yeqianxuanzhong", n3 = "bg_cwxxjm_yeqianxuanzhong"},
+        ["btnFiter4"] = {n0 = "bg_cwxxjm_yeqianweixuanzhong", n1 = "bg_cwxxjm_yeqianxuanzhong", n2 = "bg_cwxxjm_yeqianxuanzhong", n3 = "bg_cwxxjm_yeqianxuanzhong"},
+    },
+    ["CommonTL"] = {
+        ["closeButton"] = {bg  = "bg_beibao_anniu01", bgup  = "bg_beibao_anniu02"}
+    }
+}
+
+function UIWndPet:ctor(param)
+    UIWndPet.super.ctor(self, param)
+
+    self:registerComponent("UICompPetItem","UICompPetSkinItem","UICompPetSkin","UICompPetSkill","UICompPetTame","UICompPetAttr")
+
+    self._attributePanel = nil
+    self._tamePanel      = nil
+    self._skillPanel     = nil
+    self._skinPanel      = nil
+    self._controlTab     = nil
+    self._emptyNode      = nil
+    self._mask           = nil
+    self._petList        = nil
+    self._petMergeList   = nil
+    self._pets           = nil
+    self._tempPetList    = nil
+    self._tempPetFuncList= nil
+    self._petSkinList    = nil
+    self._petSkinData    = nil
+    self._selectIdx      = 1
+    self._fiterBtns      = {}
+    self._selectSkinIdx  = nil
+    self._light          = nil
+end
+
+function UIWndPet:onClear()
+    self:unregisterAllComponent()
+    self._fiterBtns      = nil
+    self._attributePanel = nil
+    self._tamePanel      = nil
+    self._skillPanel     = nil
+    self._skinPanel      = nil
+    self._controlTab     = nil
+    self._emptyNode      = nil
+    self._mask           = nil
+    self._petList        = nil
+    self._petMergeList   = nil
+    self._pets           = nil
+    self._tempPetList    = nil
+    self._tempPetFuncList= nil
+    self._petSkinList    = nil
+    self._petSkinData    = nil
+    self._selectIdx      = nil
+    self._selectSkinIdx  = nil
+    self._light          = nil
+    self._closeButton    = nil
+  
+    UIWndPet.super.onClear(self)
+end
+
+function UIWndPet:onInit()
+    UIWndPet.super.onInit(self, _GURL.WndPet)
+
+    if not self._openViewType then -- 初始化默认显示属性
+        self._openViewType = FITER_TYPES.ATTRIBUTE
+    end
+
+    self:initUI()
+end
+
+function UIWndPet:onShown()
+    self:enableUpdateEvent(true)
+
+    local param = self:getParam().param or {}
+    local mainIdx = param.index or 1
+    --加号上是否发光
+    self._light = param.light
+    local defaultView = self._fiterBtns[mainIdx]
+    defaultView:setSortingOrder(3)
+    if self:getContentPane() then
+        self:refreshPetList()
+        self:resetIdx()
+    end
+    self:openFiterView(defaultView)
+    self:showCurPanel()
+
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_PET_MY,    handler(self, self.showCurPanel),   "UIWndPet:NTF_REFRESH_PET_MY")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_PET_LIST,  handler(self, self.refreshPetList), "UIWndPet:NTF_REFRESH_PET_LIST")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_RESET_PET_INDEX,   handler(self, self.resetIdx),       "UIWndPet:NTF_RESET_PET_INDEX")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT, handler(self, self.refreshCurPanelCost),   "UIWndPet:NTF_UPDATE_ITEM_EVENT")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_MONEY_EVENT, handler(self, self.refreshCurPanelCost),   "UIWndPet:NTF_UPDATE_MONEY_EVENT")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_PET_SKIN,  handler(self, self.refreshPetList), "UIWndPet:NTF_REFRESH_PET_SKIN") -- 皮肤界面刷新
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_PET_COMPOSE_REFRESH,handler(self, self.refreshComPose), "UIWndPet:NTF_PET_COMPOSE_REFRESH")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CHECK_GUIDE_EVENT, handler(self, self.checkGuide), "UIWndPet:NTF_CHECK_GUIDE_EVENT")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_PET_CAPSULE_REFRESH, handler(self, self.showCurPanel), "UIWndPet:NTF_PET_CAPSULE_REFRESH") -- 技能升级成功
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_PET_SKIN_UP,       handler(self, self.showCurPanel), "UIWndPet:NTF_PET_SKIN_UP")           -- 皮肤升级成功
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_RED_DOT_EVENT,     handler(self, self.uptRedDotEvt), "UIWndPet:NTF_RED_DOT_EVENT")
+
+    self._petList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+    self._petMergeList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItemMerge))
+    self._petSkinList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItemSkin))
+
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        local obj = self._fiterBtns[fiterType]
+        obj:addClickListener(handler(self, self.openFiterBtnClick))
+    end
+
+    self._closeButton:addClickListener(handler(self, self.onCloseBtnClick))
+
+    self:refreshSkinReddot()
+    self:refreshFunctionReddot()
+end
+
+function UIWndPet:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndPet:NTF_REFRESH_PET_MY")
+    NtfManager:removeNtfListenerByTag("UIWndPet:NTF_REFRESH_PET_LIST")
+    NtfManager:removeNtfListenerByTag("UIWndPet:NTF_RESET_PET_INDEX")
+    NtfManager:removeNtfListenerByTag("UIWndPet:NTF_UPDATE_ITEM_EVENT")
+    NtfManager:removeNtfListenerByTag("UIWndPet:NTF_UPDATE_MONEY_EVENT")
+    NtfManager:removeNtfListenerByTag("UIWndPet:NTF_REFRESH_PET_SKIN")
+    NtfManager:removeNtfListenerByTag("UIWndPet:NTF_PET_COMPOSE_REFRESH")
+    NtfManager:removeNtfListenerByTag("UIWndPet:NTF_CHECK_GUIDE_EVENT")
+    NtfManager:removeNtfListenerByTag("UIWndPet:NTF_PET_CAPSULE_REFRESH")
+    NtfManager:removeNtfListenerByTag("UIWndPet:NTF_PET_SKIN_UP")
+    NtfManager:removeNtfListenerByTag("UIWndPet:NTF_RED_DOT_EVENT")
+
+    self:clearMergeIdxs()
+
+    self._petList:removeEventListener(fgui.UIEventType.ClickItem)
+    self._petMergeList:removeEventListener(fgui.UIEventType.ClickItem)
+    self._petSkinList:removeEventListener(fgui.UIEventType.ClickItem)
+
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        local obj = self._fiterBtns[fiterType]
+        obj:removeClickListener()
+    end
+
+    self._closeButton:removeClickListener()
+
+    self._light = nil
+end
+
+function UIWndPet:onUpdate(dt)
+    --UICompPetAttr
+    if self._attributePanel then
+        self._attributePanel:onUpdate(dt)
+    end
+    
+    if self._tamePanel then
+        self._tamePanel:onUpdate(dt)
+    end
+
+    if self._skillPanel then
+        self._skillPanel:onUpdate(dt)
+    end
+
+    if self._skinPanel then
+        self._skinPanel:onUpdate(dt)
+    end
+end
+
+function UIWndPet:initUI()
+    self._controlTab = self:getController("tabs")
+    self._emptyNode = self:getChild("emptyNode")
+    self._emptyNode:setSortingOrder(99)
+    self._mask = self:getChild("mask")
+    self._mask:setSortingOrder(999)
+    self._petList = self:getChild("petList")
+    self._petList:setItemRenderer(handler(self, self.renderPetItem))
+
+    self._petMergeList = self:getChild("petMergeList")
+    self._petMergeList:setItemRenderer(handler(self, self.renderPetItemMerge))
+
+    self._petSkinList = self:getChild("petSkinList")
+    self._petSkinList:setItemRenderer(handler(self, self.renderPetSkinItem))
+
+    self._closeButton = self:getChild("closeButton")
+    self._closeButton:setSortingOrder(100)
+
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        local obj = self:getChild(BTNFITERNAME[fiterType])
+        obj.fiterType = fiterType
+        self._fiterBtns[fiterType] = obj
+
+        obj:setVisible(BTNFITERISOPEN[fiterType] or false)
+    end
+    self._fiterSkinReddot = self._fiterBtns[FITER_TYPES.SKIN]:getChild("reddot")
+    self._fiterAttrReddot = self._fiterBtns[FITER_TYPES.ATTRIBUTE]:getChild("reddot")
+end
+
+-- 刷新左侧列表
+function UIWndPet:refreshPetList()
+    -- 数据刷新
+    self._toppingId = PetModule:getToppingId()
+    self._tempPetList = PetModule:getPetList()
+    self._tempPetFuncList = PetModule:getPetFuncList()
+
+    self:refreshListData() -- 新数据
+    self:refreshList() -- 数据刷新刷新界面
+end
+
+function UIWndPet:refreshListData()
+    if self._openViewType == FITER_TYPES.ATTRIBUTE then
+        self._pets = self._tempPetList
+    elseif self._openViewType == FITER_TYPES.SKIN then
+        self._petSkinData = CacheManager:getPetSkinTypeMap() or {}
+    else
+        self._pets = self._tempPetFuncList
+    end
+end
+
+function UIWndPet:refreshList()
+    if self._openViewType == FITER_TYPES.TAME then  -- 如果数据刷新，没有可选择的宠物直接重置选中（驯养胶囊皮肤界面需要宠物10级和存活状态）
+        if self._tamePanel and self._tamePanel:isMerge() then
+            if self._comPoseUid then
+                for index,v in ipairs(self._pets) do
+                    local data = v.data
+                    if data and data:getUid() == self._comPoseUid then
+                        self._mergeIdx = index
+                        self:setListSelectState(self._petMergeList, self._mergeIdx, true)
+                        break
+                    end
+                end
+                self._comPoseUid = nil
+            end
+        end
+    else
+        self:clearMergeIdxs() -- 不是驯养界面，重置合成索引
+    end
+
+    if not self._pets[self._selectIdx] then
+        self._selectIdx = 1
+    end
+
+    if self._openViewType == FITER_TYPES.ATTRIBUTE then
+        self._petList:setNumItems(#self._pets)          --属性界面
+    elseif self._openViewType == FITER_TYPES.TAME then
+        self._petMergeList:setNumItems(#self._pets)  -- 合成界面
+        self._petList:setNumItems(#self._pets)  -- 驯养界面
+    elseif self._openViewType == FITER_TYPES.SKILL then
+        self._petList:setNumItems(#self._pets) -- 胶囊界面
+    elseif self._openViewType == FITER_TYPES.SKIN then
+        self._petSkinList:setNumItems(#self._petSkinData) -- 皮肤界面
+    end
+end
+
+function UIWndPet:openFiterView(sender)  -- 点击页签
+    local curSelect = sender.fiterType
+    if self._openViewType == curSelect then
+        return
+    end
+    if curSelect ~= FITER_TYPES.SKIN and curSelect ~= FITER_TYPES.ATTRIBUTE then
+        -------------------------------------------------------------------------------------------------------
+        -- 检测当前宠物是否可以切换页签
+        local petInfo = self._pets[self._selectIdx]
+        local canNotChange = false
+        if petInfo then
+            if petInfo.data then
+                local petData = petInfo.data
+                local isDie = PetModule:isDie(petData:getDeadTime())
+                if isDie then
+                    canNotChange = true
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS57})
+                elseif petData:getLevel() < Constant.PET_MIN_LVL then
+                    canNotChange = true
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS55})
+                end
+            else
+                canNotChange = true
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS58})
+            end
+        end
+
+        if canNotChange then
+            curSelect = FITER_TYPES.ATTRIBUTE
+            if self._openViewType == FITER_TYPES.SKIN then
+                curSelect = FITER_TYPES.SKIN
+            end
+        end
+        -------------------------------------------------------------------------------------------------------
+        -- 切换页签
+        if self._openViewType ~= curSelect then  -- 可以切换页签
+            -- 取消之前的选中
+            self:setListSelectState(self._petList, self._selectIdx, false)
+
+            self._openViewType = curSelect
+            self:refreshListData()               -- 切换页签刷新数据   
+
+            local isExist = false
+            if petInfo and petInfo.data then
+                local uid = petInfo.data:getUid()
+                for k,v in ipairs(self._pets) do
+                    local data = v.data
+                    if data and data:getUid() == uid then
+                        self._selectIdx = k
+                        isExist = true
+                        break
+                    end
+                end
+            end
+            if not isExist then
+                self._selectIdx = 1
+            end
+        end
+        -------------------------------------------------------------------------------------------------------
+    else
+        self._openViewType = curSelect
+        self:refreshListData()
+    end
+
+    self._controlTab:setSelectedIndex(self._openViewType - 1)
+
+    self:refreshList() --切换页签刷新列表数据
+
+    -----------------------------------------------------------------------
+    -- 非属性界面停止timecounter
+    if self._openViewType ~= FITER_TYPES.ATTRIBUTE then
+        if self._attributePanel then
+            self._attributePanel:stopTC()
+        end
+    end
+    -----------------------------------------------------------------------
+
+    self:showCurPanel()
+    
+    -- 刷新列表后选中
+    self:setListSelectState(self._petList, self._selectIdx, true)
+end
+
+function UIWndPet:resetIdx()
+    if #self._pets == 0 then
+        return
+    end
+    self._petList:scrollToView(0)
+    self:setListSelectState(self._petList, self._selectIdx, false)
+    self._selectIdx = 1
+    self:setListSelectState(self._petList, self._selectIdx, true)
+    self:refreshFilterBtn()
+end
+
+function UIWndPet:refreshComPose() -- 在数据刷新之前先记录主宠物uid
+    local petInfo = self._pets[self._mergeIdx]
+    if petInfo and petInfo.data then
+        self._comPoseUid = petInfo.data:getUid()
+    end
+
+    self:clearMergeIdxs()
+end
+
+function UIWndPet:showCurPanel()
+    local petInfo = self._pets[self._selectIdx]
+
+    if self._openViewType == FITER_TYPES.ATTRIBUTE then
+        --属性界面
+        self:refreshAttrPanel(petInfo)
+        yflog:Info("ATTR")
+    elseif self._openViewType == FITER_TYPES.TAME then
+        --驯养 合成 界面
+        self:refreshTamePanel()
+        yflog:Info("TAME")
+    elseif self._openViewType == FITER_TYPES.SKILL then
+        --胶囊界面
+        self:refreshSkillPanel(petInfo)
+        yflog:Info("SKILL")
+    elseif self._openViewType == FITER_TYPES.SKIN then
+        --皮肤
+        self:refreshSkinPanel()
+        yflog:Info("SKIN")
+    end
+
+    if self._openViewType == FITER_TYPES.TAME then
+        self:setPetListVisible(self._openViewType,self._tamePanel:isMerge())
+    else
+        self:setPetListVisible(self._openViewType)
+    end
+
+    --设置面板显示
+    self:setPanelVisible()
+
+    --宠物技能停止动画
+    if self._openViewType ~= FITER_TYPES.SKILL then
+        if self._skillPanel then
+            self._skillPanel:stopAnim()
+        end
+    end
+end
+
+function UIWndPet:refreshCurPanelCost()
+    -- if self._attributePanel and self._attributePanel:isVisible() then
+    --     self._attributePanel:refreshCost()
+    -- end
+
+    if self._tamePanel and self._tamePanel:isVisible() then
+        self._tamePanel:refreshCost()
+    end
+
+    if self._skillPanel and self._skillPanel:isVisible() then
+        self._skillPanel:refreshCost()
+    end
+
+    if self._skinPanel and self._skinPanel:isVisible() then
+        self._skinPanel:refreshCost()
+    end
+end
+
+function UIWndPet:setPetListVisible(openViewType,isMerge)
+    if openViewType == FITER_TYPES.TAME and isMerge then
+        self._petList:setVisible(false)
+        self._petMergeList:setVisible(true)
+        self._petSkinList:setVisible(false)
+    elseif openViewType == FITER_TYPES.SKIN then
+        self._petList:setVisible(false)
+        self._petMergeList:setVisible(false)
+        self._petSkinList:setVisible(true)
+    else
+        self._petList:setVisible(true)
+        self._petMergeList:setVisible(false)
+        self._petSkinList:setVisible(false)
+    end
+end
+
+function UIWndPet:clearMergeIdxs()
+    self:clearMergeIdxMain()
+    self:clearMergeIdxMaterial()
+end
+
+function UIWndPet:clearMergeIdxMain() -- 清除主宠物
+    if self._mergeIdx then
+        self:setListSelectState(self._petMergeList, self._mergeIdx, false)
+        self._mergeIdx  = nil
+    end
+end
+
+function UIWndPet:clearMergeIdxMaterial() -- 清除材料宠物
+    if self._mergeIdx2 then
+        self:setListSelectState(self._petMergeList, self._mergeIdx2, false)
+        self._mergeIdx2 = nil
+    end
+end
+
+function UIWndPet:setPanelVisible()
+    if self._attributePanel then
+        self._attributePanel:setVisible(self._openViewType == FITER_TYPES.ATTRIBUTE)
+    end
+
+    if self._tamePanel then
+        self._tamePanel:setVisible(self._openViewType == FITER_TYPES.TAME)
+    end
+
+    if self._skillPanel then
+        self._skillPanel:setVisible(self._openViewType == FITER_TYPES.SKILL)
+    end
+
+    if self._skinPanel then
+        self._skinPanel:setVisible(self._openViewType == FITER_TYPES.SKIN)
+    end
+end
+
+-- 刷新属性界面
+function UIWndPet:refreshAttrPanel(petInfo)
+    if not self._attributePanel then
+        self._attributePanel = fgui.UIPackage:createObject("Pet", "PetAttrPanel")
+        self._attributePanel:insertObjectToFactory(self)
+        self._emptyNode:addChild(self._attributePanel)
+    end
+    
+    -- 刷新页面
+    self._attributePanel:refreshView(petInfo,self._light)
+end
+
+-- 刷新驯养界面
+function UIWndPet:refreshTamePanel()
+    if not self._tamePanel then
+        self._tamePanel = fgui.UIPackage:createObject("Pet", "PetTamePanel")
+        self._tamePanel:insertObjectToFactory(self)
+        self._emptyNode:addChild(self._tamePanel)
+        self._tamePanel:setParentPanel(self)
+    end
+
+    -- 刷新页面
+    if self._tamePanel:isMerge() then
+        local mergeInfo1 = nil
+        if self._mergeIdx then mergeInfo1 = self._pets[self._mergeIdx] end
+        local mergeInfo2 = nil
+        if self._mergeIdx2 then mergeInfo2 = self._pets[self._mergeIdx2] end
+        
+        self._tamePanel:refreshMergePanel(mergeInfo1,mergeInfo2)
+    else
+        local petInfo = self._pets[self._selectIdx]
+        if petInfo then
+            self._tamePanel:refreshAttrPanel(petInfo)
+        else
+            self._tamePanel:refreshAttrPanel(nil)
+        end
+    end
+end
+
+-- 刷新胶囊（技能）界面
+function UIWndPet:refreshSkillPanel(petInfo)
+    if not self._skillPanel then
+        self._skillPanel = fgui.UIPackage:createObject("Pet", "PetSkillPanel")
+        self._skillPanel:insertObjectToFactory(self)
+        self._emptyNode:addChild(self._skillPanel)
+    end
+
+    -- self._skillPanel:refreshViewByAnim(petInfo)
+    -- self._skillPanel:refreshView(petInfo)
+    local learnSkillState = PetModule:getLearnSkillState()
+    if not learnSkillState then
+        -- self._skillPanel:stopAnim()
+        self._skillPanel:refreshView(petInfo)
+    elseif learnSkillState == Constant.PETLEARNSKILL.START then
+        return
+    elseif learnSkillState == Constant.PETLEARNSKILL.SUCCESS then
+        self._skillPanel:refreshViewByAnim(petInfo)
+        PetModule:clearLearnSkillState()
+    end
+end
+
+-- 刷新皮肤界面
+function UIWndPet:refreshSkinPanel()
+    if not self._skinPanel then
+        self._skinPanel = fgui.UIPackage:createObject("Pet", "PetSkinPanel")
+        self._skinPanel:insertObjectToFactory(self)
+        self._emptyNode:addChild(self._skinPanel)
+    end
+    if not self._selectSkinIdx then
+        self._selectSkinIdx = 1
+        self:setListSelectState(self._petSkinList, self._selectSkinIdx, true)
+    end
+
+    self._skinPanel:refreshView(self._petSkinData[self._selectSkinIdx])
+end
+
+function UIWndPet:refreshFilterBtn()
+    local petInfo = self._pets[self._selectIdx] or {}
+    for fiterType = 2, table.nums(FITER_TYPES) do
+        self._fiterBtns[fiterType]:getChild("n0"):setGrayed(petInfo.data == nil)
+        -- self._fiterBtns[fiterType]:setTouchable(petInfo.data ~= nil)
+    end
+    if petInfo.data == nil and self._openViewType ~= FITER_TYPES.ATTRIBUTE and self._openViewType ~= FITER_TYPES.SKIN then
+        self:openFiterBtnClick(self._fiterBtns[FITER_TYPES.ATTRIBUTE])
+    end
+end
+
+function UIWndPet:onCloseBtnClick()
+    self:resetView()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndPet", close = true})
+end
+
+function UIWndPet:openFiterBtnClick(context)
+    local sender = context.getSender and context:getSender() or context
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        if fiterType == sender.fiterType then
+            self._fiterBtns[fiterType]:setSortingOrder(3)
+        else
+            self._fiterBtns[fiterType]:setSortingOrder(1)
+        end
+    end
+
+    self:openFiterView(sender)
+end
+
+function UIWndPet:renderPetItem(index, obj)
+    local curIndex = index + 1
+    local petInfo = self._pets[curIndex]
+    obj:setInfo(petInfo, self._toppingId)
+    obj:setSelect(self._selectIdx == curIndex)
+    obj.index = curIndex
+    obj:insertObjectToFactory(self)
+end
+
+function UIWndPet:renderPetItemMerge(index, obj)
+    local curIndex = index + 1
+    local petInfo = self._pets[curIndex]
+    obj:setInfo(petInfo, self._toppingId)
+    obj:setSelect(self._mergeIdx == curIndex or self._mergeIdx2 == curIndex)
+    obj.index = curIndex
+    obj:insertObjectToFactory(self)
+end
+
+function UIWndPet:onClickItem(context)
+    local data = context:getData()
+    local petInfo = self._pets[data.index]
+    if self._openViewType == FITER_TYPES.ATTRIBUTE then
+        self:onClickItemCommon(context)
+    elseif self._openViewType == FITER_TYPES.TAME then
+        if petInfo.data then
+            if self._tamePanel and self._tamePanel:isMerge() then
+                -- self:onClickItemMerge(context)
+            else
+                self:onClickItemCommon(context)
+            end
+        end
+    elseif self._openViewType == FITER_TYPES.SKIN then
+        if petInfo.data then
+            self:onClickItemCommon(context)
+        end
+    elseif self._openViewType == FITER_TYPES.SKILL then
+        if petInfo.data then
+            self:onClickItemCommon(context)
+        end
+    end
+end
+
+function UIWndPet:onClickItemCommon(context) -- 点击宠物（非合成）
+    local data = context:getData()
+    local petInfo = self._pets[data.index]
+    
+    -- 除了属性界面，其他界面需要宠物到达10级，并且宠物不死亡
+    if self._openViewType ~= FITER_TYPES.ATTRIBUTE then
+        if petInfo and petInfo.data then
+            local petData = petInfo.data
+            local isDie = PetModule:isDie(petData:getDeadTime())
+            if isDie then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS56})
+                return
+            end
+
+            if petData:getLevel() < Constant.PET_MIN_LVL then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS55})
+                return
+            end
+        end
+    end
+
+    self:setListSelectState(self._petList, self._selectIdx, false)
+    self._selectIdx = data.index
+    self:setListSelectState(self._petList, self._selectIdx, true)
+
+    --刷新右侧界面
+    self:showCurPanel()
+    self:refreshFilterBtn()
+end
+
+function UIWndPet:onClickItemMerge(context) -- 点击宠物（合成）
+    local data = context:getData()
+    local petInfo = self._pets[data.index] or {}
+    if not petInfo.data then
+        return
+    end
+    local petData = petInfo.data
+
+    if self._mergeIdx == data.index then
+        self._mergeIdx = nil
+        self:setListSelectState(self._petMergeList, data.index, false)
+    elseif self._mergeIdx2 == data.index then
+        self._mergeIdx2 = nil
+        self:setListSelectState(self._petMergeList, data.index, false)
+    elseif not self._mergeIdx then
+        local petSynMain = CacheManager:getValueById(Constant.Variable.PetSynMain)
+        if petData:getLevel() < petSynMain then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = string.format(GReadText.KEY_PET_TIPS48,petSynMain)})
+            return
+        end
+
+        if self._mergeIdx2 then
+            if petData:getCompose() ~= "" then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS54})
+                return
+            end
+        end
+        
+        self._mergeIdx = data.index
+        self:setListSelectState(self._petMergeList, self._mergeIdx, true)
+    elseif not self._mergeIdx2 then
+        -- 假如第一个有组合属性,则返回提示
+        if self._mergeIdx then
+            local mainPetInfo = self._pets[self._mergeIdx] or {}
+            local mainPetData = mainPetInfo.data
+            if mainPetInfo.data and mainPetData:getCompose() ~= "" then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS53})
+                return
+            end
+        end
+        
+        -- 出战宠物不能作为材料
+        if petData:getStatus() == 1 then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS59})
+            return
+        end
+
+        local petSynSass = CacheManager:getValueById(Constant.Variable.PetSynSass)
+        if petData:getLevel() < petSynSass then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = string.format(GReadText.KEY_PET_TIPS49,petSynSass)})
+            return
+        end
+
+        if petData:getAttr1() <= 0 then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS50})
+            return
+        end
+
+        self._mergeIdx2 = data.index
+        self:setListSelectState(self._petMergeList, self._mergeIdx2, true)
+    end
+
+    --刷新右侧界面
+    self:showCurPanel()
+    self:refreshFilterBtn()
+end
+
+function UIWndPet:resetView()
+end
+
+-----------------------------------------------------------------------------
+--
+function UIWndPet:renderPetSkinItem(index, obj)
+    local petSkinInfo = self._petSkinData[index + 1]
+    obj:setInfo(petSkinInfo)
+    obj.index = index + 1
+    obj:insertObjectToFactory(self)
+end
+
+function UIWndPet:onClickItemSkin(context) -- 点击皮肤
+    local data = context:getData()
+
+    self:setListSelectState(self._petSkinList, self._selectSkinIdx, false)
+    self._selectSkinIdx = data.index
+    self:setListSelectState(self._petSkinList, self._selectSkinIdx, true)
+
+    --刷新右侧界面
+    self:showCurPanel()
+    self:refreshFilterBtn()
+end
+
+function UIWndPet:setListSelectState(list, index, flag)
+    local children = list:getChildren()
+    if index > #children then
+        -- 容错
+        return
+    else
+        local childIndex = list:itemIndexToChildIndex(index - 1)
+        list:getChildAt(childIndex):setSelect(flag)
+    end
+end
+
+function UIWndPet:checkGuide()
+    if GuideModule:checkCanGuide(Constant.GUIDE_ID.PETFIGHT14) then
+        local pos = self:displayObject():convertToWorldSpace(self._petList:getPosition())
+        GuideModule:triggerGuide(Constant.GUIDE_ID.PETFIGHT14, self._petList, pos)
+        return
+    end
+
+    --宠物引导
+    if self._attributePanel then
+        self._attributePanel:checkGuide()
+    end
+end
+
+function UIWndPet:uptRedDotEvt(event)
+    local param = event.param or {}
+    if param.name == "PetModule_checkPetUp" then
+        self:refreshSkinReddot()
+        if self._openViewType == FITER_TYPES.SKIN then
+            self:refreshPetList()
+        end
+    elseif param.name == "PetModule_checkPetFunction" then
+        self:refreshFunctionReddot()
+    end
+end
+
+function UIWndPet:refreshSkinReddot()
+    local isShowRedDot = lt.RedDotModule:getTipsStateByName("PetModule_checkPetUp")
+    self._fiterSkinReddot:setVisible(isShowRedDot)
+end
+
+function UIWndPet:refreshFunctionReddot()
+    local isShowRedDot = lt.RedDotModule:getTipsStateByName("PetModule_checkPetFunction")
+    self._fiterAttrReddot:setVisible(isShowRedDot)
+end
+
+return UIWndPet

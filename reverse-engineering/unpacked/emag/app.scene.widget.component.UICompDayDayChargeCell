@@ -1,0 +1,142 @@
+---@class UICompDayDayChargeCell
+--- 天天充值领取奖励
+local UICompDayDayChargeCell = class("UICompDayDayChargeCell", lt.UICompBase)
+
+local RechargeModule = lt.RechargeModule
+local ItemModule     = lt.ItemModule
+local Constant       = lt.Constant
+local GameModule     = lt.GameModule
+local NtfManager     = lt.NtfManager
+
+function UICompDayDayChargeCell:ctor(param)
+    UICompDayDayChargeCell.super.ctor(self,param)
+    self._rewardList = nil
+    self._dayNum     = nil
+    self._condNum    = nil
+    self._btnNotFinished = nil
+    self._btnDraw    = nil
+    self._rewardArray= nil
+    self._cfgDay     = nil
+end
+
+function UICompDayDayChargeCell:onClear()
+    self._rewardList = nil
+    self._dayNum     = nil
+    self._condNum    = nil
+    self._btnNotFinished = nil
+    self._btnDraw    = nil
+    self._cfgDay     = nil
+    self:clearRewardArray()
+    UICompDayDayChargeCell.super.onClear(self)
+end
+
+function UICompDayDayChargeCell:onConstruct()
+    self._rewardList = self:getChild("reward_list")
+    self._rewardList:setItemRenderer(handler(self, self.onRenderItem))
+
+    self._dayNum = self:getChild("day_num")
+    self._condNum = self:getChild("cond_num")
+
+    self._btnNotFinished = self:getChild("btn_not_finished")
+    self._btnDraw = self:getChild("btn_draw")
+    self._btnAlreadyDraw = self:getChild("btn_already_draw")
+end
+
+function UICompDayDayChargeCell:onEnter()
+    UICompDayDayChargeCell.super.onEnter(self)
+    self._btnNotFinished:addClickListener(handler(self, self.onBtnNotFinishedClick))
+    self._btnDraw:addClickListener(handler(self, self.onBtnDrawClick))
+end
+
+function UICompDayDayChargeCell:onExit()
+    self._btnNotFinished:removeClickListener()
+    self._btnDraw:removeClickListener()
+    UICompDayDayChargeCell.super.onExit(self)
+end
+
+function UICompDayDayChargeCell:clearRewardArray()
+    if self._rewardArray then
+        for i=1,#self._rewardArray do
+            self._rewardArray[i].itemId     = nil
+            self._rewardArray[i].itemType   = nil
+            self._rewardArray[i].itemAddNum = nil
+            self._rewardArray[i].itemInfo   = nil
+            self._rewardArray[i] = nil
+        end
+        self._rewardArray = nil
+    end
+end
+
+function UICompDayDayChargeCell:setInfo(data)
+    if not data then
+        return
+    end
+    
+    local race = GameModule:getHeroRace()
+    local rewardCfg = data:getRewardByRace(race)
+    self:clearRewardArray()
+    self._rewardArray = {}
+    for i,v in ipairs(rewardCfg) do
+        table.insert(self._rewardArray, { itemId = tonumber(v[2]), itemType = tonumber(v[1]), num = tonumber(v[3])})
+        local itemInfo = nil
+        if self._rewardArray[#self._rewardArray].itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+            itemInfo = ItemModule:getItemDataByRewardConfig(v)
+            self._rewardArray[#self._rewardArray].itemInfo = itemInfo
+        end
+    end
+
+    local display = data:getDisplay()
+    self._dayNum:setText(display)
+    local chargeDay = RechargeModule:getRechargedDays()
+    local day = data:getDay() or 0
+    self._cfgDay = day
+    local showChargeDay = chargeDay
+    if chargeDay > day then
+        showChargeDay = day
+    end
+    self._condNum:setText(string.format("%s/%s",showChargeDay,day))
+    if chargeDay < day then
+        -- 未达条件
+        self._condNum:setColor(Constant.COLOR_TEXT_RED)
+        self._btnNotFinished:setVisible(true)
+        self._btnDraw:setVisible(false)
+        self._btnAlreadyDraw:setVisible(false)
+    else
+        -- 领取
+        self._condNum:setColor(Constant.COLOR_TEXT_GREEN_H)
+        
+        local alreadyDraw = RechargeModule:getDayDayRechargeByDay(day) == Constant.DayDayChargeState.DRAWED
+        if alreadyDraw then
+            self._btnNotFinished:setVisible(false)
+            self._btnDraw:setVisible(false)
+            self._btnAlreadyDraw:setVisible(true)
+        else
+            self._btnNotFinished:setVisible(false)
+            self._btnDraw:setVisible(true)
+            self._btnAlreadyDraw:setVisible(false)
+        end
+    end
+    self._rewardList:setNumItems(#self._rewardArray)
+end
+
+function UICompDayDayChargeCell:onRenderItem(index, obj)
+    local curIndex = index + 1
+    obj:setRegClass(self:getRegClass())
+    obj:setInfo(self._rewardArray[curIndex])
+    obj:insertObjectToFactory(self:getRegClass())
+end
+
+function UICompDayDayChargeCell:onBtnNotFinishedClick()
+    yflog:Info("obBtnNotFinishedClick")
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_ACTIVITY_TIPS3})
+end
+
+function UICompDayDayChargeCell:onBtnDrawClick()
+    yflog:Info("onBtnDrawClick")
+    if not self._cfgDay then
+        return
+    end
+    RechargeModule:sendDayDayChargeDraw(self._cfgDay)
+end
+
+return UICompDayDayChargeCell

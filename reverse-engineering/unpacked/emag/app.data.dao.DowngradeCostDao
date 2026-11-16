@@ -1,0 +1,21 @@
+local DowngradeCostDao = {}
+
+function DowngradeCostDao:query(idx)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM DowngradeCost WHERE PointsPerLevel=%d;", tonumber(idx))) do
+    	local meta = lt.DowngradeCostMeta.new(row)
+        return meta
+    end
+end
+
+function DowngradeCostDao:queryAll()
+    local map = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM DowngradeCost") do
+        local meta = lt.DowngradeCostMeta.new(row)
+        map[meta:getPointsPerLevel()] = meta
+    end
+    return map
+end
+
+return DowngradeCostDao

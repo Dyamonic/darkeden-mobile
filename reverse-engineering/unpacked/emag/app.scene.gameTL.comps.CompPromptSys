@@ -1,0 +1,224 @@
+---@class CompPromptSys 主界面-提示系统
+local CompPromptSys = class("CompPromptSys", lt.UICompBase)
+
+local Constant = lt.Constant
+local ItemModule = lt.ItemModule
+local GameModule = lt.GameModule
+local NtfManager = lt.NtfManager
+local TimeCounterManager = lt.TimeCounterManager
+local FriendModule = lt.FriendModule
+local SkillEnum = lt.SkillEnum
+local BuffEnum = lt.BuffEnum
+local GuideModule = lt.GuideModule
+local TeamModule = lt.TeamModule
+local GuildModule = lt.GuildModule
+
+function CompPromptSys:ctor(view)
+    CompPromptSys.super.ctor(self)
+    -- self:registerComponent("CompMsgItem")
+
+    self._view = view
+
+    -- data
+    self._listData = nil
+    self._remainTs = nil
+    self._systemList = nil
+    -- ui
+    self._list = nil
+    self._buffFlag = nil
+
+    -- 显示列表
+    self._list = self._view:getChild("list")
+    self._list:setItemRenderer(handler(self, self.renderListItem))
+end
+
+function CompPromptSys:onClear()
+    -- self:unregisterAllComponent()
+
+    self._view = nil
+
+    -- data
+    self._listData = nil
+    self._remainTs = nil
+    self._systemList = nil
+    -- ui
+    self._list = nil
+    self._buffFlag = nil
+    CompPromptSys.super.onClear(self)
+
+end
+
+function CompPromptSys:onEnter()
+    self:changeState()
+    self:addAllListener()
+    --检查属性加点
+    local heroData = GameModule:getHeroData()
+    heroData:checkAddPoint()
+end
+
+function CompPromptSys:onExit()
+    self:removeAllListener()
+    self._systemList = nil
+    self._list = nil
+    self._buffFlag = nil
+end
+
+function CompPromptSys:addAllListener()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_HERO_DIE, handler(self, self.refreshHeroDie), "CompPromptSys:NTF_HERO_DIE")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_HERO_RELIVE, handler(self, self.changeState), "CompPromptSys:NTF_HERO_RELIVE")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_HERO_EVENT, handler(self, self.changeState), "CompPromptSys:NTF_UPDATE_HERO_EVENT")
+    NtfManager:addNtfListener(NtfManager.NTF.NFT_SYSTEM_TIPS_CHANGE, handler(self, self.setSystemTips), "CompPromptSys:NFT_SYSTEM_TIPS_CHANGE")
+end
+
+function CompPromptSys:removeAllListener()
+    NtfManager:removeNtfListenerByTag("CompPromptSys:NTF_HERO_DIE")
+    NtfManager:removeNtfListenerByTag("CompPromptSys:NTF_HERO_RELIVE")
+    NtfManager:removeNtfListenerByTag("CompPromptSys:NTF_UPDATE_HERO_EVENT")
+    NtfManager:removeNtfListenerByTag("CompPromptSys:NFT_SYSTEM_TIPS_CHANGE")
+end
+
+function CompPromptSys:refreshHeroDie()
+    self:changeState()
+end
+
+--设置各系统状态
+function CompPromptSys:setSystemTips(event)
+    local params = event.param
+    if self._systemList == nil then
+        self._systemList = {}
+    end
+    self._systemList[params.key] = params.visible
+    self:promptLogic()
+end
+
+-- 切换状态
+-- 正常状态切换到死亡要五秒后再刷新
+function CompPromptSys:changeState()
+    local heroData = GameModule:getHeroData()
+    if not heroData then
+        return
+    end
+    local isAlive = heroData:isAlive()
+    if isAlive then
+        -- 活着
+        self:promptLogic()
+    else
+        self._list:setNumItems(0)
+    end
+end
+
+-- 提示逻辑
+function CompPromptSys:promptLogic()
+    if self._systemList == nil then
+        self._systemList = {}
+    end
+    local aliveList = {}
+    --邮件
+    if self._systemList[Constant.SYSTEMTIPS.MAIL] then
+        table.insert(aliveList, {type = Constant.SYSTEMTIPS.MAIL, icon = string.format(_GURL.GetImageMain, "icon_zjm_youjian"), touchFunc = function ()
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndMail"})
+        end})
+    end
+    --提升
+    if self._systemList[Constant.SYSTEMTIPS.ADDPOINT] then
+        local race = GameModule:getHeroRace()
+        local addPointIcon = "levelup_8"  -- 人
+        if race == Constant.RaceType.Ousters then
+            addPointIcon = "levelup_9"    -- 魔灵
+        end
+        table.insert(aliveList, {type = Constant.SYSTEMTIPS.ADDPOINT, icon = string.format(_GURL.GetImageMain, addPointIcon), touchFunc = function ()
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_IMPROVE_TIPS)
+        end})
+    end
+    --好友
+    if self._systemList[Constant.SYSTEMTIPS.Friend] then
+        local friendApplyList = FriendModule:getFriendApplyList()
+        if #friendApplyList > 0 then
+            table.insert(aliveList, {type = Constant.SYSTEMTIPS.Friend, icon = string.format(_GURL.GetImageFriend, "icon_zjm_haoyou3"), touchFunc = function ()
+                local newFriendInfo = friendApplyList[1]
+                local namerich =  string.format("[color=%s]%s[/color]","#ebf058", newFriendInfo.playerName)
+                local content = string.format(GReadText.KEY_FRIEND_TIPS1, namerich)
+                local parseTxt = string.format("[size=%s]%s[/size]",26,content)
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+                    content = parseTxt,
+                    confirmCallback = function()
+                        FriendModule:sendFriendAcceptReq(newFriendInfo.playerId,0)--// 0 同意。 1 拒绝
+                    end,
+                    cancelCallback= function()
+                        FriendModule:sendFriendAcceptReq(newFriendInfo.playerId,1)--// 0 同意。 1 拒绝
+                    end,
+                })
+            end})
+        end
+    end
+
+    --邀请入会
+    if self._systemList[Constant.SYSTEMTIPS.INVITEGUILD] then
+        local simpleData = GuildModule:getInviteGuildInfo()
+        if simpleData ~=nil then
+            table.insert(aliveList, {type = Constant.SYSTEMTIPS.INVITEGUILD, icon = string.format(_GURL.GetImageMain, "icon_zjm_haoyou4"), touchFunc = function ()
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+                    content = string.format(GReadText.KEY_GUILD_TIPS12, simpleData.guildName),
+                    confirmCallback = function()
+                        GuildModule:sendGuildInviteOptReq(true, simpleData.guildId) --true同意 false拒绝
+                    end,
+                    cancelCallback = function()
+                        GuildModule:sendGuildInviteOptReq(false, simpleData.guildId)
+                    end,
+                })
+            end})
+        end
+    end
+
+    --邀请组队
+    if self._systemList[Constant.SYSTEMTIPS.INVITETEAM] then
+        table.insert(aliveList, {type = Constant.SYSTEMTIPS.INVITETEAM, icon = string.format(_GURL.GetImageMain, "levelup_4"), touchFunc = function ()
+            local inviteData = TeamModule:getInviteList()[1]
+            local teamId = inviteData.teamId
+            local inviteName = inviteData.inviteName
+            local inviteId = inviteData.inviteId
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+                title = GReadText.KEY_TEAM_HALL_TIPS33,
+                content = inviteName .. GReadText.KEY_TEAM_HALL_TIPS34,
+                confirmStr = GReadText.KEY_TEAM_HALL_TIPS37,
+                confirmCallback = function()
+                    TeamModule:sendAgreeToTeam(inviteId, teamId)
+                end,
+                cancelStr = GReadText.KEY_TEAM_HALL_TIPS38,
+                cancelCallback= function()
+                    TeamModule:sendRejectToTeam(inviteId, teamId)
+                end,
+            })
+            TeamModule:deleteInviteList()
+        end})
+    end
+
+    --申请入队
+    if self._systemList[Constant.SYSTEMTIPS.APPLYTEAM] then
+        table.insert(aliveList, {type = Constant.SYSTEMTIPS.APPLYTEAM, icon = string.format(_GURL.GetImageMain, "levelup_3"), touchFunc = function ()
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndTeam", param = { index = 2, openApply = true } })
+        end})
+    end
+    
+    self._listData = aliveList
+   
+    self._list:setNumItems(#aliveList)
+    -- self._list:setSize(#aliveList*48,46)
+    -- self._view:setSize(#aliveList*48,46)
+end
+
+function CompPromptSys:renderListItem(index, obj)
+    if type(self._listData) ~= "table" then
+        return
+    end
+
+    obj.index = index
+    local data = self._listData[index+1]
+    if not data then
+        return
+    end
+    obj:setPromptSysInfo(data)
+end
+
+
+return CompPromptSys

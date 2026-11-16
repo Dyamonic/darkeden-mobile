@@ -1,0 +1,22 @@
+
+local MaintenanceCostsDao = {}
+
+function MaintenanceCostsDao:query(id)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM MaintenanceCosts WHERE RepairType=%d;", id)) do
+        local data = lt.MaintenanceCostsMeta.new(row)
+        return data
+    end
+end
+
+function MaintenanceCostsDao:queryAll()
+    local dataTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM MaintenanceCosts;") do
+        local data = lt.MaintenanceCostsMeta.new(row)
+        dataTable[data:getRepairType()] = data
+    end
+    return dataTable
+end
+
+return MaintenanceCostsDao

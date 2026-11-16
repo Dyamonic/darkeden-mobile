@@ -1,0 +1,683 @@
+
+local UpdaterTL = class("UpdaterTL")
+--[[
+    天炼游戏部分热更
+]]
+local scheduler = require("cocos.framework.scheduler")
+local LauncherHttpApi = require("launcher.http.LauncherHttpApi")
+local LauncherConstant = require("launcher.tianlian.LauncherConstant")
+local StarterCommitLayer = require("starter.StarterCommitLayerTL")
+local LauncherStr = require("launcher.LauncherStr")
+local DownloadProgress = require("launcher.tianlian.DownloadProgress")
+
+-- 版本获取地址
+local BaseVersionUrl = _G_TL_URL .. "api/v1/center/getVersion?centerFlag=%s"
+
+-- 版本详细信息获取地址
+local BaseVersionChannelUrl = _G_TL_URL .. "api/v1/center/getVersion?centerFlag=%s&channelId=%s&os=%s&version=%s"
+
+local GAME_WIN32_DOWNLOAD_LIST_KEY = "GAME_WIN32_DOWNLOAD_LIST_KEY"        -- 游戏下载
+local GAME_STARTER_GAME_INSTALL_win32 = "GAME_STARTER_GAME_INSTALL_win32"  -- 游戏是否安装
+
+local GAME_VERSION_TXT = "version.txt"
+local GAME_MAP_TXT = "res_map.txt"
+
+--[[ 
+    下载参数
+    DOWNLOAD_COUNT_MAX  最大线程数
+    DOWNLOAD_FAIL_MAX  最大失败次数
+    DOWNLOAD_HANG_MAX  最大挂起
+]]
+local DOWNLOAD_COUNT_MAX = 5
+local DOWNLOAD_HANG_MAX = 3
+local DOWNLOAD_FAIL_MAX = 4
+
+function UpdaterTL:ctor()
+end
+
+function UpdaterTL:run()
+end
+
+function UpdaterTL:downloadGame()
+    -- 检查更新游戏
+    self:checkGameUpdate()
+end
+
+-- 检查游戏更新
+function UpdaterTL:checkGameUpdate()
+    self._errorCount = 0
+
+    --  游戏热更检测
+    LauncherHttpApi:reportGameStage(LauncherConstant.GAME_STAGE.CHECK_GAME_UPDATE)
+
+    -- 检测版本号
+    self:checkGameVersionUpdate()
+end
+
+-- 检测版本号
+function UpdaterTL:checkGameVersionUpdate()
+	local url = string.format(tostring(BaseVersionUrl), _G_API_CENTER_FLAG)
+
+	yflog:Info("Updater:checkGameUpdate url: %s", url)
+
+	local request = network.createHTTPRequest(handler(self, self.onCheckGameVersionUpdate), url, "GET")
+	request:start()
+end
+
+-- 监听检测版本号返回
+function UpdaterTL:onCheckGameVersionUpdate(event)
+    local errorCode = nil
+	while true do
+		if event.name == "failed" then
+			errorCode = LauncherStr.STARTER_GAME_ERROR_MSG1
+			break
+		end
+
+		if event.name ~= "completed" then
+			return
+		end
+
+		local request = event.request
+		local code = request:getResponseStatusCode()
+		if code ~= 200 then
+			errorCode = 10000 + code
+			break
+		end
+
+		local response = json.decode(request:getResponseString()) or {}
+		if not response.data or not response.data.gameVersion or response.data.gameVersion == "" then
+			errorCode = LauncherStr.STARTER_GAME_ERROR_MSG2
+			break
+		end
+
+		-- 首先判断 version
+		local remoteGameVersion = response.data.gameVersion
+		local localGameVersion = self:getLocalGameVersion()
+		if remoteGameVersion ~= localGameVersion then
+			-- 版本不同则需要更新 url=http://xxxlauncher/v1.0.1/
+			self._gameResUrl = string.format("%swin32/v%s/", _G_CDN_URL, remoteGameVersion)
+			self._errorCount = 0
+			self:getGameResMap()
+		else
+            -- 版本一致，无需下载，直接进入游戏
+            self:checkGameUpdateComplete()
+        end
+		return
+	end
+
+	self._errorCount = self._errorCount + 1
+	if self._errorCount < 4 then
+		-- 重新请求
+		self:checkGameVersionUpdate()
+	else
+		if errorCode then
+			self:checkGameUpdateFail(errorCode)
+		end
+	end
+end
+
+-- 灰度版本号更新
+function UpdaterTL:downloadGaryGame(tarVersion)
+    --  游戏热更检测
+    LauncherHttpApi:reportGameStage(LauncherConstant.GAME_STAGE.CHECK_GAME_UPDATE)
+
+    local remoteGameVersion = tarVersion
+    local localGameVersion = self:getLocalGameVersion()
+
+    if remoteGameVersion ~= localGameVersion then
+			-- 版本不同则需要更新 url=http://xxxlauncher/v1.0.1/
+			self._gameResUrl = string.format("%swin32/v%s/", _G_CDN_URL, remoteGameVersion)
+			self._errorCount = 0
+			self:getGameResMap()
+    else
+        -- 版本一致，无需下载，直接进入游戏
+        self:checkGameUpdateComplete()
+    end
+end
+
+-- 开始下载远程res_map.txt
+function UpdaterTL:getGameResMap()
+    local baseUrl = self._gameResUrl .. GAME_MAP_TXT
+    local url = baseUrl
+
+    yflog:Info("Download Game remote res_map.txt:%s", url)
+    local request = network.createHTTPRequest(handler(self, self.onGetGameResMap), url, "GET")
+    request:start()
+end
+
+-- 下载res_map.txt返回
+function UpdaterTL:onGetGameResMap(event)
+    local errorCode = nil
+	while true do
+		if event.name == "failed" then
+			errorCode = LauncherStr.STARTER_GAME_ERROR_MSG3
+			break
+		end
+
+		if event.name ~= "completed" then
+			return
+		end
+
+		local request = event.request
+	    local code = request:getResponseStatusCode()
+	    if code ~= 200 then
+	    	self:checkGameUpdateFail(20000 + code)
+	    	return
+	    end
+
+		-- res_map.txt 内容，文件更新目录以及md5，大小
+	    self._remoteGameResMapStr = request:getResponseString()
+	    self:compareGameResMap()
+		return
+	end
+
+	self._errorCount = self._errorCount + 1
+	if self._errorCount < 4 then
+		self:getGameResMap()
+	else
+		if errorCode then
+			self:checkGameUpdateFail(errorCode)
+		end
+	end
+end
+
+-- 比较md5，并下载
+function UpdaterTL:compareGameResMap()
+    local downloadList = {}
+	local localStarterMap = self:getLocalGameResMap()
+	local remoteStarterMap = self:getRemoteGameResMap()
+
+	-- 比较文件内容，并生成下载地址列表
+	for key, value in pairs(remoteStarterMap) do
+		if key ~= "nil" then
+			if not isset(localStarterMap, key) then
+				downloadList[#downloadList + 1] = value
+			else
+				if value[2] ~= localStarterMap[key][2] then
+					downloadList[#downloadList + 1] = value
+				end
+			end
+		end
+	end
+
+	if #downloadList == 0 then
+        -- 无下载内容，直接游戏 
+		self:checkGameUpdateComplete()
+	else
+		-- 排序规则 version始终最后加载，因为version会用于判断是否需要进入下载，所以最后下载。
+		table.sort(downloadList, function(value1, value2)
+			if value1[1] == "version.txt" then
+				return false
+			elseif value2[1] == "version.txt" then
+				return true
+			else
+				return tonumber(value1[3]) > tonumber(value2[3])
+			end
+		end)
+
+        -- 开始下载
+        LauncherHttpApi:reportGameStage(LauncherConstant.GAME_STAGE.START_GAME_UPDATE)
+
+		self:prepareGameDownload(downloadList)
+	end
+end
+
+-- 准备下载
+function UpdaterTL:prepareGameDownload(downloadList)
+    -- 下载中状态
+    self._isDownloading = false
+
+    -- 下载失败次数
+    self._downloadFailCount = 0
+
+    -- 下载地址
+    self._downloadUrl  = self._gameResUrl
+
+    -- 下载目录
+    self._downloadPath = device.writablePath
+    if device.platform == "mac" or device.platform == "windows" then
+        self._downloadPath = self._downloadPath .. "download/"
+    end
+    self._downloadPath = self._downloadPath .. "win32" .. "/"
+
+    -- 下载列表
+    self._downloadList = {}
+
+    self._downloadIdx = 0
+
+    -- 下载进度
+    self._downloadProgress = 0
+
+    -- 每个下载文件自己的状态Table
+    self._downloadProgressTable = {}
+
+    -- 总和大小
+    local sumSize = 0
+    -- 任然需要下载的量
+    local needSize = 0
+
+    -- 本地下载的量
+    local localSize = 0
+    for i, value in ipairs(downloadList) do
+        sumSize = sumSize + value[3]
+        if not self:isFileDownload(value) then
+            -- 未下载
+            needSize = needSize + value[3]
+
+            table.insert(self._downloadList, value)
+        else
+            localSize = localSize + value[3]
+        end
+    end
+
+    -- 无需下载时 设置downloadIdx下载完
+    if needSize == 0 then
+        self._downloadIdx = #self._downloadList+1
+    end
+
+    self._downloadSumSize = sumSize
+    self._downloadCurSize = localSize
+
+    -- 提审状态 直接跳过下载提示，转解压
+    if _G_IS_EXAMINE then
+        display.getRunningScene():getLauncherLayer():onStartDownload()
+        return
+    end
+
+    local sizeStr = ""
+    if needSize > 1024 * 1024 then
+        sizeStr = string.format("%.2fM", needSize / 1024 / 1024)
+    else
+        sizeStr = string.format("%.1fK", needSize / 1024)
+    end
+
+    -- 下载确认提示框
+    display.getRunningScene():getLauncherLayer():downloadGameSizeCommit(sizeStr)
+end
+
+function UpdaterTL:stopDownload()
+    if self._downloadHandler then
+        scheduler.unscheduleGlobal(self._downloadHandler)
+        self._downloadHandler = nil
+    end
+end
+
+-- 开始下载
+function UpdaterTL:startDownload()
+    if not self._downloadHandler then
+		-- 定时器 每帧执行
+		self._downloadHandler = scheduler.scheduleUpdateGlobal(handler(self, self.onDownload))
+		self:displayDownloadProgress()
+	end
+end
+
+-- 正式下载 因为文件太多执行效率低，所以改成了多线程下载
+function UpdaterTL:onDownload()
+    -- 正在下载中的progress数量
+    local progressCount = 0
+
+    -- 挂起的，即下载不成功，多次重新下载后都失败了
+    local hangupCount = 0
+
+    -- 错误码
+    local errorCode = nil
+
+    -- 下载列表
+    for k, downloadProgress in pairs(self._downloadProgressTable) do
+        local status = downloadProgress:getStatus()
+        if status == -2 then
+            -- 挂起的
+            hangupCount = hangupCount + 1
+            errorCode = downloadProgress:getErrorCode()
+
+        elseif status == 1 then
+            -- 下载中
+            progressCount = progressCount + 1
+
+        elseif status == 0 or status == -1 then
+            -- 开启下载
+            yflog:Info("Start file download", downloadProgress:getValue()[1])
+
+            downloadProgress:startDownload()
+            progressCount = progressCount + 1
+
+        elseif status == 99 then
+            yflog:Info("file download completed", downloadProgress:getValue()[1])
+
+            self:downloadStep(downloadProgress:getValue())
+            self._downloadProgressTable[k] = nil
+        end
+    end
+
+    -- 下载进度条
+    self:displayDownloadProgress()
+
+    --[[
+        下载不成功的数量 < 3 and 正在下载中的 < 5 则新建下载任务
+        即: 最大下载线程数为5，能接受挂掉的不能超过3个
+    ]]
+    if hangupCount < DOWNLOAD_HANG_MAX and progressCount < DOWNLOAD_COUNT_MAX then
+        self._downloadIdx = self._downloadIdx + 1
+
+        if self._downloadIdx <= #self._downloadList then
+            local value = self._downloadList[self._downloadIdx]
+            if not self:isFileDownload(value) then
+                -- yflog:Info("onDownload：存在空位 添加任务: %s", value[1])
+                -- 新建下载任务
+                local downloadProgress = DownloadProgress.new(self, value)
+                self._downloadProgressTable[#self._downloadProgressTable + 1] = downloadProgress
+            end
+        end
+    end
+
+    -- 挂掉的任务太多，则下载失败，需重新下载
+    if hangupCount >= DOWNLOAD_HANG_MAX and progressCount == 0 then
+        self:downloadFail(errorCode)
+        return
+    end
+
+    -- 所有任务已经结束
+    if self._downloadIdx >= #self._downloadList and progressCount == 0 then
+        if hangupCount == 0 then
+            -- 不存在挂起任务 所有下载进程已经完毕
+            self:completeDownload()
+        else
+            -- 重新开始下载
+            self:downloadFail(errorCode)
+            return
+        end
+    end
+end
+
+-- 下载失败重新下
+function UpdaterTL:downloadFail(code)
+    display.getRunningScene():getLauncherLayer():removeProgressLayer()
+
+    self:stopDownload()
+
+    -- 后续添加 审核模式立即开始
+    --[[
+        if __G_CP_SERVER_ID > 0 then
+            -- TODO 审核模式立即开始  
+            yflog:Info("审核模式立即开始")
+            -- self:switchUrl()
+            -- self:restartDown()
+        else
+            yflog:Info("重新下载确认")
+            display.getRunningScene():getLauncherLayer():downloadFail(code)
+        end
+    ]]
+    display.getRunningScene():getLauncherLayer():downloadFail(code)
+end
+
+function UpdaterTL:restartDown()
+    -- 清理下载任务列表
+    self._downloadProgressTable = {}
+
+    self:startDownload()
+end
+
+function UpdaterTL:downloadStep(value, noSave)
+    if not noSave then
+        -- 标记这个文件已经下载
+        self:saveFileDownloadInfo(value)
+    end
+
+    -- 重新计算已下载文件大小
+    -- self._downloadCurSize = 0
+    if self:isFileDownload(value) then
+        self._downloadCurSize = self._downloadCurSize + value[3]
+    end
+    -- for i, value in ipairs(self._downloadList) do
+    --     if self:isFileDownload(value) then
+    --         self._downloadCurSize = self._downloadCurSize + value[3]
+    --     end
+    -- end
+end
+
+-- 进度条更新
+function UpdaterTL:displayDownloadProgress()
+    local curSize1 = self._downloadCurSize or 0
+    local curSize2 = 0
+    local sumSize = self._downloadSumSize or 0
+    local curIdx = 0
+    local sumIdx = 1
+    if self._downloadList then
+        curIdx = self._downloadIdx or 0
+        sumIdx = #self._downloadList
+    end
+    if self._downloadProgressTable then
+        for _, downloadProgress in pairs(self._downloadProgressTable) do
+            if downloadProgress:getStatus() == 1 then
+                curSize2 = curSize2 + downloadProgress:getCurDownloadSize()
+            end
+        end
+    end
+
+    -- 播放进度条
+    display.getRunningScene():getLauncherLayer():displayDownloadProgress(curSize1 + curSize2, sumSize, curIdx, sumIdx)
+end
+
+-- 更新失败 提示
+function UpdaterTL:checkGameUpdateFail(code)
+    display.getRunningScene():getLauncherLayer():checkGameUpdateFail(code or "unknown error")
+end
+
+-- function UpdaterTL:loadingOn()
+--     self._loadingRC = self._loadingRC + 1
+--     print("LauncherLayer:loadingOn "..self._loadingRC)
+
+--     if not self._loadingLayer then
+--         self._loadingLayer = require("launcher.LauncherLoadingLayer").new()
+--         display.getRunningScene():addChild(self._loadingLayer, 10000)
+--     end
+-- end
+
+-- 获取当前文件版本号
+function UpdaterTL:getLocalGameVersion()
+	local version = ""
+	local f = io.open(self:getLocalGameVersionPath(), "r")
+	if f then
+		for line in f:lines()  do
+			version = line
+			break
+		end
+
+		f:close()
+	end
+
+	return version
+end
+
+-- 获取本地游戏version.txt
+function UpdaterTL:getLocalGameVersionPath()
+	local path = device.writablePath
+	if device.platform == "mac" or device.platform == "windows" then
+		path = path .. "download/"
+	end
+
+	local filePath = path .. "win32/" .. GAME_VERSION_TXT
+	if not io.exists(filePath) then
+		cc.FileUtils:getInstance():createDirectory(path.."win32")
+		
+		local fullPath = cc.FileUtils:getInstance():fullPathForFilename("win32/"..GAME_VERSION_TXT)
+		local dataFromFile = cc.FileUtils:getInstance():getDataFromFile(fullPath)
+
+		local file = io.open(filePath, "w+b")
+        file:write(dataFromFile)
+        file:close()
+	end
+
+	return filePath
+end
+
+-- 当前res_map.txt 内容
+function UpdaterTL:getLocalGameResMap()
+    local resMap = {}
+	local f = io.open(self:getLocalGameResMapPath(), "r")
+	if f then
+		for line in f:lines()  do
+			if line and line ~= "" then
+				local value = self:analysisResMapLine(line)
+				if value then
+					resMap[value[1]] = value
+				end
+			end
+		end
+
+		io.close(f)
+	end
+
+	return resMap
+end
+
+-- 获取本地res_map.txt
+function UpdaterTL:getLocalGameResMapPath()
+	local path = device.writablePath
+	if device.platform == "mac" or device.platform == "windows" then
+		path = path .. "download/"
+	end
+
+	local filePath = path .. "win32/" .. GAME_MAP_TXT
+	if not io.exists(filePath) then
+		cc.FileUtils:getInstance():createDirectory(path)
+		
+		local fullPath = cc.FileUtils:getInstance():fullPathForFilename("win32/"..GAME_MAP_TXT)
+		local dataFromFile = cc.FileUtils:getInstance():getDataFromFile(fullPath)
+
+		local file = io.open(filePath, "w+b")
+        file:write(dataFromFile)
+        file:close()
+	end
+
+	return filePath
+end
+
+-- 远程res信息
+function UpdaterTL:getRemoteGameResMap()
+	local resMap = {}
+
+	if self._remoteGameResMapStr then
+		local lines = string.split(self._remoteGameResMapStr, "\n")
+		for _, line in ipairs(lines) do
+			if line and line ~= "" then
+				local value = self:analysisResMapLine(line)
+				if value then
+					resMap[value[1]] = value
+				end
+			end
+		end
+	end
+
+	return resMap
+end
+
+-- 文件是否已下载，download信息: 格式：[res/bil.pk] = 8b8fa82ad6d2b3f3c2ef0c7562baf2e5
+function UpdaterTL:isFileDownload(value)
+	local downloadInfo = self:getFileDownloadInfo()
+	return isset(downloadInfo, value[1]) and downloadInfo[value[1]] == value[2]
+end
+
+-- 获取downloadInfo
+function UpdaterTL:getFileDownloadInfo()
+	if not self._downloadInfo then
+		local downloadList = cc.UserDefault:getInstance():getStringForKey(GAME_WIN32_DOWNLOAD_LIST_KEY, "")
+		if downloadList == "" then
+			self._downloadInfo = {}
+		else
+			self._downloadInfo = json.decode(downloadList) or {}
+		end
+	end
+
+	return self._downloadInfo
+end
+
+function UpdaterTL:saveFileDownloadInfo(value)
+    local downloadInfo = self:getFileDownloadInfo()
+    self._downloadInfo[value[1]] = value[2]
+    cc.UserDefault:getInstance():setStringForKey(GAME_WIN32_DOWNLOAD_LIST_KEY, json.encode(self._downloadInfo))
+    cc.UserDefault:getInstance():flush()
+end
+
+function UpdaterTL:clearFileDownloadInfo()
+    self._downloadInfo = {}
+    cc.UserDefault:getInstance():setStringForKey(GAME_WIN32_DOWNLOAD_LIST_KEY, json.encode(self._downloadInfo))
+    cc.UserDefault:getInstance():flush()
+end
+
+function UpdaterTL:saveLocalGameMap()
+    if not self._remoteGameResMapStr then
+        return
+    end
+
+    io.writefile(self:getLocalGameResMapPath(), self._remoteGameResMapStr)
+end
+
+-- res_map.txt 文件格式
+function UpdaterTL:analysisResMapLine(line)
+	local lineArray = string.split(line, ",")
+	if #lineArray < 3 then
+		return nil
+	end
+
+	return {lineArray[1] or "nil", lineArray[2] or "", lineArray[3] or 0}
+end
+
+-- 确认游戏是否安装
+function UpdaterTL:isGameInstall()
+	local status = cc.UserDefault:getInstance():getIntegerForKey(GAME_STARTER_GAME_INSTALL_win32, 0)
+	if status == 0 then
+		local resPath = "win32/res_map.txt"
+		if cc.FileUtils:getInstance():isFileExist(resPath) then
+			status = 1
+		else
+			status = 2
+		end
+		cc.UserDefault:getInstance():setIntegerForKey(GAME_STARTER_GAME_INSTALL_win32, status)
+		cc.UserDefault:getInstance():flush()
+	end
+
+	return status == 1
+end
+
+-- 设置游戏已安装
+function UpdaterTL:setGameInstalled()
+    cc.UserDefault:getInstance():setIntegerForKey(GAME_STARTER_GAME_INSTALL_win32, 1)
+    cc.UserDefault:getInstance():flush()
+end
+
+
+-- 完成下载
+function UpdaterTL:completeDownload()
+    yflog:Info("LauncherLayer:completeDownload")
+
+    display.getRunningScene():getLauncherLayer():removeProgressLayer()
+
+    -- 下载完成
+    LauncherHttpApi:reportGameStage(LauncherConstant.GAME_STAGE.COMPLETE_GAME_DOWNLOAD)
+
+    self:stopDownload()
+    -- 保存
+    self:clearFileDownloadInfo()
+    self:saveLocalGameMap()
+    self:checkGameUpdateComplete()
+end
+
+-- 下载地址
+function UpdaterTL:getDownloadUrl()
+    return self._downloadUrl
+end
+
+-- 下载到本地的目录
+function UpdaterTL:getDownloadPath()
+    return self._downloadPath
+end
+
+function UpdaterTL:checkGameUpdateComplete()
+    -- 更新本地存储
+    self:setGameInstalled()
+
+    display.getRunningScene():getLauncherLayer():onGameUpdateCompleteEnterGame()
+end
+
+return UpdaterTL

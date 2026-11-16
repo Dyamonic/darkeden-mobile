@@ -1,0 +1,30 @@
+.class public interface abstract Lcom/bytedance/bdtracker/t2;
+.super Ljava/lang/Object;
+.source ""
+
+
+# virtual methods
+.method public abstract a()Ljava/util/List;
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "()",
+            "Ljava/util/List<",
+            "Ljava/lang/String;",
+            ">;"
+        }
+    .end annotation
+.end method
+
+.method public abstract c()I
+.end method
+
+.method public abstract f()Ljava/util/List;
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "()",
+            "Ljava/util/List<",
+            "Ljava/lang/Number;",
+            ">;"
+        }
+    .end annotation
+.end method

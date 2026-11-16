@@ -1,0 +1,207 @@
+---@ 精力系统 界面
+---@class UIWndEnergy:UIWindowBase
+local UIWndEnergy = class("UIWndEnergy", lt.UIWindowBase)
+
+local NtfManager = lt.NtfManager
+local Constant = lt.Constant
+local CacheManager = lt.CacheManager
+local EnergyModule = lt.EnergyModule
+local TimeCounter = lt.TimeCounter
+local TimeCounterManager = lt.TimeCounterManager
+local CommonFunc = lt.CommonFunc
+local GuideModule = lt.GuideModule
+
+function UIWndEnergy:ctor(param)
+    self:registerComponent("UICompEnergyCell")
+    UIWndEnergy.super.ctor(self, param)
+end
+
+function UIWndEnergy:onShown()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_ENERGY_EXP, handler(self, self.refreshView), "UIWndEnergy:refreshView")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CHECK_GUIDE_EVENT, handler(self, self.checkGuide), "UIWndEnergy:checkGuide")
+    self._addBtn:addClickListener(handler(self, self.onBtnAddClick))
+    self._freeBtn:addClickListener(handler(self, self.onBtnFreeClick))
+    TimeCounterManager:startTimeCounter(TimeCounterManager.TC.ENERGY_ACHIEVE_UPDATE, {callback = function()
+        self:onUpdate()
+    end})
+    --请求数据
+    EnergyModule:sendQueryEnergy()
+end
+
+function UIWndEnergy:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndEnergy:refreshView")
+    NtfManager:removeNtfListenerByTag("UIWndEnergy:checkGuide")
+    self._addBtn:removeClickListener()
+    self._freeBtn:removeClickListener()
+    TimeCounterManager:stopTimeCounter(TimeCounterManager.TC.ENERGY_ACHIEVE_UPDATE)
+    UIWndEnergy.super.onHide(self)
+end
+
+function UIWndEnergy:onClear()
+    self:unregisterAllComponent()
+    self._energyLabel = nil
+    self._tipsLabel = nil
+    self._percentLabel = nil
+    self._percentBar = nil
+    self._activeImg = nil
+    self._disableImg = nil
+    self._redImg = nil
+    self._activeNum = nil
+    self._disableNum = nil
+    self._freeLabel = nil
+    self._timeLabel = nil
+    self._dailyLabel = nil
+    self._limiteLabel = nil
+    self._dailyBar = nil
+    self._totalLabel = nil
+    self._listEnergy = nil
+    self._addBtn = nil
+    self._freeBtn = nil
+    UIWndEnergy.super.onClear(self)
+end
+
+function UIWndEnergy:onUpdate(dt)
+    --免费精力领取倒计时
+    local isAchieve = EnergyModule:getAchieveEnergy()
+    if isAchieve then
+        self:refreshCountDown()
+    end
+    --精力系统双倍沙漏倒计时
+    local childs = self._listEnergy:getChildren()
+    for k, v in ipairs(childs) do
+        if v:getLastTime() and v:getLastTime() >= 0 then
+            v:refreshTime()
+        end
+    end
+end
+
+function UIWndEnergy:onInit()
+    UIWndEnergy.super.onInit(self, _GURL.UIWndEnergy)
+    self._energyLabel = self:getChild("label_energy")
+    self._tipsLabel = self:getChild("label_tips")
+    self._percentLabel = self:getChild("label_percent")
+    self._percentBar = self:getChild("bar_percent")
+    self._activeImg = self:getChild("img_active")
+    self._disableImg = self:getChild("img_disable")
+    self._redImg = self:getChild("img_red")
+    self._activeNum = self:getChild("num_active")
+    self._disableNum = self:getChild("num_disable")
+    self._freeLabel = self:getChild("label_free")
+    self._timeLabel = self:getChild("label_time")
+    self._dailyLabel = self:getChild("label_daily")
+    self._limiteLabel = self:getChild("label_limite")
+    self._dailyBar = self:getChild("bar_daily")
+    self._totalLabel = self:getChild("label_total")
+    self._listEnergy = self:getChild("list")
+    self._listEnergy:setItemRenderer(handler(self, self.onItemRender))
+    self._addBtn = self:getChild("btn_add")
+    self._freeBtn = self:getChild("btn_free")
+end
+
+function UIWndEnergy:refreshView(event)
+    local param = event.param or {}
+    local reloadList = param.reloadList or false
+    --判断是否需要刷新列表
+    if reloadList then
+        self._vitalityTable = EnergyModule:getVitalityListMeta()
+        self._listEnergy:setNumItems(#self._vitalityTable)
+    end
+    
+    local energy = EnergyModule:getEnergy()
+    local expPerVitality = EnergyModule:getExpPerVitality()
+    local dailyExpLimit = EnergyModule:getDailyExpLimit()
+    local isAchieve = EnergyModule:getAchieveEnergy()
+    local meta = EnergyModule:getVitalityMeta()
+    if meta then
+        self._energyLabel:setText(energy)
+        self._energyLabel:setColor(energy > 0 and Constant.COLOR_GREEN or Constant.COLOR_TEXT_RED)
+        local perVitality = meta:getExperienceValuePerVitality()
+        self._tipsLabel:setText(string.format(GReadText.KEY_ENERGY_TIPS1, perVitality))
+        if expPerVitality > perVitality then
+            expPerVitality = perVitality
+        end
+        if energy == 0 then
+            self._percentLabel:setText(expPerVitality.."/"..perVitality)
+            self._percentBar:setFillAmount(expPerVitality/perVitality)
+        else
+            self._percentLabel:setText((perVitality-expPerVitality).."/"..perVitality)
+            self._percentBar:setFillAmount((perVitality-expPerVitality)/perVitality)
+        end
+        
+        local dailyExp = meta:getDailyExperienceLimit()
+        if dailyExpLimit > dailyExp then
+            dailyExpLimit = dailyExp
+        end
+        self._dailyLabel:setText(dailyExpLimit.."/"..dailyExp)
+        self._dailyLabel:setColor(dailyExpLimit < dailyExp and Constant.COLOR_GREEN or Constant.COLOR_TEXT_RED)
+        self._dailyBar:setFillAmount(dailyExpLimit/dailyExp)
+        self._limiteLabel:setVisible(dailyExpLimit >= dailyExp)
+    end
+
+    --总加成
+    local totalExp = EnergyModule:getPureExpAdd()
+    local color = totalExp == 0 and "[color=#ffffff]" or "[color=#00ff00]"
+    self._totalLabel:setText(GReadText.KEY_ENERGY_TIPS2..color..totalExp.."%[/color]")
+
+    --是否领取精力药水
+    self._activeImg:setVisible(not isAchieve)
+    self._disableImg:setVisible(isAchieve)
+    self._redImg:setVisible(not isAchieve)
+    self._activeNum:setVisible(not isAchieve)
+    self._disableNum:setVisible(isAchieve)
+    self._freeLabel:setVisible(not isAchieve)
+    self._timeLabel:setVisible(isAchieve)
+    self._freeBtn:setVisible(not isAchieve)
+
+    --如果已领取刷新倒计时
+    if isAchieve then
+        self:refreshCountDown()
+    end
+
+    --精力药水数量
+    local freeVitalityDaily = CacheManager:getVariableById(Constant.Variable.FreeVitalityDaily)
+    local number = string.split(freeVitalityDaily, ",")[3]
+    self._activeNum:setText(number)
+    self._disableNum:setText(number)
+end
+
+--刷新倒计时
+function UIWndEnergy:refreshCountDown()
+    local serverTime = TimeCounter:serverTime()
+    local seconds = CommonFunc:getSecondsUntilNextDay(serverTime)
+    local day, hour, minute, second = CommonFunc:secondsToTime(seconds)
+    if hour < 10 then hour = "0"..hour end
+    if minute < 10 then minute = "0"..minute end
+    if second < 10 then second = "0"..second end
+    self._timeLabel:setText(hour..":"..minute..":"..second)
+end
+
+function UIWndEnergy:onItemRender(index, obj)
+    obj:setObjInfo(self._vitalityTable[index+1])
+end
+
+function UIWndEnergy:onBtnAddClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndEnergyBuy"})
+end
+
+--领取精力药水
+function UIWndEnergy:onBtnFreeClick()
+    local isAchieve = EnergyModule:getAchieveEnergy()
+    if isAchieve then return end
+    --发送协议
+    EnergyModule:sendGetEnergyItems()
+end
+
+--检查引导
+function UIWndEnergy:checkGuide()
+    --精力系统引导
+    if GuideModule:checkCanGuide(Constant.GUIDE_ID.ENERGY2) then
+        local pos = self:displayObject():convertToWorldSpace(self._freeBtn:getPosition())
+        GuideModule:triggerGuide(Constant.GUIDE_ID.ENERGY2, self._freeBtn, pos, function()
+            self:onBtnFreeClick()
+        end)
+        return
+    end
+end
+
+return UIWndEnergy

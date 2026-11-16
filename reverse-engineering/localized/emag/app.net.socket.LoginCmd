@@ -1,0 +1,120 @@
+local SocketApi = lt.SocketApi
+local cliggproto = lt.CliGgProto
+
+-- 登录请求--
+function SocketApi:userLogin()
+    --发送登录gate请求
+    if not _G_TOKEN then
+        lt.LogUtil:debug("does not exist _G_TOKEN")
+        lt.SocketManager:disconnect()
+        lt.SocketManager:brokenNtf()
+        return
+    end
+    print("Login account:", _G_TOKEN)
+
+    local sdkId = 0
+    local gameLocalVersion = 20200428
+    local extra = 0
+    local serverId = 0
+    local configLoader = require("launcher.ConfigLoader")
+    if configLoader then
+        sdkId = configLoader:getSdkId()
+    end
+    if _G_SERVER_INFO then
+        serverId = _G_SERVER_INFO.serverId
+    end
+
+    print("_G_TOKEN", _G_TOKEN)
+    print("_G_CHECK_TOKEN", _G_CHECK_TOKEN)
+    if device.platform == "windows" then
+        SocketApi:loginReq(_G_TOKEN, _G_CHECK_TOKEN or "", 0, 20200428, 0, serverId,"",0)
+    else
+        SocketApi:loginReq(_G_TOKEN, _G_CHECK_TOKEN or "", sdkId, gameLocalVersion, extra, serverId,"",0)
+    end
+end
+
+function SocketApi:loginReq(szAuthAct,szAuthStr,wAPType,dwClientVersion,wClientType,dwServerID,szInviteCode,dwReserve)
+    
+    local loginreq = cliggproto.PKG_CLI_GG_Login_REQ.new()
+
+    loginreq._szAuthAct = szAuthAct
+	loginreq._szAuthStr = szAuthStr
+	loginreq._wAPType = wAPType
+	loginreq._dwClientVersion = dwClientVersion
+	loginreq._wClientType = wClientType
+    loginreq._dwServerID = dwServerID
+    loginreq._szInviteCode = szInviteCode
+    loginreq._dwReserve = dwReserve
+    
+    local data = cliggproto:encode(cliggproto.MessageID.CLI_GG_Login_REQ,loginreq)
+    self:_sendData(data,#data)
+end
+
+-- 选角色请求--
+function SocketApi:selectRoleReq(szRoleName)
+    local selchr = cliggproto.PKG_CLI_GG_SelectRole_REQ.new()
+    selchr._szRoleName = szRoleName
+    local data = cliggproto:encode(cliggproto.MessageID.CLI_GG_SelectRole_REQ, selchr)
+    self:_sendData(data, #data)
+end
+
+-- 创建角色请求--
+function SocketApi:createRoleReq(szRoleName,byHair,dwColor,byJob,bySex)
+    local createchr = cliggproto.PKG_CLI_GG_CreateRole_REQ.new()
+	createchr._szRoleName = szRoleName
+	createchr._byHair = byHair
+	createchr._byJob = byJob
+    createchr._bySex = bySex
+    createchr._dwColor = dwColor
+    local data =  cliggproto:encode(cliggproto.MessageID.CLI_GG_CreateRole_REQ,createchr)
+    self:_sendData(data,#data)
+end
+
+-- 删除角色请求--
+function SocketApi:deleteRoleReq(szRoleName)
+    local delchr = cliggproto.PKG_CLI_GG_DelRole_REQ.new()
+    delchr._szRoleName = szRoleName
+    local data =  cliggproto:encode(cliggproto.MessageID.CLI_GG_DelRole_REQ,delchr)
+    self:_sendData(data,#data)
+end
+
+-- 恢复角色请求--
+function SocketApi:unDeleteRoleReq(szRoleName)
+    local undelchr = cliggproto.PKG_CLI_GG_UnDelRole_REQ.new()
+    undelchr._szRoleName = szRoleName
+    local data =  cliggproto:encode(cliggproto.MessageID.CLI_GG_UnDelRole_REQ,undelchr)
+    self:_sendData(data,#data)
+end
+
+-- 登出消息
+function SocketApi:logoutReq()
+    local logout = cliggproto.PKG_CLI_GG_Logout_NTF.new()
+    local data =  cliggproto:encode(cliggproto.MessageID.CLI_GG_Logout_NTF,logout)
+    self:_sendData(data,#data)
+end
+
+-- 小退
+function SocketApi:reselRole(szRoleName)
+    print("SocketApi:reselRole:", szRoleName)
+    local reselRole = cliggproto.PKG_CLI_GG_ReselRole_REQ.new()
+    reselRole._szRoleName = szRoleName
+    local data =  cliggproto:encode(cliggproto.MessageID.CLI_GG_ReselRole_REQ,reselRole)
+    self:_sendData(data,#data)
+end
+
+--验证重复昵称
+function SocketApi:repeatRoleName(szRoleName, pid)
+    print("SocketApi:repeatRoleName:", szRoleName,pid)
+    local repeatRoleNamePkg = cliggproto.PKG_CLI_GG_VerifyUserName_REQ.new()
+    repeatRoleNamePkg._szRoleName = szRoleName
+    repeatRoleNamePkg._szPid = pid
+    local data = cliggproto:encode(cliggproto.MessageID.CLI_GG_VerifyUserName_REQ, repeatRoleNamePkg)
+    self:_sendData(data,#data)
+end
+
+function SocketApi:sendBeatHeart()
+    local data =  cliggproto:beatHeart()
+    self:_sendData(data,#data)
+end
+
+return SocketApi

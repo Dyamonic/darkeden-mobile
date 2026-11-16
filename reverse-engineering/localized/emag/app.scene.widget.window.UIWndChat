@@ -1,0 +1,695 @@
+--- 聊天界面
+---@class UIWndChat:UIWindowBase
+local UIWndChat            = class("UIWndChat", lt.UIWindowBase)
+local Constant             = lt.Constant
+local ChatModule           = lt.ChatModule
+local NtfManager           = lt.NtfManager
+local PrefManager          = lt.PrefManager
+local GameModule           = lt.GameModule
+local ItemModule           = lt.ItemModule
+local FriendModule         = lt.FriendModule
+local CacheManager         = lt.CacheManager
+-- 频道按钮
+local btnTypeList          = {
+    { name = "btn_xitong" },
+    { name = "btn_zonghe" },
+    { name = "btn_shijie" },
+    { name = "btn_zhongzu" },
+    { name = "btn_fujin" },
+    { name = "btn_quyu" },
+    { name = "btn_siliao" },
+    { name = "btn_zudui" },
+    { name = "btn_gonghui" },
+    { name = "btn_lianmeng" }
+}
+
+-- 功能按钮
+local btnFncList           = {
+    { name = "btn_setting" },
+    { name = "btn_yuyin" },
+    { name = "btn_emoji" },
+    { name = "btn_laba" },
+    { name = "btnsend" }
+}
+
+UIWndChat.ChangeSkinConf   = {
+    ["Chat"] = {
+        ["bg"]           = "bg_liaotian_di",
+        ["btn_setting"]  = { n0 = "bth_beibao_anniu02", n1 = "bth_beibao_anniu01" },
+        ["btn_yuyin"]    = { n0 = "bth_beibao_anniu02", n1 = "bth_beibao_anniu01" },
+        ["btn_emoji"]    = { n0 = "bth_beibao_anniu02", n1 = "bth_beibao_anniu01" },
+        ["btn_laba"]     = { n0 = "bth_beibao_anniu02", n1 = "bth_beibao_anniu01" },
+        ["Btn_fenge"]    = { up = "bg_liaotian_wjwxz", down = "bg_liaotian_wjxz" },
+        ["frame"]        = { closeButton = { bg = "icon_liaotian_jt01" } },
+        ["btn_xitong"]   = { bg = "bg_liaotian_anniu01" },
+        ["btn_zonghe"]   = { bg = "bg_liaotian_anniu01" },
+        ["btn_shijie"]   = { bg = "bg_liaotian_anniu01" },
+        ["btn_zhongzu"]  = { bg = "bg_liaotian_anniu01" },
+        ["btn_fujin"]    = { bg = "bg_liaotian_anniu01" },
+        ["btn_quyu"]     = { bg = "bg_liaotian_anniu01" },
+        ["btn_siliao"]   = { bg = "bg_liaotian_anniu01" },
+        ["btn_zudui"]    = { bg = "bg_liaotian_anniu01" },
+        ["btn_gonghui"]  = { bg = "bg_liaotian_anniu01" },
+        ["btn_lianmeng"] = { bg = "bg_liaotian_anniu01" },
+        ["btnsend"]      = { loaderdown = "bg_beibao_ren_anniu" },
+    },
+}
+
+UIWndChat.ChangeSkinOffset = {
+    [Constant.RaceType.Slayer] = {
+        ["frame"] = {
+            closeButton = { x = 2, y = 0 },
+        },
+        ["bg"] = { x = 0, y = 5 },
+    },
+    [Constant.RaceType.Vampire] = {
+        ["bg"] = { x = 0, y = 10 }
+    },
+    [Constant.RaceType.Ousters] = {
+    }
+}
+
+local PrivateIndex         = 7
+function UIWndChat:ctor(param)
+    self:registerComponent("UICompChatPlayerCell", "UICompChatRichTextCell", "UICompChatQuick", "UICompChatEditCell")
+    UIWndChat.super.ctor(self, param)
+    self._unreadCount = 0
+    self._btnTypeList = {}
+    self._btnFncList = {}
+end
+
+function UIWndChat:onShown()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_FLOAT_CHAT, handler(self, self.onChatMsg), "UIWndChat:onChatMsg")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_FLOAT_CHAT_SHOWQUICK, handler(self, self.onShowQuick),
+        "UIWndChat:onShowQuick")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CHAT_ADDKINK_POST, handler(self, self.onChatAddLink),
+        "UIWndChat:onChatAddLink")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_FLOAT_CHAT_PRIVATE, handler(self, self.onChatPrivate),
+        "UIWndChat:onChatPrivate")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CHAT_CHAT_RESULT, handler(self, self.onChatResult),
+        "UIWndChat:onChatResult")
+    -- self._list_chat:addEventListener(fgui.UIEventType.ScrollEnd, handler(self, self.onScrollEnd))
+    self._btnPrivate:addClickListener(handler(self, self.onFncOpenPrivateClick))
+    self._msgPanel:addClickListener(handler(self, self.onFncUnreadClick))
+
+    for k, v in pairs(self._btnTypeList or {}) do
+        v:addClickListener(handler(self, self.onBtnTypeClick))
+    end
+
+    -- 功能
+    for k, v in pairs(self._btnFncList or {}) do
+        v:addClickListener(handler(self, self.onFncBtnClick))
+    end
+    -- 是不是私聊
+    self._setitmes = nil
+    self._posData  = nil
+    local param    = self:getParam()
+    if param and param.playername then -- 私聊
+        self._playername:setText(param.playername)
+        self:onBtnTypeClick(nil, PrivateIndex)
+    else
+        if ChatModule._isInit == true then -- 第一次默认打开世界
+            self:onBtnTypeClick(nil, 3)
+            ChatModule._isInit = false
+        else -- 默认打开上次频道
+            local type =  ChatModule._curType
+            self:onBtnTypeClick(nil, type)
+        end
+    end
+end
+
+function UIWndChat:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndChat:onChatMsg")
+    NtfManager:removeNtfListenerByTag("UIWndChat:onShowQuick")
+    NtfManager:removeNtfListenerByTag("UIWndChat:onChatAddLink")
+    NtfManager:removeNtfListenerByTag("UIWndChat:onChatPrivate")
+    NtfManager:removeNtfListenerByTag("UIWndChat:onChatResult")
+
+    -- self._list_chat:removeEventListener(fgui.UIEventType.ScrollEnd)
+    self._btnPrivate:removeClickListener()
+    self._msgPanel:removeClickListener()
+    for k, v in ipairs(self._btnTypeList or {}) do
+        v:removeClickListener()
+    end
+    for k, v in ipairs(self._btnFncList or {}) do
+        v:removeClickListener()
+    end
+
+    self._compBottom:setVisible(false)
+    ChatModule._isChating = false
+    UIWndChat.super.onHide(self)
+end
+
+function UIWndChat:onClear()
+    self._list_chat = nil
+    -- self._txtInput    = nil
+    self._controlType = nil
+    self._compBottom  = nil
+    self._playername  = nil
+    self._msgPanel    = nil
+    self._bgKuang     = nil
+    self._btnTypeList = nil
+    self._btnFncList  = nil
+    if self._txtInput then
+        self._txtInput:removeFromParent()
+        self._txtInput = nil
+    end
+    self._btnPrivate = nil
+
+    self:unregisterAllComponent()
+    UIWndChat.super.onClear(self)
+end
+
+function UIWndChat:onInit()
+    UIWndChat.super.onInit(self, _GURL.ChatPanel)
+    self._list_chat = self:getChild("list_msg")
+    -- self._txtInput = self:getChild("txt_input")
+    -- self._txtInput:addEventListener(fgui.UIEventType.Submit, handler(self, self.btnSendClick))
+    self._controlType = self:getController("c1") -- 聊天频道
+    self._list_chat:setVirtual()
+    self._compBottom = self:getChild("compBottom")
+    self._playername = self:getChild("playername")
+    self._bgKuang = self:getChild("bgKuang")
+
+    self._msgPanel = self:getChild("msg")
+    self._msgCount = self._msgPanel:getChild("msgcount")
+    self._btnPrivate = self:getChild("Btn_fenge")
+
+    -- 频道
+    for k, v in ipairs(btnTypeList) do
+        local btn = self:getChild(v.name)
+        btn.index = k
+        self._btnTypeList[k] = btn
+    end
+
+    -- 功能
+    for k, v in ipairs(btnFncList) do
+        local btn = self:getChild(v.name)
+        btn.index = k
+        self._btnFncList[k] = btn
+    end
+
+    self._list_chat:setItemProvider(handler(self, self.getListItemResource))
+    self._list_chat:setItemRenderer(handler(self, self.renderChatItem))
+
+    self:initUI()
+    self:initCocosInputUI()
+end
+
+function UIWndChat:initCocosInputUI()
+    if not self._txtInput then
+        self._txtInput = ccui.EditBox:create(cc.size(211, 47), "", ccui.TextureResType.localType)
+        self._txtInput:setAnchorPoint(cc.p(0, 0))
+        self._txtInput:setPlaceHolder("Please enter text")
+        self._txtInput:setFontName(lt.Constant.FONT_4)
+        self._txtInput:setFontSize(24)
+        self._txtInput:setReturnType(cc.KEYBOARD_RETURNTYPE_SEND)
+        self._txtInput:setInputMode(cc.EDITBOX_INPUT_MODE_SINGLELINE)
+        self._txtInput:registerScriptEditBoxHandler(handler(self, self.editBoxEvent))
+        self._txtInput:setPosition(cc.p(0, 0))
+        self._bgKuang:displayObject():addChild(self._txtInput)
+    end
+end
+
+function UIWndChat:editBoxEvent(eventType, sender)
+    if eventType == "began" then
+    elseif eventType == "ended" then
+    elseif eventType == "changed" then
+        local str = sender:getText()
+        -- str = string.gsub(str, " ", "") --过滤掉空格
+        -- str = string.gsub(str, "\n", "")
+        -- str = CommonUtil:rmSpecChars(str)
+        local count = string.len(str)
+        local reCount = 0
+        local beginIndex = -1
+        local reString = ""
+        for i = 1, count do
+            local s = string.sub(str, i, i)
+            local t = string.byte(s)
+            if t < 128 then
+                reCount = reCount + 1 --1字节文字，长度加1
+            elseif t >= 192 then
+                reCount = reCount + 2 --1字节以上文字，长度加2
+            end
+            if reCount > 60 then
+                beginIndex = i - 1
+                break
+            end
+            beginIndex = i
+        end
+        reString = string.sub(str, 1, beginIndex)
+        sender:setText("")
+        self._txtInput:setText(reString)
+    elseif eventType == "return" then
+    end
+end
+
+function UIWndChat:initUI()
+    self._compBottom:setVisible(false)
+end
+
+function UIWndChat:getListItemResource(index) -- 系统私聊频道用富文本 其他用有头像框的  综合频道两种都有 sb
+    if not self._controlType then
+        return
+    end
+    local control = self._controlType:getSelectedIndex()
+    local chatType = ChatModule.CHATTYPE[control + 1] or 0
+
+    local chatInfoTb = nil
+    if chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_TOTAL then    -- 综合频道
+        chatInfoTb = ChatModule:getChatInfo()                        --综合
+    elseif chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_WORD then -- 世界
+        chatInfoTb = ChatModule:getChatWorldInfo()
+    elseif chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_NEW_SYSTEM then -- 系统( + 后台广播)
+        chatInfoTb = ChatModule:getChatSystemInfo()
+    else
+        chatInfoTb = ChatModule:getChatTypeInfo(chatType) --
+    end
+
+    if chatInfoTb then
+        local chatInfo = chatInfoTb[index]
+        if chatInfo then
+            if chatInfo.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_NEW_SYSTEM or
+                chatInfo.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_PRIVATE or
+                chatInfo.chatType == Constant.MESSAGE_TALK_TYPE.LANTERN_NOTICE or 
+                chatInfo.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_WEB_NOTICE then -- 系统 / 私聊 / 喇叭 /后台广播
+                return _GURL.GetCompMsgSys
+            else
+                return _GURL.GetCompChatPlayerCell
+            end
+        end
+    end
+    return ""
+end
+
+function UIWndChat:renderChatItem(index, obj)
+    local controlType = self._controlType:getSelectedIndex()
+    local chatType = ChatModule.CHATTYPE[controlType + 1]
+    local chatInfoTb = nil
+    if chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_TOTAL then    -- 综合频道
+        chatInfoTb = ChatModule:getChatInfo()                        --综合
+    elseif chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_WORD then -- 世界频道< + 喇叭>
+        chatInfoTb = ChatModule:getChatWorldInfo()
+    elseif chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_NEW_SYSTEM then -- 系统( + 后台广播)
+        chatInfoTb = ChatModule:getChatSystemInfo()
+    else
+        chatInfoTb = ChatModule:getChatTypeInfo(chatType) --
+    end
+    if chatInfoTb then
+        local chatInfo = chatInfoTb[index + 1]
+        if chatInfo then
+            obj:setInfo(chatInfo, chatType)
+        end
+    end
+end
+
+function UIWndChat:onBtnTypeClick(target, sendindex)
+    local index = 0
+    if not target then
+        index = sendindex
+    else
+        index = target:getSender().index
+    end
+    ChatModule._curType = index
+    self._controlType:setSelectedIndex(index - 1)
+    if index == PrivateIndex then
+        -- self._txtInput:setSize(1, 1)
+        self._txtInput:setPosition(30, 0)
+        self._txtInput:setContentSize(181, 47)
+    else
+        self._txtInput:setPosition(0, 0)
+        -- self._txtInput:setSize(200, 34)
+        self._txtInput:setContentSize(211, 47)
+    end
+    self._txtInput:setText("")
+    self._setitmes = nil
+    self._posData  = nil
+    if self._index ~= index then
+        self._msgPanel:setVisible(false)
+        self._unreadCount = 0
+        self._index = index
+    end
+    self:onChatMsg()
+end
+
+function UIWndChat:onFncBtnClick(target)
+    local index = target:getSender().index
+    if index == 1 then     -- 设置界面
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndChatSetting" })
+    elseif index == 2 then -- 语音
+        NtfManager:dispatchNtf(
+            NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_ACCESS_TIPS9 })
+    elseif index == 3 then            -- emoji
+        if ChatModule._isChating then -- 已经打开了
+            self:onShowQuick()
+            return
+        end
+        self._compBottom:setVisible(true)
+        ChatModule._isChating = true
+        local size            = self._compBottom:getSize()
+        self:setPositionEx(0, -size.height)
+        self._compBottom:refresh()
+    elseif index == 4 then --喇叭
+        local items = { 310001, 310002, 310003 }
+        local itemObjId = nil
+        for k, v in ipairs(items or {}) do
+            local item = ItemModule:getItemByItemId(v, Constant.ItemType.ITEM_TYPE_PROP)
+            if item then
+                itemObjId = item:getObjId()
+                break
+            end
+        end
+
+        local curItem, index = ItemModule:getItemByObjId(itemObjId)
+        if curItem and index then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndChatLaba", itemObjID = itemObjId })
+        else
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+                content = GReadText.KEY_ACCESS_TIPS8,
+                confirmCallback = function()
+                    local itemMeta = CacheManager:getItemMeta(310001)
+                    local access = itemMeta:getAccess()
+                    if access then
+                        local jumpStore = access[1][2]
+                        lt.RechargeModule:openRechargeByItemId(jumpStore)
+                    end
+                end,
+            })
+        end
+    elseif index == 5 then -- 发送消息
+        self:btnSendClick()
+    end
+end
+
+function UIWndChat:btnSendClick(addlinkstr)
+    local msg = nil
+    if type(addlinkstr) == "string" then
+        msg = addlinkstr
+    else
+        msg = self._txtInput:getText()
+    end
+    local sendman = GameModule:getHeroData():getName()
+    if msg ~= "" then
+        msg = lt.MaskWordUtil:process(msg, "**") -- 屏蔽字
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_CHAT_TIPS2 })
+        return
+    end
+
+    if lt.CommonUtil:GetUTFWidth(msg) > 60 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = "The input cannot exceed 30 characters." })
+        return
+    end
+
+    local control = self._controlType:getSelectedIndex()
+    local chatType = ChatModule.CHATTYPE[control + 1] or 0
+    -- 判断配置表
+    local chatList = CacheManager:getChatAllMap()
+    if chatList[chatType] then
+        local needLv = chatList[chatType]:getLevel() or 0
+        local myLv = GameModule:getHeroData():getLevel()
+        local meta = lt.VipModule:getCurVipMeta()
+        local canChat = false
+        if meta and meta:getActivateChat() == 1 then
+            canChat = true
+        end
+        -- vip 激活聊天（提前开启条件）。
+        if not canChat and (needLv > 0 and needLv > myLv) then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,
+                { content = string.format(GReadText.KEY_AUTO_RECYCLE_TIPS6, needLv) }) -- 当前频道需要%s级
+            return
+        end
+        local needRecharge = chatList[chatType]:getRecharge() or 0
+        local myRecharge = GameModule:getHeroData():getTotalRecharge()
+        if needRecharge > 0 and needRecharge > myRecharge then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,
+                { content = string.format(GReadText.KEY_AUTO_RECYCLE_TIPS7, needRecharge) }) --当前频道需要充值%s元
+            return
+        end
+    end
+
+    local msg = self:parseAndInsert(msg, true)
+
+
+    local recieveMan = ""
+    local privatePlayerName = self._playername:getText()
+    if Constant.MESSAGE_TALK_TYPE.TALKTYPE_PRIVATE == chatType then -- 私聊服务器不给自己发 自己插入
+        if privatePlayerName == "" then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_CHAT_TIPS3 })
+            return
+        end
+        if privatePlayerName == sendman then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_GUILD_TIPS16 })
+            return
+        end
+        if not FriendModule:checkIsFriend(privatePlayerName) then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = "Please add a friend" })
+            return
+        end
+        recieveMan = privatePlayerName
+    elseif Constant.MESSAGE_TALK_TYPE.TALKTYPE_UNION == chatType then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = "Alliance function has not been developed yet" })
+        return
+    else
+        self._playername:setText("")
+    end
+
+    local keySetting = PrefManager:getUserValueByKey(ChatModule.CHAT_SETTING_COLOR) or 1
+    local strColor = ChatModule.CHATCOLOR[keySetting] or "#ffffff"
+    ChatModule:sendGMChat(msg, chatType, sendman, recieveMan, strColor)
+end
+
+function UIWndChat:onChatMsg(event)
+    local param = event and event.param or nil
+    local controlType = self._controlType:getSelectedIndex()
+    local chatType = ChatModule.CHATTYPE[controlType + 1]
+    local chatinfo = nil
+    if chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_TOTAL then    -- 综合
+        chatinfo = ChatModule:getChatInfo()
+    elseif chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_WORD then -- 世界( + 喇叭)
+        chatinfo = ChatModule:getChatWorldInfo()
+    elseif chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_NEW_SYSTEM then -- 系统( + 后台广播)
+        chatinfo = ChatModule:getChatSystemInfo()
+    else
+        chatinfo = ChatModule:getChatTypeInfo(chatType)
+    end
+
+    -- 私聊显示
+    local redPoint = self._btnTypeList[PrivateIndex]:getChild("redPoint")
+    if chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_PRIVATE then
+        ChatModule:reSetPrivateUnReadInfo()
+    end
+
+    redPoint:setVisible(#ChatModule:getPrivateUnReadInfo() > 0)
+
+    if chatinfo and #chatinfo > 0 then
+        local isScrollBottom = self._list_chat:getScrollPane():isBottomMost()
+        self._list_chat:setNumItems(#chatinfo)
+        if isScrollBottom then
+            self._list_chat:getScrollPane():scrollBottom()
+            self._unreadCount = 0
+            self._msgPanel:setVisible(false)
+        else
+            if param then
+                self._unreadCount = self._unreadCount + 1
+                self._msgPanel:setVisible(true)
+                if self._unreadCount > ChatModule._maxnum then
+                    self._unreadCount = ChatModule._maxnum
+                end
+                self._msgCount:setText(string.format(GReadText.KEY_VIP_TIPS_2, self._unreadCount)) --有未读消息%s条
+            end
+        end
+    else
+        self._list_chat:setNumItems(0)
+    end
+end
+
+function UIWndChat:onScrollEnd()
+    local isScrollBottom = self._list_chat:getScrollPane():isBottomMost()
+    if isScrollBottom then
+        self._msgPanel:setVisible(false)
+        self._unreadCount = 0
+    end
+end
+
+function UIWndChat:onFncUnreadClick()
+    local controlType = self._controlType:getSelectedIndex()
+    local chatType = ChatModule.CHATTYPE[controlType + 1]
+    local chatinfo = nil
+    if chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_TOTAL then    -- 综合
+        chatinfo = ChatModule:getChatInfo()
+    elseif chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_WORD then -- 世界( + 喇叭)
+        chatinfo = ChatModule:getChatWorldInfo()
+    elseif chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_NEW_SYSTEM then -- 系统( + 后台广播)
+        chatinfo = ChatModule:getChatSystemInfo()
+    else
+        chatinfo = ChatModule:getChatTypeInfo(chatType)
+    end
+
+    if chatinfo then
+        if #chatinfo > 0 and self._unreadCount > 0 then
+            local index = #chatinfo - 1 - self._unreadCount
+            self._list_chat:scrollToView(index, false)
+        end
+    end
+    self._msgPanel:setVisible(false)
+end
+
+function UIWndChat:onFncOpenPrivateClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndChatPrivate", location = "right" })
+end
+
+function UIWndChat:onShowQuick()
+    if ChatModule._isChating == false then
+        return
+    end
+    local size = self._compBottom:getSize()
+    self._compBottom:setVisible(false)
+    self:setPositionEx(0, size.height)
+    ChatModule._isChating = false
+end
+
+-- 策划要求：
+-- 这边要改成 先把文字显示在输入框之后 可以编辑 最后发送
+-- 只能显示一个物品 一个坐标 后续只能替换当前物品和坐标
+
+function UIWndChat:onChatAddLink(event)
+    local proto = event.param
+    local index = proto.index or 0
+    if index == 1 then
+        if proto.items then
+            -- 这边只能显示一个物品的链接
+            local items = proto.items
+            local textstr = self._txtInput:getText()
+            if not self._setitmes then
+                self._setitmes = items
+                textstr = textstr .. "[" .. items:getName() .. "]"
+            else
+                self._setitmes = items
+                textstr = self:parseAndInsert(textstr)
+            end
+            self._txtInput:setText(textstr)
+        elseif proto.posData then
+            local textstr = self._txtInput:getText()
+            local info = lt.MapDao:query(proto.posData[1])
+            if not self._posData then
+                self._posData = proto.posData
+                textstr = textstr ..
+                    "[" .. info:getMapName() .. " " .. proto.posData[2] .. "," .. proto.posData[3] .. "]"
+            else
+                self._posData = proto.posData
+                textstr = self:parseAndInsert(textstr)
+            end
+            self._txtInput:setText(textstr)
+        elseif proto.emoji then
+            local textstr = self._txtInput:getText()
+            textstr = textstr .. "[:" .. proto.emoji .. "]"
+            self._txtInput:setText(textstr)
+        elseif proto.messageStr then
+            local textstr = proto.messageStr
+            textstr = textstr .. proto.messageStr
+            self._txtInput:setText(textstr)
+        end
+    end
+end
+
+function UIWndChat:parseAndInsert(input, isSend)
+    local tableStr = {}
+    local lastPos = 1
+    local inputLen = #input
+    while lastPos <= inputLen do
+        local startPos, endPos = input:find("%b[]", lastPos)
+        if not startPos then
+            -- No more brackets found, add remaining text
+            table.insert(tableStr, input:sub(lastPos))
+            break
+        end
+        -- Add text before the bracket
+        if startPos > lastPos then
+            table.insert(tableStr, input:sub(lastPos, startPos - 1))
+        end
+        local match = input:sub(startPos, endPos)
+        -- Process the matched content
+        if match:sub(1, 2) == "[:" then
+            table.insert(tableStr, match)
+        elseif match:find(",") then
+            -- Map location processing
+            local mapName, x, y = match:match("%[(.-)%s*(%d+),(%d+)%]")
+            -- 如果是发送状态需要校验
+            if isSend then
+                if self._posData then
+                    local info = lt.MapDao:query(self._posData[1])
+                    if info:getMapName() == mapName and self._posData[2] == tonumber(x) and self._posData[3] == tonumber(y) then
+                        local posStr =
+                            "[#?" .. info:getMapName() .. " " .. self._posData[2] .. "," .. self._posData[3] .. "]"
+                        table.insert(tableStr, posStr)
+                    else
+                        table.insert(tableStr, match)
+                    end
+                else
+                    table.insert(tableStr, match)
+                end
+            else
+                if self._posData then
+                    local info = lt.MapDao:query(self._posData[1])
+                    if info:getMapName() == mapName then
+                        local posStr = "[" ..
+                            info:getMapName() .. " " .. self._posData[2] .. "," .. self._posData[3] .. "]"
+                        table.insert(tableStr, posStr)
+                    else
+                        table.insert(tableStr, match)
+                    end
+                end
+            end
+        else
+            -- Equipment processing
+            local equipName = match:sub(2, -2) -- Remove brackets
+            -- 如果是发送状态需要校验
+            if isSend then
+                if self._setitmes then
+                    if equipName == self._setitmes:getName() then -- 如果一致
+                        local array = {}
+                        for k, v in pairs(self._setitmes:getPropertyTable()) do
+                            if k then
+                                array[#array + 1] = { k, v }
+                            end
+                        end
+                        local sendStr = "/?" .. self._setitmes:getObjId() .. "/?" .. json.encode(array) .. "/?"
+                        table.insert(tableStr, "[" .. sendStr .. "]")
+                    else
+                        table.insert(tableStr, "[" .. equipName .. "]")
+                    end
+                else
+                    table.insert(tableStr, match)
+                end
+            else
+                if self._setitmes then
+                    table.insert(tableStr, "[" .. self._setitmes:getName() .. "]")
+                end
+            end
+        end
+        lastPos = endPos + 1
+    end
+
+    return table.concat(tableStr)
+end
+
+function UIWndChat:onChatPrivate(event)
+    local proto = event.param
+    if proto.playername then
+        self._playername:setText(proto.playername)
+        self:onBtnTypeClick(nil, PrivateIndex)
+    end
+end
+
+function UIWndChat:onChatResult(event)
+    local param = event.param
+    if param and param.ret == 0 then
+        self._txtInput:setText("")
+        self._setitmes = nil
+        self._posData  = nil
+        self:onShowQuick()
+    end
+end
+
+return UIWndChat

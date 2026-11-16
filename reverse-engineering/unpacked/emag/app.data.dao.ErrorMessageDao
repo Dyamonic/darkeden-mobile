@@ -1,0 +1,15 @@
+
+local ErrorMessageDao = {}
+
+function ErrorMessageDao:queryAll()
+    local errorMessageTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM ErrorMessage") do
+        local errorMessage = lt.ErrorMessageMeta.new(row)
+        errorMessageTable[errorMessage:getCode()] = errorMessage:getValue()
+    end
+
+    return errorMessageTable
+end
+
+return ErrorMessageDao

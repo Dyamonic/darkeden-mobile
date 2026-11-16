@@ -1,0 +1,83 @@
+---@class UIWndTransactionRecord:UIWindowBase
+--- 交易记录
+local UIWndTransactionRecord = class("UIWndTransactionRecord", lt.UIWindowBase)
+
+local Constant               = lt.Constant
+local CacheManager           = lt.CacheManager
+local NtfManager             = lt.NtfManager
+local TransactionModule      = lt.TransactionModule
+
+UIWndTransactionRecord.ChangeSkinConf = {
+    ["Transaction"] = {
+        ["bg"] = "bg_pmh_beijinban",
+        ["bg_nk"] = "bg_pmh_nk03",
+        ["bg_title"] = "bth_pmh_jyjlyeqian",
+    },
+    ["CommonTL"] = {
+        ["frame"] = {
+            closeButton = {bg  = "bg_beibao_anniu01", bgup  = "bg_beibao_anniu02"},
+        }
+    }
+}
+
+function UIWndTransactionRecord:ctor(param)
+    self:registerComponent("UICompTransactionRecordCell")
+    UIWndTransactionRecord.super.ctor(self, param)
+end
+
+function UIWndTransactionRecord:onClear()
+    self._lblSellNum = nil
+    self._lblPoint = nil
+    self._lblCoin = nil
+    self._recordList = nil
+    self:unregisterAllComponent()
+    UIWndTransactionRecord.super.onClear(self)
+end
+
+function UIWndTransactionRecord:onShown()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_TRANSACTION_RECORD_RESP, handler(self, self.onTradingLogResp),
+        "UIWndTransactionMain:onTradingLogResp")
+    TransactionModule:sendTradingLogReq()
+end
+
+function UIWndTransactionRecord:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndTransactionMain:onTradingLogResp")
+    self._recordList:removeItemRenderer()
+    UIWndTransactionRecord.super.onHide(self)
+end
+
+function UIWndTransactionRecord:onInit()
+    UIWndTransactionRecord.super.onInit(self, _GURL.TransactionRecord)
+    self._lblSellNum = self:getChild("lbl_sellnum")
+    self._lblPoint = self:getChild("lbl_point")
+    self._lblCoin = self:getChild("lbl_coin")
+    self._recordList = self:getChild("list_record")
+    self._recordList:setItemRenderer(handler(self, self.recordRender))
+end
+
+function UIWndTransactionRecord:refreshView()
+    local tradingInfo = TransactionModule:getTradingInfo()
+    local sellNum = TransactionModule:getTradingSellNum()
+    local ticketCost = TransactionModule:getTradingCostById(Constant.TYPE_VAULE_ITEM.TICKET)
+    local coinCost = TransactionModule:getTradingCostById(Constant.TYPE_VAULE_ITEM.COIN)
+    self._lblSellNum:setText(sellNum)
+    self._lblPoint:setText(ticketCost)
+    self._lblCoin:setText(coinCost)
+    self._recordList:setNumItems(#tradingInfo)
+end
+
+function UIWndTransactionRecord:hideSelectView()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndTransactionRecord", close = true })
+end
+
+function UIWndTransactionRecord:recordRender(index, obj)
+    local tradingInfo = TransactionModule:getTradingInfo()
+    obj:setObjInfo(tradingInfo[index + 1])
+    obj.index = index + 1
+end
+
+function UIWndTransactionRecord:onTradingLogResp()
+    self:refreshView()
+end
+
+return UIWndTransactionRecord

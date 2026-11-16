@@ -1,0 +1,107 @@
+-- @Date    : 2020-10-30 15:39:20
+-- @Author  : ZhaoCi
+-- @Desc    :
+
+local TimeCounterManager = {}
+
+-- CounterName
+TimeCounterManager.TC = {
+    SKILL_TIP_CHECK        = "SKILL_TIP_CHECK",        --技能长按的计时
+    BUFFER_TIPS_REMAINTS   = "BUFFER_TIPS_REMAINTS",   --buff Tips倒计时
+    HERO_REVIVE_AUTO       = "HERO_REVIVE_AUTO",       --自动复活计时
+    HERO_REFRESH_BUFF_LIST = "HERO_REFRESH_BUFF_LIST", --死亡刷新BUFF列表显示
+    DUNGEON_LEFTTIME       = "DUNGEON_LEFTTIME",       --副本倒计时
+    PET_ATTR_UPDATE        = "PET_ATTR_UPDATE",        --宠物属性界面更新
+    PET_FEED_UPDATE        = "PET_FEED_UPDATE",        --宠物喂养界面倒计时
+    TRADE_SPECIAL_REFRESH  = "TRADE_SPECIAL_REFRESH",  --特殊商店刷新
+    DAILY_GIFT_UPDATE      = "DAILY_GIFT_UPDATE",      --每日礼包刷新
+    MY_TEAM_UPDATE         = "MY_TEAM_UPDATE",         --我的队伍刷新
+    TEAM_HALL_UPDATE       = "TEAM_HALL_UPDATE",       --组队大厅刷新
+    EQUIP_STFUSION_UPDATE  = "EQUIP_STFUSION_UPDATE",  --装备融合
+    AUTO_EQUIP_UPDATE      = "AUTO_EQUIP_UPDATE",      --自动穿戴
+    SCRIPT_BATTLE_UPDATE   = "SCRIPT_BATTLE_UPDATE",   --副本倒计时
+    MONTH_CARD_UPDATE      = "MONTH_CARD_UPDATE",      --月卡倒计时
+    ENERGY_ACHIEVE_UPDATE  = "ENERGY_ACHIEVE_UPDATE",  --精力值领取倒计时(第二天0点)
+    BAG_SORT_UPDATE        = "BAG_SORT_UPDATE",        --背包整理
+    WORLD_BOSS_UPDATE      = "WORLD_BOSS_UPDATE",      --世界boss复活倒计时(多个)
+    WORLD_ELITE_UPDATE     = "WORLD_ELITE_UPDATE",     --精英怪物复活倒计时(多个)
+}
+
+function TimeCounterManager:init()
+    yflog:Info("TimeCounterManager:init()")
+    self._tcTable = {}
+    self._markerTable = {}
+    self._tickHandler = lt.ScheduleUtil:scheduleGlobal(handler(self, self.tick), 1)
+end
+
+function TimeCounterManager:clear()
+    if self._tickHandler then
+        lt.ScheduleUtil:unscheduleGlobal(self._tickHandler)
+        self._tickHandler = nil
+    end
+    self._tcTable = {}
+    self._markerTable = {}
+end
+
+-- 记录器
+function TimeCounterManager:startTimeMark(name, params)
+    if not self._markerTable[name] then
+        self._markerTable[name] = { counter = lt.TimeCounter.new(name) }
+    end
+    self._markerTable[name].counter:mark()
+
+    return self._markerTable[name].counter
+end
+
+function TimeCounterManager:stopTimeMark(name)
+    self._markerTable[name] = nil
+end
+
+function TimeCounterManager:getTimeMarker(name, params)
+    if not self._markerTable[name] then
+        self:startTimeMark(name, params)
+    end
+
+    return self._markerTable[name].counter
+end
+
+-- 获取距离记录器开始记录时到当前的时间间隔
+function TimeCounterManager:getMarkInterval(name)
+    local tr = self:getTimeMarker(name)
+    return tr:getMarkInterval()
+end
+
+-- 定时器 (需要定时触发事件使用以下接口)
+function TimeCounterManager:startTimeCounter(name, params)
+    params = params or {}
+    self._tcTable[name] = { counter = lt.TimeCounter.new(name), callback = params.callback }
+end
+
+function TimeCounterManager:stopTimeCounter(name)
+    self._tcTable[name] = nil
+end
+
+function TimeCounterManager:getTimeCounter(name, params)
+    if not self._tcTable[name] then
+        self:startTimeCount(name, params)
+    end
+
+    return self._tcTable[name].counter
+end
+
+function TimeCounterManager:tick()
+    for _, v in pairs(self._tcTable) do
+        v.counter:tick()
+
+        if v.callback then
+            v.callback(v.counter:getTickTime())
+        end
+    end
+end
+
+function TimeCounterManager:getTickTime(name)
+    local tc = self:getTimeCounter(name)
+    return tc:getTickTime()
+end
+
+return TimeCounterManager

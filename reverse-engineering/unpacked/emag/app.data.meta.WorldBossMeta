@@ -1,0 +1,50 @@
+--boss精英
+local WorldBossMeta = class("WorldBossMeta")
+
+local CommonFunc = lt.CommonFunc
+
+function WorldBossMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function WorldBossMeta:initWithRow(row)
+    self._id            = row.Id
+    self._monsterType   = row.MonsterType
+    self._sort          = row.Sort
+    self._monsterId     = row.MonsterID
+    self._monsterInfoDesc = row.MonsterInformationDescription
+    self._modelDisplayScaleValue = tonumber(row.ModelDisplayScaleValue)
+    self._monsterDisplayPortrait = row.MonsterDisplayPortrait
+    self._monsterRefreshTime = row.MonsterRefreshTime
+    self._recommendedLevel = row.RecommendedLevel
+    self._refreshMapName = row.RefreshMapName
+    self._monsterRefreshesCoordinates = CommonFunc:analysisJsonToTable(row.MonsterRefreshesCoordinates, true)
+    self._transferCode  = row.TransferCode
+    self._monsterMap    = row.MonsterMap
+    self._slayerDroppedItems = json.decode(row.SlayerDroppedItems)
+    self._vampireDroppedItems = json.decode(row.VampireDroppedItems)
+    self._oustersDroppedItems = json.decode(row.OustersDroppedItems)
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function WorldBossMeta:getId() return self._id end
+function WorldBossMeta:getMonsterType() return self._monsterType end
+function WorldBossMeta:getSort() return self._sort end
+function WorldBossMeta:getMonsterId() return self._monsterId end
+function WorldBossMeta:getMonsterInfoDesc() return self._monsterInfoDesc end
+function WorldBossMeta:getModelDisplayScaleValue() return self._modelDisplayScaleValue end
+function WorldBossMeta:getMonsterDisplayPortrait() return self._monsterDisplayPortrait end
+function WorldBossMeta:getMonsterRefreshTime() return self._monsterRefreshTime end
+function WorldBossMeta:getRecommendedLevel() return self._recommendedLevel end
+function WorldBossMeta:getRefreshMapName() return self._refreshMapName end
+function WorldBossMeta:getMonsterRefreshesCoordinates() return self._monsterRefreshesCoordinates end
+function WorldBossMeta:getTransferCode() return self._transferCode end
+function WorldBossMeta:getMonsterMap() return self._monsterMap end
+function WorldBossMeta:getSlayerDroppedItems() return self._slayerDroppedItems end
+function WorldBossMeta:getVampireDroppedItems() return self._vampireDroppedItems end
+function WorldBossMeta:getOustersDroppedItems() return self._oustersDroppedItems end
+
+-- AUTO GENERATED GETTERS END
+return WorldBossMeta

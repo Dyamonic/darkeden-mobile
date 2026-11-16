@@ -1,0 +1,485 @@
+---@宠物喂养
+---@class UIWndPetFeed:UIWindowBase
+local UIWndPetFeed = class("UIWndPetFeed",lt.UIWindowBase)
+
+local CommonFunc = lt.CommonFunc
+local NtfManager = lt.NtfManager
+local ItemModule = lt.ItemModule
+local PetModule  = lt.PetModule
+local Constant   = lt.Constant
+local PetUIActor = lt.PetUIActor
+local CacheManager = lt.CacheManager
+local TimeCounterManager = lt.TimeCounterManager
+local GuideModule = lt.GuideModule
+
+UIWndPetFeed.ChangeSkinConf = {
+    ["CommonTL"] = {
+        ["btn_feed"]    = {bg = "sort"},
+        ["closeButton"] = {bg = "bg_beibao_anniu01", bgup = "bg_beibao_anniu02"},
+        ["btn_other_ok"]= {bg = "sort"},
+        ["btn_revive"]  = {bg = "sort"},
+    },
+    ["Pet"] = {
+        ["frame"] = {n1 = "bg_tankuang"},
+    }
+}
+
+function UIWndPetFeed:ctor(param)
+    UIWndPetFeed.super.ctor(self,param)
+
+    --UI
+    self._skinBtn = nil
+    self._feedBtn = nil
+    self._modelNode = nil
+    self._petActor = nil
+    self._lastDayLabel = nil
+    self._barImg1 = nil
+    self._lastTimeLabel = nil
+    self._barImg2 = nil
+    self._itemList = nil
+    self._reviveList = nil
+    self._digLabel = nil
+    self._expLabel = nil
+    self._levelLabel = nil
+    --数据
+    self._list = nil
+    self._petInfo = nil
+    self._id = nil
+end
+
+
+function UIWndPetFeed:onShown()
+    self:enableUpdateEvent(true)
+
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_PET_MY, handler(self, self.refreshCurPanel), "UIWndPetFeed:NTF_REFRESH_PET_MY")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_ITEM_CHANGE_EVENT, handler(self, self.refreshCurPanel), "UIWndPetFeed:NTF_UPDATE_ITEM_CHANGE_EVENT")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CHECK_GUIDE_EVENT, handler(self, self.checkGuide), "UIWndPetFeed:NTF_CHECK_GUIDE_EVENT")
+
+    self._feedBtn:addClickListener(handler(self, self.onfeedBtnClick))
+    self._reviveBtn:addClickListener(handler(self, self.onReliveBtnClick))
+    self._btnOtherOk:addClickListener(handler(self, self.onfeedSpecialClick))
+    self._itemList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+    self._reviveList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+    local closeButton = self:getChild("closeButton")
+    closeButton:addClickListener(handler(self, self.onCloseBtnClick))
+
+    self:refreshCurPanel()
+
+    --定时器
+    TimeCounterManager:startTimeCounter(TimeCounterManager.TC.PET_FEED_UPDATE, {callback = function()
+        self:refreshPetInfo()
+    end})
+end
+
+function UIWndPetFeed:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndPetFeed:NTF_REFRESH_PET_MY")
+    NtfManager:removeNtfListenerByTag("UIWndPetFeed:NTF_UPDATE_ITEM_CHANGE_EVENT")
+    NtfManager:removeNtfListenerByTag("UIWndPetFeed:NTF_CHECK_GUIDE_EVENT")
+
+    self._feedBtn:removeClickListener()
+    self._reviveBtn:removeClickListener()
+    self._btnOtherOk:removeClickListener()
+    self._itemList:removeEventListener(fgui.UIEventType.ClickItem)
+    self._reviveList:removeEventListener(fgui.UIEventType.ClickItem)
+    local closeButton = self:getChild("closeButton")
+    closeButton:removeClickListener()
+
+    TimeCounterManager:stopTimeCounter(TimeCounterManager.TC.PET_FEED_UPDATE)
+
+    UIWndPetFeed.super.onHide(self)
+end
+
+function UIWndPetFeed:onInit()
+    self:registerComponent("UICompPetFeedItem")
+    UIWndPetFeed.super.onInit(self, _GURL.WndPetFeedPanel)
+    self:initUI()
+end
+
+function UIWndPetFeed:onClear()
+    if self._petActor then
+        self._petActor:onClear()
+        self._petActor   = nil
+    end
+    self:unregisterAllComponent()
+    --UI
+    self._skinBtn = nil
+    self._feedBtn = nil
+    self._modelNode = nil
+    self._lastDayLabel = nil
+    self._barImg1 = nil
+    self._lastTimeLabel = nil
+    self._barImg2 = nil
+    self._digLabel = nil
+    self._expLabel = nil
+    self._levelLabel = nil
+    --数据
+    self._list = nil
+    self._petInfo = nil
+    self._id = nil
+
+    if self._itemList then
+        self._itemList:removeChildrenToPool()
+        self._itemList:removeItemRenderer()
+        self._itemList = nil
+    end
+
+    if self._reviveList then
+        self._reviveList:removeChildrenToPool()
+        self._reviveList:removeItemRenderer()
+        self._reviveList = nil
+    end
+end
+
+function UIWndPetFeed:onUpdate(dt)
+    if self._petActor then
+        self._petActor:onUpdate(dt)
+    end
+end
+
+function UIWndPetFeed:initUI()
+    self._feedBtn = self:getChild("btn_feed")
+    self._reviveBtn = self:getChild("btn_revive")
+    self._btnOtherOk = self:getChild("btn_other_ok")
+    self._modelNode = self:getChild("node_model")
+    self._petActor = PetUIActor.new(2)
+    self._modelNode:displayObject():addChild(self._petActor)
+    --详细属性
+    self._lastDayLabel = self:getChild("label_lastday")
+    self._barImg1 = self:getChild("img_bar1")
+    self._lastTimeLabel = self:getChild("label_lasttime")
+    self._barImg2 = self:getChild("img_bar2")
+    --喂养列表
+    self._itemList = self:getChild("list_item")
+    self._itemList:setItemRenderer(handler(self, self.renderFeedItem))
+    --复活列表
+    self._reviveList = self:getChild("list_revive")
+    self._reviveList:setItemRenderer(handler(self, self.renderFeedItem))
+    --额外属性
+    self._digLabel = self:getChild("label_dig")
+    self._expLabel = self:getChild("label_exp")
+    self._levelLabel = self:getChild("label_level")
+end
+
+function UIWndPetFeed:refreshCurPanel()
+    local param = self:getParam().param or {}
+    local feedType = param.feedType
+    self:getChild("com_feed"):setVisible(feedType == Constant.WndFeedType.Feed or feedType == Constant.WndFeedType.Revive)
+    self:getChild("com_other"):setVisible(feedType == Constant.WndFeedType.Other)
+    if feedType == Constant.WndFeedType.Feed then  -- 喂养界面
+        local uid      = param.uid
+        local petData  = PetModule:getPetByUid(uid)
+        local petInfo  = {data = petData, meta = CacheManager:getPetMeta(petData:getId())}
+        self:refreshViewFeed(petInfo)
+    elseif feedType == Constant.WndFeedType.Other then  -- 喂养其他界面
+        local uid      = param.uid
+        local petData  = PetModule:getPetByUid(uid)
+        local petInfo  = {data = petData, meta = CacheManager:getPetMeta(petData:getId())}
+        self:refreshViewOther(petInfo)
+    elseif feedType == Constant.WndFeedType.Revive then  -- 喂养复活界面
+        local uid      = param.uid
+        local petData  = PetModule:getPetByUid(uid)
+        local petInfo  = {data = petData, meta = CacheManager:getPetMeta(petData:getId())}
+        self:refreshViewRevive(petInfo)
+    end
+end
+
+function UIWndPetFeed:refreshViewFeed(petInfo)
+    local petMeta = petInfo.meta
+    local petData = petInfo.data
+    --剩余存活天数
+    local lastDay, lastTime = PetModule:getSurviveTime(petData:getDeadTime())
+    self._lastDayLabel:setText(lastDay..GReadText.KEY_TIME_DAY)
+    self._barImg1:setFillAmount(lastDay/Constant.PET_MAX_SURVIVE)
+    local lastsTime = CommonFunc:secondsToTime4(lastTime)
+    self._lastTimeLabel:setText(lastsTime)
+    self._barImg2:setFillAmount(lastTime/Constant.WHOLE_DAY)
+    -- local isDie = PetModule:isDie(petData:getDeadTime())
+    -- local dieTime = PetModule:getDeadTime(petData:getDeadTime())
+    -- self._feedBtn:setText(isDie and GReadText.KEY_PET_TIPS16 or GReadText.KEY_PET_TIPS17)
+    --宠物模型
+    self._petActor:setDirection(petMeta:getModleDir())
+    self._petActor:playAction(petData:getPetModel())
+    --列表 存活显示口粮
+    self._list = petMeta:getFeed()
+    self._itemList:setNumItems(#self._list)
+    yflog:Info("UIWndPetFeed:refreshView ---> feed %s", #self._list)
+    -- self:refreshSelect(nil)
+    self._petInfo = petInfo
+
+    self:getChild("node_feed"):setVisible(true)
+    self:getChild("node_revive"):setVisible(false)
+    self._reviveBtn:setVisible(false)
+    self._feedBtn:setVisible(true)
+    self._itemList:setVisible(true)
+    self._reviveList:setVisible(false)
+end
+
+function UIWndPetFeed:refreshViewOther(petInfo)
+    local petMeta = petInfo.meta
+    local petData = petInfo.data
+
+    --宠物模型
+    self._petActor:playAction(petData:getPetModel())
+
+    self._list = petMeta:getFeedSpecial()
+    self._itemList:setNumItems(#self._list)
+    -- self:refreshSelect(nil)
+    self._petInfo = petInfo
+
+    --刷新宠物数据
+    self:refreshPetInfo()
+end
+
+--刷新宠物数据
+function UIWndPetFeed:refreshPetInfo()
+    if not self._petInfo then
+        return
+    end
+    local petInfo = self._petInfo
+    local digSpeedUpTime = PetModule:getDigSpeedUpTime(petInfo)
+    local expSpeedUpTime = PetModule:getExpSpeedUpTime(petInfo)
+    local digColor = digSpeedUpTime == 0 and "[color=#ff0000]" or "[color=#00ff00]"
+    local expColor = expSpeedUpTime == 0 and "[color=#ff0000]" or "[color=#00ff00]"
+    if digSpeedUpTime == 0 then
+        digSpeedUpTime = GReadText.KEY_PET_TIPS82
+    end
+    if expSpeedUpTime == 0 then
+        expSpeedUpTime = GReadText.KEY_PET_TIPS82
+    end
+    self._digLabel:setText(GReadText.KEY_PET_TIPS78..digColor..digSpeedUpTime.."[/color]")
+    self._expLabel:setText(GReadText.KEY_PET_TIPS79..expColor..expSpeedUpTime.."[/color]")
+end
+
+function UIWndPetFeed:refreshViewRevive(petInfo)
+    local petMeta = petInfo.meta
+    local petData = petInfo.data
+    --宠物模型
+    self._petActor:playAction(petData:getPetModel())
+    --列表
+    local isDie = PetModule:isDie(petData:getDeadTime())
+    self:getChild("node_feed"):setVisible(not isDie)
+    self:getChild("node_revive"):setVisible(isDie)
+    self._reviveBtn:setVisible(true)
+    self._feedBtn:setVisible(false)
+    self._itemList:setVisible(false)
+    self._reviveList:setVisible(true)
+
+    --死亡显示复活
+    self._list = {{1, Constant.SEVEN_DAY_IN, 1}, {1, Constant.SEVEN_DAY_OUT, 1}}
+    -- if dieTime > 7 then
+    --     table.remove(self._list, 1)
+    -- end
+    yflog:Info("UIWndPetFeed:refreshViewRevive ---> %s", #self._list)
+    self._reviveList:setNumItems(#self._list)
+
+    if isDie then
+        --已死亡
+        local dieTime = PetModule:getDeadTime(petData:getDeadTime())
+        self:getChild("label_die"):setText(string.format(GReadText.KEY_PET_TIPS11, dieTime))
+        local item = self._reviveList:getChildAt(dieTime >= 7 and 1 or 0)
+        self._id = item:getId()
+        self:refreshSelect(item)
+    else
+        --剩余存活天数
+        local lastDay, lastTime = PetModule:getSurviveTime(petData:getDeadTime())
+        self._lastDayLabel:setText(lastDay..GReadText.KEY_TIME_DAY)
+        self._barImg1:setFillAmount(lastDay/Constant.PET_MAX_SURVIVE)
+        local lastsTime = CommonFunc:secondsToTime4(lastTime)
+        self._lastTimeLabel:setText(lastsTime)
+        self._barImg2:setFillAmount(lastTime/Constant.WHOLE_DAY)
+        self:refreshSelect(nil)
+    end
+
+    self._petInfo = petInfo
+end
+
+-- function UIWndPetFeed:refreshView(petInfo)
+--     local petMeta = petInfo.meta
+--     local petData = petInfo.data
+--     --剩余存活天数
+--     local lastDay, lastTime = PetModule:getSurviveTime(petData:getDeadTime())
+--     self._lastDayLabel:setText(lastDay..GReadText.KEY_TIME_DAY)
+--     self._barImg1:setFillAmount(lastDay/Constant.PET_MAX_SURVIVE)
+--     local lastsTime = CommonFunc:secondsToTime4(lastTime)
+--     self._lastTimeLabel:setText(lastsTime)
+--     self._barImg2:setFillAmount(lastTime/Constant.WHOLE_DAY)
+--     local isDie = PetModule:isDie(petData:getDeadTime())
+--     local dieTime = PetModule:getDeadTime(petData:getDeadTime())
+--     self._feedBtn:setText(isDie and GReadText.KEY_PET_TIPS16 or GReadText.KEY_PET_TIPS17)
+--     --宠物模型
+--     self._petActor:playAction(petData:getPetModel())
+--     --列表
+--     if isDie then
+--         --死亡显示复活
+--         self._list = {{1, Constant.SEVEN_DAY_IN, 1}, {1, Constant.SEVEN_DAY_OUT, 1}}
+--         if dieTime > 7 then
+--             table.remove(self._list, 1)
+--         end
+--         yflog:Info("UIWndPetFeed:refreshView ---> %s", #self._list)
+--         self._itemList:setNumItems(#self._list)
+--     else
+--         --存活显示口粮
+--         self._list = petMeta:getFeed()
+--         self._itemList:setNumItems(#self._list)
+--         yflog:Info("UIWndPetFeed:refreshView ---> feed %s", #self._list)
+--     end
+--     self:refreshSelect(nil)
+--     self._petInfo = petInfo
+-- end
+
+function UIWndPetFeed:refreshSelect(item)
+    if self._id then
+        if self._item then
+            self._item:setSelect(false)
+        end
+        self._item = item
+        if self._item then
+            self._item:setSelect(true)
+        else
+            self._id = nil
+        end
+    end
+end
+
+function UIWndPetFeed:onfeedBtnClick()
+    if self._id == nil then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_STRENGTHEN_TIPS14})
+        return
+    end
+    local canUse = ItemModule:enoughItem(Constant.ItemType.ITEM_TYPE_PROP, self._id, 1, {tips = true})
+    if not canUse then
+        return
+    end
+    -- local uid = ItemModule:getUidById(self._id)
+    local itemId = self._id
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {type = 2, content = GReadText.KEY_PET_TIPS32,
+    confirmCallback = function()
+        PetModule:sendPetFeed(self._petInfo, itemId)
+
+    end})
+    yflog:Info("UIWndPetFeed:onfeedBtnClick ---> %s",self._id)
+end
+
+function UIWndPetFeed:onReliveBtnClick()
+    if self._id == nil then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_STRENGTHEN_TIPS14})
+        return
+    end
+    local isDie = PetModule:isDie(self._petInfo.data:getDeadTime())
+    if not isDie then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS68})
+        return
+    end
+    local dieTime = PetModule:getDeadTime(self._petInfo.data:getDeadTime())
+    if dieTime >= 7 and self._id == Constant.SEVEN_DAY_IN then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS72})
+        return
+    end
+    local canUse = ItemModule:enoughItem(Constant.ItemType.ITEM_TYPE_PROP, self._id, 1, {tips = true})
+    if not canUse then
+        return
+    end
+    --复活
+    local petUid = self._petInfo.data:getUid()
+    PetModule:sendPetRelive(petUid, self._id)
+    yflog:Info("UIWndPetFeed:onReliveBtnClick ---> %s %s",isDie, self._id)
+end
+
+function UIWndPetFeed:onfeedSpecialClick()
+    if self._id == nil then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_STRENGTHEN_TIPS14})
+        return
+    end
+    local canUse = ItemModule:enoughItem(Constant.ItemType.ITEM_TYPE_PROP, self._id, 1, {tips = true})
+    if not canUse then
+        return
+    end
+    -- local uid = ItemModule:getUidById(self._id)
+    local itemMeta = ItemModule:getItemMetaByItemId(Constant.ItemType.ITEM_TYPE_PROP, self._id)
+    local petStr = nil
+    if itemMeta:getType() == Constant.PropTypeSub_10.DigSpeed then   -- 挖掘加速	  12
+        petStr = GReadText.KEY_PET_TIPS73
+    elseif itemMeta:getType() == Constant.PropTypeSub_10.AddLvl then -- 宠物直升丹	  13
+        local effect = itemMeta:getEffectParam() or {}
+        local petData = self._petInfo.data
+        if effect and effect[1] and effect[1][1] == "Pet" then
+            local level = tonumber(effect[1][2])
+            if type(level) == "number" then
+                if level <= petData:getLevel() then
+                    petTipsStr = string.format(GReadText.KEY_PET_TIPS76, level)
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = petTipsStr})
+                    return
+                end
+                petStr = string.format(GReadText.KEY_PET_TIPS74, level)   -- 使用提示
+            end
+        end
+    elseif itemMeta:getType() == Constant.PropTypeSub_10.AddExp then -- 宠物经验加成 14
+        petStr = GReadText.KEY_PET_TIPS84
+    end
+    
+    local petUid = self._petInfo.data:getUid()
+    local itemId = self._id
+    if petStr then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {type = 2, content = petStr,
+        confirmCallback = function()
+            PetModule:sendPetUseItem(petUid, itemId)
+        end})
+    else
+        PetModule:sendPetUseItem(petUid, self._id)
+    end
+    yflog:Info("UIWndPetFeed:onfeedSpecialClick ---> %s",self._id)
+end
+
+function UIWndPetFeed:renderFeedItem(index, obj)
+    local param = self:getParam().param or {}
+    local feedType = param.feedType
+    local itemInfo = self._list[index + 1]
+    obj:setInfo(itemInfo, feedType)
+    obj:insertObjectToFactory(self)
+end
+
+function UIWndPetFeed:onClickItem(context)
+    local param = self:getParam().param or {}
+    local data = context:getData()
+    local itemMeta = CacheManager:getItemMeta(data:getId())
+    --如果重复选中显示tips
+    if data:getId() == self._id then
+        self:showTips(itemMeta)
+        return
+    end
+    self._id = data:getId()
+    self:refreshSelect(data)
+    --宠物直升丹特殊显示
+    if itemMeta:getKind() == Constant.PropType.PET_CULTIVATE and itemMeta:getType() == Constant.PropTypeSub_10.AddLvl then
+        local effectParam = itemMeta:getEffectParam()
+        self._levelLabel:setText(string.format(GReadText.KEY_PET_TIPS75, effectParam[1][2]))
+        self._levelLabel:setVisible(true)
+    else
+        self._levelLabel:setVisible(false)
+    end
+end
+
+function UIWndPetFeed:onCloseBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndPetFeed", close = true})
+end
+
+function UIWndPetFeed:showTips(itemMeta)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS, {itemInfo = itemMeta, tipsType = Constant.PROPTIPS_FORM.Display})
+end
+
+function UIWndPetFeed:checkGuide()
+    --宠物喂养引导
+    if GuideModule:checkCanGuide(Constant.GUIDE_ID.PETFEED5) then
+        local pos = self:displayObject():convertToWorldSpace(self._itemList:getPosition())
+        GuideModule:triggerGuide(Constant.GUIDE_ID.PETFEED5, self._itemList, pos)
+        return
+    end
+
+    if GuideModule:checkCanGuide(Constant.GUIDE_ID.PETFEED6) then
+        local pos = self:displayObject():convertToWorldSpace(self._feedBtn:getPosition())
+        GuideModule:triggerGuide(Constant.GUIDE_ID.PETFEED6, self._feedBtn, pos)
+        return
+    end
+end
+
+return UIWndPetFeed

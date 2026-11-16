@@ -1,0 +1,122 @@
+local MBloodyWaveEffectGenerator = class("MBloodyWaveEffectGenerator", lt.MEffectGenerator)
+local CacheManager = lt.CacheManager
+local SkillEnum = lt.SkillEnum
+local function cpt(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in next, orig, nil do
+            copy[cpt(orig_key)] = cpt(orig_value)
+        end
+        setmetatable(copy, cpt(getmetatable(orig)))
+    else
+        copy = orig
+    end
+    return copy
+end
+
+function MBloodyWaveEffectGenerator:generate(egInfo)
+    local skillId = egInfo.skillId
+	local currentPhase = egInfo.currentPhase
+
+
+	local v_cp = {};
+	local p = {};
+	if currentPhase == 1 then
+        p.x = 0; p.y = -1;
+        table.insert(v_cp, cpt(p))
+        p.x = 0; p.y = 1;
+        table.insert(v_cp, cpt(p))
+        p.x = 1; p.y = 0;
+        table.insert(v_cp, cpt(p))
+        p.x = -1; p.y = 0;
+        table.insert(v_cp, cpt(p))
+    elseif currentPhase == 2 then
+        p.x = 1; p.y = -1;
+        table.insert(v_cp, cpt(p))
+        p.x = 1; p.y = 1;
+        table.insert(v_cp, cpt(p))
+        p.x = -1; p.y = -1;
+        table.insert(v_cp, cpt(p))
+        p.x = -1; p.y = 1;
+        table.insert(v_cp, cpt(p))
+    elseif currentPhase == 3 then
+        p.x = 0; p.y = -2;
+        table.insert(v_cp, cpt(p))
+        p.x = 0; p.y = 2;
+        table.insert(v_cp, cpt(p))
+        p.x = 2; p.y = 0;
+        table.insert(v_cp, cpt(p))
+        p.x = -2; p.y = 0;
+        table.insert(v_cp, cpt(p))
+    elseif currentPhase == 4 then
+        p.x = 1; p.y = -2;
+        table.insert(v_cp, cpt(p))
+
+        p.x = 2; p.y = -1;
+        table.insert(v_cp, cpt(p))
+
+        p.x = 1; p.y = 2;
+        table.insert(v_cp, cpt(p))
+        p.x = 2; p.y = 1;
+        table.insert(v_cp, cpt(p))
+        p.x = -1; p.y = -2;
+        table.insert(v_cp, cpt(p))
+        p.x = -2; p.y = -1;
+        table.insert(v_cp, cpt(p))
+        p.x = -1; p.y = 2;
+        table.insert(v_cp, cpt(p))
+        p.x = -2; p.y = 1;
+        table.insert(v_cp, cpt(p))
+    else
+        p.x = 0; p.y = -3;
+        table.insert(v_cp, cpt(p))
+        p.x = 0; p.y = 3;
+        table.insert(v_cp, cpt(p))
+        p.x = 3; p.y = 0;
+        table.insert(v_cp, cpt(p))
+        p.x = -3; p.y = 0;
+        table.insert(v_cp, cpt(p))
+    end
+
+
+
+	local tX, tY = egInfo.tX, egInfo.tY
+
+	local sX, sY;
+
+	for i=1, table.nums(v_cp) do
+		sX = tX + v_cp[i].x;
+		sY = tY + v_cp[i].y;
+        local effectMeta = nil
+        if skillId == SkillEnum.SKILL_BLOODY_WAVE then
+            local effectMetas = CacheManager:getSkillEffectBySkillIdAndGenerator(skillId, 27)
+            effectMeta = effectMetas[1]
+        elseif skillId == SkillEnum.SKILL_BOMB_CRASH_WALK then
+            local effectMetas = CacheManager:getHitMetas(skillId)
+            effectMeta = effectMetas[1]
+        elseif skillId == SkillEnum.SKILL_BLOODY_SCARIFY then
+            local effectMetas = CacheManager:getHitMetas(skillId)
+            effectMeta = effectMetas[1]
+        elseif skillId == SkillEnum.MAGIC_BLOODY_MASTER_WAVE then
+            local effectMetas = CacheManager:getProcessMetas(skillId)
+            effectMeta = effectMetas[1]
+        end
+        local x, y = lt.MapUtil:calcMNMid(sX, sY)
+		local offsetX, offsetY = -25, 15
+		local reX, reY = x + offsetX, y + offsetY
+        local bullet = lt.BullectScreenEffect.new(skillId, 0, cc.p(reX, reY))
+        bullet:addEffect(skillId, effectMeta)
+
+        local zorder = (sY  * 10000 + sX + 9999) * 10 + 1
+
+        lt.BulletManager:addBulletToMapZOrder(bullet, zorder)
+
+    end
+
+end
+
+
+
+return MBloodyWaveEffectGenerator

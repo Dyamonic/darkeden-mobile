@@ -1,0 +1,99 @@
+---@装备洗炼二次确认
+---@class UICompStSuccinctConfirm
+local UICompStSuccinctConfirm = class("UICompStSuccinctConfirm", lt.UIGButtonBase, lt.UICompChangeSkin)
+
+UICompStSuccinctConfirm.ChangeSkinConf = {
+    ["MessageBox"] = {
+        ["img_di"] = "bg_tytanchuang_01",
+    },
+    ["CommonTL"] = {
+        ["btn_cancel"] = {bg = "sort"},
+        ["btn_confirm"] = {bg = "sort"},
+    }
+}
+
+local SUCCINCT_TYPES = {
+    RECASTING = 1,      --重铸
+    PURIFY = 2,         --净化
+}
+
+local NtfManager = lt.NtfManager
+
+function UICompStSuccinctConfirm:ctor()
+    self:registerComponent("UICompEnchantItem")
+    UICompStSuccinctConfirm.super.ctor(self)
+    --UI
+    self._titleLabel = nil
+    self._btnCancel = nil
+    self._btnConfirm = nil
+    self._attrNode = nil
+    self._attrItem = nil
+    self._animNode = nil
+    --数据
+    self._index = nil
+end
+
+function UICompStSuccinctConfirm:onClear()
+    self:unregisterAllComponent()
+    --UI
+    self._titleLabel = nil
+    self._btnCancel = nil
+    self._btnConfirm = nil
+    self._attrNode = nil
+    self._attrItem = nil
+    self._animNode = nil
+    --数据
+    self._index = nil
+end
+
+function UICompStSuccinctConfirm:onConstruct()
+    self:startSkin()
+    self:initUI()
+end
+
+function UICompStSuccinctConfirm:initUI()
+    self._titleLabel = self:getChild("label_title")
+    self._btnCancel = self:getChild("btn_cancel")
+    self._btnConfirm = self:getChild("btn_confirm")
+    self._attrNode = self:getChild("node_attr")
+    self._attrItem = fgui.UIPackage:createObject("Strengthen", "EnchantItem")
+    self._attrItem:insertObjectToFactory(self)
+    self._attrNode:addChild(self._attrItem)
+    self._animNode = self._attrItem:getChild("node_anim")
+end
+
+function UICompStSuccinctConfirm:onEnter()
+    self._btnCancel:addClickListener(handler(self, self.onCancelBtnClick))
+    self._btnConfirm:addClickListener(handler(self, self.onConfirmBtnClick))
+end
+
+function UICompStSuccinctConfirm:onExit()
+    self._btnCancel:removeClickListener()
+    self._btnConfirm:removeClickListener()
+end
+
+function UICompStSuccinctConfirm:refreshView(index, selectItem)
+    self._index = index
+    self._titleLabel:setText(index == SUCCINCT_TYPES.RECASTING and GReadText.KEY_STRENGTHEN_TIPS41 or GReadText.KEY_STRENGTHEN_TIPS42)
+    local attr = selectItem:getPorp()
+    if index == SUCCINCT_TYPES.RECASTING then
+        self._attrItem:setAttr(attr)
+    else
+        self._attrItem:setAttr(attr)
+    end
+    self._animNode:setVisible(true)
+end
+
+function UICompStSuccinctConfirm:closeView()
+    self:setVisible(false)
+end
+
+function UICompStSuccinctConfirm:onConfirmBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_CONFIRM_SUCCINCT)
+end
+
+function UICompStSuccinctConfirm:onCancelBtnClick()
+    self:closeView()
+end
+
+return UICompStSuccinctConfirm

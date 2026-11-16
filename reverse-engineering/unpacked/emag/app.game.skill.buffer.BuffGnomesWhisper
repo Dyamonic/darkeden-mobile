@@ -1,0 +1,18 @@
+local BuffGnomesWhisper = class("BuffGnomesWhisper", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+
+--[[
+    真实视野
+]]
+function BuffGnomesWhisper:ctor(time, actor, skilllevel)    
+    BuffGnomesWhisper.super.ctor(self, BuffEnum.EFFECT_GNOMES_WHISPER, time, actor, skilllevel)
+    actor:playQueueEffect(SkillEnum.SKILL_GNOMES_WHISPER, 1)
+end
+
+function BuffGnomesWhisper:onClear()
+    self._actor:stopQueueEffect(SkillEnum.SKILL_GNOMES_WHISPER)
+    BuffGnomesWhisper.super.onClear(self)
+end
+
+return BuffGnomesWhisper

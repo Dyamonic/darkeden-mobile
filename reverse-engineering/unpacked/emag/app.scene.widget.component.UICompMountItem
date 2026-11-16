@@ -1,0 +1,131 @@
+--- 坐骑光环
+---@class UICompMountItem
+local UICompMountItem = class("UICompMountItem", lt.UIGButtonBase)
+
+local MountModule     = lt.MountModule
+local Constant        = lt.Constant
+local ItemModule      = lt.ItemModule
+
+local BGQUALITY       = {
+    [1] = "bg_cwzq_huangkuang02",
+    [2] = "bg_cwzq_lankuang02",
+    [3] = "bg_cwzq_hongkuang02"
+}
+local ITEMQUALITY     = {
+    [1] = "bg_cwzq_huangkuang01",
+    [2] = "bg_cwzq_lankuang01",
+    [3] = "bg_cwzq_hongkuang01"
+}
+function UICompMountItem:ctor()
+    UICompMountItem.super.ctor(self)
+    self._data  = nil
+    self._index = nil
+    self._level = nil
+end
+
+function UICompMountItem:onClear()
+    self._data        = nil
+    self._index       = nil
+
+    self._bgIcon      = nil
+    self._selectNode  = nil
+    self._useNode     = nil
+    self._qualityNode = nil
+    self._nameText    = nil
+    self._iconNode    = nil
+    self._redPoint    = nil
+    for i = 1, 5 do
+        self._stars[i] = nil
+        self._stars = {}
+    end
+    UICompMountItem.super.onClear(self)
+end
+
+function UICompMountItem:onConstruct()
+    self._bgIcon      = self:getChild("bg")
+    self._selectNode  = self:getChild("bg_select")
+    self._useNode     = self:getChild("bg_used")
+    self._qualityNode = self:getChild("bg_quality")
+    self._nameText    = self:getChild("lbl_name")
+    self._iconNode    = self:getChild("bg_icon")
+    self._redPoint    = self:getChild("redPoint")
+    self._selectNode:setVisible(false)
+    self._useNode:setVisible(false)
+    self._stars = {}
+    for i = 1, 5 do
+        self._stars[i] = self:getChild("star" .. i)
+    end
+end
+
+function UICompMountItem:onEnter()
+    UICompMountItem.super.onEnter(self)
+end
+
+function UICompMountItem:onExit()
+    UICompMountItem.super.onExit(self)
+end
+
+function UICompMountItem:setInfo(_data, _index, _fiterType)
+    self._data      = _data
+    self._index     = _index
+    self._fiterType = _fiterType
+    self._selectNode:setVisible(false)
+    self._useNode:setVisible(false)
+    self._nameText:setText(_data:getName())
+    local resUrl = string.format(_GURL.GetMountIcon, _data:getIcon())
+    self._iconNode:setURL(resUrl)
+    self._bgIcon:setURL(string.format(_GURL.GetMountIcon, BGQUALITY[_data:getQuality()]))
+    self._qualityNode:setURL(string.format(_GURL.GetMountIcon, ITEMQUALITY[_data:getQuality()]))
+end
+
+function UICompMountItem:setSelectVisible(value)
+    self._selectNode:setVisible(value)
+end
+
+function UICompMountItem:setUseVisible(value)
+    self._useNode:setVisible(value)
+end
+
+function UICompMountItem:refreshLevel(_level)
+    -- if self._level ~= _level then
+    local level = _level or -1
+    self._level = level
+    self._redPoint:setVisible(MountModule:checkRed(level, self._data:getType(), self._fiterType))
+    local numbStars = #self._stars
+    if level < 0 then
+        -- self._bgIcon:setGrayed(true)
+        self._qualityNode:setGrayed(true)
+        for i = 1, numbStars do
+            self._stars[i]:setURL("ui://Mount/icon_cwzq_xin02")
+        end
+        return
+    end
+    self._bgIcon:setGrayed(false)
+    self._qualityNode:setGrayed(false)
+    for i = 1, numbStars do
+        if level > 5 then
+            local maxnumb = level % 5
+            if maxnumb == 0 or maxnumb >= i then
+                self._stars[i]:setURL("ui://Mount/icon_cwzq_xin03")
+            else
+                self._stars[i]:setURL("ui://Mount/icon_cwzq_xin01")
+            end
+        elseif level > 0 then
+            local maxnumb = level % 5
+            if maxnumb == 0 or maxnumb >= i then
+                self._stars[i]:setURL("ui://Mount/icon_cwzq_xin01")
+            else
+                self._stars[i]:setURL("ui://Mount/icon_cwzq_xin02")
+            end
+        else
+            self._stars[i]:setURL("ui://Mount/icon_cwzq_xin02")
+        end
+    end
+    -- end
+end
+
+function UICompMountItem:getData()
+    return self._data
+end
+
+return UICompMountItem

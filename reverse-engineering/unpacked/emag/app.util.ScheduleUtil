@@ -1,0 +1,38 @@
+local ScheduleUtil = {}
+
+ScheduleUtil._sharedScheduler = cc.Director:getInstance():getScheduler()
+
+ScheduleUtil._scheculeHandlerTable = {}
+
+function ScheduleUtil:clear()
+    for scheduleHandler, _ in pairs(self._scheculeHandlerTable) do
+        ScheduleUtil:unscheduleGlobal(scheduleHandler)
+    end
+end
+
+function ScheduleUtil:scheduleUpdateGlobal(listener)
+    return ScheduleUtil._sharedScheduler:scheduleScriptFunc(listener, 0, false)
+end
+
+function ScheduleUtil:scheduleGlobal(listener, interval)
+    return ScheduleUtil._sharedScheduler:scheduleScriptFunc(listener, interval, false)
+end
+
+function ScheduleUtil:unscheduleGlobal(handle)
+    ScheduleUtil._sharedScheduler:unscheduleScriptEntry(handle)
+end
+
+function ScheduleUtil:performWithDelayGlobal(listener, time)
+    local handle
+    handle = ScheduleUtil._sharedScheduler:scheduleScriptFunc(function()
+        ScheduleUtil:unscheduleGlobal(handle)
+        listener()
+        self._scheculeHandlerTable[handle] = nil
+    end, time, false)
+
+    self._scheculeHandlerTable[handle] = true
+    
+    return handle
+end
+
+return ScheduleUtil

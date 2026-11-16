@@ -1,0 +1,148 @@
+--- 好友
+---@class UIWndFriend:UIWindowBase
+
+local UIWndFriend = class("UIWndFriend", lt.UIWindowBase)
+local NtfManager = lt.NtfManager
+local FriendModule = lt.FriendModule
+local CommonModule = lt.CommonModule
+local Constant = lt.Constant
+
+UIWndFriend.ChangeSkinConf = {
+    ["Friend"] = {
+        ["bg"] = "bg_haoyou_beijingban",
+        ["bg_fenge"] = "bg_haoyou_fenge1",
+        ["btn_add"] = { icon = "bth_haoyou_anniu" },
+        -- ["btn_select"] = {loaderimg = "bg_liaotian_duihaok"},
+        ["fenge1"] = "bg_haoyou_fenge",
+        ["fenge2"] = "bg_haoyou_fenge",
+        ["fenge3"] = "bg_haoyou_fenge",
+        ["fenge4"] = "bg_haoyou_fenge",
+        ["fenge5"] = "bg_haoyou_fenge",
+    },
+    ["CommonTL"] = {
+        ["frame"] = {
+            closeButton = { bg = "bg_beibao_anniu01", bgup = "bg_beibao_anniu02" },
+        }
+    }
+}
+
+function UIWndFriend:ctor(param)
+    self:registerComponent("UICompFriendCell")
+    UIWndFriend.super.ctor(self, param)
+end
+
+function UIWndFriend:onShown()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_FRIEND_PLAYERTIPS, handler(self, self.onFriendSelect),
+        "UIWndFriend:onFriendSelect")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_FRIEND_LIST, handler(self, self.onFriendList),
+        "UIWndFriend:onFriendList")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_FRIEND_ALLOW_SIGN, handler(self, self.onFriendAllowSign),
+        "UIWndFriend:onFriendAllowSign")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_DLG_MAIN_VIEW, handler(self, self.openDlgMainView),
+        "UIWndFriend:openDlgMainView")
+
+    self._btnSelect:addClickListener(handler(self, self.onBtnFncSelectClick))
+    self._btnAdd:addClickListener(handler(self, self.onBtnFncAddClick))
+end
+
+function UIWndFriend:doShowAnimation()
+    FriendModule:sendFriendListReq() -- 好友列表
+    self:clearSelect()
+end
+
+function UIWndFriend:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndFriend:onFriendSelect")
+    NtfManager:removeNtfListenerByTag("UIWndFriend:onFriendList")
+    NtfManager:removeNtfListenerByTag("UIWndFriend:onFriendAllowSign")
+    NtfManager:removeNtfListenerByTag("UIWndFriend:openDlgMainView")
+    self._btnSelect:removeClickListener()
+    self._btnAdd:removeClickListener()
+
+    UIWndFriend.super.onHide(self)
+end
+
+function UIWndFriend:onClear()
+    self._selectItem = nil
+    self._btnSelect  = nil
+    self._btnAdd     = nil
+    self._lblCount   = nil
+    self._listFriend = nil
+    self:unregisterAllComponent()
+    UIWndFriend.super.onClear(self)
+end
+
+function UIWndFriend:onInit()
+    UIWndFriend.super.onInit(self, _GURL.FriendListPanel)
+    self._btnSelect = self:getChild("btn_select")
+    self._btnAdd = self:getChild("btn_add")
+    self._lblCount = self:getChild("lbl_count")
+    self._listFriend = self:getChild("list_friend")
+    self._listFriend:setItemRenderer(handler(self, self.renderListItem))
+end
+
+function UIWndFriend:onBtnFncSelectClick()
+    local allowSign = FriendModule:getAllowSign()
+    local canAllow = allowSign == 1 and 0 or 1
+    FriendModule:sendFriendSetAllowSignReq(canAllow)
+end
+
+function UIWndFriend:onFriendSelect(event)
+    if self._selectItem then
+        self._selectItem:setSelected(false)
+    end
+    local param = event.param
+    self._selectItem = param.data
+    self._selectItem:setSelected(true)
+
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndFriendTips", data = param.data })
+end
+
+function UIWndFriend:refreshSelectBtn()
+    local allowSign = FriendModule:getAllowSign()
+    local isAllow = allowSign == CommonModule:GetNetCmdEnum("ALLOWADDFRIENDTYPE_NOTALLOW_ENUM")
+    self._btnSelect:setSelected(isAllow)
+end
+
+function UIWndFriend:onFriendList(event)
+    local listFriend = FriendModule:getFriendList()
+    self._listFriend:setNumItems(#listFriend)
+    self._lblCount:setText(#listFriend .. "/100")
+
+    self:refreshSelectBtn()
+end
+
+function UIWndFriend:onFriendAllowSign(event)
+    self:refreshSelectBtn()
+end
+
+function UIWndFriend:openDlgMainView(event)
+    local param = event.param
+    local layerName = param.class
+    if layerName and layerName == "UIWndFriendTips" and param.close then
+        self:clearSelect()
+    end
+end
+
+function UIWndFriend:clearSelect()
+    if self._selectItem then
+        self._selectItem:setSelected(false)
+    end
+    self._selectItem = nil
+end
+
+-- 添加好友
+function UIWndFriend:onBtnFncAddClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_FRIENDADD_MESSAGE_BOX, {
+        confirmCallback = function(str)
+            FriendModule:sendFriendApplyReq("0", str)
+        end,
+    })
+end
+
+function UIWndFriend:renderListItem(index, obj)
+    local listFriend = FriendModule:getFriendList()
+    local info = listFriend[index + 1]
+    obj:setInfo(info, index)
+end
+
+return UIWndFriend

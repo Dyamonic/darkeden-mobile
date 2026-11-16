@@ -1,0 +1,71 @@
+---@class TipRoleLayer 通知层
+local TipRoleLayer = class("TipRoleLayer", lt.UICompBase)
+local NtfManager = lt.NtfManager
+
+function TipRoleLayer:ctor()
+    TipRoleLayer.super.ctor(self)
+    self._view = fgui.UIPackage:createObject("CreateRole", "TipRoleLayer")
+    self._view:setPivot(0.5, 0.5 , true)
+    self._view:setPosition(display.cx, display.cy)
+    self:addChild(self._view)
+    self._bgtips = self._view:getChild("bg_tips")
+    self._bgtips:setVisible(false)
+    self._tips = self._view:getChild("tips")
+    self._tips:setVisible(false)
+end
+
+function TipRoleLayer:onClear()
+    self._view = nil
+    self._bgtips = nil
+    self._tips = nil
+    TipRoleLayer.super.onClear(self)
+end
+
+function TipRoleLayer:onEnter()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_FLOAT_TIP, handler(self, self.showTips), "TipRoleLayer:showTips")
+
+end
+
+function TipRoleLayer:onExit()
+    NtfManager:removeNtfListenerByTag("TipRoleLayer:showTips")
+end
+
+function TipRoleLayer:showTips(event)
+    local param = event.param
+
+    fgui.GTween:kill(self._tips)
+    fgui.GTween:kill(self._bgtips)
+
+    self._tips:setVisible(true)
+    self._bgtips:setVisible(true)
+    self._tips:setText(tostring(param.content))
+    self._tips:setAlpha(0)
+    self._bgtips:setAlpha(0)
+
+    fgui.GTween:to(0, 1, 0.2)
+        :setTarget(self._tips, fgui.TweenPropType.Alpha)
+        :setEase(lt.Constant.EaseType.QuadIn)
+        :onComplete(function()
+            fgui.GTween:to(1, 0, 1.5) -- 显示1.5s 0.2s渐渐隐藏
+                :setTarget(self._tips, fgui.TweenPropType.None)
+                :onComplete(function()
+                    fgui.GTween:to(1, 0, 0.2)
+                        :setTarget(self._tips, fgui.TweenPropType.Alpha)
+                        :setEase(lt.Constant.EaseType.QuadOut)
+                        :onComplete(function()
+                            self._tips:setVisible(false)
+                        end)
+                    fgui.GTween:to(1, 0, 0.2)
+                        :setTarget(self._bgtips, fgui.TweenPropType.Alpha)
+                        :setEase(lt.Constant.EaseType.QuadOut)
+                        :onComplete(function()
+                            self._bgtips:setVisible(false)
+                        end)
+                end)
+        end)
+    fgui.GTween:to(0, 1, 0.2)
+        :setTarget(self._bgtips, fgui.TweenPropType.Alpha)
+        :setEase(lt.Constant.EaseType.QuadIn)
+end
+
+return TipRoleLayer

@@ -1,0 +1,122 @@
+---@class UICompShowSkillTips 技能通用tips
+---
+local UICompShowSkillTips = class("UICompShowSkillTips", lt.UICompBase)
+
+local Constant = lt.Constant
+local NtfManager = lt.NtfManager
+
+local btnName = {
+    [Constant.SkillTipBtns.Study] = GReadText["KET_SKILL_BTN_STUDY"],
+    [Constant.SkillTipBtns.Detail] = GReadText["KET_SKILL_BTN_DETAIL"],
+}
+
+function UICompShowSkillTips:ctor()
+    self:makeFullScreen()
+    self._param = nil
+    self._btnList = nil
+    self._skillInfo = nil
+    self._studyCallback = nil
+    self._list = nil
+    self._touchLayer = nil
+    UICompShowSkillTips.super.ctor(self)
+end
+
+function UICompShowSkillTips:onConstruct()
+    self._list = self:getChild("list")
+    self._list:setItemRenderer(handler(self, self.renderListItem))
+end
+
+function UICompShowSkillTips:onClear()
+    self._param = nil
+    self._btnList = nil
+    self._skillInfo = nil
+    self._studyCallback = nil
+    self._list = nil
+    self._touchLayer = nil
+    UICompShowSkillTips.super.onClear(self)
+end
+
+function UICompShowSkillTips:onEnter()
+    local list = self:getChild("list")
+    list:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+end
+
+function UICompShowSkillTips:onExit()
+    local list = self:getChild("list")
+    list:removeEventListener(fgui.UIEventType.ClickItem)
+end
+
+function UICompShowSkillTips:refreshTips(param)
+    if not param then
+        return
+    end
+
+    self._param = param
+    local btnList = param.btnList or {}
+    self._btnList = btnList
+    self._skillInfo = param.skillInfo
+    self._studyCallback = param.studyCallback
+
+    local list = self:getChild("list")
+
+    list:setNumItems(#btnList)
+    local tempListSize = list:getSize()
+    list:setSize(tempListSize.width, #btnList*50)
+
+    if not self._touchLayer then
+        self._touchLayer = self:getChild("touch") -- 触摸关闭
+        local function btnClik()
+            self:setVisible(false)
+            NtfManager:removeNtfListenerByTag("UICompShowSkillTips:refreshExp")
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_CLOSE_SKILL_TIPS)
+        end
+        self._touchLayer:addClickListener(handler(self, btnClik))
+    end
+    self:setVisible(true)
+
+    local size = self:getSize()
+    local skillTips = self:getChild("skillTips")
+    local list = self:getChild("list")
+
+    skillTips:refreshTips(param)
+    local skillTipsSize = skillTips:getSize()
+    local listSize = list:getSize()
+    skillTips:setPosition(size.width/2-skillTipsSize.width/2,size.height/2-skillTipsSize.height/2-listSize.height/2)
+    list:setPosition(size.width/2-listSize.width/2,size.height/2+skillTipsSize.height/2-listSize.height/2+3)
+
+    local function refreshExp()
+        skillTips:refreshTips(param)
+    end
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_INIT_SKILL_LIST, handler(self, refreshExp), "UICompShowSkillTips:refreshExp")
+end
+
+function UICompShowSkillTips:onClickItem(context)
+    local data = context:getData()
+    -- print("btnIndex",data.index)
+    local btnType = self._btnList[data.index]
+    if Constant.SkillTipBtns.Study == btnType then
+        if self._studyCallback then
+            self._studyCallback()
+        end
+    elseif Constant.SkillTipBtns.Detail == btnType then
+        if self._skillInfo then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_HELP_TIPS, {
+                tipsType = Constant.HelpTipsType.Skill,
+                skillInfo = self._skillInfo,
+            })
+        end
+    end
+    self:setVisible(false)
+end
+
+function UICompShowSkillTips:renderListItem(index, obj)
+    if not self._btnList[index+1] then
+        return
+    end
+
+    local name = obj:getChild("name")
+    name:setText(btnName[self._btnList[index+1]] or "")
+    obj.index = index+1
+end
+
+return UICompShowSkillTips

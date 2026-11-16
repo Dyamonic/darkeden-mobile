@@ -1,0 +1,1130 @@
+local AutoFightManager = {}
+
+local Constant = lt.Constant
+local GameModule = lt.GameModule
+local ItemModule = lt.ItemModule
+local SkillModule = lt.SkillModule
+local MonsterModule = lt.MonsterModule
+local CacheManager = lt.CacheManager
+local SocketManager = lt.SocketManager
+local NtfManager = lt.NtfManager
+local SkillEnum = lt.SkillEnum
+local BuffEnum = lt.BuffEnum
+
+AutoFightManager._oldAuto = false		--断线前是否处于自动战斗状态
+AutoFightManager._isAuto = false		--是否处于自动战斗模式
+AutoFightManager._isSearch = false		--是否处于自动索敌状态中
+AutoFightManager._isPickUp = false		--是否处于自动拾物状态中
+AutoFightManager._isStopPickUp = false	--是否停止自动拾物
+AutoFightManager._isAutoSkill = false	--是否处于自动释放技能中
+AutoFightManager._canAuto = true		--是否可以执行自动战斗(因为外部点击技能会夺取控制权)
+AutoFightManager._isAddBullet = false	--是否处于自动装弹状态中
+AutoFightManager._randomPoint = nil		--是否在随机寻路
+AutoFightManager._searchStep = nil		--自动寻路的格子数
+AutoFightManager._absorbSoul = false	--是否可以自动灵魂吸收
+
+AutoFightManager._autoCheckPotionTimer = 0
+AutoFightManager._autoCheckFightTimer = 0.5
+AutoFightManager._autoCheckBulletTimer = 5
+AutoFightManager._autoCheckSearchTimer = 0
+AutoFightManager._autoCheckAutoBuyTimer    = 0
+
+local Distance1 = 3					--怪物检测范围1(目标选择)
+local Distance2 = 12				--怪物检测范围2(目标选择)
+local AreaDistance = 2				--怪物附近检测范围(单体群体)
+local MaxRepeat = 99				--最大连击数
+local TotalTime = 60				--在寻路状态的最大时间
+local NormalSpeed = 0.5				--自动战斗正常速度
+
+
+local SETTINGS_TYPE = {
+	SYSTEM = "SYSTEM", --系统设置
+}
+
+function AutoFightManager:init()
+	self:reset()
+	self:setWorldAgent(lt.AgentManager:getWorldAgent())
+	NtfManager:addNtfListener(NtfManager.NTF.NTF_STOP_AUTO_ROUTE, handler(self, self.onStopAutoRoute), "AutoFightManager:onStopAutoRoute")
+end
+
+function AutoFightManager:clear()
+	NtfManager:removeNtfListenerByTag("AutoFightManager:onStopAutoRoute")
+	self._isAuto = nil
+	self._isSearch = nil
+	self._isPickUp = nil
+	self._isStopPickUp = nil
+	self._isAutoSkill = nil
+	self._isAddBullet = nil
+	self._canAuto = nil
+	self._worldAgent = nil
+	self._randomPoint = nil
+	self._searchStep = nil
+	self._absorbSoul = nil
+	self._targetPosX = nil
+	self._targetPosY = nil
+	self._race = nil
+	self._potionHp = nil
+	self._potionMp = nil
+	self._potionHpAutoBuy = nil  -- 自动购买
+	self._potionMpAutoBuy = nil  -- 自动购买
+end
+
+function AutoFightManager:reset()
+	self._isAuto = false
+	self._isSearch = false
+	self._isPickUp = false
+	self._isStopPickUp = false
+	self._isAutoSkill = false
+	self._isAddBullet = false
+	self._canAuto = true
+	self._autoCheckPotionTimer = 0
+	self._autoCheckFightTimer = 0.5
+	self._autoCheckBulletTimer = 5
+	self._autoCheckSearchTimer = 0
+	self._autoCheckAutoBuyTimer = 0
+	self._randomPoint = false
+	self._searchStep = 0
+	self._absorbSoul = false
+	self._targetPosX = nil
+	self._targetPosY = nil
+end
+
+---------------------------自动战斗------------------------------
+function AutoFightManager:onUpdate(dt, heroAgent)
+	-- 网络有问题 暂停处理
+	if not SocketManager:isAlive() then
+		return
+	end
+
+	if not heroAgent then
+		return
+	end
+
+	--自动检测药水使用
+	self:onUpdateAutoPotion(dt, heroAgent)
+	--自动加弹药
+	self:onUpdateAutoBullet(dt, heroAgent)
+	--自动战斗检测
+	self:onUpdateAutoFight(dt, heroAgent)
+	--自动买药
+	self:onUpdateAutoBuy(dt, heroAgent)
+end
+
+--[[_
+	longPress
+	cd 普攻检测 -> 释放
+	释放列表 nextskill
+]]
+function AutoFightManager:onUpdateAutoFight(dt, heroAgent)
+	--不是自动战斗状态
+	if not self:isAuto() then return end
+
+	--是否可以执行自动战斗
+	if not self._canAuto then return end
+
+	--在自动释放技能
+	if self._isAutoSkill then return end
+
+	--在自动拾物状态
+	if self._isPickUp then return end
+
+	--无法移动
+	if not heroAgent:canMove() then return end
+
+	--0.5秒检测一次
+	if self._autoCheckFightTimer < NormalSpeed then
+		self._autoCheckFightTimer = self._autoCheckFightTimer + dt
+		return
+	end
+	self._autoCheckFightTimer = 0
+
+	--非鬼族检测回血技能
+	if self:checkHealSkill(heroAgent) then return end
+
+	--检测增益技能
+	if self:checkBuffSkill(heroAgent) then return end
+
+	--[[ 战斗检测 ]]
+	-- 自动装弹状态
+	if self._isAddBullet then return end
+
+	--在自动索敌状态
+	if self._isSearch then
+		-- if self._randomPoint then
+		-- 	self._autoCheckSearchTimer = self._autoCheckSearchTimer + 0.5
+		-- 	if self._autoCheckSearchTimer >= TotalTime then
+		-- 		self._autoCheckSearchTimer = 0
+		-- 		--寻找地图中怪物坐标
+		-- 		GameModule:sendSearchMonster()
+		-- 	end
+		-- end
+		return
+	end
+
+	--判断灵魂吸收
+	if self._absorbSoul then
+		self._absorbSoul = false
+		if self:checkOustersSkill(heroAgent) then
+			return
+		end
+	end
+	
+	--3格周围有怪物(打怪)
+	local nearestMonster1, nearestMonster2 = self:checkAroundMonster(heroAgent)
+	local isArea = self:checkHasMonster(heroAgent, nearestMonster1)
+	if isArea ~= nil then
+		-- aoe 技能自动施法
+		if self:checkFightSkill(heroAgent, isArea) then
+			-- self:resetSearchTime()
+			return
+		end
+	end
+
+	--没怪检测脚下是否有物品和尸体
+	if self:checkAutoItem(heroAgent) then
+		-- self:resetSearchTime()
+		return
+	end
+
+	--检测12格内有没有物品和尸体
+	if self:checkNearbyItem(heroAgent) then
+		-- self:resetSearchTime()
+		return
+	end
+	
+	--12格周围有怪物(打怪)
+	isArea = self:checkHasMonster(heroAgent, nearestMonster2)
+	if isArea ~= nil then
+		if self:checkFightSkill(heroAgent, isArea) then
+			-- self:resetSearchTime()
+			return
+		end
+	end
+
+	-- 自动寻路到随机点
+	self:moveRandomPoint(heroAgent)
+end
+
+function AutoFightManager:checkNextSkill(heroAgent)
+	--不是自动战斗状态
+	if not self:isAuto() then return end
+
+	--是否可以执行自动战斗
+	if not self._canAuto then return end
+
+	--无法移动
+	if not heroAgent:canMove() then return end
+
+	--非鬼族检测回血技能
+	if self:checkHealSkill(heroAgent) then return end
+
+	--检测增益技能
+	if self:checkBuffSkill(heroAgent) then return end
+
+	--判断灵魂吸收
+	if self._absorbSoul then
+		self._absorbSoul = false
+		if self:checkOustersSkill(heroAgent) then
+			return
+		end
+	end
+
+	--3格周围有怪物(打怪)
+	local nearestMonster1, nearestMonster2 = self:checkAroundMonster(heroAgent)
+	local isArea = self:checkHasMonster(heroAgent, nearestMonster1)
+	if isArea ~= nil then
+		-- aoe 技能自动施法
+		if self:checkFightSkill(heroAgent, isArea) then
+			-- self:resetSearchTime()
+			return
+		end
+	end
+end
+
+--检测回血技能
+function AutoFightManager:checkHealSkill(heroAgent)
+	-- 非鬼族检测回血技能
+	if self:getRace() == Constant.RaceType.Vampire then
+		return false
+	end
+
+	--在安全区里不战斗
+	if heroAgent:isInSafeArea() ~= nil then
+        return false
+    end
+
+	local autoSkillList = {}
+	local heroData = heroAgent:getHeroData()
+	local healSkills = SkillModule:getAutoHealSkills()
+	--配置了回血技能
+	if #healSkills > 0 then
+		--血量小于30%自定释放回血技能
+		local hpPercent = heroData:getHpPercent()
+		if hpPercent < 0.3 then
+			for k, v in ipairs(healSkills) do
+				table.insert(autoSkillList, v)
+			end
+		end
+	end
+
+	if #autoSkillList > 0 then
+		local canUse = self:playAutoSkill(heroAgent, autoSkillList, true)
+		return canUse
+	end
+
+	return false
+end
+
+--检测增益技能
+function AutoFightManager:checkBuffSkill(heroAgent)
+	--在安全区里不战斗
+	if heroAgent:isInSafeArea() ~= nil then
+        return false
+    end
+
+	local autoSkillList = {}
+	local buffSkills = SkillModule:getAutoBuffSkills()
+	for k, v in pairs(buffSkills) do
+		--检测身上是否还有buff
+		if not heroAgent:hasBuffer(v) then
+			table.insert(autoSkillList, k)
+		end
+	end
+
+	if #autoSkillList > 0 then
+		local canUse = self:playAutoSkill(heroAgent, autoSkillList, true)
+		return canUse
+	end
+
+	return false
+end
+
+-- 检测战斗技能
+function AutoFightManager:checkFightSkill(heroAgent, isArea)
+	--在安全区里不战斗
+	if heroAgent:isInSafeArea() ~= nil then
+        return false
+    end
+
+	local autoSkillList = {}
+
+	--鬼族判断能否吸血(敌方血量小于30%)
+	if self:getRace() == Constant.RaceType.Vampire and self:checkVampireSkill(heroAgent) then
+		table.insert(autoSkillList, SkillEnum.SKILL_BLOOD_DRAIN)
+	end
+	
+	--检测其他战斗技能
+	if isArea then
+		--怪大于等于3个先检测群体技能
+		local areaSkills = SkillModule:getAutoAreaSkills()
+		for k, v in ipairs(areaSkills) do
+			table.insert(autoSkillList, v)
+		end
+	end
+
+	--再检测单体技能
+	local singleSkills = SkillModule:getAutoSingleSkills()
+	for k, v in ipairs(singleSkills) do
+		table.insert(autoSkillList, v)
+	end
+
+	--最后检测普攻
+    local normalSkill = SkillModule:getNoramlSkillId()
+    table.insert(autoSkillList, normalSkill)
+
+	if #autoSkillList > 0 then
+		local canUse = self:playAutoSkill(heroAgent, autoSkillList, false)
+		return canUse
+	end
+end
+
+--鬼族判断能否吸血(敌方血量小于30%)
+function AutoFightManager:checkVampireSkill(heroAgent)
+	if not heroAgent then return false end
+
+	local targetAgent = heroAgent:getTargetAgent()
+	if targetAgent then
+		if SkillModule:hasBloodDrain() then
+			local hpPercent = targetAgent:getHeroData():getHpPercent()
+			local hasBuffer = targetAgent:hasBuffer(BuffEnum.EFFECT_CLASS_BLOOD_DRAIN) or targetAgent:hasBuffer(BuffEnum.EFFECT_MMUNE_TO_BLOOD_DRAIN)
+			if not hasBuffer and hpPercent < 1/3 then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+--魔族判断能否吸蓝(自身蓝量<=100%)
+function AutoFightManager:checkOustersSkill(heroAgent)
+	if not heroAgent then return false end
+	if self:getRace() ~= Constant.RaceType.Ousters then return false end
+
+	if SkillModule:hasAbsorbSoul() then
+		local mpPercent = heroAgent:getHeroData():getMpPercent()
+		if mpPercent <= 1 then
+			--判断周围两格是否有尸体
+			local monster = heroAgent:getMonsterBody(true)
+			if monster then
+				local canUse = self:playAutoSkill(heroAgent, {SkillEnum.SKILL_ABSORB_SOUL}, false)
+				return canUse
+			end
+		end
+	end
+	return false
+end
+
+--检测周围怪物数量
+function AutoFightManager:checkAroundMonster(heroAgent)
+	local targetAgent = heroAgent:getTargetAgent()
+	--优先返回自己选中的怪物
+	if targetAgent and targetAgent:isMonsterAgent() and targetAgent:getMasterObjId() == 0 then
+		local data  = targetAgent:getMonsterData()
+		if data and data:getCurHp() > 0 then
+			return targetAgent, targetAgent
+		else
+			-- 切换目标
+			if data and data:isAlive() then
+				-- 上传bugly 日志
+				if buglyReportLuaException then
+					local m, n = targetAgent:getMNExactly()
+					local msgLog = string.format("title: \n          agentId:%s \n          objId:%s \n          m:%s \n          n:%s", targetAgent:getAgentId(), data:getObjId(), m, n)
+					buglyReportLuaException("BUGLY LOG: AutoFightManager:checkHasMonster", msgLog)
+				end
+			end
+		end
+	end
+
+	local worldAgent = self:getWorldAgent()
+	local nearestMonster1, nearestMonster2 = worldAgent:getNearestMonster(Distance1, Distance2)
+	return nearestMonster1, nearestMonster2
+end
+
+--检测是否有怪(需要单体群体)
+function AutoFightManager:checkHasMonster(heroAgent, nearestMonster)
+	if nearestMonster then	--选中最近的怪
+		heroAgent:setTargetAgentId(nearestMonster:getAgentId())
+		--取怪附近是否大于等于3只怪
+		local worldAgent = self:getWorldAgent()
+		local needAreaSkill = worldAgent:getAroundMonster(nearestMonster, AreaDistance, 3)
+		return needAreaSkill
+	end
+	return nil
+end
+
+--检测技能列表里的技能是否能使用
+function AutoFightManager:playAutoSkill(heroAgent, autoSkillList, isSelf)
+	local skillId = nil
+
+    for _, v in ipairs(autoSkillList) do
+		if heroAgent:checkPlaySkillBaseCondition(v) then
+            skillId = v
+            break
+		end
+    end
+
+	-- yflog:Info("AutoFightManager:playAutoSkill #autoSkillList:%s skillId:%s", #autoSkillList, skillId)
+    if skillId then
+		-- 先打断自动索敌
+		-- heroAgent:onMessage({msgId = Constant.MSG_ROUTE_STOP})
+		self:stopAutoRoute(heroAgent)
+
+		if isSelf then
+			--如果是治疗和增益选中自己
+			-- heroAgent:setTargetAgentId(heroAgent:getAgentId())
+		else
+			if skillId ~= SkillEnum.SKILL_BLOOD_DRAIN and skillId ~= SkillEnum.SKILL_ABSORB_SOUL then
+				--伤害类技能放完后，下一个技能优先级最高
+				local skillCfg = CacheManager:querySkillMeta(skillId)
+				if skillCfg:getIndividualOrGroup() == 2 then
+					SkillModule:nextAutoAreaSkills(skillId)
+				else
+					SkillModule:nextAutoSingleSkills(skillId)
+				end
+			elseif skillId == SkillEnum.SKILL_ABSORB_SOUL then
+				heroAgent:setTargetAgentId(nil)
+			end
+		end
+
+		--连击技能段数计算
+		self:checkComboSkill(heroAgent, skillId)
+
+		--使用技能
+		heroAgent:addSelfSkillId(skillId)
+		return true
+    end
+	return false
+end
+
+--检测是否为连击技能
+function AutoFightManager:checkComboSkill(heroAgent, skillId)
+	--先清连击
+	heroAgent:clearShotTime()
+	local shotRepeatSkill = SkillEnum.GUN_SHOT_SKILL_REPEATED_TIMES_TABLE[skillId]
+	local isRepeat = shotRepeatSkill and (shotRepeatSkill == -1 or shotRepeatSkill > 1)
+	if isRepeat then
+		if SkillEnum.GUN_SHOT_SKILL_ID_TABLE[skillId] then
+			--如果是枪技能(走子弹那套)
+			local bulletNum = SkillModule:getBulletNum()
+			if shotRepeatSkill == -1 then
+				shotRepeatSkill = bulletNum
+			else
+				shotRepeatSkill = math.min(bulletNum, shotRepeatSkill)
+			end
+		else
+			--如果是别的技能(最大上限设置为99)
+			if shotRepeatSkill == -1 then
+				shotRepeatSkill = MaxRepeat
+			end
+		end
+
+		--添加连击
+		for i = 1, shotRepeatSkill do
+			heroAgent:addShotTime()
+		end
+	end
+end
+
+--获得是否自动战斗时开启自动拾取
+function AutoFightManager:getAutoPickUp()
+	local editTable = self:getEditConfByIndex(Constant.SETTINGS_TYPES.AUTO_PICKUP)
+	return editTable.switch == 1
+end
+
+
+--检测拾取物品
+function AutoFightManager:checkAutoItem(heroAgent)
+	if not self:getAutoPickUp() then
+		return false
+	end
+	--获取地格所能拾取的物品和尸体
+	local agent = GameModule:checkCurDropAndBodyGridMap()
+	if agent then
+		self:setPickUp(true)
+		if agent:isItemAgent() then
+			--检查有没有停止拾取
+			if self._isStopPickUp then
+				self:setPickUp(false)
+				return false
+			end
+			--发送捡东西
+			heroAgent:pickUpDrop(agent)
+		else
+			--发送挖掘尸体
+			MonsterModule:sendDigCorpse(agent)
+		end
+		return true
+	end
+	return false
+end
+
+--判断附近有没有没拾取的物品或者尸体
+function AutoFightManager:checkNearbyItem(heroAgent)
+	if not self:getAutoPickUp() then
+		return false
+	end
+	local worldAgent = self:getWorldAgent()
+	local agent = worldAgent:getAroundDig(heroAgent)
+	if agent and (agent:isMonsterAgent() or (agent:isItemAgent() and not self._isStopPickUp)) then
+		local m1, n1 = heroAgent:getMNExactly()
+		local m2, n2 = agent:getMN()
+		local route = lt.MapUtil:route(m1, n1, m2, n2)
+		if route then
+			NtfManager:dispatchNtf(NtfManager.NTF.NTF_MINIMAP_ROUTE_POS,{posx = m2, posy = n2})
+			return true
+		end
+	end
+	return false
+end
+
+--随机寻路到地图中的一个合法点
+function AutoFightManager:moveRandomPoint(heroAgent)
+	local m1, n1 = heroAgent:getMNExactly()
+	if self._targetPosX and self._targetPosY then
+		local route = lt.MapUtil:route(m1, n1, self._targetPosX, self._targetPosY)
+		if route then
+			NtfManager:dispatchNtf(NtfManager.NTF.NTF_MINIMAP_ROUTE_POS,{posx = self._targetPosX, posy = self._targetPosY})
+			self:resetSearchTime()
+		end
+	else
+		local x, y = self:getRandomPos(heroAgent)
+		local route = lt.MapUtil:route(m1, n1, x, y)
+		if route then
+			self._randomPoint = true
+			NtfManager:dispatchNtf(NtfManager.NTF.NTF_MINIMAP_ROUTE_POS,{posx = x, posy = y})
+		end
+	end
+end
+
+--记录一个最近的怪物地点xy
+function AutoFightManager:setSearchTarget(x, y)
+	self._targetPosX = x
+	self._targetPosY = y
+end
+
+--重置搜索时间
+function AutoFightManager:resetSearchTime()
+	self._autoCheckSearchTimer = 0
+	self:setSearchTarget(nil, nil)
+end
+
+--增加自动寻路走的格子数
+function AutoFightManager:addAutoSearchStep(heroAgent)
+	if not heroAgent then
+		return
+	end
+	--在安全区里不检测
+	if heroAgent:isInSafeArea() then
+        return
+    end
+	if self:isAuto() and self._randomPoint then
+		self._searchStep = self._searchStep + 1
+		if self._searchStep == 3 then
+			local worldAgent = self:getWorldAgent()
+			local nearestMonster = worldAgent:getNearestMonster(Distance2)
+			self._searchStep = 0
+			if nearestMonster then
+				heroAgent:setTargetAgentId(nearestMonster:getAgentId())
+				self:setSearch(false)
+			end
+		end
+	end
+end
+
+--开始挂机
+function AutoFightManager:startAutoFight(noAnim)
+	if self:isAuto() then
+		self:endAutoFight()
+		return
+	end
+	local heroAgent = lt.AgentManager:getWorldAgent():getHeroAgent()
+	if not heroAgent then
+		return
+	end
+	if not heroAgent:isAlive() then
+		return
+	end
+	--暂停之前的寻路
+	self:stopAutoRoute(heroAgent)
+	
+    self._isAuto = true
+	self._canAuto = true
+	NtfManager:dispatchNtf(NtfManager.NTF.NTF_AUTOFIGHT_START, {noAnim = noAnim})
+end
+
+--结束挂机
+function AutoFightManager:endAutoFight(noAnim)
+	if not self:isAuto() then
+		return
+	end
+	local heroAgent = lt.AgentManager:getWorldAgent():getHeroAgent()
+	if heroAgent then
+		heroAgent:clearShotTime()
+		-- heroAgent:onMessage({msgId = Constant.MSG_ROUTE_STOP})
+		self:stopAutoRoute(heroAgent)
+		
+		heroAgent:clearSelfSkillId()
+    	heroAgent:setAutoSkill(false)
+	end
+	self:reset()
+	NtfManager:dispatchNtf(NtfManager.NTF.NTF_AUTOFIGHT_END, {noAnim = noAnim})
+end
+
+--设置为自动释放技能状态
+function AutoFightManager:setAutoSkill(isAutoSkill)
+	self._isAutoSkill = isAutoSkill
+end
+
+--设置为自动拾取物品状态
+function AutoFightManager:setPickUp(isPickUp)
+	self._isPickUp = isPickUp
+end
+
+--设置停止自动拾取物品
+function AutoFightManager:setStopPickUp(isStopPickUp)
+	self._isStopPickUp = isStopPickUp
+	NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_BAG_FULL, {isFull = isStopPickUp})
+end
+
+--设置是否在自动寻路状态
+function AutoFightManager:setSearch(isSearch)
+	self._isSearch = isSearch
+	if not isSearch and self._randomPoint then
+		self._randomPoint = false
+		self._searchStep = 0
+	end
+end
+
+--是否在自动寻路
+function AutoFightManager:isAutoSearch()
+	return self._isSearch
+end
+
+function AutoFightManager:onStopAutoRoute()
+	if not self._isAuto then
+		return
+	end
+
+	self:setSearch(false)
+end
+
+-- 停止自动寻路
+function AutoFightManager:stopAutoRoute(heroAgent)
+	heroAgent:stopAutoRoute()
+end
+
+--设置是否可以执行自动战斗状态
+function AutoFightManager:setCanAuto(canAuto)
+	self._canAuto = canAuto
+end
+
+--设置是否可以自动灵魂吸收
+function AutoFightManager:setAbsorbSoul(absorbSoul)
+	self._absorbSoul = absorbSoul
+end
+
+--是否在自动战斗
+function AutoFightManager:isAuto()
+	return self._isAuto
+end
+
+--断线前是否处于自动战斗状态
+function AutoFightManager:setOldAuto(oldAuto)
+	self._oldAuto = oldAuto
+end
+
+function AutoFightManager:getOldAuto()
+	return self._oldAuto
+end
+
+--获得地图里有效的随机点
+function AutoFightManager:getRandomPos(heroAgent)
+	local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+	local mapData = mapAgent:getMapData()
+    local mCount = mapData:getMCount()
+    local nCount = mapData:getNCount()
+	-- local m, n = heroAgent:getMNExactly()
+	-- local mMin = m - 10
+	-- local mMax = m + 10
+	-- local nMin = n - 10
+	-- local nMax = n + 10
+	-- --寻路终点避开边界五格
+	-- local border = 5
+	-- mMin = mMin <= border and border or mMin
+	-- mMax = mMax >= mCount - border and mCount - border or mMax
+	-- nMin = nMin <= border and border or nMin
+	-- nMax = nMax >= nCount - border and nCount or nMax
+    -- local x = math.random(mMin, mMax)
+    -- local y = math.random(nMin, nMax)
+	local x = math.random(1, mCount)
+	local y = math.random(1, nCount)
+    if mapAgent and (mapAgent:isBlocked(x, y) or mapAgent:isTrans(x, y)) then
+        return self:getRandomPos(heroAgent)
+    end
+    return x, y
+end
+
+----------------------------系统设置------------------------------------
+--重载设置
+function AutoFightManager:reloadConfig(roleId, race)
+	self:setRace(race)
+	self._configMap = {}
+	self:reloadSettingConfig(roleId)
+	self:reloadPostionConfig()
+end
+
+function AutoFightManager:reloadSettingConfig(roleId)
+	local config = {}
+    local dataString = cc.UserDefault:getInstance():getStringForKey("Save_Common_Edit_Of_Settings" .. roleId, "{}")
+    if dataString == "{}" then
+		--初始化
+        self:setDefaultConf()
+		return
+	end
+	config = json.decode(dataString)
+	--对新的设置选项进行赋初值
+	self:compareDefaultConf(config)
+end
+
+function AutoFightManager:setDefaultConf()
+    local config = {}
+    local settingMeta = CacheManager:getAllSettingMeta()
+    for index, meta in pairs(settingMeta) do
+        if meta:getOccupation() == 0 or meta:getOccupation() == self:getRace() then
+            local editTable = {}
+            if meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE1 then
+                editTable.value = meta:getDefaultValue()
+                editTable.switch = meta:getDefaultSwitch()
+                editTable.selectId = meta:getSettingList()[1][2]
+				editTable.isAutoBuy = meta:getDefaultSelect()
+                editTable.autoBuyCount = meta:getDefaultInputValue()
+            elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE2 then
+                editTable.value = meta:getDefaultValue()
+            elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE3 then
+                editTable.switch = meta:getDefaultSwitch()
+            elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE4
+			or meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE6 then
+                editTable.value = meta:getDefaultValue()
+            elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE5 then
+                editTable.value = meta:getDefaultValue()
+                editTable.switch = meta:getDefaultSwitch()
+            end
+            config[tostring(index)] = editTable
+        end
+    end
+	self._configMap[SETTINGS_TYPE.SYSTEM] = config
+end
+
+function AutoFightManager:compareDefaultConf(config)
+	local settingMeta = CacheManager:getAllSettingMeta()
+	for index, meta in pairs(settingMeta) do
+        if meta:getOccupation() == 0 or meta:getOccupation() == self:getRace() then
+			if not config[tostring(index)] then
+				local editTable = {}
+				if meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE1 then
+					editTable.value = meta:getDefaultValue()
+					editTable.switch = meta:getDefaultSwitch()
+					editTable.selectId = meta:getSettingList()[1][2]
+					editTable.isAutoBuy = meta:getDefaultSelect()
+					editTable.autoBuyCount = meta:getDefaultInputValue()
+				elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE2 then
+					editTable.value = meta:getDefaultValue()
+				elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE3 then
+					editTable.switch = meta:getDefaultSwitch()
+				elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE4
+				or meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE6 then
+					editTable.value = meta:getDefaultValue()
+				elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE5 then
+					editTable.value = meta:getDefaultValue()
+					editTable.switch = meta:getDefaultSwitch()
+				end
+				config[tostring(index)] = editTable
+			end
+        end
+    end
+	self._configMap[SETTINGS_TYPE.SYSTEM] = config
+end
+
+function AutoFightManager:setEditConfByIndex(index, key, value)
+    if self._configMap[SETTINGS_TYPE.SYSTEM][tostring(index)] then
+        self._configMap[SETTINGS_TYPE.SYSTEM][tostring(index)][key] = value
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_CHANGE_SETTINGS, {index = index})
+end
+
+function AutoFightManager:getEditConfByIndex(index)
+	if not self._configMap then
+		return {}
+	end
+    return self._configMap[SETTINGS_TYPE.SYSTEM][tostring(index)] or {}
+end
+
+function AutoFightManager:saveEditConf(roleId)
+    local dataString = json.encode(self._configMap[SETTINGS_TYPE.SYSTEM])
+    cc.UserDefault:getInstance():setStringForKey("Save_Common_Edit_Of_Settings" .. roleId, dataString)
+    cc.UserDefault:getInstance():flush()
+end
+
+-- 左侧屏幕边缘偏移
+function AutoFightManager:refreshLeftUIOffset(uiTable,parent,index)
+    local editTable = AutoFightManager:getEditConfByIndex(index) or {}
+    local value = editTable.value or 0
+
+    for _, v in ipairs(uiTable) do
+        local ui = parent:getChild(v)
+        if ui then
+            local pos = ui:getPosition()
+            ui:setPosition(value,pos.y)
+        end
+    end
+end
+
+-- 左侧屏幕边缘偏移
+function AutoFightManager:refreshLeftInnerUIOffset(uiTable,parent,index)
+    local editTable = AutoFightManager:getEditConfByIndex(index) or {}
+    local value = editTable.value or 0
+
+    for k, v in pairs(uiTable) do
+        local ui = parent:getChild(k)
+        if ui then
+            local pos = ui:getPosition()
+            ui:setPosition(v+value,pos.y)
+        end
+    end
+end
+
+-- 右侧屏幕边缘偏移
+function AutoFightManager:refreshRightUIOffset(uiTable,parent,index)
+    local editTable = AutoFightManager:getEditConfByIndex(index) or {}
+    local value = editTable.value or 0
+
+    local visibleSize = cc.Director:getInstance():getVisibleSize()
+    for _, v in ipairs(uiTable) do
+        local ui = parent:getChild(v)
+        if ui then
+            local pos = ui:getPosition()
+            ui:setPosition(visibleSize.width-value,pos.y)
+        end
+    end
+end
+
+function AutoFightManager:getEditConfOffsetValue()
+	local rightEditTable = lt.AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.RIGHT_OFFSET) or {}
+    local rightValue = rightEditTable.value or 0
+    local leftEditTable = lt.AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.LEFT_OFFSET) or {}
+    local leftValue = leftEditTable.value or 0
+    local offsetValue = (-rightValue + leftValue) / 2
+
+	return offsetValue
+end
+
+--ping值
+function AutoFightManager:getPingValueOpen()
+	local editTable = self:getEditConfByIndex(Constant.SETTINGS_TYPES.SHOW_PING)
+	return editTable.switch == 1
+end
+
+---------------------------自动使用药品-------------------------
+--检测自动使用药品
+function AutoFightManager:reloadPostionConfig()
+    if self:getRace() == Constant.RaceType.Slayer then
+		self:setAutoUsePotion(Constant.SETTINGS_TYPES.SLAYER_HP)
+		self:setAutoUsePotion(Constant.SETTINGS_TYPES.SLAYER_MP)
+    elseif self:getRace() == Constant.RaceType.Vampire then
+		self:setAutoUsePotion(Constant.SETTINGS_TYPES.VAMPIRE_HP)
+    elseif self:getRace() == Constant.RaceType.Ousters then
+		self:setAutoUsePotion(Constant.SETTINGS_TYPES.OUSTERS_HP)
+		self:setAutoUsePotion(Constant.SETTINGS_TYPES.OUSTERS_EP)
+    end
+end
+
+function AutoFightManager:setAutoUsePotion(settingType)
+	if settingType == Constant.SETTINGS_TYPES.SLAYER_HP or
+		settingType == Constant.SETTINGS_TYPES.VAMPIRE_HP or
+		settingType == Constant.SETTINGS_TYPES.OUSTERS_HP then
+		local editTable = self:getEditConfByIndex(settingType)
+		if editTable and editTable.switch == 1 then
+			self._potionHp = {}
+			self._potionHp.itemId = editTable.selectId
+			self._potionHp.limited = editTable.value/100
+			local itemMeta = CacheManager:getItemMeta(editTable.selectId)
+			self._potionHp.interval = itemMeta:getPotionTime()
+			self._potionHp.cd = itemMeta:getPotionTime()
+		else
+			self._potionHp = nil
+		end
+
+		local editTable = self:getEditConfByIndex(settingType)
+		if editTable and editTable.isAutoBuy == 1 then
+			self._potionHpAutoBuy = {}
+			self._potionHpAutoBuy.itemId = editTable.selectId
+			self._potionHpAutoBuy.isAutoBuy = editTable.isAutoBuy
+			self._potionHpAutoBuy.autoBuyCount = editTable.autoBuyCount
+		else
+			self._potionHpAutoBuy = nil
+		end
+	elseif settingType == Constant.SETTINGS_TYPES.SLAYER_MP or
+			settingType == Constant.SETTINGS_TYPES.OUSTERS_EP then
+		local editTable = self:getEditConfByIndex(settingType)
+		if editTable and editTable.switch == 1 then
+			self._potionMp = {}
+			self._potionMp.itemId = editTable.selectId
+			self._potionMp.limited = editTable.value/100
+			local itemMeta = CacheManager:getItemMeta(editTable.selectId)
+			self._potionMp.interval = itemMeta:getPotionTime()
+			self._potionMp.cd = itemMeta:getPotionTime()
+		else
+			self._potionMp = nil
+		end
+
+		local editTable = self:getEditConfByIndex(settingType)
+		if editTable and editTable.isAutoBuy == 1 then
+			self._potionMpAutoBuy = {}
+			self._potionMpAutoBuy.itemId = editTable.selectId
+			self._potionMpAutoBuy.isAutoBuy = editTable.isAutoBuy
+			self._potionMpAutoBuy.autoBuyCount = editTable.autoBuyCount
+		else
+			self._potionMpAutoBuy = nil
+		end
+	end
+end
+
+-- 更新自动使用药品
+function AutoFightManager:onUpdateAutoPotion(dt, heroAgent)
+	if not heroAgent then
+		return
+	end
+
+	local heroData = heroAgent:getHeroData()
+	if not heroData then
+		return
+	end
+
+	--1秒检测一次
+	if self._autoCheckPotionTimer < 1 then
+		self._autoCheckPotionTimer = self._autoCheckPotionTimer + dt
+		return
+	end
+	self._autoCheckPotionTimer = 0
+
+	-- FIXME delay 需要增加开关，在血量变化的时候才去检测
+	if self._potionHp and self._potionHp.itemId then
+		if self._potionHp.cd < self._potionHp.interval then
+			self._potionHp.cd = self._potionHp.cd + 1
+		end
+		local hpPercent = heroData:getHpPercentReal()
+		if hpPercent < self._potionHp.limited then
+			local itemId = self._potionHp.itemId
+			local item = ItemModule:getItemByItemId(itemId, Constant.ItemType.ITEM_TYPE_PROP)
+			if item then
+				if self._potionHp.cd >= self._potionHp.interval then
+					self._potionHp.cd = 0
+					ItemModule:sendUseItem(item:getObjId())
+				end
+			end
+		elseif hpPercent == 1 then
+			self._potionHp.cd = self._potionHp.interval
+		end
+	end
+
+	if self._potionMp and self._potionMp.itemId then
+		if self._potionMp.cd < self._potionMp.interval then
+			self._potionMp.cd = self._potionMp.cd + 1
+		end
+		local mpPercent = heroData:getMpPercent()
+		if mpPercent < self._potionMp.limited then
+			local itemId = self._potionMp.itemId
+			local item = ItemModule:getItemByItemId(itemId, Constant.ItemType.ITEM_TYPE_PROP)
+			if item then
+				if self._potionMp.cd >= self._potionMp.interval then
+					self._potionMp.cd = 0
+					ItemModule:sendUseItem(item:getObjId())
+				end
+			end
+		elseif mpPercent == 1 then
+			self._potionMp.cd = self._potionMp.interval
+		end
+	end
+end
+
+
+function AutoFightManager:onUpdateAutoBuy(dt, heroAgent)
+	if not heroAgent then
+		return
+	end
+
+	--10秒检测一次
+	if self._autoCheckAutoBuyTimer < 10 then
+		self._autoCheckAutoBuyTimer = self._autoCheckAutoBuyTimer + dt
+		return
+	end
+	self._autoCheckAutoBuyTimer = 0
+	local function onAutoBuy(config)
+		if not config or not config.itemId then return end
+
+		local itemId = config.itemId
+		local count = tonumber(config.autoBuyCount)
+		local item = ItemModule:getItemByItemId(itemId, Constant.ItemType.ITEM_TYPE_PROP)
+		if item then return end  -- 有货就不买
+		
+		local meta = lt.VipModule:getCurVipMeta()
+		if not meta or meta:getAutoMedication() ~= 1 then
+			return
+		end
+		local itemMeta = ItemModule:getItemMetaByItemId(Constant.ItemType.ITEM_TYPE_PROP, itemId)
+		if not itemMeta then return end
+
+		local access = itemMeta:getAccess()
+		for i,v in ipairs(access or {}) do
+			local type = tonumber(v[1])
+			if type == Constant.PROPTIPS_ACCESS.SHOP then
+				lt.RechargeModule:autoBuyByShopId(v[2], count)
+				break  -- 防止重复购买
+			end
+		end
+	end
+
+	onAutoBuy(self._potionHpAutoBuy)
+	onAutoBuy(self._potionMpAutoBuy)
+end
+
+
+--自动加弹药
+function AutoFightManager:onUpdateAutoBullet(dt, heroAgent)
+	if not heroAgent then
+		return
+	end
+
+	if self._autoCheckBulletTimer < 5 then
+		self._autoCheckBulletTimer = self._autoCheckBulletTimer + dt
+		return
+	end
+
+	local gunEquip = ItemModule:getEquipGun()
+	if not gunEquip then return end
+
+	if gunEquip:getAmmoCount() > 0 then
+		return
+	end
+
+	local isAdd = ItemModule:autoAddBullet()
+	--5秒内不再检测
+	if not isAdd then
+		self._autoCheckBulletTimer = 0
+	else
+		self._autoCheckBulletTimer = 0
+		self._isAddBullet = true
+		-- heroAgent:onMessage({msgId = Constant.MSG_ROUTE_STOP})
+		self:stopAutoRoute(heroAgent)
+	end
+end
+
+--设置是否在添加子弹状态
+function AutoFightManager:setAddBullet(isAddBullet)
+	self._isAddBullet = isAddBullet
+end
+
+function AutoFightManager:isAddBullet()
+	return self._isAddBullet
+end
+
+function AutoFightManager:setWorldAgent(worldAgent)
+	self._worldAgent = worldAgent
+end
+
+function AutoFightManager:getWorldAgent()
+	if not self._worldAgent then
+		self._worldAgent = lt.AgentManager:getWorldAgent()
+	end
+
+	return self._worldAgent
+end
+
+--种族
+function AutoFightManager:setRace(race)
+	self._race = race
+end
+
+function AutoFightManager:getRace()
+	if not self._race then
+		local heroData = GameModule:getHeroData()
+		if heroData then
+			self._race = heroData:getRace()
+			self:reloadPostionConfig()
+		end
+	end
+	return self._race
+end
+
+-- 是否是自动买药道具
+function AutoFightManager:isAutoBuyItem(itemId)
+	if self._potionHpAutoBuy and self._potionHpAutoBuy.itemId and self._potionHpAutoBuy.itemId == itemId then
+		return true
+	end
+	if self._potionMpAutoBuy and self._potionMpAutoBuy.itemId and self._potionMpAutoBuy.itemId == itemId then
+		return true
+	end
+	return false
+end
+
+return AutoFightManager

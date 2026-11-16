@@ -1,0 +1,20 @@
+
+local PetSkinData = class("PetSkinData")
+
+local luaBean = lt.CommonFunc.metaLuaBean
+
+luaBean(PetSkinData, "_skinId")
+luaBean(PetSkinData, "_level")
+luaBean(PetSkinData, "_petUid")
+
+function PetSkinData:ctor(petProto)
+	self:setPetSkinInfo(petProto)
+end
+
+function PetSkinData:setPetSkinInfo(petProto)
+	self._skinId = petProto.skinId
+	self._level  = petProto.level
+	self._petUid = petProto.petUid
+end
+
+return PetSkinData

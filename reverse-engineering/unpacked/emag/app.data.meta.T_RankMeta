@@ -1,0 +1,30 @@
+
+local RankMeta = class("RankMeta")
+
+
+
+function RankMeta:ctor(row)
+    self:initWithRow(row)
+end
+
+function RankMeta:initWithRow(row)
+    self._rankId = row.RankId
+    self._name = row.Name
+    self._enName = row.ENName
+    self._race = row.Race
+    self._classLevel = row.ClassLevel
+    self._iconId = row.IconId
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function RankMeta:getRankId() return self._rankId end
+function RankMeta:getName() return self._name end
+function RankMeta:getEnName() return self._enName end
+function RankMeta:getRace() return self._race end
+function RankMeta:getClassLevel() return self._classLevel end
+function RankMeta:getIconId() return self._iconId end
+
+-- AUTO GENERATED GETTERS END
+return RankMeta

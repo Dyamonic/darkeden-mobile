@@ -1,0 +1,35 @@
+
+local ServerButton = class("ServerButton", lt.UIWidget)
+
+ServerButton._title = nil
+
+function ServerButton:ctor(serverName, serverStatus, callback)
+    ServerButton.super.ctor(self)
+
+    local spriteBg = display.newSprite("ui/init/bg_select_server.png")
+    self:addChild(spriteBg)
+
+    local sprite = display.newSprite("ui/init/img_server_status_1.png")
+    sprite:setPosition(-60, 0)
+    self:addChild(sprite)
+
+    self._title = lt.LabelEx.new(serverName, { font=lt.Constant.FONT_2, size=20, color=lt.Constant.COLOR_BTN_1 })
+    self._title:setPosition(20, 0)
+    self:addChild(self._title)
+
+    local btn = ccui.Button:create()
+    btn:ignoreContentAdaptWithSize(false)
+    btn:setContentSize(cc.size(191, 55))
+    btn:addClickEventListener(callback)
+    self:addChild(btn)
+end
+
+function ServerButton:onClear()
+    self._title = nil
+end
+
+function ServerButton:setTitle(title)
+    self._title:setString(title)
+end
+
+return ServerButton

@@ -1,0 +1,441 @@
+--[[
+    cocos2dx4.0
+    shader: 
+    示例:  
+        local vsh = require('app.shaders.' .. vshStr)
+        local frag = require('app.shaders.' .. fragStr)
+        local program = ccb.Device:getInstance():newProgram(vsh, frag)
+        local state = ccb.ProgramState:new(program)
+        sprite:setProgramState(state)
+
+    本Util用于缓存program
+    state不需要缓存，同一个program可以给不用的精灵保持不同的渲染状态。
+    因为使用频率较高，先不做retain和release
+]]
+
+local ShaderBackendUtil = {}
+
+local ccbEngine = ccb
+local ccEngine  = cc
+
+-- 还原原shader 安卓使用时会空
+ShaderBackendUtil.CC_ProgramPositionTextureColor    = ccbEngine.Program:getBuiltinProgram(ccEngine.backendProgramType.POSITION_TEXTURE_COLOR)
+-- 置灰
+ShaderBackendUtil.CC_ProgramGrayScale               = ccbEngine.Program:getBuiltinProgram(ccEngine.backendProgramType.GRAY_SCALE)
+-- 默认还原shader key
+ShaderBackendUtil.KEY_CC_Shader_ProgramPositionTextureColor= "KEY_CC_Shader_ProgramPositionTextureColor"
+-- 默认还原shader key
+ShaderBackendUtil.KEY_CC_Shader_ProgramGrayScale           = "KEY_CC_Shader_ProgramGrayScale"
+-- 遮罩
+ShaderBackendUtil.KEY_CC_Shader_ProgramTextureMask         = "KEY_CC_Shader_ProgramTextureMask"
+-- 模型颜色调整
+ShaderBackendUtil.KEY_CC_Shader_MulModelEffect             = "KEY_CC_Shader_MulModelEffect"
+-- 模型颜色替换调整
+ShaderBackendUtil.KEY_CC_Shader_ColorReplaceMulFS          = "KEY_CC_Shader_ColorReplaceMulFS"
+-- Cyan变色
+ShaderBackendUtil.KEY_CC_Shader_CyanEffect                 = "KEY_CC_Shader_CyanEffect"
+-- 武器颜色调整shader
+ShaderBackendUtil.KEY_CC_Shader_WeaponEffect               = "KEY_CC_Shader_WeaponEffect"
+-- 装备物品变色及描边
+ShaderBackendUtil.KEY_CC_Shader_BorderEffect               = "KEY_CC_Shader_BorderEffect"
+-- 视野
+ShaderBackendUtil.KEY_CC_Shader_LightEffect               = "KEY_CC_Shader_LightEffect"
+-- 技能黑暗
+ShaderBackendUtil.KEY_CC_Shader_DarknessEffect            = "KEY_CC_Shader_DarknessEffect"
+-- 棺材擦除特效
+ShaderBackendUtil.KEY_CC_Shader_CasketEffect            = "KEY_CC_Shader_CasketEffect"
+-- Boss击杀特效
+ShaderBackendUtil.KEY_CC_Shader_BossHitEffect            = "KEY_CC_Shader_BossHitEffect"
+
+
+ShaderBackendUtil._customShaderProgramTable = nil
+
+function ShaderBackendUtil:init()
+    self._customShaderProgramTable = {}
+end
+
+function ShaderBackendUtil:clear()
+    if self._customShaderProgramTable then
+        
+        self._customShaderProgramTable = nil
+    end
+end
+
+function ShaderBackendUtil:loadCustomShader(vert, frag, key)
+    local program = self._customShaderProgramTable[key]
+
+    if program ~= nil then
+        return program
+    end
+
+    if vert == nil or frag == nil then
+        return nil
+    end
+
+    program = ccbEngine.Device:getInstance():newProgram(vert, frag)
+    assert(program ~= nil, "create custom shader " .. key .. " faild.")
+
+    self._customShaderProgramTable[key] = program
+
+    return program
+end
+
+-- 置灰
+function ShaderBackendUtil:makeNodeFromNormalToGray(node)
+    if node == nil then
+        return
+    end
+
+    -- 引擎内部已缓存
+    local program = ShaderBackendUtil.CC_ProgramGrayScale
+    if program == nil then
+        program = self:loadCustomShader(ccEngine.positionTextureColor_vert, ccEngine.grayScale_frag, ShaderBackendUtil.KEY_CC_Shader_ProgramGrayScale)
+        ShaderBackendUtil.CC_ProgramGrayScale = program
+    end
+
+    node:setProgramState(ShaderBackendUtil:CreateProgramState(program))
+
+    local children = node:getChildren()
+    if children == nil then
+        return
+    end
+
+    local i = 0
+    local len = node:getChildrenCount()
+    for i = 1, len, 1 do
+        self:makeNodeFromNormalToGray(tolua.cast(children[i], "cc.Node"))
+    end
+end
+
+-- 还原默认shader
+function ShaderBackendUtil:makeNodeFromGrayToNormal(node)
+    if node == nil then
+        return
+    end
+
+    local program = ShaderBackendUtil.CC_ProgramPositionTextureColor
+    if program == nil then
+        program = self:loadCustomShader(ccEngine.positionTextureColor_vert, ccEngine.positionTextureColor_frag, ShaderBackendUtil.KEY_CC_Shader_ProgramPositionTextureColor)
+        ShaderBackendUtil.CC_ProgramPositionTextureColor = program
+    end
+
+    node:setProgramState(ShaderBackendUtil:CreateProgramState(program))
+
+    local children = node:getChildren()
+    if children == nil then
+        return
+    end
+
+    local i = 0
+    local len = node:getChildrenCount()
+    for i = 1, len, 1 do
+        self:makeNodeFromGrayToNormal(tolua.cast(children[i], "cc.Node"))
+    end
+end
+
+function ShaderBackendUtil:makeNodeToNormal(node)
+    ShaderBackendUtil:makeNodeFromGrayToNormal(node)
+end
+
+--[[
+    node: 被遮罩的原图
+    maskNode: 遮罩区域 
+]]
+function ShaderBackendUtil:makeNodeTextureMask(node, maskNode)
+    if not node or not maskNode then
+        return
+    end
+
+    local program = self:loadCustomShader(ShaderBackendUtil.PositionTextureColor_vert, ShaderBackendUtil.TextureMask_fragment, ShaderBackendUtil.KEY_CC_Shader_ProgramTextureMask)     
+    local maskProgramState = lt.MaskGLProgramState.new(node, maskNode, program)
+
+    node:setProgramState(maskProgramState:getProgramState())
+    -- BlendFactor
+    node:setBlendFunc({src=ccbEngine.BlendFactor.SRC_ALPHA, dst=ccbEngine.BlendFactor.ONE_MINUS_SRC_ALPHA}) -- 设置混合模式
+
+    return maskProgramState
+end
+
+--[[
+    node: 被遮罩的原图
+    maskNode: 遮罩区域
+    图集
+]]
+function ShaderBackendUtil:makeNodeSpriteFrameTextureMask(node, maskNode)
+    if not node or not maskNode then
+        return
+    end
+
+    local program = self:loadCustomShader(ShaderBackendUtil.PositionTextureColor_vert, lt.ShaderSpriteFrameTextureMask_fragment, ShaderBackendUtil.KEY_CC_Shader_ProgramTextureMask)     
+    local maskProgramState = lt.MaskGLProgramState.new(node, maskNode, program)
+
+    node:setProgramState(maskProgramState:getProgramState())
+    -- BlendFactor
+    node:setBlendFunc({src=ccbEngine.BlendFactor.SRC_ALPHA, dst=ccbEngine.BlendFactor.ONE_MINUS_SRC_ALPHA}) -- 设置混合模式
+
+    return maskProgramState
+end
+
+--[[
+    MulModelEffect 模型变色shader
+]]
+function ShaderBackendUtil:makeMulModelEffect(node, param)
+    if not node then
+        return
+    end
+
+    local program = self:loadCustomShader(lt.ShaderNormalVS, lt.ShaderColorModelFS, ShaderBackendUtil.KEY_CC_Shader_MulModelEffect)    
+    local shaderEffect = lt.ShaderMulModelEffect.new(node, program)
+    shaderEffect:render(param)
+    return shaderEffect
+end
+--[[
+    MulModelEffect 模型变色shader
+]]
+function ShaderBackendUtil:makeColorReplaceEffect(node, param)
+    if not node then
+        return
+    end
+
+    local program = self:loadCustomShader(lt.ShaderNormalVS, lt.ShaderColorReplaceMulFS, ShaderBackendUtil.KEY_CC_Shader_ColorReplaceMulFS)    
+    local shaderEffect = lt.ShaderColorReplaceEffect.new(node, program)
+    shaderEffect:render(param)
+    return shaderEffect
+end
+--[[
+    ShaderBorderEmptyEffect 装备物品变色及描边
+]]
+function ShaderBackendUtil:makeBorderEffect(node, param)
+    if not node then
+        return
+    end
+    local program = self:loadCustomShader(lt.ShaderBorderEmptyVS, lt.ShaderBorderEmptyFS, ShaderBackendUtil.KEY_CC_Shader_BorderEffect)    
+    local shaderEffect = lt.ShaderBorderEmptyEffect.new(node, program)
+    shaderEffect:render(param)
+    return shaderEffect
+end
+
+--[[
+    ShaderLightEffect 光照与视野
+]]
+function ShaderBackendUtil:makeLightEffect(node, param)
+    if not node then
+        return
+    end
+    local program = self:loadCustomShader(lt.ShaderNormalVS, lt.ShaderLightFS, ShaderBackendUtil.KEY_CC_Shader_LightEffect)    
+    local shaderEffect = lt.ShaderLightEffect.new(node, program)
+    shaderEffect:render(node, param)
+    return shaderEffect
+end
+
+--[[
+    ShaderHoleEffect 技能黑暗效果（黑暗之触、黄毒）
+]]
+function ShaderBackendUtil:makeDarknessEffect(node, param)
+    if not node then
+        return
+    end
+    local program = self:loadCustomShader(lt.ShaderNormalVS, lt.ShaderHoleFS, ShaderBackendUtil.KEY_CC_Shader_DarknessEffect)    
+    local shaderEffect = lt.ShaderHoleEffect.new(node, program)
+    shaderEffect:render(node, param)
+    return shaderEffect
+end
+
+
+--[[
+    ShaderBoss Boss击杀
+]]
+function ShaderBackendUtil:makeBossDieEffect(node, param)
+    if not node then
+        return
+    end
+    local program = self:loadCustomShader(lt.ShaderBossVS, lt.ShaderBossFS, ShaderBackendUtil.KEY_CC_Shader_BossHitEffect)    
+    node:setProgramState(ShaderBackendUtil:CreateProgramState(program))
+
+    local children = node:getChildren()
+    if children == nil then
+        return
+    end
+
+    local i = 0
+    local len = node:getChildrenCount()
+    for i = 1, len, 1 do
+        self:makeBossDieEffect(tolua.cast(children[i], "cc.Node"))
+    end
+end
+
+
+--[[
+    CyanEffect Cyan变色shader
+]]
+function ShaderBackendUtil:makeCyanEffect(node, param)
+    if not node then
+        return
+    end
+
+    local program = self:loadCustomShader(ShaderBackendUtil.CyanEffect_vert, ShaderBackendUtil.CyanEffect_frag, ShaderBackendUtil.KEY_CC_Shader_CyanEffect)    
+    local shaderEffect = lt.ShaderCyanEffect.new(node, program)
+    shaderEffect:render(param)
+    return shaderEffect
+end
+--[[
+-- 武器颜色调整shader
+-- ShaderBackendUtil.KEY_CC_Shader_WeaponEffect
+]]
+function ShaderBackendUtil:makeWeaponEffect(node, param)
+    if not node then
+        return
+    end
+
+    -- 通用模型 ShaderColorModelFS，分两个函数
+    local program = self:loadCustomShader(lt.ShaderNormalVS, lt.ShaderColorModelFS, ShaderBackendUtil.KEY_CC_Shader_WeaponEffect)    
+    local shaderEffect = lt.ShaderWeaponEffect.new(node, program)
+    shaderEffect:render(param)
+    return shaderEffect
+end
+
+--[[
+棺材擦除特效
+]]
+function ShaderBackendUtil:makeCasketEffect(node, param)
+    if not node then
+        return
+    end
+
+    local program = self:loadCustomShader(lt.ShaderNormalVS, lt.ShaderCasketWipeOutFS, ShaderBackendUtil.KEY_CC_Shader_CasketEffect)    
+    local shaderEffect = lt.ShaderCasketEffect.new(node, program)
+    shaderEffect:render(param)
+    return shaderEffect
+end
+
+function ShaderBackendUtil:CreateProgramState(program)
+    if not program then
+        return nil
+    end
+
+    return ccbEngine.ProgramState:new(program)
+end
+
+--[[
+    帧动画在手机上抖动bug
+    纹理坐标从CPU传到GPU后，因为精度问题带来四舍五入导致了纹理坐标微小变化。
+
+    通过修改精度可解决，具体的修改地方如下
+    precision lowp float;
+    改成
+    precision highp float;
+
+    varying mediump vec2 v_texCoord;
+    改成
+    varying highp vec2 v_texCoord;
+]]
+
+-- 默认 vert 
+ShaderBackendUtil.PositionTextureColor_vert = "     \n\
+attribute vec4 a_position;                          \n\
+attribute vec2 a_texCoord;                          \n\
+attribute vec4 a_color;                             \n\
+                                                    \n\
+// cocos4.0 参数名称变化 CC_PMatrix -> u_MVPMatrix   \n\
+uniform mat4 u_MVPMatrix;                           \n\
+                                                    \n\
+#ifdef GL_ES                                        \n\
+varying lowp vec4 v_fragmentColor;                  \n\
+varying mediump vec2 v_texCoord;                    \n\
+#else                                               \n\
+varying vec4 v_fragmentColor;                       \n\
+varying vec2 v_texCoord;                            \n\
+#endif                                              \n\
+                                                    \n\
+void main()                                         \n\
+{                                                   \n\
+    gl_Position = u_MVPMatrix * a_position;         \n\
+    v_fragmentColor = a_color;                      \n\
+    v_texCoord = a_texCoord;                        \n\
+}                                                   \n\
+"
+
+--[[ 
+    根据纹理大小以及纹理alpha做遮罩
+    shader 挖空 GLSL
+
+    文件目录
+    local vshPath = cc.FileUtils:getInstance():fullPathForFilename("shader/mb.vsh")
+    local fshPath = cc.FileUtils:getInstance():fullPathForFilename("shader/mb.fsh")
+]]
+ShaderBackendUtil.TextureMask_fragment = "                                                          \n\
+#ifdef GL_ES                                                                                 \n\
+precision mediump float;                                                                     \n\
+#endif                                                                                       \n\
+                                                                                             \n\
+varying vec4 v_fragmentColor;                                                                \n\
+varying vec2 v_texCoord;                                                                     \n\
+                                                                                             \n\
+uniform sampler2D u_mask_texture;                                                            \n\
+uniform vec2 sp_size;                                                                        \n\
+uniform vec2 mask_size;                                                                      \n\
+uniform vec2 v_offset;                                                                       \n\
+uniform float u_enable;                                                                        \n\
+                                                                                             \n\
+// cocos4.0 参数名称变化 CC_Texture0 -> u_texture                                             \n\
+uniform sampler2D u_texture;                                                                 \n\
+                                                                                             \n\
+void main() {                                                                                \n\
+    vec2 texCoord = v_texCoord;                                                              \n\
+    vec2 pos = vec2(texCoord.x*sp_size.x, texCoord.y*sp_size.y);                             \n\
+    vec2 offset = vec2(pos.x - v_offset.x, pos.y - v_offset.y);                              \n\
+                                                                                             \n\
+    if(offset.x <= mask_size.x && offset.x >= 0.0 && offset.y <= mask_size.y && offset.y >= 0.0) \n\
+    {                                                                                        \n\
+        vec2 finCoord = vec2(offset.x/mask_size.x, offset.y/mask_size.y);                    \n\
+        vec4 mask_FragColor = texture2D(u_mask_texture, finCoord);                           \n\
+                                                                                             \n\
+        vec4 texColor = texture2D(u_texture, v_texCoord);                                    \n\
+        gl_FragColor = v_fragmentColor*texColor;                                             \n\
+        gl_FragColor.a = (1.0-mask_FragColor.a*u_enable) * texColor.a;                                \n\
+    }else{                                                                                   \n\
+        gl_FragColor = v_fragmentColor*texture2D(u_texture, v_texCoord);                     \n\
+    }                                                                                        \n\
+}                                                                                            \n\
+"
+
+--[[
+    cyan变色
+]]
+ShaderBackendUtil.CyanEffect_vert = "                     \n\
+    attribute vec4 a_position;                          \n\
+    attribute vec2 a_texCoord;                          \n\
+    attribute vec4 a_color;                             \n\
+                                                        \n\
+    #ifdef GL_ES                                        \n\
+    varying lowp vec4 v_fragmentColor;                  \n\
+    varying mediump vec2 v_texCoord;                    \n\
+    #else                                               \n\
+    varying vec4 v_fragmentColor;                       \n\
+    varying vec2 v_texCoord;                            \n\
+    #endif                                               \n\
+    uniform mat4 u_MVPMatrix;                           \n\
+                                                        \n\
+    void main()                                         \n\
+    {                                                   \n\
+        gl_Position = u_MVPMatrix * a_position;          \n\
+        v_fragmentColor = a_color;                      \n\
+        v_texCoord = a_texCoord;                        \n\
+    }                                                   \n\
+"
+ShaderBackendUtil.CyanEffect_frag = "                                     \n\
+    #ifdef GL_ES                                                        \n\
+    precision mediump float;                                            \n\
+    #endif                                                              \n\
+                                                                        \n\
+    varying vec2 v_texCoord;                                            \n\
+    uniform sampler2D u_texture;                                         \n\
+    void main(void)                                                     \n\
+    {                                                                   \n\
+        vec4 col = texture2D(u_texture, v_texCoord);                  \n\
+        float green = col.g;                                            \n\
+        gl_FragColor = vec4(0, green, green, col.a);                    \n\
+    }                                                                   \n\
+"
+
+return ShaderBackendUtil

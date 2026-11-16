@@ -1,0 +1,25 @@
+-- boss 击杀跑马灯 Fragment Shader
+return [[
+    #ifdef GL_ES
+        precision mediump float;
+    #endif
+
+    varying vec2 v_texCoord; // 接收从顶点着色器传来的纹理坐标
+    uniform sampler2D u_Texture; // 文字纹理
+
+    void main()
+    {
+        vec2 uv = v_texCoord;
+
+        vec3 topColor = vec3(1.0, 0.0, 0.0);     // #FF0000 -> (1.0, 0.0, 0.0)
+        vec3 bottomColor = vec3(0.294, 0.0, 0.0); // #4B0000 -> (0.294, 0.0, 0.0)
+
+        float mixFactor = 1.0 - uv.y;
+
+        vec3 finalColor = mix(bottomColor, topColor, mixFactor);
+
+        float alpha = texture2D(u_Texture, uv).a;
+
+        gl_FragColor = vec4(finalColor, alpha);
+    }
+]]

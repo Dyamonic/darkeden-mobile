@@ -1,0 +1,178 @@
+local HeroStateAFire = class("HeroStateAFire", lt.HeroStateBase)
+
+local MapUtil = lt.MapUtil
+local AgentManager = lt.AgentManager
+local Constant = lt.Constant
+local SkillEnum = lt.SkillEnum
+local ActionManager = lt.ActionManager
+local ScheduleUtil = lt.ScheduleUtil
+local TimeTrigger = lt.TimeTrigger
+
+
+-- 目标位置
+HeroStateAFire._mTarget       = nil
+HeroStateAFire._nTarget       = nil
+HeroStateAFire._xTarget       = nil
+HeroStateAFire._yTarget       = nil
+
+-- hero位置
+HeroStateAFire._mHeroX = nil
+HeroStateAFire._mHeroY = nil
+
+--[[
+    技能: 点燃
+]]
+
+function HeroStateAFire:ctor(heroAgent, mTarget, nTarget)
+    HeroStateAFire.super.ctor(self, heroAgent)
+    self._skillCode = SkillEnum.SKILL_SET_AFIRE
+    self._enterState = false
+    self._mTarget = mTarget
+    self._nTarget = nTarget
+    -- local transformId = self._heroAgent:getTransformId()
+    -- local count, step = ActionManager:getActorFrameCount(self._heroAgent:getHeroData():getModelName(), Constant.ACTION_ATTACK, self._heroAgent:getDirection(), transformId,self._heroAgent:getCurStepMultiple())
+    -- self._attackActionTime = count * step
+    self._isArriveDest = false
+    self._timeTrigger = TimeTrigger.new()
+    self._isFastMove = false
+end
+
+
+function HeroStateAFire:resetActionStep()
+    ----------------------------------------------------------------------
+    -- 设置step倍率
+   
+    local param = 1
+    if self._heroAgent and self._heroAgent.getCurStepMultiple then
+        param = self._heroAgent:getCurStepMultiple() or 1
+    end
+    local actionInfo = self._heroAgent:getActor():getActionInfo()
+    ----------------------------------------------------------------------
+    
+    self._timeTrigger:reset(actionInfo:getStep()*param)
+end
+
+function HeroStateAFire:onClear()
+    HeroStateAFire.super.onClear(self)
+end
+
+function HeroStateAFire:initMove()
+   
+    -- hero 目标格子位置
+  
+
+    -- 转换坐标
+    self._xTarget, self._yTarget = MapUtil:calcMNMid(self._mTarget, self._nTarget)
+
+    -- 设置方向
+    local xHero, yHero = self._heroAgent:getPosition()
+
+    -- 换算方向
+    local direction = MapUtil:calcDirectionXY(self._xTarget - xHero, self._yTarget - yHero)
+    self._heroAgent:setDirection(direction)
+    self._mHeroX = xHero
+    self._mHeroY = yHero
+    self._mHero, self._nHero = self._heroAgent:getMNExactly()
+   
+
+    -- 修改MapAgent的AgentSystem
+    local mapAgent = AgentManager:getWorldAgent():getMapAgent()
+    mapAgent:changeAgentMN(self._heroAgent, self._mTarget, self._nTarget)
+
+    -- 播放平移动画
+    self._heroAgent:playAction(Constant.ROLE_ACTION_MOVE)
+    self:resetActionStep()
+end
+
+function HeroStateAFire:onEnter()
+    --播放红光特效
+    local fromAgentId = self._heroAgent:getAgentId()
+    lt.SkillManager:playSkillAFire(SkillEnum.SKILL_SET_AFIRE, fromAgentId, 0, Constant.ErrorCode.Success)
+    self:initMove()
+    self._enterState = true
+    
+end
+
+function HeroStateAFire:onExit()
+  
+end
+
+function HeroStateAFire:onUpdate()
+    if not self._enterState then return end
+    if self._isArriveDest then return end
+    if self._timeTrigger:tick() then
+        if not self._isFastMove then
+            -- 急行幻影效果
+            self._isFastMove = true
+            self._heroAgent:getActor():fastMovePosition(self._mTarget, self._nTarget, {moveTimesDiv = 4, mHero = self._mHero, nHero = self._nHero})
+        end
+        local directionV = cc.pSub(cc.p(self._xTarget, self._yTarget), cc.p(self._mHeroX, self._mHeroY))
+
+        -- Constant.MOVE_RUN
+        local step = 40 * self._heroAgent:getMoveSpeed(Constant.MOVE_RUN) * lt.GameBoard:getDeltaTime()
+        if cc.pGetLength(directionV) < step then
+            -- 到达
+            self._heroAgent:setPosition(self._xTarget, self._yTarget)
+            self._heroAgent:getActor():setStop()
+            self._isArriveDest = true
+            
+            -- self._heroAgent:playAction(Constant.ACTION_ATTACK)
+
+            -- ScheduleUtil:performWithDelayGlobal(function()
+                if not self._heroAgent then
+                    return
+                end
+                if self._heroAgent:getIsSelf() then
+                    local targetAgentId = self._heroAgent:getTargetAgentId()
+                    if targetAgentId then
+                        self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+                        return
+                    end
+                end
+                self:checkCmd()
+                self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+            -- end, self._attackActionTime)
+        else
+            -- 未到
+            directionV = cc.pMul(cc.pNormalize(directionV), step)
+            self._mHeroX = self._mHeroX + directionV.x
+            self._mHeroY = self._mHeroY + directionV.y
+            self._heroAgent:setPosition(self._mHeroX, self._mHeroY)
+
+        end
+    end
+end
+
+function HeroStateAFire:checkCmd()
+    if not self._heroAgent then
+       return  
+    end
+    if not self._heroAgent:getCmdSystem() then
+       return 
+    end
+    local cmd = self._heroAgent:getCmdSystem():get()
+    if cmd then
+        if cmd:getCmdId() == Constant.CmdId.CMD_JUMP then
+            self._heroAgent:getCmdSystem():pop()
+            self:initMove()
+        else
+            self._heroAgent:getCmdSystem():pop()
+            self._heroAgent:handleCmd(cmd)
+        end
+    else
+        self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+    end
+end
+
+function HeroStateAFire:onMessage(msg)
+end
+
+function HeroStateAFire:getStateId()
+    return Constant.HERO_STATE_AFIRE
+end
+
+function HeroStateAFire:getStateName()
+    return "HeroStateAFire"
+end
+
+return HeroStateAFire

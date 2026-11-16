@@ -1,0 +1,94 @@
+
+local TrapStateMove = class("TrapStateMove", lt.TrapStateBase)
+
+local Constant = lt.Constant
+
+TrapStateMove._moveType = nil
+TrapStateMove._xTarget  = nil
+TrapStateMove._yTarget  = nil
+TrapStateMove._speedRate= nil
+
+function TrapStateMove:ctor(trapAgent, moveType, direction, mTarget, nTarget)
+    TrapStateMove.super.ctor(self, trapAgent)
+    self._speedRate = 1
+    self:initMove(moveType, direction, mTarget, nTarget)
+end
+
+function TrapStateMove:onClear()
+    self._moveType  = nil
+    self._xTarget   = nil
+    self._yTarget   = nil
+    self._speedRate = nil
+
+    TrapStateMove.super.onClear(self)
+end
+
+function TrapStateMove:onEnter()
+    local leftCount = self._trapAgent:getCmdSystem():getCmdCount()
+    if leftCount > 0 then
+        self._speedRate = 1 + leftCount * 0.3
+    end
+end
+
+function TrapStateMove:onExit()
+end
+
+function TrapStateMove:onUpdate()
+    local xTrap, yTrap = self._trapAgent:getPosition()
+    local directionV = cc.pSub(cc.p(self._xTarget, self._yTarget), cc.p(xTrap, yTrap))
+    local length = cc.pGetLength(directionV)
+
+    local step = self._trapAgent:getMoveSpeed() * lt.GameBoard:getDeltaTime() * self._speedRate
+    if length < step or length > 300 then
+        -- 到达
+        self._trapAgent:setPosition(self._xTarget, self._yTarget)
+        
+        if not self:checkMoveOn() then
+            self._trapAgent:changeState(lt.TrapStateIdle.new(self._trapAgent))
+            return
+        end
+    else
+        -- 未到到
+        directionV = cc.pMul(cc.pNormalize(directionV), step)
+        self._trapAgent:setPosition(xTrap + directionV.x, yTrap + directionV.y)
+    end
+end
+
+function TrapStateMove:onMessage(msg)
+end
+
+function TrapStateMove:getStateId()
+    return Constant.TRAP_STATE_MOVE
+end
+
+function TrapStateMove:getStateName()
+    return "TrapStateMove"
+end
+
+function TrapStateMove:checkMoveOn()
+    local cmd = self._trapAgent:getCmdSystem():get()
+    if cmd and cmd:getCmdId() == Constant.CmdId.CMD_MOVE then
+        self._trapAgent:getCmdSystem():pop()
+
+        self:initMove(cmd:getMoveType(), cmd:getDirection(), cmd:getMNext(), cmd:getNNext())
+
+        local leftCount = self._trapAgent:getCmdSystem():getCmdCount()
+        if leftCount > 0 then
+            self._speedRate = 1 + leftCount * 0.3
+        else
+            self._speedRate = 1
+        end
+            
+        return true
+    else
+        self._trapAgent:changeState(lt.TrapStateIdle.new(self._trapAgent))
+        return false
+    end
+end
+
+function TrapStateMove:initMove(moveType, direction, mNext, nNext)
+    self._moveType = moveType
+    self._xTarget, self._yTarget = lt.MapUtil:calcMNMid(mNext, nNext)
+end
+
+return TrapStateMove

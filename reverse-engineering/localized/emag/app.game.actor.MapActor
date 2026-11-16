@@ -1,0 +1,1787 @@
+
+local MapAnimation = class("MapAnimation", function()
+    return display.newSprite()
+end)
+
+local ShaderBackendUtil = lt.ShaderBackendUtil
+local Constant = lt.Constant
+local MapModule = lt.MapModule
+local GameModule = lt.GameModule
+local TaskModule = lt.TaskModule
+
+MapAnimation._mapAnimationInfo = nil
+
+function MapAnimation:ctor()
+end
+
+function MapAnimation:setInfo(mapAnimationInfo)
+    self._mapAnimationInfo = mapAnimationInfo
+
+    self:updateAnimation(0)
+end
+
+function MapAnimation:updateAnimation(index)
+    if not self._mapAnimationInfo then
+        return
+    end
+
+    local texture = self._mapAnimationInfo:getTexture(index)
+    if texture then
+        self:initWithTexture(texture)
+        self:setAnchorPoint(0, 1)
+    end
+end
+
+local MapActor = class("MapActor", function()
+    return display.newNode()
+end)
+
+local MapManagerInstance = cpp.MapManager:getInstance()
+local MapUtil = lt.MapUtil
+
+MapActor._scale = 1
+MapActor._mapData = nil
+MapActor._mapMeta = nil
+
+MapActor._curTileTable = nil
+MapActor._curBlockTable = nil
+-- MapActor._curTileAnimationTable = nil
+MapActor._curTileIndexTable = nil
+MapActor._curBlockIndexTable = nil
+MapActor._curObjectTable = nil
+MapActor._imageObjectIdTable = nil
+-- MapActor._curObjectAnimationTable = nil
+MapActor._curObjectIndexTable = nil
+MapActor._mCur = nil
+MapActor._mLTile = nil
+MapActor._mRTile = nil
+MapActor._nCur = nil
+MapActor._nTTile = nil
+MapActor._nBTile = nil
+
+MapActor._tileNode   = nil
+MapActor._smTileNode = nil
+MapActor._drawNode   = nil
+MapActor._routeNode  = nil
+MapActor._itemNode   = nil
+MapActor._floorNode  = nil
+MapActor._heroNode   = nil
+MapActor._mapDecorationNode   = nil --地图装饰物
+MapActor._moveMarkNode   = nil
+MapActor._alphaNode  = nil
+MapActor._chatNode   = nil -- 副本对话框
+
+MapActor._imageTable = nil
+
+-- MapActor._animationElapse = 0
+-- MapActor._animationInterval = 1 / 10
+MapActor._animationIndex = 0
+
+MapActor._mTileCount = nil
+
+--地面点击特效距离多少消失
+local MaxRange = 25
+
+function MapActor:ctor()
+    self._imageTable = {}
+    self._curTileTable = {}
+    self._curBlockTable = {}
+    -- self._curTileAnimationTable = {}
+    self._curTileIndexTable = {}
+    self._curBlockIndexTable = {}
+    self._curObjectTable = {}
+    self._imageObjectIdTable = {}
+    -- self._curObjectAnimationTable = {}
+    self._curObjectIndexTable = {}
+    self._mCur = nil
+    self._nCur = nil
+    self._mLTile = nil
+    self._mRTile = nil
+    self._nTTile = nil
+    self._nBTile = nil
+    self._mLObj = nil
+    self._mRObj = nil
+    self._nTObj = nil
+    self._nBObj = nil
+
+    self._tileNode = display.newNode()
+    self:addChild(self._tileNode, -2)
+
+    self._smTileNode = display.newNode()
+    self:addChild(self._smTileNode, -1)
+
+    self._drawNode = cc.DrawNode:create()
+    --  self._drawNode:setVisible(false)
+    self:addChild(self._drawNode, 99990)
+
+    --[[
+    self._safeAreaNode = cc.DrawNode:create()
+    self:addChild(self._safeAreaNode, 0)
+    ]]
+    self._safeAreaNode = display.newNode()
+    self:addChild(self._safeAreaNode, 0)
+
+    self._routeNode = display.newNode()
+    self:addChild(self._routeNode, 1)
+
+    self._floorNode = display.newNode()
+    self:addChild(self._floorNode, 3)
+
+    self._itemNode = display.newNode()
+    self:addChild(self._itemNode, 1150)
+
+    self._heroSkillNode = display.newNode()
+    self:addChild(self._heroSkillNode, 1152)
+
+    self._heroShadowNode = display.newNode()
+    self:addChild(self._heroShadowNode, 999)
+
+    self._heroNode = display.newNode()
+    self:addChild(self._heroNode, 1152)
+    
+
+    self._heroSkillOpacityNode = display.newNode()
+    self:addChild(self._heroSkillOpacityNode, 1153)
+    
+    --草 < 影子 < 物品 < 移动标记 < 人物
+    self._mapDecorationNode = display.newNode()
+    self:addChild(self._mapDecorationNode, 998)
+
+    self._moveMarkNode = display.newNode()
+    self:addChild(self._moveMarkNode, 1151)
+
+    -- self._objectNode = display.newNode()
+    -- self:addChild(self._objectNode, 1000)
+
+    -- self._alphaNode = display.newNode()
+    -- self:addChild(self._alphaNode, 1100)
+
+    self._maskNode = display.newNode()
+    self:addChild(self._maskNode, 1200)
+
+    self._textNode = display.newNode()
+    self:addChild(self._textNode, 1300)
+
+    self._chatNode = display.newNode()
+    self:addChild(self._chatNode, 1400)
+
+    self._eyeMaskNode = display.newNode()
+    self:addChild(self._eyeMaskNode, 1999)
+
+
+    lt.NtfManager:addNtfListener(lt.NtfManager.NTF.NTF_TOGGLE_BLOCK, handler(self, self.onToggleBlock), "MapActor:NTF_TOGGLE_BLOCK")
+    lt.NtfManager:addNtfListener(lt.NtfManager.NTF.NTF_HERO_DIE, handler(self, self.onHeroDie), "MapActor:NTF_HERO_DIE")
+    lt.NtfManager:addNtfListener(lt.NtfManager.NTF.NTF_HERO_RELIVE, handler(self, self.onHeroRelive), "MapActor:NTF_HERO_RELIVE")
+    lt.NtfManager:addNtfListener(lt.NtfManager.NTF.NTF_DUNGEON_MONSTER_CHANGE, handler(self, self.addChatMsg), "MapActor:NTF_DUNGEON_MONSTER_CHANGE")
+    lt.NtfManager:addNtfListener(lt.NtfManager.NTF.NTF_DUNGEON_ALTAR, handler(self, self.onDungeonAltar), "MapActor:NTF_DUNGEON_ALTAR")
+    lt.NtfManager:addNtfListener(lt.NtfManager.NTF.NTF_DUNGEON_BLOOD, handler(self, self.onDungeonBlood), "MapActor:NTF_DUNGEON_BLOOD")
+    lt.NtfManager:addNtfListener(lt.NtfManager.NTF.NTF_DUNGEON_FAIL, handler(self, self.onDungeonFailed), "MapActor:NTF_DUNGEON_FAIL")
+end
+
+function MapActor:onUpdate()
+    --[[
+    self._animationElapse = self._animationElapse + lt.GameBoard:getDeltaTime()
+    if self._animationElapse > self._animationInterval then
+        self._animationElapse = self._animationElapse - self._animationInterval
+
+        self._animationIndex = self._animationIndex + 1
+
+        -- for _, spriteArray in pairs(self._curTileAnimationTable) do
+        --     for _, sprite in ipairs(spriteArray) do
+        --         sprite:updateAnimation(self._animationIndex)
+        --     end
+        -- end
+
+        -- for _, sprite in pairs(self._curObjectAnimationTable) do
+        --     sprite:updateAnimation(self._animationIndex)
+        -- end
+    end
+    ]]
+
+    --检查点击特效是否需要删除
+    self:checkClickMark()
+end
+
+function MapActor:onToggleBlock()
+    -- self._drawNode:setVisible(not self._drawNode:isVisible())
+end
+
+function MapActor:onHeroDie()
+    local heroAgent = lt.AgentManager:getHeroAgent()
+    if not heroAgent then
+        return
+    end
+
+    if not self._maskSprite then
+        -- 死亡遮罩
+        self._maskSprite = display.newSprite("ui/common/img_black.png")
+        self._maskSprite:setVisible(false)
+        self._maskSprite:setScale(50)
+        -- self._maskSprite:setBlendFunc({src=ccb.BlendFactor.DST_COLOR, dst=ccb.BlendFactor.ZERO})
+        self._maskSprite:setOpacity(255 * 0.4)
+        self._maskNode:addChild(self._maskSprite)
+    end
+
+    self._maskSprite:stopAllActions()
+    local delayAction = cc.Sequence:create(cc.DelayTime:create(lt.Constant.ReviveShowTime),cc.CallFunc:create(function()
+        self._maskSprite:setVisible(true)
+    end))
+    self._maskSprite:runAction(delayAction)
+    self._maskNode:setPosition(heroAgent:getPosition())
+end
+
+function MapActor:onHeroRelive()
+    if self._maskSprite then
+        self._maskSprite:stopAllActions()
+        self._maskSprite:setVisible(false)
+        self._maskSprite = nil
+    end
+end
+
+function MapActor:onClear()
+    lt.NtfManager:removeNtfListenerByTag("MapActor:NTF_TOGGLE_BLOCK")
+    lt.NtfManager:removeNtfListenerByTag("MapActor:NTF_HERO_DIE")
+    lt.NtfManager:removeNtfListenerByTag("MapActor:NTF_HERO_RELIVE")
+    lt.NtfManager:removeNtfListenerByTag("MapActor:NTF_DUNGEON_MONSTER_CHANGE")
+    lt.NtfManager:removeNtfListenerByTag("MapActor:NTF_DUNGEON_ALTAR")
+    lt.NtfManager:removeNtfListenerByTag("MapActor:NTF_DUNGEON_BLOOD")
+    lt.NtfManager:removeNtfListenerByTag("MapActor:NTF_DUNGEON_FAIL")
+
+    
+    if self._maskSprite then
+        self._maskSprite:stopAllActions()
+        self._maskSprite = nil
+    end
+    if self._chatLabel then
+        self._chatLabel:stopAllActions()
+        self._chatLabel = nil
+    end
+
+    if self._armatureAni then
+        self._armatureAni:stopAllActions()
+        self._armatureAni = nil
+    end
+    self:stopAllActions()
+
+    -- 将Sprite归还到PoolManager
+    for _, spriteArray in pairs(self._curTileTable) do
+        for _, sprite in ipairs(spriteArray) do
+            lt.PoolManager:pushSprite(sprite)
+        end
+    end
+
+    for _, spriteArray in pairs(self._curBlockTable) do
+        for _, sprite in ipairs(spriteArray) do
+            lt.PoolManager:pushSprite(sprite)
+        end
+    end
+
+    for key, sprite in pairs(self._curObjectTable) do
+        if sprite.spine then
+            sprite.spine:removeSelf()
+            sprite.spine = nil
+        end
+
+        lt.PoolManager:pushSprite(sprite)
+    end
+
+    if self._imageObjectIdTable then
+        for _, imageObject in pairs(self._imageObjectIdTable) do
+            imageObject:onClear()
+        end
+
+        self._imageObjectIdTable = nil
+    end
+
+    -- 移除MapAnimation
+    -- for _,animationArray in pairs(self._curTileAnimationTable) do
+    --     for _, animation in ipairs(animationArray) do
+    --     end
+    -- end
+
+    -- for _, sprite in pairs(self._curObjectAnimationTable) do
+    -- end
+
+    -- 移除纹理
+    -- for imageFilename,_ in pairs(self._imageTable) do
+    --     display.removeImage(imageFilename)
+    -- end
+    -- self._imageTable = {}
+    cc.Director:getInstance():getTextureCache():removeUnusedTextures()
+
+
+
+    -- 清除弹道
+    lt.BulletManager:onClear()
+    lt.BulletSystem:onClear()
+    self._tileNode:removeSelf()
+    self._smTileNode:removeSelf()
+    self._drawNode:removeSelf()
+    self._safeAreaNode:removeSelf()
+    self._routeNode:removeSelf()
+    self._floorNode:removeSelf()
+    self._itemNode:removeSelf()
+    self._heroShadowNode:removeSelf()
+    self._heroSkillNode:removeSelf()
+    self._heroNode:removeSelf()
+    self._mapDecorationNode:removeSelf()
+    self._moveMarkNode:removeSelf()
+    -- self._objectNode:removeSelf()
+    -- self._alphaNode:removeSelf()
+    self._maskNode:removeSelf()
+    self._textNode:removeSelf()
+    self._chatNode:removeSelf()
+    self:removeSelf()
+
+    self._curTileTable = nil
+    self._curBlockTable = nil
+    -- self._curTileAnimationTable = nil
+    self._curTileIndexTable = nil
+    self._curBlockIndexTable = nil
+    self._curObjectTable = nil
+    self._imageObjectIdTable = nil
+    -- self._curObjectAnimationTable = nil
+    self._curObjectIndexTable = nil
+
+    self._heroActor = nil
+    self._chatBg = nil
+end
+
+function MapActor:loadMap(mapData)
+    -- 清理之前的地图内容
+    for _, spriteArray in pairs(self._curTileTable) do
+        for _, sprite in ipairs(spriteArray) do
+            lt.PoolManager:pushSprite(sprite)
+        end
+    end
+
+    for _, spriteArray in pairs(self._curBlockTable) do
+        for _, sprite in ipairs(spriteArray) do
+            lt.PoolManager:pushSprite(sprite)
+        end
+    end
+
+    for key, sprite in pairs(self._curObjectTable) do
+        -- 移除shader 不然使用过的图片会有黑色的阴影 来自于之前遮罩部分 不清除感觉
+        if sprite ~= nil then
+            if self._imageObjectIdTable[key] then
+                ShaderBackendUtil:makeNodeToNormal(sprite)
+            end
+            if sprite then
+                if sprite.spine then
+                    sprite.spine:removeSelf()
+                    sprite.spine = nil
+                end
+                lt.PoolManager:pushSprite(sprite)
+            end
+        end
+    end
+
+    if self._imageObjectIdTable then
+        for i, imageObject in pairs(self._imageObjectIdTable) do
+            imageObject:onClear()
+        end
+        
+        self._imageObjectIdTable = nil
+    end
+
+    
+    if self._maskSprite then
+        self._maskSprite:stopAllActions()
+        self._maskSprite = nil
+    end
+    if self._chatLabel then
+        self._chatLabel:stopAllActions()
+        self._chatLabel = nil
+    end
+    self:stopAllActions()
+
+
+    -- for _, spriteArray in pairs(self._curTileAnimationTable) do
+    --     for _, sprite in ipairs(spriteArray) do
+    --     end
+    -- end
+
+    -- for _, sprite in pairs(self._curObjectAnimationTable) do
+    -- end
+
+    -- for imageFilename,_ in pairs(self._imageTable) do
+    --     display.removeImage(imageFilename)
+    -- end
+    -- self._imageTable = {}
+    cc.Director:getInstance():getTextureCache():removeUnusedTextures()
+    self:clearClickMark()
+
+    -- 清理之前的弹道表现
+    lt.BulletManager:onClear()
+    lt.BulletSystem:onClear()
+    lt.MapManager:clear()
+
+    if self._mapObjectTexture then
+        self._mapObjectTexture:clear()
+        self._mapObjectTexture = nil
+    end
+
+    self._curTileTable = {}
+    self._curBlockTable = {}
+    -- self._curTileAnimationTable = {}
+    self._curTileIndexTable = {}
+    self._curBlockIndexTable = {}
+    self._curObjectTable = {}
+    self._imageObjectIdTable = {}
+    -- self._curObjectAnimationTable = {}
+    self._curObjectIndexTable = {}
+    self._mCur = nil
+    self._nCur = nil
+    self._mTileCount = nil
+    self._mLTile = nil
+    self._mRTile = nil
+    self._nTTile = nil
+    self._nBTile = nil
+    self._mLObj = nil
+    self._mRObj = nil
+    self._nTObj = nil
+    self._nBObj = nil
+    self._heroActor = nil
+
+    self._tileNode:removeAllChildren()
+    self._heroNode:removeAllChildren()
+    self._mapDecorationNode:removeAllChildren()
+    -- self._moveMarkNode:removeAllChildren()
+    self._smTileNode:removeAllChildren()
+    self._safeAreaNode:removeAllChildren()
+    --[[
+    self._safeAreaNode = cc.DrawNode:create()
+    self:addChild(self._safeAreaNode, 0)
+    ]]
+    self._safeAreaNode = display.newNode()
+    self:addChild(self._safeAreaNode, 0)
+    self._routeNode:removeAllChildren()
+    self._floorNode:removeAllChildren()
+    self._itemNode:removeAllChildren()
+    self._heroShadowNode:removeAllChildren()
+    self._heroSkillNode:removeAllChildren()
+    -- self._heroNode:removeAllChildren()
+    -- self._objectNode:removeAllChildren()
+    -- self._alphaNode:removeAllChildren()
+    self._maskNode:removeAllChildren()
+    self._textNode:removeAllChildren()
+    self._drawNode:removeAllChildren()
+    self._chatNode:removeAllChildren()
+
+    -- 设置新地图
+    self._mapCode = self._mapMeta:getResCode()
+    self._mapObjectTexture = lt.MapObjectTexture.new(self._mapCode)
+
+    self._mapData = mapData
+    self:initMTitleCount(mapData)
+
+    -- 屏蔽地图红线
+    if DEBUG > 1 then
+        self:drawGrid()
+    end
+    -- self:drawGridPos(mapData)
+end
+
+function MapActor:initMTitleCount(mapData)
+     local mCount = mapData:getMCount()
+    -- local nCount = mapData:getNCount()
+    local nWidth = 48 * mCount;
+    -- local nHeight = 32 * nCount;
+    -- 此处需要四舍五入
+    self._mTileCount = math.floor((nWidth/256)+0.495) + (nWidth%256 == 0 and 0 or 1)
+    if self._mapMeta and self._mapMeta:getResCode() == "1102" then
+        self._mTileCount = 26
+    end
+    -- yflog:Info("*****************mCount:%s, nWidth: %s self._mTileCount = %s math.ceil(nWidth / 256):%02f nWidth256:%s", mCount, nWidth, self._mTileCount, math.ceil(nWidth / 256), (nWidth%256 == 0 and 0 or 1))
+end
+
+function MapActor:setMapMeta(mapMeta)
+    self._mapMeta = mapMeta
+end
+
+function MapActor:getMapCode()
+    if not self._mapMeta then
+        return -1
+    end
+
+    return self._mapMeta:getMapCode()
+end
+
+-- 添加自己
+function MapActor:setSelfHeroActor(heroActor)
+    self._heroActor = heroActor
+end
+
+--[[
+    添加 actor
+]]
+-- 添加 英雄Actor 
+function MapActor:addHeroActor(heroActor)
+    if heroActor:getSkillActor() then
+        self._heroSkillNode:addChild(heroActor:getSkillActor())
+    end
+    if heroActor:getOpacitySkillActor() then
+        self._heroSkillOpacityNode:addChild(heroActor:getOpacitySkillActor())
+    end
+
+    if heroActor:getShadowActor() then
+        self._heroShadowNode:addChild(heroActor:getShadowActor())
+    end
+   
+    self._heroNode:addChild(heroActor)
+    -- self._alphaNode:addChild(heroActor:getNodeAlpha())
+    self._textNode:addChild(heroActor:getNameNode())
+
+    self._eyeMaskNode:addChild(heroActor:getEyeMaskNode())
+end
+
+-- 怪物Actor 
+function MapActor:addMonsterActor(monsterActor)
+    if monsterActor:getShadowActor() then
+        self._heroShadowNode:addChild(monsterActor:getShadowActor())
+    end
+
+    self._heroNode:addChild(monsterActor)
+    if monsterActor:getNameNode() then
+        self._textNode:addChild(monsterActor:getNameNode())
+    end
+end
+
+-- 单独添加怪物阴影Actor
+function MapActor:addMonsterShadowActor(monsterShadowActor)
+    if monsterShadowActor then
+        self._heroShadowNode:addChild(monsterShadowActor)
+    end
+end
+
+-- 陷阱Actor
+function MapActor:addTrapActor(trapActor)
+    -- if trapActor:isSole() then  -- 地板trap显示在脚底
+    --     self._heroSkillNode:addChild(trapActor)
+    -- else
+    self._heroNode:addChild(trapActor)
+    -- end
+    if trapActor:getSeletNode() then
+        self._textNode:addChild(trapActor:getSeletNode())
+    end
+    if trapActor:getNameNode() then
+        self._textNode:addChild(trapActor:getNameNode())
+    end 
+end
+
+-- 棺材
+function MapActor:addCasketActor(casketActor, ownerAgent)
+    if casketActor:getShadowActor() then
+        self._heroShadowNode:addChild(casketActor:getShadowActor())
+    end
+    ownerAgent:getActor()._casketNode:addChild(casketActor)
+end
+
+-- 元素
+function MapActor:addElementActor(elementActor)
+    self._heroNode:addChild(elementActor)
+end
+
+-- npc actor
+function MapActor:addNpcActor(npcActor)
+    if npcActor:getShadowActor() then
+        self._heroShadowNode:addChild(npcActor:getShadowActor())
+    end
+    
+    self._heroNode:addChild(npcActor)
+    self._textNode:addChild(npcActor:getNameNode())
+end
+
+-- 道具actor
+function MapActor:addItemActor(itemActor)
+    self._itemNode:addChild(itemActor)
+    self._textNode:addChild(itemActor:getNameNode())
+end
+
+-- 其他actor
+function MapActor:addNormalActor(actor)
+    self._heroNode:addChild(actor)
+end
+
+-- 场景战斗特效
+function MapActor:addBattleEffect(amatureAni, localZOrder)
+    self._heroNode:addChild(amatureAni, localZOrder)
+end
+
+-- 移动标记Actor
+function MapActor:addMoveMarkActor(moveMarkActor)
+    self._moveMarkNode:addChild(moveMarkActor)
+end
+
+function MapActor:addChatMsg(event)
+    local param = event.param
+    local state = param.state or 0
+    local waveCount = param.waveCount or 0
+    local myMapMeta = lt.AgentManager:getWorldAgent():getMapAgent():getMapMeta()
+    local mymapcode = myMapMeta:getMapCode()
+    local npcMap = nil
+    if state == 1 then
+        local npcMapStr = lt.CacheManager:getMasterSummonSayTable(mymapcode)
+        if not npcMapStr or not npcMapStr[waveCount] then
+            return
+        end
+        npcMap = {npcMapStr[waveCount]}
+    elseif state == 2 then
+        npcMap = lt.CacheManager:getMasterDeadTable(mymapcode)
+    else
+        return
+    end
+    if not npcMap then
+        return
+    end
+    local strings = npcMap
+    local m = param.m
+    local n = param.n
+    local x, y = lt.MapUtil:calcMNMid(m, n)
+    local heroAgent = lt.AgentManager:getHeroAgent()
+    if not heroAgent then
+        return
+    end
+
+    if not self._chatBg then
+        self._chatBg = display.newSprite("game/common/bg_gsp_kuang.png", 0, 0,
+            { scale9 = true, capInsets = cc.rect(6, 31, 214, 61) })
+        self._chatNode:addChild(self._chatBg)
+    end
+
+    if not self._chatLabel then
+        self._chatLabel = lt.LabelEx.new("",
+            { font = Constant.FONT_4, size = 15, color = cc.c3b(255, 255, 255), outline = true, outlineColor = cc.c3b(0,
+                0, 0) })
+        self._chatBg:addChild(self._chatLabel)
+    end
+    self._chatBg:setAnchorPoint(0.5, 0)
+    self._chatBg:setPosition(50, 0)
+    self._chatLabel:setDimensions(214, 0)
+    self._chatLabel:setAnchorPoint(0, 0)
+    self._chatLabel:setVisible(true)
+    self._chatBg:setVisible(true)
+    self._chatLabel:stopAllActions()
+    y = y + 80
+    self._chatNode:setPosition(x, y)
+    -- 当前显示的字符串索引
+    local currentIndex = 1
+
+    -- 创建一个函数来更新 Label 的文本
+    local function updateLabel()
+        if currentIndex <= #strings then
+            yflog:Info("---------strings-"..strings[currentIndex])
+            self._chatLabel:setString(strings[currentIndex]) -- 更新 Label 文本
+            local height = self._chatLabel:getContentSize().height
+            self._chatBg:setContentSize(cc.size(228, 28 + height))
+            self._chatLabel:setPosition(8, 22)
+            currentIndex = currentIndex + 1 -- 移动到下一个字符串
+        else
+            self:hideChatLabel()
+        end
+    end
+
+    updateLabel()
+    -- 创建动作序列
+    local function createSequence()
+        return cc.Sequence:create(
+            cc.DelayTime:create(2),                         -- 延迟 5 秒
+            cc.CallFunc:create(updateLabel),                -- 更新 Label 文本
+            cc.CallFunc:create(function()
+                self._chatLabel:runAction(createSequence()) -- 如果还有字符串未显示，重新运行序列
+            end)
+        )
+    end
+
+    -- 开始执行动作（从第二个字符串开始）
+    self._chatLabel:runAction(createSequence())
+end
+
+
+function MapActor:hideChatLabel()
+    if self._chatLabel then
+        self._chatLabel:setString("")
+        self._chatLabel:stopAllActions()
+        self._chatLabel:setVisible(false)
+    end
+    if self._chatBg then
+        self._chatBg:setVisible(false)
+    end
+end
+
+-- 同步更新坐标(x,y为自己角色的坐标)
+function MapActor:updateDraw(x, y)
+    local m, n = lt.MapUtil:calcTileMN(x, y)
+    local bm, bn = lt.MapUtil:calcMN(x, y)
+
+    self:updateTile(m, n)
+
+    self:updateObject(bm, bn)
+
+    self._mCur = m
+    self._nCur = n
+end
+
+-- m -> x, n -> y 根据256计算得出的m,n title(m,n)
+function MapActor:updateTile(m, n)
+    local update = false
+    -- local col = math.max(12 , math.ceil(15 / self._scale))
+    -- local row = math.max(10, math.ceil(12 / self._scale))
+
+    -- 以m,n为基点，没半面加载的资源数量(x列 与 y行)
+    local col = math.max(6 , math.ceil(6 / self._scale))
+    local row = math.max(3, math.ceil(3 / self._scale))
+    
+    
+    local mL = m - col  -- 左边
+    local mR = m + col  -- 右边
+    local nT = n + row  -- 上边
+    local nB = n - row  -- 下边
+
+    -- 第一次加载，先赋值镜头Rect为m,n 
+    if not self._mLTile or not self._mRTile or not self._nTTile or not self._nBTile then
+        self._mLTile = m
+        self._mRTile = m
+        self._nTTile = n
+        self._nBTile = n
+
+        self:drawTileMN(m, n)
+        update = true
+    end
+
+    -- 窗口参数错误修正
+    if mL > self._mRTile or mR < self._mLTile or nT  < self._nBTile or nB > self._nTTile then
+        -- 显示窗口与原先区域完全不重合 移除当前所有土块
+        print("map jump")
+        for m=self._mLTile, self._mRTile do
+            for n=self._nBTile, self._nTTile do
+                self:removeTileMN(m, n)
+            end
+        end
+
+        self._mLTile = m
+        self._mRTile = m
+        self._nTTile = n
+        self._nBTile = n
+
+        self:drawTileMN(m, n)
+        update = true
+    end
+
+    local mLNew = self._mLTile
+    local mRNew = self._mRTile
+    local nTNew = self._nTTile
+    local nBNew = self._nBTile
+
+    -- 逐步以当前m,n为中心，向外扩散加载title图片资源
+    if mL > self._mLTile then
+        mLNew = mLNew + 1
+        update = true
+
+    elseif mL < self._mLTile then
+        mLNew = mLNew - 1
+        update = true
+
+    end
+
+    if mR < self._mRTile then
+        mRNew = mRNew - 1
+        update = true
+
+    elseif mR > self._mRTile then
+        mRNew = mRNew + 1
+        update = true
+
+    end
+
+    if nT < self._nTTile then
+        nTNew = nTNew - 1
+        update = true
+
+    elseif nT > self._nTTile then
+        nTNew = nTNew + 1
+        update = true
+
+    end
+
+    if nB > self._nBTile then
+        nBNew = nBNew + 1
+        update = true
+
+    elseif nB < self._nBTile then
+        nBNew = nBNew - 1
+        update = true
+
+    end
+
+    if update then
+        if mLNew > self._mLTile then
+            for n=self._nBTile, self._nTTile do
+                self:removeTileMN(self._mLTile, n)
+            end
+
+        elseif mLNew < self._mLTile then
+            for n=nBNew, nTNew do
+                self:drawTileMN(mLNew, n)
+            end
+
+        end
+
+        if mRNew < self._mRTile then
+            for n=self._nBTile, self._nTTile do
+                self:removeTileMN(self._mRTile, n)
+            end
+
+        elseif mRNew > self._mRTile then
+            for n=nBNew, nTNew do
+                self:drawTileMN(mRNew, n)
+            end
+
+        end
+
+        if nTNew < self._nTTile then
+            for m=self._mLTile, self._mRTile do
+                self:removeTileMN(m, self._nTTile)
+            end
+
+        elseif nTNew > self._nTTile then
+            for m=mLNew, mRNew do
+                self:drawTileMN(m, nTNew)
+            end
+
+        end
+
+        if nBNew > self._nBTile then
+            for m=self._mLTile, self._mRTile do
+                self:removeTileMN(m, self._nBTile)
+            end
+        elseif nBNew < self._nBTile then
+            for m=mLNew, mRNew do
+                self:drawTileMN(m, nBNew)
+            end
+        end
+
+        self._mLTile = mLNew
+        self._mRTile = mRNew
+        self._nTTile = nTNew
+        self._nBTile = nBNew
+
+
+        -- print("drawTile L:",mLNew,"R:", mRNew, "B:", nBNew, "T:", nTNew)
+    end
+end
+
+-- 以当前m,n为中心，逐步向外扩散加载title图片资源
+function MapActor:calcExpansionTitle(newValue, curValue, range)
+    local update = false
+    if range > curValue then
+        newValue = newValue + 1
+        update = true
+
+    elseif range < curValue then
+        newValue = newValue - 1
+        update = true
+    end
+
+    return newValue, update
+end
+
+-- 根据格子大小计算出的m,n
+function MapActor:updateObject(m, n)
+    local update = false
+    local col = math.max(10 , math.ceil(15 / self._scale))
+    local col2 = math.ceil(col * 3.33)
+    local row = math.max(8, math.ceil(15 / self._scale))
+
+    local mL = m - row
+    local mR = m + row
+
+    local nT = n + col2
+    local nB = n - col
+
+    if not self._mLObj or not self._mRObj or not self._nTObj or not self._nBObj then
+        self._mLObj = m
+        self._mRObj = m
+        self._nTObj = n
+        self._nBObj = n
+
+        self:drawObjectMN(m, n)
+        update = true
+    end
+
+    if mL > self._mRObj or mR < self._mLObj or nT  < self._nBObj or nB > self._nTObj then
+        -- 显示窗口与原先区域完全不重合 移除当前所有土块
+        print("map jump")
+        for m=self._mLObj, self._mRObj do
+            for n=self._nBObj, self._nTObj do
+                self:removeTileMN(m, n)
+                self:removeBlockMN(m, n)
+            end
+        end
+
+        self._mLObj = m
+        self._mRObj = m
+        self._nTObj = n
+        self._nBObj = n
+
+        self:drawObjectMN(m, n)
+        update = true
+    end
+
+    local mLNew = self._mLObj
+    local mRNew = self._mRObj
+    local nTNew = self._nTObj
+    local nBNew = self._nBObj
+
+    if mL > self._mLObj then
+        mLNew = mLNew + 1
+        update = true
+
+    elseif mL < self._mLObj then
+        mLNew = mLNew - 1
+        update = true
+
+    end
+
+    if mR < self._mRObj then
+        mRNew = mRNew - 1
+        update = true
+
+    elseif mR > self._mRObj then
+        mRNew = mRNew + 1
+        update = true
+
+    end
+
+    if nT < self._nTObj then
+        nTNew = nTNew - 1
+        update = true
+
+    elseif nT > self._nTObj then
+        nTNew = nTNew + 1
+        update = true
+
+    end
+
+    if nB > self._nBObj then
+        nBNew = nBNew + 1
+        update = true
+
+    elseif nB < self._nBObj then
+        nBNew = nBNew - 1
+        update = true
+
+    end
+
+    if update then
+        if mLNew > self._mLObj then
+            for n=self._nBObj, self._nTObj do
+                self:removeObjectMN(self._mLObj, n)
+            end
+        elseif mLNew < self._mLObj then
+            for n=nBNew, nTNew do
+                self:drawObjectMN(mLNew, n)
+            end
+        end
+
+        if mRNew < self._mRObj then
+            for n=self._nBObj, self._nTObj do
+                self:removeObjectMN(self._mRObj, n)
+            end
+        elseif mRNew > self._mRObj then
+            for n=nBNew, nTNew do
+                self:drawObjectMN(mRNew, n)
+            end
+        end
+
+        if nTNew < self._nTObj then
+            for m=self._mLObj, self._mRObj do
+                self:removeObjectMN(m, self._nTObj)
+            end
+
+        elseif nTNew > self._nTObj then
+            for m=mLNew, mRNew do
+                self:drawObjectMN(m, nTNew)
+            end
+
+        end
+
+        if nBNew > self._nBObj then
+            for m=self._mLObj, self._mRObj do
+                self:removeObjectMN(m, self._nBObj)
+            end
+
+        elseif nBNew < self._nBObj then
+            for m=mLNew, mRNew do
+                self:drawObjectMN(m, nBNew)
+            end
+
+        end
+
+        self._mLObj = mLNew
+        self._mRObj = mRNew
+        self._nTObj = nTNew
+        self._nBObj = nBNew
+        -- print("drawObject L:",mLNew,"R:", mRNew, "B:", nBNew, "T:", nTNew)
+    end
+end
+
+-- 绘制地图图片(256*256)
+function MapActor:drawTileMN(mIndex, nIndex)
+    -- yflog:Info("mIndex=%d nIndex=%d",mIndex, nIndex)
+    if mIndex < 0 or nIndex < 0 then
+        return
+    end
+
+    -- yflog:Info("mIndex=%d nIndex=%d",mIndex, nIndex)
+
+    local tileIndex = lt.MapUtil:calcMNIndex(mIndex, nIndex)
+    if not self._curTileIndexTable[tileIndex] then
+        self._curTileIndexTable[tileIndex] = true
+
+        -- 验证m,n是否合法
+        local ok = self:check256Title(mIndex, nIndex)
+        if ok then
+            -- 绘制256图片
+            self:draw256Tile(mIndex, nIndex, tileIndex)
+        end
+    end
+end
+
+-- 验证m,n是否合法
+function MapActor:check256Title(m, n)
+    local mIndex,nIndex = math.floor(m*lt.Constant.MAP_TILE_SIZE / lt.Constant.MAP_BLOCK_WIDTH), math.floor(n*lt.Constant.MAP_TILE_SIZE / lt.Constant.MAP_BLOCK_HEIGHT)
+    return self._mapData:getMapTile(mIndex, nIndex)
+end
+
+function MapActor:removeTileMN(mIndex, nIndex)
+    local tileIndex = lt.MapUtil:calcMNIndex(mIndex, nIndex)
+    if self._curTileIndexTable[tileIndex] then
+        local spriteArray = self._curTileTable[tileIndex]
+        if spriteArray then
+            for _, sprite in ipairs(spriteArray) do
+                lt.PoolManager:pushSprite(sprite)
+                sprite:removeSelf()
+            end
+        end
+
+        -- local spriteArray = self._curTileAnimationTable[tileIndex]
+        -- if spriteArray then
+        --     for _, sprite in ipairs(spriteArray) do
+        --         sprite:removeSelf()
+        --     end
+        -- end
+
+        self._curTileTable[tileIndex] = nil
+        -- self._curTileAnimationTable[tileIndex] = nil
+        self._curTileIndexTable[tileIndex] = nil
+    end
+end
+
+-- 绘制阻挡点 (测试用) TEST BLOCK
+function MapActor:drawTitleMBBlock(mIndex, nIndex)
+    if mIndex < 0 or nIndex < 0 then
+        return
+    end
+    
+    local blockIndex = lt.MapUtil:calcMNIndex(mIndex, nIndex)
+     if not self._curBlockIndexTable[blockIndex] then
+        self._curBlockIndexTable[blockIndex] = true
+
+        local mapTile = self._mapData:getMapTile(mIndex, nIndex)
+        if mapTile then
+            self:drawBlock(mIndex, nIndex, blockIndex, mapTile)
+        end
+    end
+end
+
+function MapActor:removeBlockMN(mIndex, nIndex)
+    local tileIndex = lt.MapUtil:calcMNIndex(mIndex, nIndex)
+    if self._curBlockIndexTable[tileIndex] then
+        local spriteArray = self._curBlockTable[tileIndex]
+        if spriteArray then
+            for _, sprite in ipairs(spriteArray) do
+                lt.PoolManager:pushSprite(sprite)
+                sprite:removeSelf()
+            end
+        end
+
+        self._curBlockTable[tileIndex] = nil
+        self._curBlockIndexTable[tileIndex] = nil
+    end
+end
+
+function MapActor:drawObjectMN(mIndex, nIndex)
+    -- 测试时可以打开
+    -- self:drawTitleMBBlock(mIndex, nIndex)
+
+    local heroActor = self:getSelfActor()
+
+    local objectIndex = lt.MapUtil:calcMNIndex(mIndex, nIndex)
+    -- 当前格子是否被加载过object
+    if not self._curObjectIndexTable[objectIndex] then
+        self._curObjectIndexTable[objectIndex] = true
+
+        local imgObjList = self._mapData:getMapImageObjectList(mIndex, nIndex)
+        if #imgObjList > 0 then
+            self:drawImageObject(objectIndex, imgObjList, heroActor)
+        end
+    end
+end
+
+function MapActor:removeObjectMN(mIndex, nIndex)
+    local objectIndex = lt.MapUtil:calcMNIndex(mIndex, nIndex)
+    if self._curObjectIndexTable[objectIndex] then
+        local imgObjList = self._mapData:getMapImageObjectList(mIndex, nIndex)
+        if #imgObjList > 0 then
+            self:removeImageObject(mIndex, nIndex, objectIndex, imgObjList)
+        end
+
+        -- 资源缓存 
+        -- local objectSprite = self._curObjectTable[objectIndex]
+        -- if objectSprite then
+        --     lt.PoolManager:pushSprite(objectSprite)
+        --     objectSprite:removeSelf()
+        -- end
+
+        -- local objectAnimation = self._curObjectAnimationTable[objectIndex]
+        -- if objectAnimation then
+        --     objectAnimation:removeSelf()
+        -- end
+
+        -- self._curObjectTable[objectIndex] = nil
+        -- self._curObjectAnimationTable[objectIndex] = nil
+        self._curObjectIndexTable[objectIndex] = nil
+    end
+end
+
+function MapActor:drawGridPos(m, n)
+    local p = cc.p(m, n)
+    local lab = lt.LabelEx.new(string.format("(%d,%d)", p.x, p.y), {font=lt.Constant.FONT_2, size=8, color=Constant.COLOR_TEXT_WHITE_PURE, outline=true, outlineColor=cc.c3b(0, 0, 0)})
+    lab:setPosition(cc.p(p.x*48+24, -p.y*24-12))
+    lab:setAnchorPoint(cc.p(.5, .5))
+    self._drawNode:addChild(lab)
+end
+
+-- 画阻挡点
+function MapActor:drawBlock(m, n, tileIndex, mapTile)
+    -- if not mapTile:getBlocked() then
+    --     return
+    -- end
+    self:drawGridPos(m, n)
+
+    if true then
+        return
+    end
+
+
+    local block= mapTile:getBlock()
+    if MapUtil:IsEmpty(block) then
+        return
+    end
+
+    -- self:drawBlockImg(m, n,"debug/all.png", tileIndex)
+
+    if MapUtil:IsBlockAll(block) then
+        self:drawBlockImg(m, n,"debug/all.png", tileIndex)
+    end
+
+    if MapUtil:IsBlockUnderground(block) then
+        self:drawBlockImg(m, n,"debug/under.png", tileIndex)
+    end
+
+    if MapUtil:IsBlockGround(block) then
+        self:drawBlockImg(m, n,"debug/ground.png", tileIndex)
+    end
+
+    if MapUtil:IsBlockFlying(block) then
+        self:drawBlockImg(m, n,"debug/flying.png", tileIndex)
+    end
+
+    -- mapTile:getBlock()
+    -- display.loadImage("debug/blockeds.png", function(texture)
+    --     if not texture or not self._curBlockIndexTable or not self._curBlockIndexTable[tileIndex] then
+    --         return
+    --     end
+    --     local tileSprite = lt.PoolManager:popSprite()
+    --     tileSprite:initWithTexture(texture)
+    --     tileSprite:setAnchorPoint(0, 1)
+    --     tileSprite:setPosition(m * 48, -n * 24)
+    --     self._drawNode:addChild(tileSprite)
+
+    --     if not self._curBlockTable[tileIndex] then
+    --         self._curBlockTable[tileIndex] = {}
+    --     end
+    --     table.insert(self._curBlockTable[tileIndex], tileSprite)
+    -- end)
+
+    -- self._imageTable["debug/blockeds.png"] = true
+end
+
+function MapActor:drawBlockImg(m, n, path, tileIndex)
+    display.loadImage(path, function(texture)
+        if not texture or not self._curBlockIndexTable or not self._curBlockIndexTable[tileIndex] then
+            return
+        end
+        local tileSprite = lt.PoolManager:popSprite()
+        tileSprite:initWithTexture(texture)
+        tileSprite:setAnchorPoint(0, 1)
+        tileSprite:setPosition(m * 48, -n * 24)
+        self._drawNode:addChild(tileSprite)
+
+        if not self._curBlockTable[tileIndex] then
+            self._curBlockTable[tileIndex] = {}
+        end
+        table.insert(self._curBlockTable[tileIndex], tileSprite)
+    end)
+
+    self._imageTable["debug/blockeds.png"] = true
+end
+
+function MapActor:draw256Tile(m, n, tileIndex)
+    local resCode = self._mapMeta:getResCode() -- 当前地图资源Id
+    local tileName = string.format("%s/%s_%d.jpg", resCode, resCode, n * self._mTileCount + m + 1) -- 对应256title图片资源名称
+    local obj = lt.Constant:getMapObj(resCode) -- 获取该地图资源所在的object
+    local tileData =  lt.MapbinManager:getMapbinInfoByKey(obj, tileName) -- 获取256图片所在object中的字节段
+    local path = "map/common/0.jpg"
+    if tileData and tileData ~= "" then
+        -- C++代码中的特殊解析格式(仅地图资源，取字节)
+        path = string.format("map/%s/mapbin/%s%s", obj, tileName, tileData)
+    end
+
+    display.loadImage(path, function(texture)
+            if not texture or not self._curTileIndexTable or not self._curTileIndexTable[tileIndex] then
+                yflog:Info("no texture tileIndex:%d", tileIndex)
+                return
+            end
+
+            local tileSprite = lt.PoolManager:popSprite()
+            tileSprite:initWithTexture(texture)
+            tileSprite:setAnchorPoint(0, 1)
+            tileSprite:setPosition(m * lt.Constant.MAP_TILE_SIZE, -n * lt.Constant.MAP_TILE_SIZE)
+            -- 
+            self._tileNode:addChild(tileSprite)
+
+            if not self._curTileTable[tileIndex] then
+                self._curTileTable[tileIndex] = {}
+            end
+
+            table.insert(self._curTileTable[tileIndex], tileSprite)
+
+        end)
+
+        self._imageTable[path] = true
+end
+
+function MapActor:removeImageObject(mIndex, nIndex, objectIndex, imgObjList)
+    for _, imgObj in ipairs(imgObjList) do
+        local objId = imgObj:getImageObjectId()
+        if self._imageObjectIdTable[objId] then
+            -- remove的同时判断是否是最后的格子占有次object
+            local isLast = self._imageObjectIdTable[objId]:removeDrawGrid(objectIndex)
+            if isLast then
+                -- 移除Image object在地图上的显示
+                -- 资源缓存
+                local objectSprite = self._curObjectTable[objId]
+                if objectSprite then
+                    lt.PoolManager:pushSprite(objectSprite)
+                    objectSprite:removeSelf()
+                end
+
+                -- 没有grid格子关联时 清空
+                self._imageObjectIdTable[objId] = nil
+                self._curObjectTable[objId] = nil
+            end
+        end
+    end
+end
+
+function MapActor:drawImageObject(objectIndex, imgObjList, heroActor)
+    for _, imgObj in ipairs(imgObjList) do
+        local objId = imgObj:getImageObjectId()
+        if not self._imageObjectIdTable[objId] then
+            local objActor = lt.MapObjectActor.new(imgObj)
+            self._imageObjectIdTable[objId] = objActor
+
+            local objSpriteId = imgObj:getSpriteId()
+            if objSpriteId >= 0 then
+                local path = string.format("map_obj_%s_%d.png",self._mapCode, objSpriteId)
+
+                -- yflog:Info("path:%s",path)
+
+                local pos = cc.p(imgObj:getX(), -imgObj:getY())
+                local viewPoint = imgObj:getViewPoint()
+
+                -- self:drawGridPos(imgObj:getM(), imgObj:getN())
+
+                if not self._mapObjectTexture then
+                    yflog:Info("self._mapObjectTexture is nil self._mapCode:%s", self._mapCode)
+                end
+
+                self._mapObjectTexture:loadImage(path, function(frame)
+                -- display.loadImage(path, function(frame)
+                    if not frame or not self._curObjectIndexTable or not self._curObjectIndexTable[objectIndex] then
+                        yflog:Info("no texture objectIndex:%d", objectIndex)
+                        return
+                    end
+
+                    -- 此处的frame还是大纹理，所以在像素级操作会存在问题
+                    local sp = lt.PoolManager:popSprite()
+                    sp:setSpriteFrame(frame)
+                    -- sp:initWithTexture(texture)
+                    sp:setAnchorPoint(0, 1)
+                    sp:setPosition(pos)
+
+                    -- yflog:Info("objSpriteId:%d isRotated:%s", objSpriteId, frame:isRotated(), sp:isRotated())
+
+                    local dungeonTransferEffectMeta = lt.CacheManager:getDungeonTransferEffectMapById(objSpriteId)
+                    if dungeonTransferEffectMeta then
+                        -- 卡斯塔罗地图ID=81坐标121.76取消特效，此地牢只能出不能进
+                        if Constant.CASTALO_NE == tostring(self:getMapCode()) and imgObj:getM() == 121 and imgObj:getN() == 76 then
+                        else
+                            local spine = lt.SkeletonManager:createSkeletonEffectWithFile("ChuanSong01", "ChuanSong01_skeleton")
+                            spine:setAnchorPoint(0, 1)
+                            sp:addChild(spine)
+                            local size = sp:getContentSize()
+                            spine:setPosition(size.width/2, size.height/2)
+                            local needFlip = dungeonTransferEffectMeta:getNeedFlip() or 0
+                            if needFlip == 1 then
+                                spine:setScaleX(-1)
+                            end
+                            spine:setAnimation(0, "ChuanSong01", true)
+                            sp.spine = spine
+                        end
+                    end
+                    -- yflog:Info("object  pos.x:%d, pos.y:%d hero.x:%d, hero.y:%d ",pos.x, pos.y, heroActor:getPos().x,heroActor:getPos().y)
+
+                    --[[
+                        此处有个viewPoint的bug
+                        @goto 1100 102 42 此地图 objSpriteId == 613 || 614 时 viewPoint的值不正确
+                        需要用坐标重新计算
+                        local spN = math.floor((math.abs(pos.y) + sp:getContentSize().height) / lt.Constant.MAP_BLOCK_HEIGHT)
+                        此时： viewPoint=42  spN=46
+                        但是用坐标重新计算后 
+                        @goto 61 100 214  此地图 objSpriteId == 1388 马车的viewPoint值有点偏差
+                        此时：viewPoint=217  spN=220
+
+                        现暂时改成  当在1100这张地图时 特殊处理不使用viewPoint
+                    ]]
+                    local spM = math.floor(pos.x / Constant.MAP_BLOCK_WIDTH)
+                    local spN = 0
+                    local zOrder = (viewPoint * 10000 + spM + 9999) * 10 + 1
+
+                    if Constant.MAP_OBJ_ZORDER_VALUE[tostring(self:getMapCode())] == Constant.OBJ_ZORDER_VALUE_POS_SPN then 
+                        spN = math.floor((math.abs(pos.y) + sp:getContentSize().height) / Constant.MAP_BLOCK_HEIGHT)
+                        zOrder = (spN * 10000 + spM + 9999) * 10 + 1
+                    elseif Constant.MAP_OBJ_ZORDER_VALUE[tostring(self:getMapCode())] == Constant.OBJ_ZORDER_VALUE_IMGOBJ_N then
+                        spM = imgObj:getM()
+                        spN = imgObj:getN()
+                        zOrder = (spN * 10000 + spM + 9999) * 10 + 1
+                    end
+                    -- yflog:Info("spN:%s spM:%s zOrder:%s viewPoint:%s self:getMapCode():%s", spN, spM, zOrder, imgObj:getViewPoint(), self:getMapCode())
+                    if viewPoint == 0 then
+                        self._floorNode:addChild(sp, objId)
+                    else
+                        self._heroNode:addChild(sp, zOrder)
+                    end
+
+                    -- yflog:Info("zOrder:%s, imgObj: ObjectType:%s, m:%s, n:%s, imageObjectId:%s, spriteId:%s, viewPoint:%s, trans:%s",zOrder, imgObj:getObjectType(),imgObj:getM(), imgObj:getN(), imgObj:getImageObjectId(), imgObj:getSpriteId(),imgObj:getViewPoint(), imgObj:getTrans())
+                    if objActor:isTrans() then
+                        objActor:setSelfPos(pos)
+                        if heroActor.getSelfMaskSp and heroActor:getSelfMaskSp() then
+                            -- local maskGLProgramState = ShaderBackendUtil:makeNodeTextureMask(sp, heroActor:getSelfMaskSp())
+                            local maskGLProgramState = ShaderBackendUtil:makeNodeSpriteFrameTextureMask(sp, heroActor:getSelfMaskSp())
+                            maskGLProgramState:updateRotated(frame:isRotated())
+
+                            self._imageObjectIdTable[objId]:setLocalZOrder(zOrder)
+                            self._imageObjectIdTable[objId]:setMaskGLProgramState(maskGLProgramState)
+                            self._imageObjectIdTable[objId]:setIsRotated(frame:isRotated())
+                            self._imageObjectIdTable[objId]:updateOffset(heroActor:getPos(), heroActor:getLocalZOrder())
+                        end
+                    end
+
+                    self._curObjectTable[objId] = sp
+                end)
+            end
+
+        end
+
+        -- 记录当前obj已被格子m,n绘制, 用于判断该objId 不再重复被绘制
+        self._imageObjectIdTable[objId]:addDrawGrid(objectIndex)
+    end
+end
+
+function MapActor:updateObjMask(x, y)
+    if not self._imageObjectIdTable then
+        return
+    end
+
+    for _, imgObj in pairs(self._imageObjectIdTable) do
+        if imgObj:IsExistOnMap() and imgObj:isTrans() then
+            imgObj:updateOffset(cc.p(x, y), self:getSelfActor():getLocalZOrder())
+       end
+    end
+end
+
+function MapActor:drawGrid()
+    local mCount = self._mapData:getMCount()
+    local nCount = self._mapData:getNCount()
+
+    lt.LogUtil:debugTable("----------mCount = "..tostring(mCount))
+    lt.LogUtil:debugTable("----------nCount = "..tostring(nCount))
+
+    local blockWidth = lt.Constant.MAP_BLOCK_WIDTH
+    local blockHeight = lt.Constant.MAP_BLOCK_HEIGHT
+
+    -- Line
+    local color = cc.c4f(0.5, 0, 0, 0.5)
+    if DEBUG > 0 then
+        for m = 0, mCount do
+            self._drawNode:drawLine(cc.p(m * blockWidth, 0), cc.p(m * blockWidth, -blockHeight * nCount), color)
+        end
+
+        for n = 0, nCount do
+            self._drawNode:drawLine(cc.p(0, -n * blockHeight), cc.p(mCount * blockWidth, -n * blockHeight), color)
+        end
+    end
+end
+
+function MapActor:drawRoute(route)
+    --[[
+    self._routeNode:removeAllChildren()
+
+    for i = 0, route:getMNCount() - 1 do
+        local m, n = route:queryMN(i)
+        local x, y = lt.MapUtil:calcMNMid(m, n)
+
+        --lt.LogUtil:debug("m,n:%d,%d, x,y:%f,%f", m, n, x, y)
+
+        local sprite = display.newSprite("debug/route.png")
+        sprite:setPosition(x, y)
+        self._routeNode:addChild(sprite)
+    end
+    --]]
+end
+
+function MapActor:playAnimaton(sprite, path, dirName, index, animationCount)
+    local animation = display.getAnimationCache(path)
+    if not animation then
+        local frames = {}
+
+        local texture = display.loadImage(path)
+        if texture then
+            local size = texture:getContentSize()
+            frames[#frames + 1] = cc.SpriteFrame:createWithTexture(texture, cc.rect(0, 0, size.w, size.h))
+        end
+        for i=1,animationCount-1 do
+            local subPath = string.format("%s%05d_%d.png", dirName, index, i)
+            local subTexture = display.loadImage(subPath)
+            if subTexture then
+                local size = subTexture:getContentSize()
+                frames[#frames + 1] = cc.SpriteFrame:createWithTexture(subTexture, cc.rect(0, 0, size.w, size.h))
+            end
+        end
+
+        animation = display.newAnimation(frames, 1/30)
+
+        display.setAnimationCache(path, animation)
+        print("setAnimationCache", path)
+    end
+    sprite:playAnimationForever(animation)
+end
+
+function MapActor:setScale(scale)
+    self._scale = scale
+
+    -- 清除当前数据为了重新绘制
+    self._mCur = nil
+    self._nCur = nil
+
+    cc.Node.setScale(self, scale)
+end
+
+function MapActor:getSelfActor()
+    if self._heroActor then
+        return self._heroActor
+    end
+
+    local heroAgent = lt.AgentManager:getHeroAgent()
+    if not heroAgent then
+        return
+    end
+
+    self._heroActor = heroAgent:getActor()
+    return self._heroActor
+end
+
+--初始化转职副本
+function MapActor:initAdvanceDungeon()
+    --染色副本
+    self:drawBlackArea()
+    --解决人质副本
+    self:initDungeonBlood()
+end
+
+--初始化副本染色
+function MapActor:drawBlackArea()
+    local myMapMeta = lt.AgentManager:getWorldAgent():getMapAgent():getMapMeta()
+    local mymapcode = myMapMeta:getMapCode()
+    if mymapcode ~= Constant.MAP_CODE.GATEOFALTAR then return end
+    if self._blackSprites == nil then
+        self._blackSprites = {}
+    end
+    local race = GameModule:getHeroData():getRace()
+    local taskData = TaskModule:getTaskById(Constant["ADVANCE_TASK"..race].DYEING)
+    local isComplete = TaskModule:checkTaskComplete(taskData)
+    if not isComplete then
+        local missionMeta = lt.CacheManager:getMissionMeta(Constant["ADVANCE_TASK"..race].DYEING)
+        local target = missionMeta:getMissionTarget()[1][2]
+        local meta = lt.CacheManager:getGateOfAltarMeta(target)
+        local areas = meta:getCompleteArea()
+        local resPath = lt.ResManager:getBlackGridResPath()
+        for i = 1, #areas do
+            local m = areas[i][1]
+            local n = areas[i][2]
+            local mnIndex = MapUtil:calcMNIndex(m, n)
+            if self._blackSprites[mnIndex] == nil then
+                local blackSprite = display.newSprite(resPath)
+                blackSprite:setPosition(m * Constant.MAP_BLOCK_WIDTH + Constant.MAP_BLOCK_WIDTH/2, -n * Constant.MAP_BLOCK_HEIGHT - Constant.MAP_BLOCK_HEIGHT/2)
+                self._blackSprites[mnIndex] = blackSprite
+                self._floorNode:addChild(blackSprite)
+            end
+        end
+        self:onDungeonAltar()
+    else
+        self:createTeleportation()
+    end
+end
+
+--重置副本染色
+function MapActor:resetBlackArea()
+    self._blackSprites = {}
+end
+
+--副本染色
+function MapActor:onDungeonAltar(event)
+    local myMapMeta = lt.AgentManager:getWorldAgent():getMapAgent():getMapMeta()
+    local mymapcode = myMapMeta:getMapCode()
+    if mymapcode ~= Constant.MAP_CODE.GATEOFALTAR then return end
+    if self._blackSprites then
+        local altarGatePos = MapModule:getAltarGatePos()
+        for i = 1, #altarGatePos do
+            self._blackSprites[tonumber(altarGatePos[i])]:setVisible(false)
+        end
+    end
+    self:createTeleportation()
+end
+
+--初始化副本解救人质
+function MapActor:initDungeonBlood()
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    local myMapMeta = worldAgent:getMapAgent():getMapMeta()
+    local mymapcode = myMapMeta:getMapCode()
+    if mymapcode ~= Constant.MAP_CODE.ALTAROFBLOOD then return end
+    local race = GameModule:getHeroData():getRace()
+    local taskData = TaskModule:getTaskById(Constant["ADVANCE_TASK"..race].HOSTAGE)
+    local isComplete = TaskModule:checkTaskComplete(taskData)
+    if not isComplete then
+        self:onDungeonBlood()
+    else
+        self:createTeleportation()
+    end
+end
+
+--副本解救人质
+function MapActor:onDungeonBlood(event)
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    local myMapMeta = worldAgent:getMapAgent():getMapMeta()
+    local mymapcode = myMapMeta:getMapCode()
+    if mymapcode ~= Constant.MAP_CODE.ALTAROFBLOOD then return end
+    local altarBloodNpc = MapModule:getAltarBloodNpc()
+    for i = 1, #altarBloodNpc do
+        local npcId = tonumber(altarBloodNpc[i])
+        local agent = worldAgent:getNpcAgentById(npcId)
+        if agent then
+            agent:setNpcVisible(false)
+            agent:visibleActor(false)
+            lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_NPC_DISAPPEAR, {npcId = npcId})
+        end
+    end
+    self:createTeleportation()
+end
+
+--生成传送阵
+function MapActor:createTeleportation()
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    local myMapMeta = worldAgent:getMapAgent():getMapMeta()
+    local mymapcode = myMapMeta:getMapCode()
+    local race = GameModule:getHeroData():getRace()
+    local meta = nil
+    if mymapcode == Constant.MAP_CODE.GATEOFALTAR then
+        local taskData = TaskModule:getTaskById(Constant["ADVANCE_TASK"..race].DYEING)
+        local isComplete = TaskModule:checkTaskComplete(taskData)
+        if not isComplete then
+            if self._blackSprites == nil then
+                return
+            end
+            local altarGatePos = MapModule:getAltarGatePos()
+            if #altarGatePos ~= table.nums(self._blackSprites) then
+                return
+            end
+        end
+        local missionMeta = lt.CacheManager:getMissionMeta(Constant["ADVANCE_TASK"..race].DYEING)
+        local target = missionMeta:getMissionTarget()[1][2]
+        meta = lt.CacheManager:getGateOfAltarMeta(target)
+    elseif mymapcode == Constant.MAP_CODE.ALTAROFBLOOD then
+        local taskData = TaskModule:getTaskById(Constant["ADVANCE_TASK"..race].HOSTAGE)
+        local isComplete = TaskModule:checkTaskComplete(taskData)
+        local altarBloodNpc = MapModule:getAltarBloodNpc()
+        local missionMeta = lt.CacheManager:getMissionMeta(Constant["ADVANCE_TASK"..race].HOSTAGE)
+        local target = missionMeta:getMissionTarget()[1][2]
+        meta = lt.CacheManager:getAltarOfBloodMeta(target)
+        local dungeonTarget = meta:getDungeonTarget()
+        if not isComplete then
+            local maxNum = 0
+            for i = 1, #dungeonTarget do
+                if dungeonTarget[i][1] == race then
+                    maxNum = maxNum + 1
+                end
+            end
+            if #altarBloodNpc ~= maxNum then
+                return
+            end
+        else
+            for i = 1, #dungeonTarget do
+                if dungeonTarget[i][1] == race then
+                    local npcId = dungeonTarget[i][2]
+                    local agent = worldAgent:getNpcAgentById(npcId)
+                    if agent then
+                        agent:visibleActor(false)
+                        agent:setNpcVisible(false)
+                        lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_NPC_DISAPPEAR, {npcId = npcId})
+                    end
+                end
+            end
+        end
+    end
+    if meta == nil then return end
+    local zone = meta:getLeaveZone()
+    local m = zone[2]
+    local n = zone[3]
+    --创建传送阵特效
+    local effectMeta = lt.EffectMeta.new({
+        SkillId          = 0,
+        OrderId          = 1,
+        EffectSpriteType = 1185,
+        BltType          = 1,
+        Step             = 0.07,
+        DelayFrame       = 0,
+        Owner            = 0,
+        LoopCount        = 1
+    })
+    local effectActor = lt.CompEffectActor.new(effectMeta, 1, true)
+    effectActor:setPosition(MapUtil:calcMNMid(m, n))
+    self:addChild(effectActor)
+end
+
+--副本失败
+function MapActor:onDungeonFailed(event)
+    local race = GameModule:getHeroData():getRace()
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndTaskTalk", missionId = race})
+end
+
+--多重虚影节点
+function MapActor:addPhantom(node)
+    if node then
+        self._heroShadowNode:addChild(node)
+    end
+end
+
+function MapActor:drawClickMark(x, y)
+    -- 特效
+    self:clearClickMark()
+    if self._armatureAni == nil then
+        -- 加载精灵表
+        cc.SpriteFrameCache:getInstance():addSpriteFrames("ui/game/spritesheet.plist", "ui/game/spritesheet.png")
+
+        local frames = {}
+        for i = 1, 3 do
+            local frameName = string.format("%d.png", i)
+            local frame = cc.SpriteFrameCache:getInstance():getSpriteFrame(frameName)
+            table.insert(frames, frame)
+        end
+
+        local animation = cc.Animation:createWithSpriteFrames(frames, 0.14)
+        local animate = cc.Animate:create(animation)
+
+        self._armatureAni = cc.Sprite:createWithSpriteFrame(frames[1])
+        self._armatureAni:runAction(cc.RepeatForever:create(animate))
+        self:addMoveMarkActor(self._armatureAni)
+    end
+    self._armatureAni:setPosition(x, y)
+    self._armatureAni:setVisible(true)
+end
+
+function MapActor:clearClickMark()
+    if self._armatureAni then
+        self._armatureAni:setVisible(false)
+    end
+end
+
+--与角色距离<=1隐藏点击特效
+function MapActor:checkClickMark()
+    if self._armatureAni then
+        local heroAgent = lt.AgentManager:getHeroAgent()
+        if heroAgent then
+            local mHero, nHero = heroAgent:getPosition()
+            local disX = mHero - self._armatureAni:getPositionX()
+            local disY = nHero - self._armatureAni:getPositionY()
+            local dis = math.sqrt(disX * disX + disY * disY)
+            if dis <= MaxRange then
+                self:clearClickMark()
+            end
+        end
+    end
+end
+
+-- 下陨石特效
+function MapActor:repeatShakeEffect()
+
+    local function onNpcVampireLairSkill()
+        -- 陨石术 没有伤害 纯表现
+        local heroAgent = lt.AgentManager:getWorldAgent():getHeroAgent()
+        if not heroAgent then
+            return
+        end
+        for i = 1, 10 do
+            local targetM, targetN = heroAgent:getMNExactly()
+            targetM = targetM + math.random(-15,15)
+            targetN = targetN + math.random(-10,10)
+            local endX, endY = lt.MapUtil:calcMNMid(targetM, targetN)
+            local startY = endY + 500
+            local startX = endX + 150
+            local bullet = lt.BulletSnowEffect.new(lt.SkillEnum.SKILL_MAGIC_METEOR, cc.p(startX, startY), cc.p(endX, endY), 2)
+
+            local worldAgent = lt.AgentManager:getWorldAgent()
+            if not worldAgent then
+                return nil
+            end
+            local mapAgent = worldAgent:getMapAgent()
+            if not mapAgent then
+                return nil
+            end
+            local mapActor = mapAgent:getMapActor()
+            if not mapActor then
+                return nil
+            end
+            mapActor:addChild(bullet, 100000)
+            lt.BulletManager:addBullet(bullet)
+        end
+    end
+    -- 下陨石
+    local delayAction = cc.Sequence:create(cc.DelayTime:create(0.8),cc.CallFunc:create(onNpcVampireLairSkill))
+    self:runAction(cc.Repeat:create(delayAction, 10))
+end
+
+return MapActor

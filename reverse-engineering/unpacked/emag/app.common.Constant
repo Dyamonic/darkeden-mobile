@@ -1,0 +1,4312 @@
+
+local Constant = {}
+
+local cc = cc
+
+Constant.CENTER_URL = "http://test1.sg.yofijoy.com:803/"
+
+--[[
+    "192.168.6.160"  
+    "192.168.6.200"
+]] 
+Constant.ConectServer = {
+    {
+        id = 1001,
+        sub_id = 1001,
+        name =  "alpha",
+        url = "",
+        ip = "192.168.6.11",
+        port = 8700,
+        ot = 1560355200,
+        
+    }
+}
+
+Constant.GM_OPEN = true
+Constant.TILE_X = 48	
+Constant.TILE_Y=24 
+Constant.TILE_X_HALF=24 
+Constant.TILE_Y_HALF=12 
+-- 原端游FPS
+Constant.FPS_TL = 16
+--
+-- UI相关
+--
+Constant.BaseColorRatio = 1.45
+
+
+Constant.GAME_LAYER_ZORDER = {
+    Zorder_Base     = 1,
+    Zorder_Control  = 2,
+    Zorder_Dialog   = 3,
+    Zorder_Tip      = 4,
+}
+
+Constant.FONT_1 = "font/" .. lt.GameConfig.LANG .. "/FONT_1.TTF"            -- 隶书
+Constant.FONT_2 = "font/" .. lt.GameConfig.LANG .. "/FONT_2.TTF"            -- 方正
+Constant.FONT_3 = "font/" .. lt.GameConfig.LANG .. "/DroidSansFallback.ttf"            -- DroidSansFallback
+Constant.FONT_4 = "font/fangzheng.ttf"
+
+Constant.COLOR_BTN_0 = cc.c3b(0xff, 0xfb, 0xe6)                     -- 常规按钮 (232, 200, 0)
+Constant.COLOR_BTN_1 = cc.c3b(0xE6, 0xBB, 0x84)                     -- 区服选择 (230, 187, 132)
+Constant.COLOR_BTN_2 = cc.c3b(0x9C, 0x86, 0x6F)                     -- 区服未选中 (156, 134, 111)
+Constant.COLOR_BTN_3 = cc.c3b(0xEB, 0xC4, 0x91)                     -- 区服选中 (235, 196, 145)
+Constant.COLOR_BTN_4 = cc.c3b(0xFF, 0xEA, 0x69)                     -- 创建角色 (255, 234, 105)
+
+Constant.COLOR_TEXT_RED        = cc.c3b(0xFF, 0x00, 0x00)                -- 通用文本-红色 (255, 0, 0)
+Constant.COLOR_TEXT_WHITE      = cc.c3b(0xFC, 0xF0, 0xDF)                -- 通用文本-白色 (252, 240, 223)
+Constant.COLOR_TEXT_WHITE_PURE = cc.c3b(0xFF, 0xFF, 0xFF)                -- 通用文本-纯白色 (255, 255, 255)
+Constant.COLOR_TEXT_GRAY       = cc.c3b(128, 128, 128)                   -- 通用文本-灰色    
+Constant.COLOR_TEXT_GOLD       = cc.c3b(0xB6, 0xA3, 0x3A)                -- 通用文本-金色   (182, 163, 58)
+Constant.COLOR_TEXT_GOLD_H     = cc.c3b(0xFF, 0xFF, 0x00)                -- 通用文本-金色高亮 (255, 255, 0)
+Constant.COLOR_TEXT_GREEN_H    = cc.c3b(0x30, 0xCC, 0x00)                -- 通用文本-绿色高亮 (48, 204, 0)
+Constant.COLOR_TITLE           = cc.c3b(0xEB, 0xC4, 0x91)                -- 标题 (235, 196, 145)
+Constant.COLOR_OUTLINE3B       = cc.c3b(0x15, 0x0F, 0x05)                -- 标题 (21, 15, 5)
+Constant.COLOR_OUTLINE         = cc.c4b(0x15, 0x0F, 0x05, 0xFF)          -- 标题 (21, 15, 5, 255)
+Constant.COLOR_COPYRIGHT       = cc.c4b(0xBE, 0xB4, 0x8E, 0xFF)          -- 版权 (190, 180, 142, 255)
+Constant.COLOR_LITTLE_TITLE    = cc.c3b(99, 88, 77)                      -- 小标题
+Constant.COLOR_TEXT_NOMAL      = cc.c3b(190, 140, 110)                   -- 普通文本
+Constant.COLOR_TEXT_GREEN      = cc.c3b(0x67, 0x5D, 0x90)                -- 宝石绿 (103, 93, 144)
+Constant.COLOR_TEXT_LIGHTBLUE  = cc.c3b(0, 0, 137)                      -- 通用文本-蓝色
+Constant.COLOR_TEXT_BLUE       = cc.c3b(0, 0, 255)                     -- 通用文本-浅蓝色
+Constant.COLOR_TEXT_ORANGE     = cc.c3b(214, 154, 123)                   -- 通用文本-橘色
+Constant.COLOR_TEXT_BLACK      = cc.c3b(0, 0, 0)                         -- 通用文本-黑色
+Constant.COLOR_TASK_DETAIL     = cc.c3b(0xD6, 0x9A, 0x7B)                -- 任务描述字颜色
+Constant.COLOR_TEXT_MIDRED     = cc.c3b(255, 41, 0)                  -- 通用文本-红色
+Constant.COLOR_TEXT_LIGHTORANGE= cc.c3b(255, 127, 0)                  -- 橙色
+Constant.COLOR_NAME_NOMAL      = cc.c3b(255, 255, 0)                  
+Constant.COLOR_TEXT_CYAN       = cc.c3b(0x23, 0xf3, 0xf7)                --蓝绿色
+Constant.COLOR_TEXT_MOON_BOX   = cc.c3b(0xff, 0xb3, 0x0a)                -- 橙色提示
+Constant.COLOR_GREEN_H         = cc.c3b(0x30, 0xCC, 0x00)                -- 绿色提示
+Constant.COLOR_BROWN_TIP       = cc.c3b(0xbc, 0x9e, 0x8f)                -- 棕色提示
+Constant.COLOR_TEXT_TANGERINE  = cc.c3b(243,35,245)                      -- 紫色提示
+Constant.COLOR_TEXT_BROWN      = cc.c3b(62,35,18)                        -- 棕色提示
+Constant.COLOR_TITLE_YELLOW    = cc.c3b(255,221,0)                       -- 黄色小标题
+Constant.COLOR_TEXT_LIGHT      = cc.c3b(189,172,142)                     -- 常用文本
+Constant.COLOR_TITLE_BROWN     = cc.c3b(180,116,32)                      -- 棕色标题                    -- 队伍提示
+Constant.COLOR_TEXT_OUTLINE    = cc.c4b(110, 61, 8, 255)                 -- 文本描边
+
+Constant.COLOR_ITEM_BEST_PURPLE = cc.c3b(0xFF,0x8C,0xFF)                  -- 小极品 特殊紫
+
+Constant.COLOR_NOTICE_ORI     = cc.c3b(0xFF, 0x7F, 0x00)                      -- 橙色仙气飘字 ff7f00
+Constant.COLOR_NOTICE_YEL     = cc.c3b(0xFF, 0xFF, 0x00)                      -- 黄色灵气飘字 ffff00
+
+Constant.COLOR_4F_GREEN_H     = cc.c4b(0x30/255, 0xCC/255, 0x00/255, 1)            -- 4b -绿色高亮
+Constant.COLOR_NPC_STATUE_NAME= cc.c3b(0x1D, 0xC6, 0x37)                  -- npc 雕像 名字
+Constant.COLOR_TEXT_DARKYELLOW= cc.c3b(216, 200, 166)                  -- 通用文本-暗黄色
+Constant.COLOR_NPC_NAME = cc.c3b(0, 255, 0)                  -- npc 名字
+Constant.DEFALUT_CLOTH_COLOR = cc.vec3(1, 1, 1)   --默认衣服gl颜色
+Constant.COLOR_GREEN         = cc.c3b(0x00, 0xFF, 0x00)                -- 绿色
+Constant.COLOR_BLUE          = cc.c3b(0x00, 0xFF, 0xFF)                -- 蓝绿色
+Constant.COLOR_GRAY          = cc.c3b(179, 179, 179)                   -- 灰色
+Constant.COLOR_LIGHT_YELLOW  = cc.c3b(253, 234, 173)                  -- 淡黄色
+
+
+--gl color 
+Constant.COLOR_GL_GREEN = cc.vec4(0.0, 1.0,0.0, 1.0)            -- 绿色
+Constant.COLOR_GL_RED = cc.vec4(1.0, 0.0,0.0, 1.0)              -- 红色
+Constant.COLOR_GL_BLUE = cc.vec4(0.0, 0.0,1.0, 1.0)             -- 蓝色
+Constant.COLOR_GL_WHITE = cc.vec4(1.0, 1.0,1.0, 1.0)            -- 白色
+
+
+-- 倾向颜色
+Constant.COLOR_OX_TENDENCY_1 = 0x3130CE
+Constant.COLOR_OX_TENDENCY_2 = 0x18D3DE
+Constant.COLOR_OX_TENDENCY_3 = 0x848284
+Constant.COLOR_OX_TENDENCY_4 = 0xFF0000
+Constant.COLOR_OX_TENDENCY_5 = 0x6B1818
+
+Constant.COLORS = {
+    white = cc.c3b(255, 255, 255), -- white
+    green = cc.c3b(0x00, 0xFF, 0x00), -- green
+    blue = cc.c3b(0x00, 0x00, 0xFF), -- blue
+    black = cc.c3b(0x00, 0x00, 0x00), -- black
+    yellow = cc.c3b(0xE8, 0xC8, 0x00), -- yellow
+    red = cc.c3b(0xFF, 0x00, 0x00), -- red
+    orange = cc.c3b(0xFF, 0x80, 0x00), -- Orange
+    purple = cc.c3b(0xFF, 0x00, 0xFF), -- Purple
+    gray = cc.c3b(0xC0, 0xC0, 0xC0), -- Gray
+    gold = cc.c3b(0xFF, 0xFF, 0x00),
+    lightblue = cc.c3b(167, 220, 242), -- lightblue
+    pressBtn = cc.c3b(0xFF, 0x00, 0x00), -- press按鈕
+    title = cc.c3b(0xD6, 0x9A, 0x7B), -- press按鈕
+    text = cc.c3b(190, 140, 110),    -- 
+    d = nil,
+}
+
+Constant.COLOR_HAIR_ARRAY = {
+    cc.c3b(0x6B, 0x86, 0x6F),       -- 墨绿   (107, 134, 111)
+    cc.c3b(0xCA, 0x62, 0x5F),       -- 朱砂   (202, 98, 95)
+    cc.c3b(0x73, 0x87, 0xC5),       -- 蝴蝶蓝 (115, 135, 197)
+    cc.c3b(0x95, 0xD7, 0x70),       -- 竹叶青 (149, 215, 112)
+    cc.c3b(0xDE, 0xCF, 0x4D),       -- 藤黄   (222, 207, 77)
+    cc.c3b(0xA9, 0x75, 0xB2),       -- 紫罗兰 (169, 117, 178)
+    cc.c3b(0x8D, 0xA2, 0x49),       -- 芭蕉绿 (141, 162, 73)
+    cc.c3b(0xC0, 0xBB, 0x65),       -- 玄铁   (192, 187, 101)
+    cc.c3b(0xED, 0xED, 0xED),       -- 白银色 (237, 237, 237)
+    cc.c3b(0xAE, 0xAC, 0xAE),       -- 铅灰   (174, 172, 174)
+    cc.c3b(0x59, 0x59, 0x59),       -- 黑色   (89, 89, 89)
+    cc.c3b(0x7E, 0x6F, 0x64),       -- 赭绿   (126, 111, 100)
+    cc.c3b(0xAF, 0x92, 0x90),       -- 咖啡   (175, 146, 144)
+    cc.c3b(0x67, 0x5D, 0x90),       -- 宝石蓝 (103, 93, 144)
+    cc.c3b(0xCB, 0xBC, 0x5A),       -- 苍竹   (203, 188, 90)
+    cc.c3b(0x78, 0x76, 0xA3),       -- 灰蓝   (120, 118, 163)
+}
+
+Constant.Item_Tip_Color = {
+    Tip_Title       = cc.c3b(255, 255, 0), -- 物品名
+    Tip_Detail      = cc.c3b(255, 255, 255),
+    Tip_Rare        = cc.c3b(0, 176, 80),
+    Tip_Seal        = cc.c3b(255,165,0),
+}
+
+-- 战斗中使用的颜色值
+Constant.GAME_COLOR_ARRAY = {
+    cc.c3b(0x00, 0x00, 0x00),
+    cc.c3b(0x80, 0x00, 0x00),
+    cc.c3b(0x00, 0x80, 0x00),
+    cc.c3b(0x80, 0x80, 0x00),
+    cc.c3b(0x00, 0x00, 0x80),
+    cc.c3b(0x80, 0x00, 0x80),
+    cc.c3b(0x00, 0x80, 0x80),
+    cc.c3b(0xc0, 0xc0, 0xc0),
+    cc.c3b(0x55, 0x80, 0x97),
+    cc.c3b(0x9d, 0xb9, 0xc8),
+    cc.c3b(0x7b, 0x73, 0x73),
+    cc.c3b(0x2d, 0x29, 0x29),
+    cc.c3b(0x5a, 0x52, 0x52),
+    cc.c3b(0x63, 0x5a, 0x5a),
+    cc.c3b(0x42, 0x39, 0x39),
+    cc.c3b(0x1d, 0x18, 0x18),
+    cc.c3b(0x18, 0x10, 0x10),
+    cc.c3b(0x29, 0x18, 0x18),
+    cc.c3b(0x10, 0x08, 0x08),
+    cc.c3b(0xf2, 0x79, 0x71),
+    cc.c3b(0xe1, 0x67, 0x5f),
+    cc.c3b(0xff, 0x5a, 0x5a),
+    cc.c3b(0xff, 0x31, 0x31),
+    cc.c3b(0xd6, 0x5a, 0x52),
+    cc.c3b(0x94, 0x10, 0x00),
+    cc.c3b(0x94, 0x29, 0x18),
+    cc.c3b(0x39, 0x08, 0x00),
+    cc.c3b(0x73, 0x10, 0x00),
+    cc.c3b(0xb5, 0x18, 0x00),
+    cc.c3b(0xbd, 0x63, 0x52),
+    cc.c3b(0x42, 0x18, 0x10),
+    cc.c3b(0xff, 0xaa, 0x99),
+    cc.c3b(0x5a, 0x10, 0x00),
+    cc.c3b(0x73, 0x39, 0x29),
+    cc.c3b(0xa5, 0x4a, 0x31),
+    cc.c3b(0x94, 0x7b, 0x73),
+    cc.c3b(0xbd, 0x52, 0x31),
+    cc.c3b(0x52, 0x21, 0x10),
+    cc.c3b(0x7b, 0x31, 0x18),
+    cc.c3b(0x2d, 0x18, 0x10),
+    cc.c3b(0x8c, 0x4a, 0x31),
+    cc.c3b(0x94, 0x29, 0x00),
+    cc.c3b(0xbd, 0x31, 0x00),
+    cc.c3b(0xc6, 0x73, 0x52),
+    cc.c3b(0x6b, 0x31, 0x18),
+    cc.c3b(0xc6, 0x6b, 0x42),
+    cc.c3b(0xce, 0x4a, 0x00),
+    cc.c3b(0xa5, 0x63, 0x39),
+    cc.c3b(0x5a, 0x31, 0x18),
+    cc.c3b(0x2a, 0x10, 0x00),
+    cc.c3b(0x15, 0x08, 0x00),
+    cc.c3b(0x3a, 0x18, 0x00),
+    cc.c3b(0x08, 0x00, 0x00),
+    cc.c3b(0x29, 0x00, 0x00),
+    cc.c3b(0x4a, 0x00, 0x00),
+    cc.c3b(0x9d, 0x00, 0x00),
+    cc.c3b(0xdc, 0x00, 0x00),
+    cc.c3b(0xde, 0x00, 0x00),
+    cc.c3b(0xfb, 0x00, 0x00),
+    cc.c3b(0x9c, 0x73, 0x52),
+    cc.c3b(0x94, 0x6b, 0x4a),
+    cc.c3b(0x73, 0x4a, 0x29),
+    cc.c3b(0x52, 0x31, 0x18),
+    cc.c3b(0x8c, 0x4a, 0x18),
+    cc.c3b(0x88, 0x44, 0x11),
+    cc.c3b(0x4a, 0x21, 0x00),
+    cc.c3b(0x21, 0x18, 0x10),
+    cc.c3b(0xd6, 0x94, 0x5a),
+    cc.c3b(0xc6, 0x6b, 0x21),
+    cc.c3b(0xef, 0x6b, 0x00),
+    cc.c3b(0xff, 0x77, 0x00),
+    cc.c3b(0xa5, 0x94, 0x84),
+    cc.c3b(0x42, 0x31, 0x21),
+    cc.c3b(0x18, 0x10, 0x08),
+    cc.c3b(0x29, 0x18, 0x08),
+    cc.c3b(0x21, 0x10, 0x00),
+    cc.c3b(0x39, 0x29, 0x18),
+    cc.c3b(0x8c, 0x63, 0x39),
+    cc.c3b(0x42, 0x29, 0x10),
+    cc.c3b(0x6b, 0x42, 0x18),
+    cc.c3b(0x7b, 0x4a, 0x18),
+    cc.c3b(0x94, 0x4a, 0x00),
+    cc.c3b(0x8c, 0x84, 0x7b),
+    cc.c3b(0x6b, 0x63, 0x5a),
+    cc.c3b(0x4a, 0x42, 0x39),
+    cc.c3b(0x29, 0x21, 0x18),
+    cc.c3b(0x46, 0x39, 0x29),
+    cc.c3b(0xb5, 0xa5, 0x94),
+    cc.c3b(0x7b, 0x6b, 0x5a),
+    cc.c3b(0xce, 0xb1, 0x94),
+    cc.c3b(0xa5, 0x8c, 0x73),
+    cc.c3b(0x8c, 0x73, 0x5a),
+    cc.c3b(0xb5, 0x94, 0x73),
+    cc.c3b(0xd6, 0xa5, 0x73),
+    cc.c3b(0xef, 0xa5, 0x4a),
+    cc.c3b(0xef, 0xc6, 0x8c),
+    cc.c3b(0x7b, 0x63, 0x42),
+    cc.c3b(0x6b, 0x56, 0x39),
+    cc.c3b(0xbd, 0x94, 0x5a),
+    cc.c3b(0x63, 0x39, 0x00),
+    cc.c3b(0xd6, 0xc6, 0xad),
+    cc.c3b(0x52, 0x42, 0x29),
+    cc.c3b(0x94, 0x63, 0x18),
+    cc.c3b(0xef, 0xd6, 0xad),
+    cc.c3b(0xa5, 0x8c, 0x63),
+    cc.c3b(0x63, 0x5a, 0x4a),
+    cc.c3b(0xbd, 0xa5, 0x7b),
+    cc.c3b(0x5a, 0x42, 0x18),
+    cc.c3b(0xbd, 0x8c, 0x31),
+    cc.c3b(0x35, 0x31, 0x29),
+    cc.c3b(0x94, 0x84, 0x63),
+    cc.c3b(0x7b, 0x6b, 0x4a),
+    cc.c3b(0xa5, 0x8c, 0x5a),
+    cc.c3b(0x5a, 0x4a, 0x29),
+    cc.c3b(0x9c, 0x7b, 0x39),
+    cc.c3b(0x42, 0x31, 0x10),
+    cc.c3b(0xef, 0xad, 0x21),
+    cc.c3b(0x18, 0x10, 0x00),
+    cc.c3b(0x29, 0x21, 0x00),
+    cc.c3b(0x9c, 0x6b, 0x00),
+    cc.c3b(0x94, 0x84, 0x5a),
+    cc.c3b(0x52, 0x42, 0x18),
+    cc.c3b(0x6b, 0x5a, 0x29),
+    cc.c3b(0x7b, 0x63, 0x21),
+    cc.c3b(0x9c, 0x7b, 0x21),
+    cc.c3b(0xde, 0xa5, 0x00),
+    cc.c3b(0x5a, 0x52, 0x39),
+    cc.c3b(0x31, 0x29, 0x10),
+    cc.c3b(0xce, 0xbd, 0x7b),
+    cc.c3b(0x63, 0x5a, 0x39),
+    cc.c3b(0x94, 0x84, 0x4a),
+    cc.c3b(0xc6, 0xa5, 0x29),
+    cc.c3b(0x10, 0x9c, 0x18),
+    cc.c3b(0x42, 0x8c, 0x4a),
+    cc.c3b(0x31, 0x8c, 0x42),
+    cc.c3b(0x10, 0x94, 0x29),
+    cc.c3b(0x08, 0x18, 0x10),
+    cc.c3b(0x08, 0x18, 0x18),
+    cc.c3b(0x08, 0x29, 0x10),
+    cc.c3b(0x18, 0x42, 0x29),
+    cc.c3b(0xa5, 0xb5, 0xad),
+    cc.c3b(0x6b, 0x73, 0x73),
+    cc.c3b(0x18, 0x29, 0x29),
+    cc.c3b(0x18, 0x42, 0x4a),
+    cc.c3b(0x31, 0x42, 0x4a),
+    cc.c3b(0x63, 0xc6, 0xde),
+    cc.c3b(0x44, 0xdd, 0xff),
+    cc.c3b(0x8c, 0xd6, 0xef),
+    cc.c3b(0x73, 0x6b, 0x39),
+    cc.c3b(0xf7, 0xde, 0x39),
+    cc.c3b(0xf7, 0xef, 0x8c),
+    cc.c3b(0xf7, 0xe7, 0x00),
+    cc.c3b(0x6b, 0x6b, 0x5a),
+    cc.c3b(0x5a, 0x8c, 0xa5),
+    cc.c3b(0x39, 0xb5, 0xef),
+    cc.c3b(0x4a, 0x9c, 0xce),
+    cc.c3b(0x31, 0x84, 0xb5),
+    cc.c3b(0x31, 0x52, 0x6b),
+    cc.c3b(0xde, 0xde, 0xd6),
+    cc.c3b(0xbd, 0xbd, 0xb5),
+    cc.c3b(0x8c, 0x8c, 0x84),
+    cc.c3b(0xf7, 0xf7, 0xde),
+    cc.c3b(0x00, 0x08, 0x18),
+    cc.c3b(0x08, 0x18, 0x39),
+    cc.c3b(0x08, 0x10, 0x29),
+    cc.c3b(0x08, 0x18, 0x00),
+    cc.c3b(0x08, 0x29, 0x00),
+    cc.c3b(0x00, 0x52, 0xa5),
+    cc.c3b(0x00, 0x7b, 0xde),
+    cc.c3b(0x10, 0x29, 0x4a),
+    cc.c3b(0x10, 0x39, 0x6b),
+    cc.c3b(0x10, 0x52, 0x8c),
+    cc.c3b(0x21, 0x5a, 0xa5),
+    cc.c3b(0x10, 0x31, 0x5a),
+    cc.c3b(0x10, 0x42, 0x84),
+    cc.c3b(0x31, 0x52, 0x84),
+    cc.c3b(0x18, 0x21, 0x31),
+    cc.c3b(0x4a, 0x5a, 0x7b),
+    cc.c3b(0x52, 0x6b, 0xa5),
+    cc.c3b(0x29, 0x39, 0x63),
+    cc.c3b(0x10, 0x4a, 0xde),
+    cc.c3b(0x29, 0x29, 0x21),
+    cc.c3b(0x4a, 0x4a, 0x39),
+    cc.c3b(0x29, 0x29, 0x18),
+    cc.c3b(0x4a, 0x4a, 0x29),
+    cc.c3b(0x7b, 0x7b, 0x42),
+    cc.c3b(0x9c, 0x9c, 0x4a),
+    cc.c3b(0x5a, 0x5a, 0x29),
+    cc.c3b(0x42, 0x42, 0x14),
+    cc.c3b(0x39, 0x39, 0x00),
+    cc.c3b(0x59, 0x59, 0x00),
+    cc.c3b(0xca, 0x35, 0x2c),
+    cc.c3b(0x6b, 0x73, 0x21),
+    cc.c3b(0x29, 0x31, 0x00),
+    cc.c3b(0x31, 0x39, 0x10),
+    cc.c3b(0x31, 0x39, 0x18),
+    cc.c3b(0x42, 0x4a, 0x00),
+    cc.c3b(0x52, 0x63, 0x18),
+    cc.c3b(0x5a, 0x73, 0x29),
+    cc.c3b(0x31, 0x4a, 0x18),
+    cc.c3b(0x18, 0x21, 0x00),
+    cc.c3b(0x18, 0x31, 0x00),
+    cc.c3b(0x18, 0x39, 0x10),
+    cc.c3b(0x63, 0x84, 0x4a),
+    cc.c3b(0x6b, 0xbd, 0x4a),
+    cc.c3b(0x63, 0xb5, 0x4a),
+    cc.c3b(0x63, 0xbd, 0x4a),
+    cc.c3b(0x5a, 0x9c, 0x4a),
+    cc.c3b(0x4a, 0x8c, 0x39),
+    cc.c3b(0x63, 0xc6, 0x4a),
+    cc.c3b(0x63, 0xd6, 0x4a),
+    cc.c3b(0x52, 0x84, 0x4a),
+    cc.c3b(0x31, 0x73, 0x29),
+    cc.c3b(0x63, 0xc6, 0x5a),
+    cc.c3b(0x52, 0xbd, 0x4a),
+    cc.c3b(0x10, 0xff, 0x00),
+    cc.c3b(0x18, 0x29, 0x18),
+    cc.c3b(0x4a, 0x88, 0x4a),
+    cc.c3b(0x4a, 0xe7, 0x4a),
+    cc.c3b(0x00, 0x5a, 0x00),
+    cc.c3b(0x00, 0x88, 0x00),
+    cc.c3b(0x00, 0x94, 0x00),
+    cc.c3b(0x00, 0xde, 0x00),
+    cc.c3b(0x00, 0xee, 0x00),
+    cc.c3b(0x00, 0xfb, 0x00),
+    cc.c3b(0x4a, 0x5a, 0x94),
+    cc.c3b(0x63, 0x73, 0xb5),
+    cc.c3b(0x7b, 0x8c, 0xd6),
+    cc.c3b(0x6b, 0x7b, 0xd6),
+    cc.c3b(0x77, 0x88, 0xff),
+    cc.c3b(0xc6, 0xc6, 0xce),
+    cc.c3b(0x94, 0x94, 0x9c),
+    cc.c3b(0x9c, 0x94, 0xc6),
+    cc.c3b(0x31, 0x31, 0x39),
+    cc.c3b(0x29, 0x18, 0x84),
+    cc.c3b(0x18, 0x00, 0x84),
+    cc.c3b(0x4a, 0x42, 0x52),
+    cc.c3b(0x52, 0x42, 0x7b),
+    cc.c3b(0x63, 0x5a, 0x73),
+    cc.c3b(0xce, 0xb5, 0xf7),
+    cc.c3b(0x8c, 0x7b, 0x9c),
+    cc.c3b(0x77, 0x22, 0xcc),
+    cc.c3b(0xdd, 0xaa, 0xff),
+    cc.c3b(0xf0, 0xb4, 0x2a),
+    cc.c3b(0xdf, 0x00, 0x9f),
+    cc.c3b(0xe3, 0x17, 0xb3),
+    cc.c3b(0xff, 0xfb, 0xf0),
+    cc.c3b(0xa0, 0xa0, 0xa4),
+    cc.c3b(0x80, 0x80, 0x80),
+    cc.c3b(0xff, 0x00, 0x00),
+    cc.c3b(0x00, 0xff, 0x00),
+    cc.c3b(0xff, 0xff, 0x00),
+    cc.c3b(0x00, 0x00, 0xff),
+    cc.c3b(0xff, 0x00, 0xff),
+    cc.c3b(0x00, 0xff, 0xff),
+    cc.c3b(0xff, 0xff, 0xff),
+}
+
+Constant.HAIR_COLOR_COUNT = 16
+
+Constant.BOTTOM_MENU_HEIGHT = 110           -- 底部菜单栏的高度
+Constant.BOTTOM_MENU_TIME   = 0.2           -- 底部菜单栏移动动画的时间
+
+
+--
+-- Game相关
+--
+
+Constant.SHOULDERDASH_DELAYTIME = 3      -- 被冲撞的最短时间
+Constant.SHOULDERDASH_COMMONCD  = 2      -- 十步一杀与野蛮冲撞公共cd
+
+-- Job
+Constant.JOB_ZS = 1
+Constant.JOB_FS = 2
+Constant.JOB_DS = 3
+
+-- AgentType
+Constant.AGENT_TYPE_WORLD   = 1
+Constant.AGENT_TYPE_MAP     = 2
+Constant.AGENT_TYPE_HERO    = 3
+Constant.AGENT_TYPE_MONSTER = 4
+Constant.AGENT_TYPE_NPC     = 5
+Constant.AGENT_TYPE_ITEM    = 6
+Constant.AGENT_TYPE_SKILL   = 7             -- 火墙
+Constant.AGENT_TYPE_TRAP    = 8
+Constant.AGENT_TYPE_CAKE    = 9             --盛宴蛋糕
+Constant.AGENT_TYPE_ELEMENT    = 10             --元素
+
+
+-- StateId
+Constant.HERO_STATE_GLOBAL       = 1000
+Constant.HERO_STATE_IDLE         = 1001
+Constant.HERO_STATE_MOVE         = 1002
+Constant.HERO_STATE_ROUTE        = 1003
+Constant.HERO_STATE_CHASE        = 1004
+Constant.HERO_STATE_ATTACK       = 1005
+Constant.HERO_STATE_ATTACK_DUMMY = 1006
+Constant.HERO_STATE_SKILL        = 1007
+Constant.HERO_STATE_DIE          = 1008
+Constant.HERO_STATE_DEAD         = 1009
+Constant.HERO_STATE_DIZZY        = 1010
+Constant.HERO_STATE_BACK         = 1011
+Constant.HERO_STATE_BF           = 1020
+Constant.HERO_STATE_YMCZ         = 1021
+Constant.HERO_STATE_TZ           = 1022
+Constant.HERO_STATE_MOVE_HANGUP  = 1023
+Constant.HERO_STATE_AFIRE        = 1024 -- 点燃
+Constant.HERO_STATE_MOVE_NPC     = 1025 -- 移动到npc
+Constant.HERO_STATE_MOVE_CAPTURE = 1026 -- 移动捕捉宠物
+Constant.HERO_STATE_MOVE_POS     = 1027
+Constant.HERO_STATE_SPLIT        = 1028
+Constant.HERO_STATE_FAST_MOVE    = 1029 -- 快速移动
+Constant.HERO_STATE_TELEPORT     = 1030 -- 瞬间移动
+Constant.HERO_STATE_SHOT         = 1031 -- 射击
+Constant.HERO_STATE_FLY          = 1032 -- 挂起
+Constant.HERO_STATE_MOUNT_IDLE   = 1040 -- 坐骑待机
+Constant.HERO_STATE_MOUNT_MOVE   = 1041 -- 坐骑移动
+Constant.HERO_STATE_TURRET       = 1042 -- 炮塔
+Constant.HERO_STATE_TRANSFROM    = 1043 -- 变身相关
+Constant.HERO_STATE_TELEPORT_RET = 1044 -- 瞬间移动后续
+
+
+
+
+
+Constant.MONSTER_STATE_GLOBAL = 2000
+Constant.MONSTER_STATE_IDLE   = 2001
+Constant.MONSTER_STATE_MOVE   = 2002
+Constant.MONSTER_STATE_DIE    = 2003
+Constant.MONSTER_STATE_DEAD   = 2004
+Constant.MONSTER_STATE_DIZZY  = 2005
+Constant.MONSTER_STATE_BACK   = 2006
+Constant.MONSTER_STATE_FLY    = 2007
+Constant.MONSTER_STATE_MISSILE= 2008
+Constant.MONSTER_STATE_DIG    = 2009
+Constant.MONSTER_STATE_APPEAR = 2999
+Constant.MONSTER_STATE_DISAPPEAR = 2998
+Constant.MONSTER_STATE_WILDWOLF = 2300
+Constant.MONSTER_STATE_FASTMOVE = 2301
+Constant.MONSTER_STATE_SKILL    = 2302 
+
+
+Constant.NPC_STATE_IDLE = 3000
+
+Constant.TRAP_STATE_IDLE   = 4000
+Constant.TRAP_STATE_MOVE   = 4001
+Constant.TRAP_STATE_GLOBAL = 4002
+
+Constant.BLOCK_NONE    = 0
+Constant.BLOCK_BLOCKED = 1
+Constant.BLOCK_SHADOW  = 2
+
+Constant.MINIMAP_WHITE  = 1         -- 主角
+Constant.MINIMAP_BLUE   = 2         -- 非敌对行会玩家
+Constant.MINIMAP_ORANGE = 3         -- 敌对行会玩家
+Constant.MINIMAP_GREEN  = 4         -- 怪物
+Constant.MINIMAP_RED    = 5         -- NPC
+Constant.MINIMAP_ROUTE  = 6         -- ROUTE
+Constant.MINIMAP_KUANG  = 7         -- ROUTE
+Constant.MINIMAP_YELLOW = 8         -- 组队队员
+
+Constant.MAX_UNION_NUM  = 100        -- 行会最大人数
+Constant.MAX_UNIONCOMBAT_NUM  = 3    -- 行会最大宣战次数
+Constant.MAX_UNIONCOMBAT_MONEYNUM  = 500000    -- 行会最大宣战次数
+
+-- Message
+Constant.MSG_ON_HIT        = 1
+Constant.MSG_MOVE_JOYSTICK = 2
+Constant.MSG_MOVE_TOUCH    = 3
+Constant.MSG_SKILL         = 4
+Constant.MSG_ROUTE         = 5
+Constant.MSG_ROUTE_STOP    = 6       --停止寻路
+Constant.MSG_CAPTURE       = 7       --捕捉宠物
+
+-- 命令
+Constant.CmdId = {
+    CMD_MOVE   = 1,
+    CMD_ATTACK = 2,
+    CMD_DIE    = 3,
+    CMD_IDLE   = 4,
+    CMD_MOUNT  = 5,
+    CMD_DIG    = 6,
+    CMD_JUMP   = 7,
+    CMD_TRANSFORM  = 8,
+    CMD_PROPERTY   = 9,
+}
+
+-- 对生物(状态 0=活着 1=死亡 2=骨头)
+Constant.HeroStatus = {
+    ALIVE = 0,
+    DEAD  = 1,
+    BONE  = 2,
+}
+
+Constant.SkillTargetType = {
+    PASSIVE  = 0,
+    ONE      = 1,
+    ONE_AREA = 2,
+    SELF     = 3,
+    AREA     = 4,
+}
+
+Constant.NameNodeType = {
+    HERO_SELF  = 1,
+    HERO_OTHER = 2,
+    MONSTER    = 3,
+    PET        = 4,
+}
+
+Constant.COMMON_TIP_BTN = {
+    BTN_CONFIM = "btn_confim",
+    BTN_CANCEL = "btn_cancel",
+}
+
+Constant.ObjType = {
+	OBJ_PLAYER      = 0,    --玩家
+	OBJ_MONSTER     = 1,    --怪物
+	OBJ_NPC         = 2,    --NPC
+	OBJ_ITEM        = 3,    --物品
+	OBJ_FIREWALL    = 4,    --地上火墙类
+	OBJ_FLOOR       = 5,    --Floor类
+}
+
+Constant.FileWallSubType = {
+	NORMAL_FIREWALL     = 1,        -- 普通火墙
+	DASHI_FIREWALL      = 2,        -- 大师级火墙
+	NORMAL_LIUXINGHUOYU = 3,        -- 流星火雨的火
+	DASHI_LIUXINGHUOYU  = 4,        -- 大师级流星火雨
+	NIMO_FIREWALL       = 5,        -- 逆魔的火墙
+	BIANPAO             = 6,        -- 鞭炮
+	MOYAN               = 7,        -- 魔炎
+}
+
+Constant.FloorSubType = {
+    FLOOR_SWORD_OF_THOR = 1, --雷神之剑
+    FLOOR_MAGIC_ELUSION = 2, --魔法回避
+    FLOOR_GRAY_DARKNESS = 3, --黑暗神力
+    FLOOR_GREEN_POISON = 4,  --荧绿之毒
+    FLOOR_YELLOW_POISON = 5, --艳黄之毒
+    FLOOR_ACID_SWAMP = 6,    --酸性沼泽
+    FLOOR_BLOODY_WALL = 7,    --血墙
+    FLOOR_ICE_FIELD = 8,     -- 冰之领域
+    FLOOR_PROMINENCE = 9,    --地狱火海
+    FLOOR_BLOODY_TUNNEL = 10, --血之漩涡
+    FLOOR_DARKNESS = 11, --黑暗之触
+    FLOOR_CUSTOMIZE_TEXT = 12, --路标
+    FLOOR_MERCY_GROUND = 13,
+    FLOOR_HEAVEN_GROUND = 14,
+    FLOOR_SUMMON_CLAY = 15,
+    FLOOR_SLAYER_RIDER = 19, -- 人族坐骑
+    FLOOR_ICE_HORIZON = 20, -- 冰冻地平线
+    FLOOR_FURY_OF_GNOME = 25, -- 大地之怒
+}
+
+-- UIEdit btn id
+Constant.EVENT_UIEDIT_ID = {
+    BTN_JOYSTICK        = 1001,
+    BTN_CHAT            = 1002,
+    BTN_TASKBAR         = 1003,
+    BTN_HEROINFO        = 1005,
+    BTN_PACKAGE         = 1006,
+    BTN_SKILL           = 1007,
+}
+
+Constant.EQUIP_ITEM_TYPE = {
+    type_clothes        = 1,        -- 1.衣服
+    type_weapon         = 2,        -- 2.武器
+    type_necklace       = 3,        -- 3.项链
+    type_hat            = 4,        -- 4.头盔
+    type_bracelet       = 5,        -- 5.手镯
+    type_ring           = 6,        -- 6.戒指
+    type_shoes          = 7,        -- 7.靴子
+    type_belt           = 8,        -- 8.腰带
+    type_medal          = 9,        -- 9.勋章
+    type_horse          = 10,       -- 10.马牌
+    type_gem            = 32,       -- 宝石(item Kind 32)
+}
+
+Constant.EQUIP_ITEM_POS = {
+    pos_clothes         = 1,        -- 1.衣服
+    pos_weapon          = 2,        -- 2.武器
+    pos_hat             = 3,        -- 3.头盔
+    pos_necklace        = 4,        -- 4.项链
+    pos_medal           = 5,        -- 5.勋章
+    pos_left_bracelet   = 6,        -- 6.手镯
+    pos_right_bracelet  = 7,        -- 7.手镯
+    pos_left_ring       = 8,        -- 8.戒指
+    pos_right_ring      = 9,        -- 9.戒指
+    pos_shoes           = 10,       -- 10.靴子
+    pos_belt            = 11,       -- 11.腰带
+    pos_gem             = 12,       -- 10.宝石(item Kind 32)
+    pos_horse           = 13,       -- 护盾
+}
+
+Constant.EQUIP_TYPE_POS_MAP = {
+    [Constant.EQUIP_ITEM_POS.pos_clothes]           = Constant.EQUIP_ITEM_TYPE.type_clothes,
+    [Constant.EQUIP_ITEM_POS.pos_weapon]            = Constant.EQUIP_ITEM_TYPE.type_weapon,
+    [Constant.EQUIP_ITEM_POS.pos_necklace]          = Constant.EQUIP_ITEM_TYPE.type_necklace,
+    [Constant.EQUIP_ITEM_POS.pos_hat]               = Constant.EQUIP_ITEM_TYPE.type_hat,
+    [Constant.EQUIP_ITEM_POS.pos_left_bracelet]     = Constant.EQUIP_ITEM_TYPE.type_bracelet,
+    [Constant.EQUIP_ITEM_POS.pos_right_bracelet]    = Constant.EQUIP_ITEM_TYPE.type_bracelet,
+    [Constant.EQUIP_ITEM_POS.pos_left_ring]         = Constant.EQUIP_ITEM_TYPE.type_ring,
+    [Constant.EQUIP_ITEM_POS.pos_right_ring]        = Constant.EQUIP_ITEM_TYPE.type_ring,
+    [Constant.EQUIP_ITEM_POS.pos_shoes]             = Constant.EQUIP_ITEM_TYPE.type_shoes,
+    [Constant.EQUIP_ITEM_POS.pos_belt]              = Constant.EQUIP_ITEM_TYPE.type_belt,
+    [Constant.EQUIP_ITEM_POS.pos_medal]             = Constant.EQUIP_ITEM_TYPE.type_medal,
+}
+
+
+Constant.EQUIP_POS_TYPE_MAP = {
+    [Constant.EQUIP_ITEM_TYPE.type_clothes]  = { Constant.EQUIP_ITEM_POS.pos_clothes },
+    [Constant.EQUIP_ITEM_TYPE.type_weapon]   = { Constant.EQUIP_ITEM_POS.pos_weapon },
+    [Constant.EQUIP_ITEM_TYPE.type_necklace] = { Constant.EQUIP_ITEM_POS.pos_necklace },
+    [Constant.EQUIP_ITEM_TYPE.type_hat]      = { Constant.EQUIP_ITEM_POS.pos_hat },
+    [Constant.EQUIP_ITEM_TYPE.type_bracelet] = { Constant.EQUIP_ITEM_POS.pos_left_bracelet, Constant.EQUIP_ITEM_POS.pos_right_bracelet },
+    [Constant.EQUIP_ITEM_TYPE.type_ring]     = { Constant.EQUIP_ITEM_POS.pos_left_ring, Constant.EQUIP_ITEM_POS.pos_right_ring },
+    [Constant.EQUIP_ITEM_TYPE.type_shoes]    = { Constant.EQUIP_ITEM_POS.pos_shoes },
+    [Constant.EQUIP_ITEM_TYPE.type_belt]     = { Constant.EQUIP_ITEM_POS.pos_belt },
+    [Constant.EQUIP_ITEM_TYPE.type_medal]    = { Constant.EQUIP_ITEM_POS.pos_medal },
+}
+
+-- 道具(程序中出现的 避免MagicNum 注意防止拼音重复!!!)
+Constant.ITEM_ID = {
+    JCYS    = 280000, -- 金创药(小量)
+    MFYS    = 280001, -- 魔法药(小量)
+    JCYM    = 280002, -- 金创药(中量)
+    MFYM    = 280003, -- 魔法药(中量)
+    JCYL    = 280004, -- 金创药(大量)
+    MFYL    = 280005, -- 魔法药(大量)
+    TJJCY   = 280006, -- 特级金创药
+    TJMFY   = 280007, -- 特级魔法药
+    TYSS    = 280008, -- 太阳神水
+    QXTYSS  = 280009, -- 强效太阳神水
+    TSXL    = 280010, -- 天山雪莲
+    SHLJ    = 280011, -- 深海灵礁
+    CJTSXL  = 280012, -- 超级天山雪莲
+    CJSHLJ  = 280013, -- 超级深海灵礁
+    JXTSXL  = 280014, -- 极效天山雪莲
+    JXSHLJ  = 280015, -- 极效深海灵礁
+
+    HCJZ    = 310000, -- 回城卷轴
+    DLJZ    = 310001, -- 地牢卷轴
+    SJJZ    = 310002, -- 随机卷轴
+    SCHCJ   = 310003, -- 沙城回城卷
+    SJSS    = 310006, -- 随机神石
+}
+
+Constant.ITEM_PLAYER_TIPS = {
+    TSXL        = 280010,    -- 天山雪莲
+    MP          = 10026,     -- 马牌
+}
+
+Constant.ITEM_TYPE = {
+    type_gold        = 1,   --元宝
+    type_bindGold    = 2,   --金锭
+    type_money       = 3,   --金币
+    type_level       = 4,   --等级
+    type_vipLv       = 5,   --VIP等级
+    type_gradeLv     = 6,   --转生等级
+    type_exp         = 7,   --经验
+    type_vitalityExp = 8,   --活力值经验
+    type_energyExp   = 9,   --精力值经验
+    type_vitality    = 10,  --活力值
+    type_energy      = 11,  --精力值
+}
+
+-- 魔药(魔法药)
+Constant.ITEM_FAST_MPID = {
+    Constant.ITEM_ID.TJMFY,
+    Constant.ITEM_ID.MFYL,
+    Constant.ITEM_ID.MFYM,
+    Constant.ITEM_ID.MFYS,
+}
+
+-- 血药(金疮药)
+Constant.ITEM_FAST_HPID = {
+    Constant.ITEM_ID.TJJCY,
+    Constant.ITEM_ID.JCYL,
+    Constant.ITEM_ID.JCYM,
+    Constant.ITEM_ID.JCYS,
+}
+
+-- 瞬回药(太阳神水)
+Constant.ITEM_FAST_INSTANTID = {
+    Constant.ITEM_ID.QXTYSS,
+    Constant.ITEM_ID.TYSS,
+}
+
+-- 卷轴
+Constant.ITEM_FAST_SCROLL = {
+    Constant.ITEM_ID.HCJZ,
+    Constant.ITEM_ID.DLJZ,
+    Constant.ITEM_ID.SJJZ,
+    Constant.ITEM_ID.SCHCJ,
+    Constant.ITEM_ID.SJSS,
+}
+
+--传世的 废弃
+-- Constant.ATTACK_MODE = {
+--     ALL     = 0,
+--     PEACE   = 1,
+--     GROUP   = 2,
+--     GUILD   = 3,
+--     GOOD    = 4,
+-- }
+
+Constant.PK_EXP_RED = 200
+
+Constant.ITEM_KIND = {
+    kind_material    = 1,   --材料
+    kind_package     = 5,   --包裹类
+    kind_value       = 6,   --值类型道具（注：值类型道具不会进入背包）
+    kind_itemChoose  = 24,  --道具选择包
+    kind_itemExp     = 25,  -- 多倍经验道具
+    kind_recharge    = 26,  --充值道具
+    kind_awardBox    = 27,  --全类型抽奖宝箱类
+    kind_recoveryMed = 28,  --恢复类药品
+    kind_propMed     = 29,  --属性类药品
+    kind_ore         = 30,  --矿石类
+    kind_back        = 31,  --回城类
+    kind_restore     = 32,  --恢复类 可装备道具
+    kind_treasure    = 33,  --夺宝类道具
+    kind_heartExp    = 34,  --战魂经验道具
+    kind_animalFood  = 35,  --兽粮
+    kind_horse       = 36,  --马牌
+    kind_reputation  = 38,  --声望
+    kind_fashion     = 40,  --装饰性道具
+    kind_horn        = 41,  --传音号角
+    kind_compose     = 42,  --kun药袋
+    kind_tuzhi       = 44,  --图纸
+    kind_title       = 45,  --称号道具
+    kind_rename      = 48,  --改名卡
+    kind_regret      = 50,  --悔过石
+    kind_superv      = 51,  --超级会员卷轴
+    kind_yuanqi      = 52,  --内力丹
+    kind_exchange    = 56,  --物品兑换
+    kind_expdan      = 58,  --经验丹
+}
+
+Constant.TYPE_VAULE_ITEM = {
+    COIN       = 1403001,   -- 金币
+    TICKET     = 1404001,   -- 点券
+    VOUCHER    = 1404002,   -- 代金券
+}
+
+Constant.Notice_Tip = {
+    Tip_System      = 1,    -- 系统公告
+    Tip_Item        = 2,    -- 物品提示宮傲
+    Tip_Exp         = 3,    -- 经验提示
+    Tip_Hero_Top    = 4,    -- 头顶提示
+    Tip_Lanter      = 5,    -- 活动系统提示
+}
+
+Constant.NameColor = {
+    WHITE           = 0xFF,        --白色
+    BLACK           = 0x00,        --黑色
+    BLUE            = 0xFC,        --蓝色
+    GREEN           = 0xDB,        --绿色
+    RED             = 0x38,        --红色
+    DEEPRED         = 0xF9,        --深红色
+    YELLOW          = 0x97,        --黄色
+    MONSTER_YELLOW  = 0x7D,        --怪物被困魔咒困住时的颜色
+    BROWN           = 0x2f,        --褐色
+    ORANGE          = 0x45,        --桔红色
+    PURPLE          = 253,         --紫色
+    GDNAMECLOLOR    = 253,         --紫色
+}
+
+Constant.PLAY_TIPS = {
+    FIRST_LEARN_SKILL        = "FIRST_LEARN_SKILL", -- 第一次 学习技能
+    FIRST_LEARN_HUCHI_SKILL  = "FIRST_LEARN_HUCHI_SKILL", -- 第一次 学习互斥技能
+    FIRST_OPEN_SPIRIT        = "FIRST_OPEN_SPIRIT", -- 第一次 打开灵兽
+    FIRST_OPEN_DEMON         = "FIRST_OPEN_DEMON", -- 第一次 打开战魂
+    FIRST_OPEN_EXCHANGE      = "FIRST_OPEN_EXCHANGE", -- 第一次 交易频道
+    FIRST_USE_TSXL           = "FIRST_USE_TSXL", -- 第一次 使用天山雪莲
+    FIRST_FULL_BAG           = "FIRST_FULL_BAG", -- 第一次 背包满
+    GETTASK_MAIN_E           = "GETTASK_MAIN_E", -- 任务提示
+}
+
+--[[
+
+    ******************net event******************
+
+--]] 
+--  1背包 2装备 3仓库 4扩容背包 5腰带
+Constant.ItemTypePos = {
+    Item_InPackage      = 1,
+    Item_InEquip        = 2,
+    Item_InDepot        = 3,
+    Item_InExpandBag    = 4,
+    Item_InBelt         = 5,
+}
+
+Constant.BATTLE_TYPE = {
+    LOSE = 0,                       --失败
+    WIN = 1,                        --胜利
+}
+
+Constant.MonsterGradeType = {
+    NORMAL = 0,             --普通
+    ELITE = 1,              --精英
+    BOSS = 2,               --BOSS
+    PRACTISE = 3,           --练功师
+    BROADSWORD = 4,         --大刀
+    SUPERNATURAL_ANIMAL = 5,--灵兽
+    CALL_ANIMAL = 6,        --非技能召唤宠物
+    TRAP = 7,               --陷阱
+}
+
+Constant.MESSAGE_TALK_TYPE = {
+    TALKTYPE_NORMAL     = 0,  -- 地图周围普通说话()
+    TALKTYPE_PRIVATE    = 1,  -- 私聊
+    TALKTYPE_HANHUA     = 2,  -- 地图周围喊话（附近）
+    TALKTYPE_TEAM       = 3,  -- 组队
+    TALKTYPE_GUILD      = 4,  -- 行会频道
+    TALKTYPE_SERVER     = 5,  -- 系统广播，显示在顶部
+    TALKTYPE_CENTER     = 6,  -- 客户端提示，显示在中部
+    TALKTYPE_SYSTEM     = 7,  -- 系统提示频道，显示在聊天框里
+    SOUND_HORN          = 8,  -- 传音号角
+    BROWN_NOTICE        = 9,  -- 棕色滚动提示
+    ITEM_NOTICE         = 10, -- 左上角提示
+    TALKTYPE_HEAD       = 11, -- 客户端玩家头顶显示
+    LANTERN_NOTICE      = 12, -- 跑马灯
+    TALKTYPE_TOTAL      = 13, -- 综合
+    TALKTYPE_SAME_RACE  = 14, -- 同族
+    TALKTYPE_WORD       = 15, -- 世界(所有在线)
+    TALKTYPE_UNION      = 16, -- 联盟
+    TALKTYPE_MAP        = 17, -- 区域聊天（同地图）
+    TALKTYPE_NEW_SYSTEM = 18, --  系统提示
+    TALKTYPE_WEB_NOTICE = 19, -- 后台广播(跑马灯)
+}
+
+Constant.FUNCTION_ID = {
+    Spirit = 50200,        --灵兽
+    Title = 50400, -- 称号
+    Sheild = 50500, -- 护盾
+    YUAN   = 50600, -- 内功
+    THRONE = 100000, --baowu add todo
+    MEDAL  = 5011106,-- 勋章
+    SHENLU = 140000, --神炉
+    SUPERING = 130000, --特戒
+    RUNE   = 160000, -- 宝石
+}
+
+--特戒
+Constant.SuperRingDef = {
+    Attr_SprParalyTime      = 10012,        -- 麻痹时间
+    Attr_SprParalyRatio     = 10011,        -- 麻痹概率
+    Attr_SprNotHit          = 10022,        -- 抵伤比例
+    Attr_SprMpTran          = 10021,        -- 魔法转换
+    Attr_SprUseRatio        = 10023,        -- 生效比例
+    Attr_SprHitRatio        = 10031,        -- 伤害倍率
+    Attr_SprReliveHp        = 10041,        -- 重生血量
+    Attr_SprReliveTime      = 10042,        -- 重生冷却
+    Attr_SprProtect         = 10050,        -- 护身等级
+}
+
+Constant.PROTECT_ID = {10001,10002,10003,10004,11001,11002}
+Constant.PROTECT_NUM = {10,4000,3}
+Constant.SYSTEM_ID = {11001,11002,11003}
+Constant.SYSTEM_NUM = {1,1,1}
+Constant.HROSEFOOD_ID = {350001,350002,350003}
+Constant.PROTECT_SETNUM = {70,30,50,20,20,5,90}
+
+Constant.MAP_SCALE_MAX = 2
+Constant.MAP_SCALE_SET = 1
+Constant.MAP_SCALE_MIN = 0.75
+Constant.BUTTON_BACKHOMECD = 30
+Constant.SPIRIT_MAXLEVEL = 50
+Constant.CHAT_WORD_MAXNUM = 100
+Constant.MAX_EDITBOX_LENGTH = 10
+-- Constant.MONEY_MAXNUM  = 20000000
+Constant.REBORN_MAXLEVEL  = 70
+Constant.JINJIE_MAXLEVEL  = 99
+Constant.SKILL_EFFECTLEVEL= 3
+Constant.CHAT_LIMITLEVEL  = 35
+
+Constant.FIRST_RECORD = {
+    Merchant            = "Merchant",   -- 黑市商人
+    SuperMonthCrad      = "SuperMonthCrad",--特权月卡
+}
+
+Constant.SPEED_HORIZONTAL_VERTICAL_SCALE_FACTOR = 2 -- 速度左右方向相对于上下的比例
+Constant.SPEED_OBLIQUELY_SCALE_FACTOR = 2.236       -- 速度45度角方向相对于上下的比例  根号24^2+48^
+function Constant:getHeroRunSpeed(direction)
+    local speed = lt.Constant.HERO_RUN_SPEED
+
+    if direction == lt.Constant.DIRECTION_UP or direction == lt.Constant.DIRECTION_DOWN then
+        return speed
+    elseif direction == lt.Constant.DIRECTION_LEFT or direction == lt.Constant.DIRECTION_RIGHT then
+        return speed*Constant.SPEED_HORIZONTAL_VERTICAL_SCALE_FACTOR
+    elseif direction == lt.Constant.DIRECTION_LEFT_UP or direction == lt.Constant.DIRECTION_LEFT_DOWN or
+           direction == lt.Constant.DIRECTION_RIGHT_UP or direction == lt.Constant.DIRECTION_RIGHT_DOWN then
+        return speed * Constant.SPEED_OBLIQUELY_SCALE_FACTOR
+    end
+end
+
+--[[
+function Constant:getHeroWalkSpeed(direction)
+    local speed = lt.Constant.HERO_WALK_SPEED
+
+    if direction == lt.Constant.DIRECTION_UP or direction == lt.Constant.DIRECTION_DOWN then
+        return speed
+    elseif direction == lt.Constant.DIRECTION_LEFT or direction == lt.Constant.DIRECTION_RIGHT then
+        return speed*Constant.SPEED_HORIZONTAL_VERTICAL_SCALE_FACTOR
+    elseif direction == lt.Constant.DIRECTION_LEFT_UP or direction == lt.Constant.DIRECTION_LEFT_DOWN or
+           direction == lt.Constant.DIRECTION_RIGHT_UP or direction == lt.Constant.DIRECTION_RIGHT_DOWN then
+        return speed * Constant.SPEED_OBLIQUELY_SCALE_FACTOR
+    end
+end
+
+function Constant:getHeroRunHorseSpeed(direction)
+    local speed = lt.Constant.HERO_RUN_HORSE_SPEED
+
+    if direction == lt.Constant.DIRECTION_UP or direction == lt.Constant.DIRECTION_DOWN then
+        return speed
+    elseif direction == lt.Constant.DIRECTION_LEFT or direction == lt.Constant.DIRECTION_RIGHT then
+        -- return speed * 2
+        return speed*Constant.SPEED_HORIZONTAL_VERTICAL_SCALE_FACTOR
+    elseif direction == lt.Constant.DIRECTION_LEFT_UP or direction == lt.Constant.DIRECTION_LEFT_DOWN or
+           direction == lt.Constant.DIRECTION_RIGHT_UP or direction == lt.Constant.DIRECTION_RIGHT_DOWN then
+        -- return speed * 2.236
+        return speed * Constant.SPEED_OBLIQUELY_SCALE_FACTOR
+    end
+end
+]]
+
+function Constant:getMonsterWalkSpeed(direction)
+    local speed = lt.Constant.MONSTER_WALK_SPEED
+
+    if direction == lt.Constant.DIRECTION_UP or direction == lt.Constant.DIRECTION_DOWN then
+        return speed
+    elseif direction == lt.Constant.DIRECTION_LEFT or direction == lt.Constant.DIRECTION_RIGHT then
+        -- return speed * 2
+        return speed*Constant.SPEED_HORIZONTAL_VERTICAL_SCALE_FACTOR
+    elseif direction == lt.Constant.DIRECTION_LEFT_UP or direction == lt.Constant.DIRECTION_LEFT_DOWN or
+           direction == lt.Constant.DIRECTION_RIGHT_UP or direction == lt.Constant.DIRECTION_RIGHT_DOWN then
+        -- return speed * 2.236
+        return speed * Constant.SPEED_OBLIQUELY_SCALE_FACTOR
+    end
+end
+
+function Constant:getMonsterWalkSpeedByTime(direction, time)
+    local speed = (Constant.MONSTER_WALK_SPEED)/time
+    if direction == Constant.DIRECTION_UP or direction == Constant.DIRECTION_DOWN then
+        return speed
+    elseif direction == Constant.DIRECTION_LEFT or direction == Constant.DIRECTION_RIGHT then
+        return speed * Constant.SPEED_HORIZONTAL_VERTICAL_SCALE_FACTOR
+    elseif direction == Constant.DIRECTION_LEFT_UP or direction == Constant.DIRECTION_LEFT_DOWN or
+           direction == Constant.DIRECTION_RIGHT_UP or direction == Constant.DIRECTION_RIGHT_DOWN then
+        return speed * Constant.SPEED_OBLIQUELY_SCALE_FACTOR
+    end
+end
+
+function Constant:getStateBackSpeed(direction)
+    local speed = lt.Constant.STATE_BACK_SPEED
+    local stateBackSpeed = lt.CacheManager:getVariableById(Constant.Variable.StateBackSpeed, true)
+    if stateBackSpeed and stateBackSpeed > 0 then
+        speed = stateBackSpeed
+    end
+
+    if direction == lt.Constant.DIRECTION_UP or direction == lt.Constant.DIRECTION_DOWN then
+        return speed
+    elseif direction == lt.Constant.DIRECTION_LEFT or direction == lt.Constant.DIRECTION_RIGHT then
+        return speed*Constant.SPEED_HORIZONTAL_VERTICAL_SCALE_FACTOR
+    elseif direction == lt.Constant.DIRECTION_LEFT_UP or direction == lt.Constant.DIRECTION_LEFT_DOWN or
+           direction == lt.Constant.DIRECTION_RIGHT_UP or direction == lt.Constant.DIRECTION_RIGHT_DOWN then
+        -- return speed * 2.236
+        return speed * Constant.SPEED_OBLIQUELY_SCALE_FACTOR
+    end
+end
+
+-- 自定义UI相关
+function Constant:getSkillBtnIdAndCount(job)
+    if job == lt.Constant.JOB_ZS then
+        -- 战士
+        return 3101, 16
+    elseif job == lt.Constant.JOB_FS then
+        -- 法师
+        return 3201, 25
+    else
+        -- 道士
+        return 3301, 22
+    end
+end
+
+function Constant:isSkillButton(btnId)
+    return btnId >= 3000 and btnId <= 3999
+end
+
+function Constant:calcSkillId(btnId)
+    return (btnId % 1000) * 100
+end
+
+function Constant:calcBtnId(skillId)
+    return skillId / 100 + 3000
+end
+
+Constant.BTN_PADDING = 76
+
+Constant.SKILL_MFD_BREAK_CD = 0.5  -- 魔法盾 破盾CD
+
+Constant.SKILL_CODE = {
+    YMCZ    = 10200,    -- 野蛮冲撞
+    SZH     = 10300,    -- 狮子吼
+    TZ      = 10400,    -- 十步一杀
+    GSJF    = 10500,    -- 攻杀剑法
+    LHJF    = 10600,    -- 烈火剑法
+    KTZ     = 10700,    -- 开天斩
+    ZRJF    = 10800,    -- 逐日剑法
+    ZRKTZ   = 10900,    -- 逐日开天斩
+    CSJS    = 11000,    -- 刺杀剑术
+    BYWD    = 11100,    -- 半月弯刀
+    BYD     = 11200,    -- 满月斩
+    SXS     = 11300,    -- 嗜血手
+    PDZ     = 11500,    -- 破盾斩
+    -- JGHT    = 11600,    -- 金刚护体   
+
+    HQS     = 20100,    -- 火球术
+    DHQ     = 20200,    -- 大火球
+    DYH     = 20300,    -- 地狱火
+    BLHY    = 20400,    -- 爆裂火焰
+    MTH     = 20500,    -- 灭天火
+    HQ      = 20600,    -- 火墙
+    LXHY    = 20700,    -- 流星火雨
+    KJHH    = 20800,    -- 抗拒火环
+    LDS     = 20900,    -- 雷电术
+    JGDY    = 21000,    -- 疾光电影
+    DYLG    = 21100,    -- 地狱雷光
+    JXTLZF  = 21200,    -- 九霄天雷正法
+    YHZG    = 21300,    -- 诱惑之光
+    BPX     = 21400,    -- 冰咆哮
+    HBZ     = 21500,    -- 寒冰掌
+    BSXY    = 21600,    -- 冰霜雪雨
+    SXYD    = 21700,    -- 瞬息移动
+    MFD     = 21800,    -- 魔法盾
+    SYS     = 21900,    -- 圣言术
+    -- FYD     = 22300,    -- 风影盾
+    HSBF    = 22000,    -- 化身蝙蝠
+    BPS     = 22100,    -- 冰魄术
+    -- HLS     = 22300,    -- 火灵术
+    -- JLS     = 22300,    -- 禁雷术
+
+    ZLS     = 30100,    -- 治愈术
+    SDS     = 30200,    -- 施毒术
+    QTZLS   = 30300,    -- 群体治愈术
+    SXSHU   = 30400,    -- 嗜血术
+    JTYSS   = 30500,    -- 集体隐身术
+    -- GS      = 30600,    -- 赶尸
+    LHHF    = 30700,    -- 灵魂火符
+    WJZQ    = 30800,    -- 无极真气
+    QGB     = 30900,    -- 气功波
+    NSHT    = 31000,    -- 怒噬回天
+    YSS     = 31100,    -- 隐身术
+    KLZHS   = 31200,    -- 骷髅召唤术
+    ZHSS    = 31300,    -- 召唤神兽
+    QHKLS   = 31400,    -- 召唤月灵
+    YLD     = 31500,    -- 幽灵盾
+    SSZJS   = 31600,    -- 神圣战甲术
+    -- SGS     = 31900,    -- 神光术
+    -- JDS     = 32000,    -- 解毒术
+    YMHZ     = 31900,    -- 幽冥火咒
+    HYLB     = 32000,    -- 幻影裂变
+}
+
+function Constant:isUseManyItem(kind)
+    local ret = false
+    if kind == Constant.ITEM_KIND.kind_heartExp 
+    or kind == Constant.ITEM_KIND.kind_package 
+    or kind == Constant.ITEM_KIND.kind_reputation 
+    or kind == Constant.ITEM_KIND.kind_yuanqi 
+    or kind == Constant.ITEM_KIND.kind_exchange 
+    or kind == Constant.ITEM_KIND.kind_expdan then
+        ret = true
+    end
+    return ret
+end
+
+
+function Constant:getMapObj(code)
+    code = tonumber(code)
+    if not code then return "" end
+    return Constant.MAP_RES_KEY_VALUE[code] or ""
+end
+
+Constant.MAP_RES_KEY_VALUE = {
+    [1001]="object1",
+    [1002]="object2",
+    [1003]="object3",
+    [1004]="object4",
+    [1005]="object5",
+    [1006]="object6",
+    [1007]="object7",
+    [1008]="object8",
+    [1009]="object9",
+    [1010]="object10",
+    [1011]="object11",
+    [1012]="object12",
+    [1013]="object13",
+    [1014]="object14",
+    [1015]="object15",
+    [1016]="object16",
+    [1017]="object17",
+    [1018]="object18",
+    [1019]="object19",
+    [1020]="object20",
+    [1021]="object21",
+    [1022]="object22",
+    [1023]="object23",
+    [1024]="object24",
+    [1025]="object25",
+    [1026]="object26",
+    [1027]="object27",
+    [1028]="object28",
+    [1029]="object29",
+    [1030]="object30",
+    [1031]="object31",
+    [1032]="object32",
+    [1033]="object33",
+    [1034]="object34",
+    [1035]="object35",
+    [1036]="object36",
+    [1037]="object37",
+    [1038]="object38",
+    [1039]="object39",
+    [1040]="object40",
+    [1041]="object41",
+    [1042]="object42",
+    [1043]="object43",
+    [1044]="object44",
+    [1045]="object45",
+    [1046]="object46",
+    [1047]="object47",
+    [1048]="object48",
+    [1049]="object49",
+    [1050]="object50",
+    [1051]="object51",
+    [1052]="object52",
+    [1053]="object53",
+    [1054]="object54",
+    [1055]="object55",
+    [1056]="object56",
+    [1057]="object57",
+    [1058]="object58",
+    [1059]="object59",
+    [1060]="object60",
+    [1061]="object61",
+    [1062]="object62",
+    [1063]="object63",
+    [1064]="object64",
+    [1065]="object65",
+    [1066]="object66",
+    [1067]="object67",
+    [1068]="object68",
+    [1069]="object69",
+    [1070]="object70",
+    [1071]="object71",
+    [1072]="object72",
+    [1073]="object73",
+    [1074]="object74",
+    [1075]="object75",
+    [1076]="object76",
+    [1077]="object77",
+    [1078]="object78",
+    [1079]="object79",
+    [1080]="object80",
+    [1081]="object81",
+    [1082]="object82",
+    [1083]="object83",
+    [1084]="object84",
+    [1085]="object85",
+    [1086]="object86",
+    [1087]="object87",
+    [1088]="object88",
+    [1089]="object89",
+    [1090]="object90",
+    [1091]="object91",
+    [1092]="object92",
+    [1093]="object93",
+    [1094]="object94",
+    [1095]="object95",
+    [1096]="object96",
+    [1097]="object97",
+    [1098]="object98",
+    [1099]="object99",
+    [1100]="object100",
+    [1101]="object101",
+    [1102]="object102",
+    [1103]="object103",
+    [1104]="object104",
+    [1105]="object105",
+    [1106]="object106",
+    [1107]="object107",
+    [1108]="object108",
+    [1109]="object109",
+    [1110]="object110",
+    [1111]="object111",
+    [1112]="object112",
+    [1113]="object113",
+    [1114]="object114",
+    [1115]="object115",
+    [1116]="object116",
+    [1117]="object117",
+    [1118]="object118",
+    [1119]="object119",
+    [1120]="object120",
+    [1121]="object121",
+    [1126]="object122",
+    [1127]="object123",
+    [1128]="object124",
+    [1129]="object125",
+    [1130]="object126",
+    [1131]="object127",
+    [1132]="object128",
+    [1133]="object129",
+    [1134]="object130",
+    [1135]="object131",
+    [1136]="object132",
+    [1137]="object133",
+    [1138]="object134",
+    [1139]="object135",
+    [1140]="object136",
+    [1141]="object137",
+    [1142]="object138",
+    [1146]="object139",
+    [1147]="object140",
+    [1148]="object141",
+    [1149]="object142",
+    [1150]="object143",
+    [1151]="object144",
+    [1152]="object145",
+    [1153]="object146",
+    [1154]="object147",
+    [1155]="object148",
+    [1156]="object149",
+    [1157]="object150",
+}
+
+
+--[[
+    特殊地图有个viewPoint的bug,算出的Zorder值不匹配
+    根据特殊地图调试需求取值算出Zorder，MAP_OBJ_ZORDER_VALUE中的参数为MapCode
+]]
+Constant.OBJ_ZORDER_VALUE_POS_SPN = 1
+Constant.OBJ_ZORDER_VALUE_IMGOBJ_N = 2
+Constant.MAP_OBJ_ZORDER_VALUE = {
+    ["1100"] = Constant.OBJ_ZORDER_VALUE_POS_SPN,
+    ["2000"] = Constant.OBJ_ZORDER_VALUE_IMGOBJ_N,
+    ["2010"] = Constant.OBJ_ZORDER_VALUE_IMGOBJ_N,
+    ["2020"] = Constant.OBJ_ZORDER_VALUE_IMGOBJ_N,
+    ["2013"] = Constant.OBJ_ZORDER_VALUE_IMGOBJ_N,
+}
+
+-- 卡斯塔罗_东北
+Constant.CASTALO_NE = "81"
+
+
+Constant.CC_SCENWIDTH = 1386
+function Constant:GetLiuHaiX()
+    -- if device.platform == "android" and cpp.GamePlatform.getAdjustNotchScreenHeight then
+    --     -- local h = cpp.GamePlatform:getAdjustNotchScreenHeight()
+    --     -- lt.LogUtil:debugTable("test liuhai height  = "..tostring(h))
+    --     -- return tonumber(h) or 0
+    --     return 0
+    -- end
+
+    --只有是全面屏 刘海屏的时候才返回不等于0的值
+    local dirSize = cc.Director:getInstance():getWinSize()
+    if dirSize.width/dirSize.height > 2.03 then
+        local x = (Constant.CC_SCENWIDTH-1280)/2;
+        return x;
+    end
+
+    return 0;
+end
+
+---------------------------------------------------------------------
+-- 天之炼狱 Map
+Constant.MAP_TILE_SIZE    = 256
+Constant.MAP_BLOCK_WIDTH  = 48
+Constant.MAP_BLOCK_HEIGHT = 24 -- 天炼地图格子大小
+
+Constant.HERO_WALK_SPEED      = 44          -- 纵向走
+Constant.HERO_RUN_SPEED       = 48          -- 纵向跑
+Constant.MONSTER_WALK_SPEED   = 24          -- 纵向走
+Constant.HERO_RUN_HORSE_SPEED = 97          -- 纵向跑（骑马）
+Constant.STATE_BACK_SPEED     = 1000
+
+-- 技能制作子弹
+Constant.MODEL_HERO_Y = 105                 -- 英雄模型的高度
+Constant.MODEL_HIT_Y  = 50 + 18             -- 飞行物的高度
+Constant.MODEL_BULLET_SPEED = 700           -- 1000 飞行物的速度
+Constant.MODEL_HIT_Y_RATIO  = 0.5           -- 模型受击点的高度比例
+
+--[[子弹向外扩散的圆 各个方向移动的格子数]]
+Constant.BULLET_HORIZONTAL_GRID = 3     -- horizontal 横向
+Constant.BULLET_VERTICAL_GRID = 5       -- vertical   纵向
+Constant.BULLET_SKEW_GRID     = 2       -- skew       斜向
+
+-- 移动类型
+Constant.MOVE_NONE      = 0
+Constant.MOVE_RUN       = 2
+Constant.MOVE_RUN_HORSE = 3
+-- Constant.MOVE_FORWARD   = 5         -- 突斩或野蛮冲撞或化身蝙蝠位移
+Constant.MOVE_FORWARD   = 5         -- 位移 点燃 (角色)
+Constant.MOVE_BACK      = 6         -- 被拉或者被推 (怪物)
+Constant.MOVE_IMMEDIATE = 7         -- 瞬移
+Constant.MOVE_RUN_NPC = 8           -- 向npc 移动
+
+
+-- 天之炼狱 actor
+-- 方向
+Constant.DIRECTION_UNKNOW     = -1
+Constant.DIRECTION_LEFT_DOWN  = 1
+Constant.DIRECTION_LEFT       = 0
+Constant.DIRECTION_DOWN       = 2
+Constant.DIRECTION_RIGHT_DOWN = 3
+Constant.DIRECTION_RIGHT      = 4
+Constant.DIRECTION_RIGHT_UP   = 5
+Constant.DIRECTION_UP         = 6
+Constant.DIRECTION_LEFT_UP    = 7
+Constant.DIRECTION_MAX        = 8
+
+-- -- 临死和死亡动作朝向缺失映射
+-- Constant.DEATH_ACTION_MAP = {
+--     [Constant.DIRECTION_UP]         = Constant.DIRECTION_LEFT_DOWN,
+--     [Constant.DIRECTION_RIGHT_UP]   = Constant.DIRECTION_LEFT_DOWN,
+--     [Constant.DIRECTION_RIGHT]      = Constant.DIRECTION_LEFT_DOWN,
+--     [Constant.DIRECTION_RIGHT_DOWN] = Constant.DIRECTION_LEFT_DOWN,
+--     [Constant.DIRECTION_DOWN]       = Constant.DIRECTION_RIGHT_DOWN,
+--     [Constant.DIRECTION_LEFT_DOWN]  = Constant.DIRECTION_RIGHT_DOWN,
+--     [Constant.DIRECTION_LEFT]       = Constant.DIRECTION_RIGHT_DOWN,
+--     [Constant.DIRECTION_LEFT_UP]    = Constant.DIRECTION_RIGHT_DOWN,
+-- }
+
+-- 原传奇动作
+Constant.ACTION_RUSH        = 10 -- 急行幻影效果动作
+-- Constant.ACTION_BORN        = 11 -- 特殊技能与怪物出场特效时的帧
+
+
+--[[
+    天炼动作
+]]
+-- 基础通用 怪物 npc
+Constant.ACTION_IDLE               = 0  -- 待机战站立
+Constant.ACTION_MOVE               = 1  -- 移动
+Constant.ACTION_ATTACK             = 2  -- 普攻
+
+-- 鬼族
+Constant.ROLE_ACTION_IDLE               = 0  -- 待机战站立
+Constant.ROLE_ACTION_ATTACK_IDLE        = 0  -- 攻击停顿 (待机战站立) 
+Constant.ROLE_ACTION_MOVE               = 1  -- 移动
+Constant.ROLE_ACTION_ATTACK             = 2  -- 普攻
+Constant.ROLE_ACTION_BEAT               = 3  -- 拍打
+Constant.ROLE_ACTION_Hit                = 4  -- 受击
+Constant.ROLE_ACTION_FLY                = 5  -- 飞起上升
+Constant.ROLE_ACTION_DIE                = 6  -- 死亡
+Constant.ROLE_ACTION_DANCE              = 7  -- 嘲讽
+Constant.ROLE_ACTION_NORAML_ATTACK      = 8  -- 普通横切
+Constant.ROLE_ACTION_NORAML_ATTACK_FAST = 9  -- 普通横切 快
+
+
+-- 人族动作
+Constant.ACTION_STAND = 0
+Constant.ACTION_MOVE = 1
+Constant.ACTION_ATTACK = 2
+Constant.ACTION_MAGIC = 3
+Constant.ACTION_DAMAGED = 4
+Constant.ACTION_DRAINED = 5
+Constant.ACTION_DIE = 6
+Constant.ACTION_VAMPIRE_DRAIN = 7         -- 同样的值
+Constant.ACTION_SLAYER_GUN_SR = 7         -- 狙击用(SR)
+Constant.ACTION_SLAYER_GUN_AR = 8         -- 步枪(AG)
+Constant.ACTION_SLAYER_SWORD = 9          -- 刀
+Constant.ACTION_SLAYER_BLADE = 10         -- 刀
+Constant.ACTION_SLAYER_THROW_WEAPON = 11
+Constant.ACTION_SLAYER_MOTOR_MOVE = 12    -- 坐骑: 行走
+
+Constant.ACTION_MOUNT_SLAYER_MOVE = 12    -- 坐骑: 行走动作 转职前与人物动作匹配
+Constant.ACTION_MOUNT_ADVANCED_SLAYER_MOVE = 9     -- 坐骑: 行走动作 转职后 坐骑动作为9对应转职前12的动作
+
+Constant.ACTION_SLAYER_GUN_SG = 13        -- 猎枪(SG)
+Constant.ACTION_SLAYER_GUN_SMG = 14       -- 自动步枪(SMG)
+Constant.ACTION_SLAYER_SWORD_2 = 15       -- 刀特殊动作
+Constant.ACTION_SLAYER_BLADE_2 = 16       -- 刀特殊动作
+Constant.ACTION_SLAYER_THROW_POTION = 17
+Constant.ACTION_SLAYER_MOTOR_STAND = 18   -- 坐骑: 站立
+
+Constant.ACTION_MOUNT_SLAYER_STAND = 18    -- 坐骑: 站立动作 转职前与人物动作匹配
+Constant.ACTION_MOUNT_ADVANCED_SLAYER_STAND = 10     -- 坐骑: 站立动作 转职后 坐骑动作为10对应转职前18的动作
+
+Constant.ACTION_SLAYER_GUN_SR_SLOW = 19   -- 狙击用(SR)
+Constant.ACTION_SLAYER_GUN_SR_FAST = 20   -- 狙击用(SR)
+Constant.ACTION_SLAYER_GUN_AR_SLOW = 21   -- 步枪(AG)
+Constant.ACTION_SLAYER_GUN_AR_FAST = 22   -- 步枪(AG)
+Constant.ACTION_SLAYER_GUN_SG_SLOW = 23   -- 猎枪(SG)
+Constant.ACTION_SLAYER_GUN_SG_FAST = 24   -- 猎枪(SG)
+Constant.ACTION_SLAYER_GUN_SMG_SLOW = 25  -- 自动步枪(SMG)
+Constant.ACTION_SLAYER_GUN_SMG_FAST = 26  -- 自动步枪(SMG)
+Constant.ACTION_SLAYER_SWORD_SLOW = 27    -- 刀
+Constant.ACTION_SLAYER_SWORD_FAST = 28    -- 刀
+Constant.ACTION_SLAYER_BLADE_SLOW = 29    -- 刀
+Constant.ACTION_SLAYER_BLADE_FAST = 30    -- 刀
+Constant.ACTION_SLAYER_SWORD_2_SLOW = 31  -- 刀特殊动作
+Constant.ACTION_SLAYER_SWORD_2_FAST = 32  -- 刀特殊动作
+Constant.ACTION_SLAYER_BLADE_2_SLOW = 33  -- 刀特殊动作
+Constant.ACTION_SLAYER_BLADE_2_FAST = 34  -- 刀特殊动作
+
+-- 魔族
+Constant.ACTION_OUSTERS_STAND           =  7          -- 站立
+Constant.ACTION_OUSTERS_MOVE            =  8          -- 行走
+Constant.ACTION_OUSTERS_CHAKRAM         =  9          -- 投掷飞盘攻击
+Constant.ACTION_OUSTERS_MAGIC_ATTACK     = 10          -- 魔法攻击
+Constant.ACTION_OUSTERS_DRAIN            = 11          -- 吸取
+Constant.ACTION_OUSTERS_FAST_MOVE_STAND  = 12          -- 空中静止
+Constant.ACTION_OUSTERS_FAST_MOVE_MOVE   = 13          -- 空中移动
+Constant.ACTION_OUSTERS_ATTACK_SLOW      = 14          -- 普通攻击（慢）
+Constant.ACTION_OUSTERS_ATTACK_FAST      = 15          -- 普通攻击（快）
+Constant.ACTION_OUSTERS_CHAKRAM_SLOW     = 16          -- 投掷飞盘攻击（慢）
+Constant.ACTION_OUSTERS_CHAKRAM_FAST     = 17          -- 投掷飞盘攻击（快）
+
+Constant.ACTION_OUSTERS_FAIRY_MOVE_STAND  = 18          -- 蝴蝶空中站立
+Constant.ACTION_OUSTERS_FAIRY_MOVE_MOVE   = 19          -- 蝴蝶空中移动
+
+Constant.ACTION_OUSTERS_PEGASUS_MOVE_STAND  = 20          -- 独角兽空中站立
+Constant.ACTION_OUSTERS_PEGASUS_MOVE_MOVE   = 21          -- 独角兽空中移动
+
+--宠物
+Constant.ACTION_PET_DIG                 = 5             -- 挖尸体
+
+---------------------------------------------------------------------------------------------
+-- 能量补充动作特效映射
+Constant.ACTION2CHARGINGMALE = {
+    [0] = "EFFECTSPRITETYPE_CHARGING_POWER_MALE_STOP_1",
+    [1] = "EFFECTSPRITETYPE_CHARGING_POWER_MALE_WALK_1",
+    [2] = "EFFECTSPRITETYPE_CHARGING_POWER_MALE_ATTACK_NORMAL_1",
+    [3] = "EFFECTSPRITETYPE_CHARGING_POWER_MALE_MAGIC_1",
+    [4] = "EFFECTSPRITETYPE_CHARGING_POWER_MALE_DAMAGED_1",
+    [10] = "EFFECTSPRITETYPE_CHARGING_POWER_MALE_ATTACK_NORMAL_1",
+    [12] = "EFFECTSPRITETYPE_CHARGING_POWER_MALE_MOTOR_MOVE_1",
+    [16] = "EFFECTSPRITETYPE_CHARGING_POWER_MALE_SKILL_NORMAL_1",
+    [18] = "EFFECTSPRITETYPE_CHARGING_POWER_MALE_MOTOR_STOP_1",
+    [29] = "EFFECTSPRITETYPE_CHARGING_POWER_MALE_ATTACK_SLOW_1",
+    [30] = "EFFECTSPRITETYPE_CHARGING_POWER_MALE_ATTACK_FAST_1",
+    [33] = "EFFECTSPRITETYPE_CHARGING_POWER_MALE_SKILL_SLOW_1",
+    [34] = "EFFECTSPRITETYPE_CHARGING_POWER_MALE_SKILL_FAST_1"
+}
+
+Constant.ACTION2CHARGINGFEMALE = {
+    [0] = "EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_STOP_1",
+    [1] = "EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_WALK_1",
+    [2] = "EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_ATTACK_NORMAL_1",
+    [3] = "EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_MAGIC_1",
+    [4] = "EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_DAMAGED_1",
+    [10] = "EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_ATTACK_NORMAL_1",
+    [12] = "EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_MOTOR_MOVE_1",
+    [16] = "EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_SKILL_NORMAL_1",
+    [18] = "EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_MOTOR_STOP_1",
+    [29] = "EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_ATTACK_SLOW_1",
+    [30] = "EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_ATTACK_FAST_1",
+    [33] = "EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_SKILL_SLOW_1",
+    [34] = "EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_SKILL_FAST_1"
+}
+
+
+Constant.CHARGING2INDEX = {
+    ["EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_STOP_1"] = 1,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_MOTOR_STOP_1"] = 2,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_MOTOR_MOVE_1"] = 3,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_MALE_STOP_1"] = 4,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_MALE_MOTOR_STOP_1"] = 5,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_MALE_MOTOR_MOVE_1"] = 6,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_WALK_1"] = 7,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_MALE_WALK_1"] = 8,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_MAGIC_1"] = 9,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_MALE_MAGIC_1"] = 10,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_DAMAGED_1"] = 11,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_MALE_DAMAGED_1"] = 12,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_ATTACK_FAST_1"] = 13,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_ATTACK_NORMAL_1"] = 14,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_ATTACK_SLOW_1"] = 15,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_MALE_ATTACK_FAST_1"] = 16,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_MALE_ATTACK_NORMAL_1"] = 17,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_MALE_ATTACK_SLOW_1"] = 18,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_SKILL_FAST_1"] = 19,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_SKILL_NORMAL_1"] = 20,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_FEMALE_SKILL_SLOW_1"] = 21,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_MALE_SKILL_FAST_1"] = 22,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_MALE_SKILL_NORMAL_1"] = 23,
+    ["EFFECTSPRITETYPE_CHARGING_POWER_MALE_SKILL_SLOW_1"] = 24,
+}
+
+---------------------------------------------------------------------------------------------
+
+Constant.ACTION_MAX         = 10
+
+Constant.SLAYER_ACTION_SPEED = 
+{
+	{ "ACTION_SLAYER_BLADE_SLOW", "ACTION_SLAYER_BLADE", "ACTION_SLAYER_BLADE_FAST" },
+	{ "ACTION_SLAYER_GUN_SG_SLOW", "ACTION_SLAYER_GUN_SG", "ACTION_SLAYER_GUN_SG_FAST" },
+	{ "ACTION_SLAYER_GUN_SMG_SLOW", "ACTION_SLAYER_GUN_SMG", "ACTION_SLAYER_GUN_SMG_FAST" },
+	{ "ACTION_SLAYER_GUN_AR_SLOW", "ACTION_SLAYER_GUN_AR", "ACTION_SLAYER_GUN_AR_FAST" },
+	{ "ACTION_SLAYER_GUN_SR_SLOW", "ACTION_SLAYER_GUN_SR", "ACTION_SLAYER_GUN_SR_FAST" },
+	{ "ACTION_SLAYER_SWORD_SLOW", "ACTION_SLAYER_SWORD", "ACTION_SLAYER_SWORD_FAST" },
+
+
+	{ "ACTION_STAND", "ACTION_STAND", "ACTION_STAND" },
+	{ "ACTION_MOVE", "ACTION_MOVE", "ACTION_MOVE" },
+	{ "ACTION_ATTACK", "ACTION_ATTACK", "ACTION_ATTACK" },
+	{ "ACTION_MAGIC", "ACTION_MAGIC", "ACTION_MAGIC" },
+	{ "ACTION_DAMAGED", "ACTION_DAMAGED", "ACTION_DAMAGED" },
+	{ "ACTION_DRAINED", "ACTION_DRAINED", "ACTION_DRAINED" },
+	{ "ACTION_DIE", "ACTION_DIE", "ACTION_DIE" },
+
+	{ "ACTION_SLAYER_THROW_WEAPON", "ACTION_SLAYER_THROW_WEAPON", "ACTION_SLAYER_THROW_WEAPON" },
+	{ "ACTION_SLAYER_MOTOR_MOVE", "ACTION_SLAYER_MOTOR_MOVE", "ACTION_SLAYER_MOTOR_MOVE" },
+	{ "ACTION_SLAYER_SWORD_2_SLOW", "ACTION_SLAYER_SWORD_2", "ACTION_SLAYER_SWORD_2_FAST" },
+	{ "ACTION_SLAYER_BLADE_2_SLOW", "ACTION_SLAYER_BLADE_2", "ACTION_SLAYER_BLADE_2_FAST" },
+	{ "ACTION_SLAYER_THROW_POTION", "ACTION_SLAYER_THROW_POTION", "ACTION_SLAYER_THROW_POTION" },
+	{ "ACTION_SLAYER_MOTOR_STAND", "ACTION_SLAYER_MOTOR_STAND", "ACTION_SLAYER_MOTOR_STAND" },
+}
+
+
+--[[
+    技能ID
+]]
+Constant.SKILL_ID = {
+    NORAML_MELEE     = 17001,    -- 近战普攻
+    NORMAL_RANGE     = 17002,    -- 远程普攻
+}
+
+-- 天之炼狱 start
+-- 种族
+Constant.RaceType = {
+    Slayer = 1, --人类
+    Vampire = 2, --吸血鬼
+    Ousters = 3, --魔灵
+}
+
+-- 装备位
+-- 装备类型
+Constant.EquipKind = {
+    Arms = 1, --武器
+    Clothes = 2, --衣服
+    Trousers = 3, --裤子
+    Helmet = 4, --头盔
+    Glove = 5, --手套
+    Belt = 6, --腰带
+    Shoes = 7, --鞋子
+    Shield = 8, --盾牌
+    Necklace = 9, --项链
+    Bracelet = 10, --手镯
+    Ring = 11, --戒指
+    Earrings = 12, --耳环
+    Amulet = 13, --护身符
+    ElfStone = 14, --精灵石
+    TransferEquipmentLeft = 15, --转职装备左
+    TransferEquipmentRight = 16, --转职装备右
+    JewelrySet = 17, --首饰套
+    Contract = 18, --契约
+    Bible = 19, -- 圣书
+    CircletSuit = 20, -- 戒指套
+    PendantsSuit = 21, -- 项链套
+    WristletSuit = 22, -- 手镯套
+}
+
+-- 装备类型
+Constant.ArmsEquipType = {
+    HandSword = 6, --单手剑
+}
+
+-- constexpr int MAX_EQUIP_COUNT = 22; --所有种族最大装备位数量
+
+-- //人族装备位
+Constant.SlayerEquipPos = {
+    Helmet = 0, -- 头盔
+    TransferEquipmentLeft = 1, -- 转职装备左
+    TransferEquipmentRight = 2, -- 转职装备右
+    Necklace = 3, -- 项链
+    Arms = 4, -- 武器
+    Shield = 5, -- 盾牌
+    Clothes = 6, -- 衣服
+    Trousers = 7, -- 裤子
+    Glove = 8, -- 手套
+    Belt = 9, -- 腰带
+    Bracelet1 = 10, -- 手镯1
+    Bracelet2 = 11, -- 手镯2
+    Ring1 = 12, -- 戒指1
+    Ring2 = 13, -- 戒指2
+    Ring3 = 14, -- 戒指3
+    Ring4 = 15, -- 戒指4
+    Shoes = 16, -- 鞋子
+    Bible1 = 17, -- 圣书1
+    Bible2 = 18, -- 圣书2
+    Bible3 = 19, -- 圣书3
+    Bible4 = 20, -- 圣书4
+    Bible5 = 21, -- 圣书5
+    Bible6 = 22, -- 圣书6
+    Contract1 = 23, -- 契约1
+    Contract2 = 24, -- 契约2
+    Contract3 = 25, -- 契约3
+    CircletSuit1 = 26, -- 戒指套1
+    CircletSuit2 = 27, -- 戒指套2
+    CircletSuit3 = 28, -- 戒指套3
+    CircletSuit4 = 29, -- 戒指套4
+    PendantsSuit = 30, -- 项链套
+    WristletSuit1 = 31, -- 手镯套1
+    WristletSuit2 = 32, -- 手镯套2
+}
+
+--吸血鬼装备位
+Constant.VampireEquipPos = {
+    Earrings1 = 0, -- 耳环1
+    Earrings2 = 1, -- 耳环2
+    Necklace = 2, -- 项链
+    TransferEquipmentLeft = 3, -- 转职装备左
+    TransferEquipmentRight = 4, -- 转职装备右
+    Arms = 5, -- 武器
+    Clothes = 6, -- 衣服
+    Bracelet1 = 7, -- 手镯1
+    Bracelet2 = 8, -- 手镯2
+    Ring1 = 9, -- 戒指1
+    Ring2 = 10, -- 戒指2
+    Ring3 = 11, -- 戒指3
+    Ring4 = 12, -- 戒指4
+    Amulet1 = 13, -- 护身符1
+    Amulet2 = 14, -- 护身符2
+    Amulet3 = 15, -- 护身符3
+    Amulet4 = 16, -- 护身符4
+    Bible1 = 17, -- 圣书1
+    Bible2 = 18, -- 圣书2
+    Bible3 = 19, -- 圣书3
+    Bible4 = 20, -- 圣书4
+    Bible5 = 21, -- 圣书5
+    Bible6 = 22, -- 圣书6
+    Contract1 = 23, -- 契约1
+    Contract2 = 24, -- 契约2
+    Contract3 = 25, -- 契约3
+    CircletSuit1 = 26, -- 戒指套1
+    CircletSuit2 = 27, -- 戒指套2
+    CircletSuit3 = 28, -- 戒指套3
+    CircletSuit4 = 29, -- 戒指套4
+    PendantsSuit = 30, -- 项链套
+    WristletSuit1 = 31, -- 手镯套1
+    WristletSuit2 = 32, -- 手镯套2
+
+    --------------------------------
+    Arms_same = 99, -- 双手武器占位 服务器不用，可随便往后顺延
+    --------------------------------
+}
+
+--魔灵装备位
+Constant.OustersEquipPos = {
+    TransferEquipmentLeft = 0, -- 转职装备左
+    TransferEquipmentRight = 1, -- 职装备右
+    Helmet = 2, -- 头盔
+    Belt1 = 3, -- 腰带1
+    Belt2 = 4, -- 腰带2
+    Necklace1 = 5, -- 项链1
+    Necklace2 = 6, -- 项链2
+    Necklace3 = 7, -- 项链3
+    Arms = 8, -- 武器
+    Clothes = 9, -- 衣服
+    Trousers = 10, -- 鞋子
+    Ring1 = 11, -- 戒指1
+    Ring2 = 12, -- 戒指2
+    ElfStone1 = 13, -- 精灵石1
+    ElfStone2 = 14, -- 精灵石2
+    ElfStone3 = 15, -- 精灵石3
+    ElfStone4 = 16, -- 精灵石4
+    Bible1 = 17, -- 圣书1
+    Bible2 = 18, -- 圣书2
+    Bible3 = 19, -- 圣书3
+    Bible4 = 20, -- 圣书4
+    Bible5 = 21, -- 圣书5
+    Bible6 = 22, -- 圣书6
+    Contract1 = 23, -- 契约1
+    Contract2 = 24, -- 契约2
+    Contract3 = 25, -- 契约3
+    CircletSuit1 = 26, -- 戒指套1
+    CircletSuit2 = 27, -- 戒指套2
+    CircletSuit3 = 28, -- 戒指套3
+    CircletSuit4 = 29, -- 戒指套4
+    PendantsSuit = 30, -- 项链套
+    WristletSuit1 = 31, -- 手镯套1
+    WristletSuit2 = 32, -- 手镯套2
+
+    --------------------------------
+    Arms_same = 99, -- 双手武器占位 服务器不用，可随便往后顺延
+    --------------------------------
+}
+
+--人族首饰套映射
+Constant.SlayerSuitMapping = {
+    [Constant.SlayerEquipPos.Ring1] = Constant.SlayerEquipPos.CircletSuit1,
+    [Constant.SlayerEquipPos.Ring2] = Constant.SlayerEquipPos.CircletSuit2,
+    [Constant.SlayerEquipPos.Ring3] = Constant.SlayerEquipPos.CircletSuit3,
+    [Constant.SlayerEquipPos.Ring4] = Constant.SlayerEquipPos.CircletSuit4,
+    [Constant.SlayerEquipPos.Necklace] = Constant.SlayerEquipPos.PendantsSuit,
+    [Constant.SlayerEquipPos.Bracelet1] = Constant.SlayerEquipPos.WristletSuit1,
+    [Constant.SlayerEquipPos.Bracelet2] = Constant.SlayerEquipPos.WristletSuit2,
+}
+
+--鬼族首饰套映射
+Constant.VampireSuitMapping = {
+    [Constant.VampireEquipPos.Ring1] = Constant.VampireEquipPos.CircletSuit1,
+    [Constant.VampireEquipPos.Ring2] = Constant.VampireEquipPos.CircletSuit2,
+    [Constant.VampireEquipPos.Ring3] = Constant.VampireEquipPos.CircletSuit3,
+    [Constant.VampireEquipPos.Ring4] = Constant.VampireEquipPos.CircletSuit4,
+    [Constant.VampireEquipPos.Necklace] = Constant.VampireEquipPos.PendantsSuit,
+    [Constant.VampireEquipPos.Bracelet1] = Constant.VampireEquipPos.WristletSuit1,
+    [Constant.VampireEquipPos.Bracelet2] = Constant.VampireEquipPos.WristletSuit2,
+}
+
+--魔族首饰套映射
+Constant.OustersSuitMapping = {
+    [Constant.OustersEquipPos.ElfStone1] = Constant.OustersEquipPos.CircletSuit1,
+    [Constant.OustersEquipPos.ElfStone2] = Constant.OustersEquipPos.CircletSuit2,
+    [Constant.OustersEquipPos.ElfStone3] = Constant.OustersEquipPos.CircletSuit3,
+    [Constant.OustersEquipPos.ElfStone4] = Constant.OustersEquipPos.CircletSuit4,
+    [Constant.OustersEquipPos.Necklace2] = Constant.OustersEquipPos.PendantsSuit,
+    [Constant.OustersEquipPos.Ring1] = Constant.OustersEquipPos.WristletSuit1,
+    [Constant.OustersEquipPos.Ring2] = Constant.OustersEquipPos.WristletSuit2,
+}
+
+-- 装备位名
+Constant.EquipName = {}
+-- 人族装备位名
+Constant.EquipName.SlayerEquipPos = {
+    Helmet = GReadText.KEY_EQUIP_POS_S_1,--"戴帽子",
+    TransferEquipmentLeft = GReadText.KEY_EQUIP_POS_S_3,--"通讯器",
+    TransferEquipmentRight = GReadText.KEY_EQUIP_POS_S_2,--"肩甲",
+    Necklace = GReadText.KEY_EQUIP_POS_S_4, --"戴项链",
+    Arms = GReadText.KEY_EQUIP_POS_S_5, --"拿武器"
+    Shield = GReadText.KEY_EQUIP_POS_S_6, -- "戴盾牌"
+    Clothes = GReadText.KEY_EQUIP_POS_S_7, -- 穿盔甲
+    Trousers = GReadText.KEY_EQUIP_POS_S_8, -- 穿裤子
+    Glove = GReadText.KEY_EQUIP_POS_S_9, -- 戴手套
+    Belt = GReadText.KEY_EQUIP_POS_S_10, -- 戴腰带
+    Bracelet1 = GReadText.KEY_EQUIP_POS_S_11, --戴手镯
+    Bracelet2 = GReadText.KEY_EQUIP_POS_S_11, --戴手镯
+    Ring1 = GReadText.KEY_EQUIP_POS_S_12, -- 戴戒指
+    Ring2 = GReadText.KEY_EQUIP_POS_S_12, -- 戴戒指
+    Ring3 = GReadText.KEY_EQUIP_POS_S_12, -- 戴戒指
+    Ring4 = GReadText.KEY_EQUIP_POS_S_12, -- 戴戒指
+    Shoes = GReadText.KEY_EQUIP_POS_S_13, -- 穿鞋
+    Bible1 = GReadText.KEY_EQUIP_POS_S_14,--"携带圣神书标志",
+    Bible2 = GReadText.KEY_EQUIP_POS_S_14,--"携带圣神书标志",
+    Bible3 = GReadText.KEY_EQUIP_POS_S_14,--"携带圣神书标志",
+    Bible4 = GReadText.KEY_EQUIP_POS_S_14,--"携带圣神书标志",
+    Bible5 = GReadText.KEY_EQUIP_POS_S_14,--"携带圣神书标志",
+    Bible6 = GReadText.KEY_EQUIP_POS_S_14,--"携带圣神书标志",
+    Contract1 = GReadText.KEY_EQUIP_POS_S_15.."Ⅰ",--"契约Ⅰ",
+    Contract2 = GReadText.KEY_EQUIP_POS_S_15.."Ⅱ",--"契约Ⅱ",
+    Contract3 = GReadText.KEY_EQUIP_POS_S_15.."Ⅲ",--"契约Ⅲ",
+}
+
+--吸血鬼装备位名
+Constant.EquipName.VampireEquipPos = {
+    Earrings1 = GReadText.KEY_EQUIP_POS_V_1, --"装备耳环",
+    Earrings2 = GReadText.KEY_EQUIP_POS_V_1, --"装备耳环",
+    Necklace = GReadText.KEY_EQUIP_POS_V_2, --"装备项链"
+    TransferEquipmentLeft = GReadText.KEY_EQUIP_POS_V_3, -- 装备面具
+    TransferEquipmentRight = GReadText.KEY_EQUIP_POS_V_4, -- 装备文信
+    Arms = GReadText.KEY_EQUIP_POS_V_5, -- 装备武器
+    Clothes = GReadText.KEY_EQUIP_POS_V_6, -- 装备衣服
+    Bracelet1 = GReadText.KEY_EQUIP_POS_V_7, --  装备手镯
+    Bracelet2 = GReadText.KEY_EQUIP_POS_V_7, --  装备手镯
+    Ring1 = GReadText.KEY_EQUIP_POS_V_8, -- 装备戒指
+    Ring2 = GReadText.KEY_EQUIP_POS_V_8, -- 装备戒指
+    Ring3 = GReadText.KEY_EQUIP_POS_V_8, -- 装备戒指
+    Ring4 = GReadText.KEY_EQUIP_POS_V_8, -- 装备戒指
+    Amulet1 = GReadText.KEY_EQUIP_POS_V_9,--"装备附身符",
+    Amulet2 = GReadText.KEY_EQUIP_POS_V_9,--"装备附身符",
+    Amulet3 = GReadText.KEY_EQUIP_POS_V_9,--"装备附身符",
+    Amulet4 = GReadText.KEY_EQUIP_POS_V_9,--"装备附身符",
+    Bible1 = GReadText.KEY_EQUIP_POS_V_10,--"携带圣神书标志",
+    Bible2 = GReadText.KEY_EQUIP_POS_V_10,--"携带圣神书标志",
+    Bible3 = GReadText.KEY_EQUIP_POS_V_10,--"携带圣神书标志",
+    Bible4 = GReadText.KEY_EQUIP_POS_V_10,--"携带圣神书标志",
+    Bible5 = GReadText.KEY_EQUIP_POS_V_10,--"携带圣神书标志",
+    Bible6 = GReadText.KEY_EQUIP_POS_V_10,--"携带圣神书标志",
+    Contract1 = GReadText.KEY_EQUIP_POS_V_11.."Ⅰ",--"契约Ⅰ",
+    Contract2 = GReadText.KEY_EQUIP_POS_V_11.."Ⅱ",--"契约Ⅱ",
+    Contract3 = GReadText.KEY_EQUIP_POS_V_11.."Ⅲ",--"契约Ⅲ",
+
+    --------------------------------
+    Arms_same = GReadText.KEY_EQUIP_POS_V_5,--"装备武器",
+    --------------------------------
+}
+
+-- 魔灵装备位名
+Constant.EquipName.OustersEquipPos = {
+    TransferEquipmentLeft = GReadText.KEY_EQUIP_POS_O_1, -- 腰部装饰
+    TransferEquipmentRight = GReadText.KEY_EQUIP_POS_O_2, -- 手套
+    Helmet = GReadText.KEY_EQUIP_POS_O_3, -- 装备头饰
+    Belt1 = GReadText.KEY_EQUIP_POS_O_4, -- 装备臂环
+    Belt2 = GReadText.KEY_EQUIP_POS_O_4, -- 装备臂环
+    Necklace1 = GReadText.KEY_EQUIP_POS_O_5,--"装备项链",
+    Necklace2 = GReadText.KEY_EQUIP_POS_O_5,--"装备项链",
+    Necklace3 = GReadText.KEY_EQUIP_POS_O_5,--"装备项链",
+    Arms = GReadText.KEY_EQUIP_POS_O_6, -- 装备 轮/护腕
+    Clothes = GReadText.KEY_EQUIP_POS_O_7, -- 装备衣服
+    Trousers = GReadText.KEY_EQUIP_POS_O_8, -- 装备靴子
+    Ring1 = GReadText.KEY_EQUIP_POS_O_9, -- 装备戒指
+    Ring2 = GReadText.KEY_EQUIP_POS_O_9, -- 装备戒指
+    ElfStone1 = GReadText.KEY_EQUIP_POS_O_10,--"装备精灵石",
+    ElfStone2 = GReadText.KEY_EQUIP_POS_O_10,--"装备精灵石",
+    ElfStone3 = GReadText.KEY_EQUIP_POS_O_10,--"装备精灵石",
+    ElfStone4 = GReadText.KEY_EQUIP_POS_O_10,--"装备精灵石",
+    Bible1 = GReadText.KEY_EQUIP_POS_O_11,--"携带圣神书标志",
+    Bible2 = GReadText.KEY_EQUIP_POS_O_11,--"携带圣神书标志",
+    Bible3 = GReadText.KEY_EQUIP_POS_O_11,--"携带圣神书标志",
+    Bible4 = GReadText.KEY_EQUIP_POS_O_11,--"携带圣神书标志",
+    Bible5 = GReadText.KEY_EQUIP_POS_O_11,--"携带圣神书标志",
+    Bible6 = GReadText.KEY_EQUIP_POS_O_11,--"携带圣神书标志",
+    Contract1 = GReadText.KEY_EQUIP_POS_O_12.."Ⅰ",--"契约Ⅰ",
+    Contract2 = GReadText.KEY_EQUIP_POS_O_12.."Ⅱ",--"契约Ⅱ",
+    Contract3 = GReadText.KEY_EQUIP_POS_O_12.."Ⅲ",--"契约Ⅲ",
+
+    --------------------------------
+    Arms_same = GReadText.KEY_EQUIP_POS_O_6,---- 装备 轮/护腕,
+    --------------------------------
+}
+
+-- 人族装备位显示名
+Constant.EquipName.SlayerShowEquipPos = {
+    Helmet = GReadText.KEY_EQUIP_SHOW_POS_S_1,--"戴帽子",
+    TransferEquipmentLeft = GReadText.KEY_EQUIP_SHOW_POS_S_3,--"通讯器",
+    TransferEquipmentRight = GReadText.KEY_EQUIP_SHOW_POS_S_2,--"肩甲",
+    Necklace = GReadText.KEY_EQUIP_SHOW_POS_S_4, --"戴项链",
+    Arms = GReadText.KEY_EQUIP_SHOW_POS_S_5, --"拿武器"
+    Shield = GReadText.KEY_EQUIP_SHOW_POS_S_6, -- "戴盾牌"
+    Clothes = GReadText.KEY_EQUIP_SHOW_POS_S_7, -- 穿盔甲
+    Trousers = GReadText.KEY_EQUIP_SHOW_POS_S_8, -- 穿裤子
+    Glove = GReadText.KEY_EQUIP_SHOW_POS_S_9, -- 戴手套
+    Belt = GReadText.KEY_EQUIP_SHOW_POS_S_10, -- 戴腰带
+    Bracelet1 = GReadText.KEY_EQUIP_SHOW_POS_S_11, --戴手镯
+    Bracelet2 = GReadText.KEY_EQUIP_SHOW_POS_S_11, --戴手镯
+    Ring1 = GReadText.KEY_EQUIP_SHOW_POS_S_12, -- 戴戒指
+    Ring2 = GReadText.KEY_EQUIP_SHOW_POS_S_12, -- 戴戒指
+    Ring3 = GReadText.KEY_EQUIP_SHOW_POS_S_12, -- 戴戒指
+    Ring4 = GReadText.KEY_EQUIP_SHOW_POS_S_12, -- 戴戒指
+    Shoes = GReadText.KEY_EQUIP_SHOW_POS_S_13, -- 穿鞋
+    Bible1 = GReadText.KEY_EQUIP_SHOW_POS_S_14,--"携带圣神书标志",
+    Bible2 = GReadText.KEY_EQUIP_SHOW_POS_S_14,--"携带圣神书标志",
+    Bible3 = GReadText.KEY_EQUIP_SHOW_POS_S_14,--"携带圣神书标志",
+    Bible4 = GReadText.KEY_EQUIP_SHOW_POS_S_14,--"携带圣神书标志",
+    Bible5 = GReadText.KEY_EQUIP_SHOW_POS_S_14,--"携带圣神书标志",
+    Bible6 = GReadText.KEY_EQUIP_SHOW_POS_S_14,--"携带圣神书标志",
+    Contract1 = GReadText.KEY_EQUIP_SHOW_POS_S_15,--"契约Ⅰ",
+    Contract2 = GReadText.KEY_EQUIP_SHOW_POS_S_15,--"契约Ⅱ",
+    Contract3 = GReadText.KEY_EQUIP_SHOW_POS_S_15,--"契约Ⅲ",
+    CircletSuit1 = GReadText.KEY_EQUIP_SHOW_POS_S_16,--"戒指套位Ⅰ",
+    CircletSuit2 = GReadText.KEY_EQUIP_SHOW_POS_S_16,--"戒指套位Ⅱ",
+    CircletSuit3 = GReadText.KEY_EQUIP_SHOW_POS_S_16,--"戒指套位Ⅲ",
+    CircletSuit4 = GReadText.KEY_EQUIP_SHOW_POS_S_16,--"戒指套位Ⅳ",
+    PendantsSuit = GReadText.KEY_EQUIP_SHOW_POS_S_17,--"项链套位",
+    WristletSuit1 = GReadText.KEY_EQUIP_SHOW_POS_S_18,--"手镯套位Ⅰ",
+    WristletSuit2 = GReadText.KEY_EQUIP_SHOW_POS_S_18,--"手镯套位Ⅱ",
+}
+
+--吸血鬼装备位显示名
+Constant.EquipName.VampireShowEquipPos = {
+    Earrings1 = GReadText.KEY_EQUIP_SHOW_POS_V_1, --"装备耳环",
+    Earrings2 = GReadText.KEY_EQUIP_SHOW_POS_V_1, --"装备耳环",
+    Necklace = GReadText.KEY_EQUIP_SHOW_POS_V_2, --"装备项链"
+    TransferEquipmentLeft = GReadText.KEY_EQUIP_SHOW_POS_V_3, -- 装备面具
+    TransferEquipmentRight = GReadText.KEY_EQUIP_SHOW_POS_V_4, -- 装备文信
+    Arms = GReadText.KEY_EQUIP_SHOW_POS_V_5, -- 装备武器
+    Clothes = GReadText.KEY_EQUIP_SHOW_POS_V_6, -- 装备衣服
+    Bracelet1 = GReadText.KEY_EQUIP_SHOW_POS_V_7, --  装备手镯
+    Bracelet2 = GReadText.KEY_EQUIP_SHOW_POS_V_7, --  装备手镯
+    Ring1 = GReadText.KEY_EQUIP_SHOW_POS_V_8, -- 装备戒指
+    Ring2 = GReadText.KEY_EQUIP_SHOW_POS_V_8, -- 装备戒指
+    Ring3 = GReadText.KEY_EQUIP_SHOW_POS_V_8, -- 装备戒指
+    Ring4 = GReadText.KEY_EQUIP_SHOW_POS_V_8, -- 装备戒指
+    Amulet1 = GReadText.KEY_EQUIP_SHOW_POS_V_9,--"装备附身符",
+    Amulet2 = GReadText.KEY_EQUIP_SHOW_POS_V_9,--"装备附身符",
+    Amulet3 = GReadText.KEY_EQUIP_SHOW_POS_V_9,--"装备附身符",
+    Amulet4 = GReadText.KEY_EQUIP_SHOW_POS_V_9,--"装备附身符",
+    Bible1 = GReadText.KEY_EQUIP_SHOW_POS_V_10,--"携带圣神书标志",
+    Bible2 = GReadText.KEY_EQUIP_SHOW_POS_V_10,--"携带圣神书标志",
+    Bible3 = GReadText.KEY_EQUIP_SHOW_POS_V_10,--"携带圣神书标志",
+    Bible4 = GReadText.KEY_EQUIP_SHOW_POS_V_10,--"携带圣神书标志",
+    Bible5 = GReadText.KEY_EQUIP_SHOW_POS_V_10,--"携带圣神书标志",
+    Bible6 = GReadText.KEY_EQUIP_SHOW_POS_V_10,--"携带圣神书标志",
+    Contract1 = GReadText.KEY_EQUIP_SHOW_POS_V_11,--"契约Ⅰ",
+    Contract2 = GReadText.KEY_EQUIP_SHOW_POS_V_11,--"契约Ⅱ",
+    Contract3 = GReadText.KEY_EQUIP_SHOW_POS_V_11,--"契约Ⅲ",
+    CircletSuit1 = GReadText.KEY_EQUIP_SHOW_POS_V_12,--"戒指套位Ⅰ",
+    CircletSuit2 = GReadText.KEY_EQUIP_SHOW_POS_V_12,--"戒指套位Ⅱ",
+    CircletSuit3 = GReadText.KEY_EQUIP_SHOW_POS_V_12,--"戒指套位Ⅲ",
+    CircletSuit4 = GReadText.KEY_EQUIP_SHOW_POS_V_12,--"戒指套位Ⅳ",
+    PendantsSuit = GReadText.KEY_EQUIP_SHOW_POS_V_13,--"项链套位",
+    WristletSuit1 = GReadText.KEY_EQUIP_SHOW_POS_V_14,--"手镯套位Ⅰ",
+    WristletSuit2 = GReadText.KEY_EQUIP_SHOW_POS_V_14,--"手镯套位Ⅱ",
+
+    --------------------------------
+    Arms_same = GReadText.KEY_EQUIP_SHOW_POS_V_5,--"装备武器",
+    --------------------------------
+}
+
+-- 魔灵装备位显示名
+Constant.EquipName.OustersShowEquipPos = {
+    TransferEquipmentLeft = GReadText.KEY_EQUIP_SHOW_POS_O_1, -- 腰部装饰
+    TransferEquipmentRight = GReadText.KEY_EQUIP_SHOW_POS_O_2, -- 手套
+    Helmet = GReadText.KEY_EQUIP_SHOW_POS_O_3, -- 装备头饰
+    Belt1 = GReadText.KEY_EQUIP_SHOW_POS_O_4, -- 装备臂环
+    Belt2 = GReadText.KEY_EQUIP_SHOW_POS_O_4, -- 装备臂环
+    Necklace1 = GReadText.KEY_EQUIP_SHOW_POS_O_5,--"装备项链",
+    Necklace2 = GReadText.KEY_EQUIP_SHOW_POS_O_5,--"装备项链",
+    Necklace3 = GReadText.KEY_EQUIP_SHOW_POS_O_5,--"装备项链",
+    Arms = GReadText.KEY_EQUIP_SHOW_POS_O_6, -- 装备 轮/护腕
+    Clothes = GReadText.KEY_EQUIP_SHOW_POS_O_7, -- 装备衣服
+    Trousers = GReadText.KEY_EQUIP_SHOW_POS_O_8, -- 装备靴子
+    Ring1 = GReadText.KEY_EQUIP_SHOW_POS_O_9, -- 装备戒指
+    Ring2 = GReadText.KEY_EQUIP_SHOW_POS_O_9, -- 装备戒指
+    ElfStone1 = GReadText.KEY_EQUIP_SHOW_POS_O_10,--"装备精灵石",
+    ElfStone2 = GReadText.KEY_EQUIP_SHOW_POS_O_10,--"装备精灵石",
+    ElfStone3 = GReadText.KEY_EQUIP_SHOW_POS_O_10,--"装备精灵石",
+    ElfStone4 = GReadText.KEY_EQUIP_SHOW_POS_O_10,--"装备精灵石",
+    Bible1 = GReadText.KEY_EQUIP_SHOW_POS_O_11,--"携带圣神书标志",
+    Bible2 = GReadText.KEY_EQUIP_SHOW_POS_O_11,--"携带圣神书标志",
+    Bible3 = GReadText.KEY_EQUIP_SHOW_POS_O_11,--"携带圣神书标志",
+    Bible4 = GReadText.KEY_EQUIP_SHOW_POS_O_11,--"携带圣神书标志",
+    Bible5 = GReadText.KEY_EQUIP_SHOW_POS_O_11,--"携带圣神书标志",
+    Bible6 = GReadText.KEY_EQUIP_SHOW_POS_O_11,--"携带圣神书标志",
+    Contract1 = GReadText.KEY_EQUIP_SHOW_POS_O_12,--"契约Ⅰ",
+    Contract2 = GReadText.KEY_EQUIP_SHOW_POS_O_12,--"契约Ⅱ",
+    Contract3 = GReadText.KEY_EQUIP_SHOW_POS_O_12,--"契约Ⅲ",
+    CircletSuit1 = GReadText.KEY_EQUIP_SHOW_POS_O_13,--"戒指套位Ⅰ",
+    CircletSuit2 = GReadText.KEY_EQUIP_SHOW_POS_O_13,--"戒指套位Ⅱ",
+    CircletSuit3 = GReadText.KEY_EQUIP_SHOW_POS_O_13,--"戒指套位Ⅲ",
+    CircletSuit4 = GReadText.KEY_EQUIP_SHOW_POS_O_13,--"戒指套位Ⅳ",
+    PendantsSuit = GReadText.KEY_EQUIP_SHOW_POS_O_14,--"项链套位",
+    WristletSuit1 = GReadText.KEY_EQUIP_SHOW_POS_O_15,--"手镯套位Ⅰ",
+    WristletSuit2 = GReadText.KEY_EQUIP_SHOW_POS_O_15,--"手镯套位Ⅱ",
+
+    --------------------------------
+    Arms_same = GReadText.KEY_EQUIP_SHOW_POS_O_6,---- 装备 轮/护腕,
+    --------------------------------
+}
+
+-- 装备位ICON
+Constant.EquipIconName = {}
+-- 人族装备位ICON
+Constant.EquipIconName.SlayerEquipPos = {
+    Helmet = "bg_zhuangbei_02_s",--"头盔",
+    TransferEquipmentLeft = "bg_zhuangbei_01_s",--"转职装备左",
+    TransferEquipmentRight = "bg_zhuangbei_03_s",--"转职装备右",
+    Necklace = "bg_zhuangbei_04_s",
+    Arms = "bg_zhuangbei_05_s",
+    Shield = "bg_zhuangbei_07_s",
+    Clothes = "bg_zhuangbei_06_s",
+    Trousers = "bg_zhuangbei_10_s",
+    Glove = "bg_zhuangbei_08_s",
+    Belt = "bg_zhuangbei_09_s",
+    Bracelet1 = "bg_zhuangbei_11_s",
+    Bracelet2 = "bg_zhuangbei_11_s",
+    Ring1 = "bg_zhuangbei_12_s",
+    Ring2 = "bg_zhuangbei_12_s",
+    Ring3 = "bg_zhuangbei_12_s",
+    Ring4 = "bg_zhuangbei_12_s",
+    Shoes = "bg_zhuangbei_13_s",
+    Bible1 = "bg_zhuangbei_14_s",
+    Bible2 = "bg_zhuangbei_14_s",
+    Bible3 = "bg_zhuangbei_14_s",
+    Bible4 = "bg_zhuangbei_14_s",
+    Bible5 = "bg_zhuangbei_14_s",
+    Bible6 = "bg_zhuangbei_14_s",
+    Contract1 = "bg_zhuangbei_16_s",
+    Contract2 = "bg_zhuangbei_16_s",
+    Contract3 = "bg_zhuangbei_16_s",
+    CircletSuit1 = "bg_zhuangbei_12_s",
+    CircletSuit2 = "bg_zhuangbei_12_s",
+    CircletSuit3 = "bg_zhuangbei_12_s",
+    CircletSuit4 = "bg_zhuangbei_12_s",
+    PendantsSuit = "bg_zhuangbei_04_s",
+    WristletSuit1 = "bg_zhuangbei_11_s",
+    WristletSuit2 = "bg_zhuangbei_11_s",
+}
+
+--吸血鬼装备ICON
+Constant.EquipIconName.VampireEquipPos = {
+    Earrings1 = "bg_zhuangbei_01_v", --"耳环1",
+    Earrings2 = "bg_zhuangbei_01_v",
+    Necklace = "bg_zhuangbei_02_v",
+    TransferEquipmentLeft = "bg_zhuangbei_03_v",
+    TransferEquipmentRight = "bg_zhuangbei_04_v",
+    Arms = "bg_zhuangbei_05_v",
+    Clothes = "bg_zhuangbei_06_v",
+    Bracelet1 = "bg_zhuangbei_07_v",
+    Bracelet2 = "bg_zhuangbei_07_v",
+    Ring1 = "bg_zhuangbei_08_v",
+    Ring2 = "bg_zhuangbei_08_v",
+    Ring3 = "bg_zhuangbei_08_v",
+    Ring4 = "bg_zhuangbei_08_v",
+    Amulet1 = "bg_zhuangbei_09_v",--"护身符1",
+    Amulet2 = "bg_zhuangbei_09_v",--"护身符2",
+    Amulet3 = "bg_zhuangbei_09_v",--"护身符3",
+    Amulet4 = "bg_zhuangbei_09_v",--"护身符4",
+    Bible1 = "bg_zhuangbei_10_v",
+    Bible2 = "bg_zhuangbei_10_v",
+    Bible3 = "bg_zhuangbei_10_v",
+    Bible4 = "bg_zhuangbei_10_v",
+    Bible5 = "bg_zhuangbei_10_v",
+    Bible6 = "bg_zhuangbei_10_v",
+    Contract1 = "bg_zhuangbei_12_v",
+    Contract2 = "bg_zhuangbei_12_v",
+    Contract3 = "bg_zhuangbei_12_v",
+    CircletSuit1 = "bg_zhuangbei_08_v",
+    CircletSuit2 = "bg_zhuangbei_08_v",
+    CircletSuit3 = "bg_zhuangbei_08_v",
+    CircletSuit4 = "bg_zhuangbei_08_v",
+    PendantsSuit = "bg_zhuangbei_02_v",
+    WristletSuit1 = "bg_zhuangbei_07_v",
+    WristletSuit2 = "bg_zhuangbei_07_v",
+}
+
+-- 魔灵装备ICON
+Constant.EquipIconName.OustersEquipPos = {
+    Belt = "bg_zhuangbei_01_o",
+    Glove = "bg_zhuangbei_02_o",
+    Helmet = "bg_zhuangbei_03_o",
+    Bracelet1 = "bg_zhuangbei_04_o",
+    Bracelet2 = "bg_zhuangbei_04_o",
+    Necklace1 = "bg_zhuangbei_07_o",--"项链1",
+    Necklace2 = "bg_zhuangbei_07_o",--"项链2",
+    Necklace3 = "bg_zhuangbei_07_o",--"项链3",
+    Arms = "bg_zhuangbei_05_o",
+    Clothes = "bg_zhuangbei_08_o",
+    Trousers = "bg_zhuangbei_09_o",
+    Ring1 = "bg_zhuangbei_10_o",
+    Ring2 = "bg_zhuangbei_10_o",
+    ElfStone1 = "bg_zhuangbei_11_o",--"精灵石1",
+    ElfStone2 = "bg_zhuangbei_12_o",--"精灵石2",
+    ElfStone3 = "bg_zhuangbei_13_o",--"精灵石3",
+    ElfStone4 = "bg_zhuangbei_14_o",--"精灵石4",
+    Bible1 = "bg_zhuangbei_15_o",
+    Bible2 = "bg_zhuangbei_15_o",
+    Bible3 = "bg_zhuangbei_15_o",
+    Bible4 = "bg_zhuangbei_15_o",
+    Bible5 = "bg_zhuangbei_15_o",
+    Bible6 = "bg_zhuangbei_15_o",
+    Contract1 = "bg_zhuangbei_17_o",
+    Contract2 = "bg_zhuangbei_17_o",
+    Contract3 = "bg_zhuangbei_17_o",
+    CircletSuit1 = "bg_zhuangbei_11_o",
+    CircletSuit2 = "bg_zhuangbei_11_o",
+    CircletSuit3 = "bg_zhuangbei_11_o",
+    CircletSuit4 = "bg_zhuangbei_11_o",
+    PendantsSuit = "bg_zhuangbei_07_o",
+    WristletSuit1 = "bg_zhuangbei_04_o",
+    WristletSuit2 = "bg_zhuangbei_04_o",
+}
+
+Constant.ItemTipBtns = {
+    Use         = 1,
+    Split       = 2,
+    Discard     = 3,
+    TakeOff     = 4, --扩容背包使用
+    Deposit     = 5, --存入
+    TakeOut     = 6, --取出
+    PutInBelt   = 7, --放入腰带
+    TakeOutBelt = 8, --取出腰带
+    Buy         = 9, --购买
+    Sell        = 10,--出售
+    AllSell     = 11,--一键出售
+    Replace     = 12,  --替换
+    TakeOn      = 13, --装备
+    Repair      = 14, --维修
+    Share       = 15, --分享
+}
+
+Constant.EquipTipBtns = {
+    Equip = 1,      --装备
+    UnEquip = 2,    --卸下
+    Discard = 3,    --丢弃
+    Replace = 4,    --替换
+    Deposit = 5,    --存入
+    TakeOut = 6,    --取出
+    Levelup = 7,    --升级
+    Strengthen = 8, --强化
+    Blessing = 9,   --祝福
+    Compose = 10,   --合成
+    Inherit = 11,   --传承
+    Recasting = 12, --重铸
+    Purify = 13,    --净化
+    PutInBelt   = 14, --放入腰带
+    TakeOutBelt = 15, --取出腰带
+    Buy         = 16, --购买
+    Sell        = 17, --出售
+    AllSell     = 18, --一键出售
+    Repair      = 19, --维修
+    AllRepair   = 20, --一键维修
+    Silver      = 21, --镀银
+    Share       = 22, --分享
+    UnEquipSuit = 23, --卸载套件
+}
+
+Constant.PlayerTipBtns = {
+    ChangeCaptain   = 1,  --转让队长
+    PrivateChat     = 2,  --私聊
+    FriendAdd       = 3,  --申请好友
+    GuildApply      = 4,  --申请入会
+    GuildInvite     = 5,  --邀请入会
+    CheckPlayer     = 6,  --查看信息
+    InviteInTeam    = 7,  --邀请组队
+    ApplyInTeam     = 8,  --申请入队
+}
+
+Constant.GuildTipBtns = {
+    CheckPlayer     = 1,  --查看信息
+    PrivateChat     = 2,  --私聊
+    FriendAdd       = 3,  --申请好友
+    UpDuty          = 4,  --提升职务
+    ChangeMaster    = 5,  --转移会长
+    DownDuty        = 6,  --降低职务
+    KickGuild       = 7,  --踢出公会
+    InviteInTeam    = 8,  --邀请组队
+    ApplyInTeam     = 9,  --申请入队
+}
+
+Constant.GuildDuty  =
+{
+    NoDuty = 0, -- 没有职位
+	Master = 1, -- 会长
+	ViceMaster = 2, -- 副会长
+	Normal = 3, -- 普通成员
+}
+
+Constant.GuildDutyStr =
+{
+    [Constant.GuildDuty.Master] = "会长",
+    [Constant.GuildDuty.ViceMaster] = "副会长",
+    [Constant.GuildDuty.Normal] = "普通成员",
+}
+
+Constant.SkillTipBtns = {
+    Study = 1,  -- 学习
+    Detail = 2, -- 详情 
+}
+
+Constant.ItemType = {
+    ITEM_TYPE_PROP      = 1,        --道具
+    ITEM_TYPE_EQUIP     = 2,        --装备
+    ITEM_TYPE_BOOK      = 3,        --技能书
+    ITEM_TYPE_RUNE      = 4,        --符文
+    ITEM_TYPE_PET       = 9,        --宠物
+}
+
+--道具分类
+Constant.PropType = {
+    MONEY           = 1,  --货币
+    TROPHY          = 2,  --战利品
+    CONSUMABLES     = 3,  --消耗品
+    AMMUNITION      = 4,  --弹药
+    VEHICLE         = 5,  --载具
+    TRANSFER        = 6,  --传送道具
+    STRENGTHEN      = 7,  --强化道具
+    PERSONALIZATION = 8,  --个性化道具
+    PET             = 9,  --宠物道具
+    PET_CULTIVATE   = 10,  --宠物养成道具
+    OTHER           = 11,  --其他道具
+    BAG             = 12,  --背包道具
+    ACTIVITY        = 13,  --活动道具
+    VALUE           = 14,  --值类型道具
+    SKILLRESET      = 15,  --技能重置液
+}
+
+--战利品
+Constant.PropTypeSub_2 = {
+    LINGSHI         = 1,  --灵石(怪物头)
+}
+
+-- 活动道具
+Constant.PropTypeSub_6 = {
+    SlayerTransform = 1,  --人族传送
+    VampireTransform = 2, --鬼族自定义传送
+    VampireTransformS = 3,--鬼族固定传送
+    BACKHOME = 4, --回城卷轴
+}
+
+-- 载具小类[弃用]
+Constant.PropTypeSub_5 = {
+    Slayer_key = 3,   --坐骑钥匙
+    Vampire_key = 5, --吸血鬼钥匙
+    Ousters_key = 7,--魔灵钥匙
+}
+
+-- 强化道具小类
+Constant.PropTypeSub_7 = {
+    Strengthen      = 1,    -- 装备词条强化
+    Compose         = 2,    -- 装备合成
+    Recasting       = 3,    -- 装备重铸
+    Purify          = 4,    -- 装备净化
+    Blessing        = 5,    -- 装备祝福
+    Inherit         = 6,    -- 装备传承
+    Levelup         = 7,    -- 装备升级
+    Evolution       = 8,    -- 装备进阶
+    Transform       = 9,    -- 装备转换
+    Refine          = 13,   -- 首饰套精炼
+}
+
+-- 道具小类
+Constant.PropTypeSub_8 = {
+    Rename          = 1,    -- 改名卡
+    Color           = 2,    -- 改颜色
+    ChangeSex       = 3,    -- 变性药水
+    HALO            = 6,    -- 光环石
+    ClassSkillClear = 7,    -- 清除液
+    TransformBox    = 8,    -- Trans工具箱
+    ClearPoint      = 9,    -- 古代忘却水
+    ClearEvil       = 10,   --善恶值清除液
+}
+
+-- 消耗品
+Constant.PropTypeSub_3 = {
+    SlayerPotion    = 1, --人族药水
+    VampirePotion   = 4, --鬼族药水
+    CommonPotion    = 5, --通用药水
+    OustersPotion   = 8, --魔族药水
+    DoubleExp   = 11, -- 双倍经验
+    MulExp      = 14, -- 其它多倍经验
+}
+
+-- 弹药
+Constant.PropTypeSub_4 = {
+    Bullet = 1, --子弹
+}
+
+-- 技能重置液
+-- 道具小类
+Constant.PropTypeSub_15 = {
+    Blade    = 1,    -- 刀
+    Sword    = 2,    -- 剑
+    Gun      = 3,    -- 枪
+    Heal     = 4,    -- 医生
+    Bless    = 5,    -- 祝福
+    Vampire  = 6,    -- 鬼族
+    Ousters  = 7,    -- 魔族
+}
+
+-- 宠物喂养道具小类
+Constant.PropTypeSub_10 = {
+    RedBird = 4,-- 红鸟
+    RedBird2 = 5,-- 红鸟2
+    CutHead = 6,-- 宠物挖头清除剂
+    ShockCapsule = 7,-- 震撼胶囊
+    CombinationDevice = 8,-- 宠物组合器
+    IceCapsule = 9,-- 种族胶囊
+    Combination = 11,-- 组合重置药水
+    DigSpeed = 12,-- 挖掘加速
+    AddLvl   = 13,-- 宠物直升丹
+    AddExp   = 14,-- 宠物经验加成
+    Food     = 15,-- 宠物口粮
+    Revival7 = 16,-- 7天复活
+    Revival14 = 17,-- 14天复活
+}
+
+-- 活动道具
+Constant.PropTypeSub_13 = {
+    EXCHANGE = 1,   --兑换里的礼包
+}
+
+-- 其他道具
+Constant.PropTypeSub_11 = {
+    ADVANCE = 1,    --转职道具
+    ZIMOTT = 15,    --碎片
+    HALO   = 16,    --光环
+}
+
+Constant.RaceToJobPanel = {
+    [Constant.RaceType.Slayer] = "Slayer",  -- 人
+    [Constant.RaceType.Vampire] = "Vampire", -- 鬼
+    [Constant.RaceType.Ousters] = "Ousters", -- 魔
+}
+
+Constant.EquipShowTipsType = {
+    Bag = 1,    -- 背包
+    RoleEquip = 2,  -- 角色身上
+    WareHouse = 3,  -- 仓库
+    Belt = 4,
+    Buy = 5,    --买
+    Sell = 6,   --卖
+    Repair = 7,     --维修
+    Silver = 8,     --镀银
+    Chat = 9,       -- 聊天(按钮只有分享)
+    Display = 99,   -- 纯展示(不需要按钮)
+}
+
+Constant.RaceSkinRes = {
+    [Constant.RaceType.Slayer] = "_s",
+    [Constant.RaceType.Vampire] = "_v",
+    [Constant.RaceType.Ousters] = "_o"
+}
+
+Constant.RaceStr = {
+    [Constant.RaceType.Slayer] = "人族",
+    [Constant.RaceType.Vampire] = "鬼族",
+    [Constant.RaceType.Ousters] = "魔族"
+}
+
+-- Single = 1, --1*1
+-- Short = 2, --1*2
+-- Long = 3, --1*3
+-- Square = 4, --2*2
+-- Big = 6, --2*3
+Constant.ITEMSIZE = 
+{
+    [0] = {width = 1, height = 1 },
+    [1] = {width = 1, height = 1 },
+    [2] = {width = 1, height = 2 },
+    [3] = {width = 1, height = 3 },
+    [4] = {width = 2, height = 2 },
+    [6] = {width = 2, height = 3 },
+};
+Constant.INVENTORY_DEFUAL_SIZE = 
+{
+    WIDTH = 8,
+    HEIGHT = 8
+};
+Constant.STRENGTHEN_SIZE = 
+{
+    WIDTH = 6,
+    HEIGHT = 8
+};
+
+Constant.TRANSACTION_SIZE = 
+{
+    WIDTH = 5,
+    HEIGHT = 7
+};
+
+Constant.PROPTIPS_FORM = {
+    BAG = 1, 
+    OTHER = 2,
+    WAREHOUSE = 3,
+    BELT = 4,
+    BUY = 5,
+    SELL = 6,
+    REPAIR = 7,
+    DisplayShop = 98, --商城展示
+    Display = 99,
+}
+
+-- 物品获取途径
+Constant.PROPTIPS_ACCESS = {
+    SHOP     = 1,    -- 商城
+    NPC      = 2,    -- NPC
+    DUNGEON  = 3,    -- 副本
+    TEXT     = 4,    -- 文本
+}
+
+Constant.TendencyType = {
+    LESS_EVIL = 1,
+    EVIL = 2,
+    NEUTRAL = 3,
+    GOOD = 4,
+    MORE_GOOD = 5,
+}
+
+Constant.RoleInfoBtnType = {
+    role = 1,
+    magic = 2,
+    lowCls = 3,
+    superCls = 4,
+    transfer = 5,
+}
+
+-- 阶级技能按钮状态
+Constant.ClsSkillState = {
+    NotLearnable = 1, -- 不能学的
+    Learnable = 2, --  可以学的
+    Learned = 3, -- 已经学习的
+    CurUnableToLearn = 4, -- 目前不能学习的技能
+}
+
+-- 普通技能按钮状态
+Constant.SkillState = {
+    NotLearnable = 1, -- 不能学的
+    Learnable = 2, --  可以学的
+    Learned = 3, -- 已经学习的
+}
+
+Constant.SexType = {
+    MALE = 0,
+    FEMALE = 1,
+}
+
+Constant.SkillOperate = {
+    Battle = 1, --战斗
+    Edit_Normal = 2, --正常编辑模式
+    Edit_Set = 3,--编辑正在设置技能
+    Edit_Pos = 4,--位置，放大等编辑
+    Auto_Normal = 5,--自动正常编辑模式
+    Auto_Set = 6,--自动编辑正在设置技能
+}
+
+Constant.WndLockType = {
+    WareHouse = 1, --仓库
+    SkillTips = 2, --技能
+    Belt      = 3, --腰带
+    Trade     = 4, --买卖
+    Repair    = 5, --维修/镀银
+    AutoRecycle  = 6, -- 自动售卖
+}
+
+Constant.WndFeedType = {
+    Feed   = 1, -- 喂养
+    Other  = 2, -- 其他物品
+    Revive = 3, -- 复活
+}
+
+Constant.TransferLevel = 150 -- 转职最大等级
+Constant.ElementMax = 26     -- 元素最大值
+Constant.MaxDomain = 150     -- 领域最大值
+Constant.MaxTendency = 10000
+
+Constant.HelpTipsType = {
+    Role = 1, --角色
+    Skill = 2, --技能
+}
+Constant.AttackShowType = {
+    Null = 0,--无表现
+    Line = 1,--线性
+    Sector = 2,--扇形
+    Circle = 3,--圆形
+    Rectangle = 4,--矩形
+}
+
+Constant.DomainType = {
+    Blade = 1,     -- 刀
+    Sword = 2,     -- 剑
+    Gun   = 3,     -- 枪
+    Heal  = 4,     -- 治疗
+    Bless = 5,     -- 祝福
+}
+
+Constant.AdvState = {
+    NotAdv = 0,  -- 未转生
+    Adv = 1,     -- 转生
+}
+
+Constant.WeaponType = {
+    Knife = 1,--刀
+    SGGun = 2,--=SG枪
+    SMGGun = 3,--=SMG枪
+    ARGun = 4,--=AR枪
+    SRGun = 5,--=SR枪
+    Sword = 6,--=剑
+    Cross = 7,--=十字架
+    Wand = 8,--=权杖
+    ClawPrick = 9 ,--=爪刺
+    BattleWheel = 10,--=战轮
+    WristGuard = 11,--=护腕
+}
+
+-- 用于显示子弹数量
+Constant.IsGun = {
+    [Constant.WeaponType.SGGun] = true,--"SG枪",
+    [Constant.WeaponType.SMGGun] = true,--"SMG枪",
+    [Constant.WeaponType.ARGun] = true,--"AR枪",
+    [Constant.WeaponType.SRGun] = true,--"SR枪",
+}
+--人族近战
+Constant.IsSlayerMelee = {
+    [Constant.WeaponType.Knife] = true,
+    [Constant.WeaponType.Sword] = true,
+    [Constant.WeaponType.Cross] = true,
+    [Constant.WeaponType.Wand] = true,
+}
+
+
+
+-- 职业名称
+Constant.JobStr = {
+    [11] = "刀手",
+    [12] = "剑士",
+    [13] = "枪手",
+    [14] = "医生",
+    [15] = "祝福",
+    [21] = "战士",
+    [22] = "法师",
+    [31] = "战士",
+    [32] = "火灵",
+    [33] = "水灵",
+    [34] = "土灵"
+}
+
+--[[
+    0=不需要目标，技能就可以释放。
+    1=需要目标，目标仅为敌方或怪物，技能才可以释放。
+    2=需要目标，目标仅为自己，技能才可以释放。
+    4=需要目标，目标仅为友方，技能才可以释放。
+    3=1+2
+    5=1+4
+    6=2+4
+    7=1+2+4
+]]
+Constant.SelectTargetType = {
+    NULL = 0,
+    Enemy = 1,
+    Self = 2,
+    Enemy_Self = 3,
+    Friend = 4,
+    Enemy_Friend = 5,
+    Self_Friend =6,
+    All = 7
+}
+
+
+-- 类型1：跳转对话  如：1|104:105,106 跳转到指定对话
+-- 类型2：打开地图传送 如： 2|1004:x,y
+-- 类型3：打开界面 如：3|UIWndInventory
+-- 类型4：回复满血
+-- 类型5：退出
+-- 类型6：道具兑换:交换协议
+-- 类型7：保险箱购买：购买某件物品
+-- 类型8：摩托车找回：某件物品回到某个位置
+-- 类型9：捐款：刷好感度
+-- 类型10：记录复活点
+-- 类型11：接取任务
+-- 类型12：提交任务
+-- 类型13：放弃任务
+-- 类型14：npc对话任务
+-- 类型15：公会
+-- 类型16：圣书
+-- 类型17：魔灵柱解锁
+
+Constant.NpcOpenType = {
+   Talk = 1, 
+   Map = 2,
+   View = 3,
+   HP = 4,
+   Exit = 5,
+   Exchange = 6,
+   PurchangeBox = 7,
+   FindMoto = 8,
+   Donate = 9,
+   Revive = 10,
+   LeadingTask = 11,
+   CommitTask = 12,
+   GiveupTask = 13,
+   NpcTalk = 14,
+   Guild = 15,
+   HolyBook = 16,
+   OUSTERSTOWER = 17,
+}
+
+Constant.MiniMapSelect = {
+    Pos = 1,
+    Npc = 2,
+    Delivery = 3,
+    Task = 4,
+    Team = 5,
+}
+
+Constant.StateSelect = {
+    Pos = 1,
+    Team = 2,
+    Task = 3,
+    Entrance = 4,
+    MapName = 5,
+    Level = 6,
+}
+
+Constant.BeltBarType = {
+    Main = 1,  -- 主界面
+    Inventory = 2,   -- 背包
+}
+
+Constant.BeltOperateType = {
+    PutIn = 0,  -- 存入
+    TakeOut = 1,   -- 取出
+}
+--扩容背包数量
+Constant.ExpandMaxCnt = 5
+
+Constant.FiterType = {
+    Buy = 1,        --买
+    Sell = 2,       --卖
+    Exchange = 3,   --交换
+}
+
+Constant.RepairType = {
+    Repair = 1,     --维修
+    Silver = 2,     --镀银
+}
+
+--兑换类型
+Constant.ExchangeType = {
+    NORMAL = 1,     --普通
+    SPECIAL = 2,    --特殊
+    LOTTO = 3,      --乐透
+    EXCHANGE = 4,   --兑换
+}
+
+-- buff来源类型
+Constant.BuffSrcType = {
+	BuffSrcType_Skill = 0,
+	BuffSrcType_Item = 1,
+	BuffSrcType_Equip = 2, 
+    BuffSrcType_Creature = 3;
+    BuffSrcType_Mount = 4;   -- 坐骑
+    BuffSrcType_Halo = 5;    -- 光环
+}
+
+-- 自动复活时间
+Constant.AutoReviveTime = 60
+-- 复活显示时间
+Constant.ReviveShowTime = 5
+
+-- 常量表ID
+Constant.Variable = {
+    StorePrice     = 1,
+    StoreMaxCoin   = 2,
+    BagMaxCoin     = 3,
+    Hairdye        = 7,
+    WorldSpeakerMaxLength = 14,
+    ItemIconScale  = 20,
+    EquipIconScale = 21,
+    WearEquipIconScale = 22,
+    Reputation1 = 24,
+    Reputation2 = 25,
+    Reputation3 = 26,
+    Reputation4 = 27,
+    CreateGuildPlayerLevel = 33,
+    CreateGuildCostItem = 34,
+    GuildNameLength = 35,
+    GuildNoticeLength = 36,
+    GuildMemberNoticeLength = 37,
+    GuildApplySize = 39,
+    TransformZ = 42,
+    DivineZ = 51,
+    TouchMovePixel = 44,
+    PetAttr1UnlockLevel = 45,
+    PetAttr2UnlockLevel = 46,
+    PetAttr3UnlockLevel = 47,
+    PetSynMain          = 55,
+    PetSynSass          = 56,
+    TradingTime = 61,
+    Number = 64,
+    PickupDistance = 71,
+    MailListNum = 73,
+    NPCMarkShift = 74,
+    InitialAdvanceMission = 76,
+    AdvanceEquipNumber = 79,
+    ScaleRole = 86,
+    UnderGroundSightHeightRatio = 87,
+    -- MobileRecycleRequire = 92, --便捷出售功能需求VIP开启等级
+    -- QuickRecycleRequire = 93, --一键出售功能需求VIP开启等级
+    -- AutoRecycleRequire = 94, --自动出售功能需求VIP开启等级
+    QuickRecycleCoolDown = 95, --一键出售冷却时间（秒）
+    AutoRecycleRequireCoolDown = 96, --自动出售间隔（秒）
+    PowerColorSetRatio = 99, --词条等级颜色倍率
+    DefaultEqiupColorSet = 100, --默认装备颜色亮度倍率（白色
+    GuildQuitAndApplyCD = 103, -- 公会退出后重新加入CD（秒）
+    TradingUpper = 105, --交易行竞价最高上限
+    MultipleEquipSlotsIconScale = 107, --多装备位图标缩放尺寸(TIPS)
+    FreeVitalityDaily = 108, --精力系统右上角每日免费领取的物品（类，id，数量）
+    VitalityUsage = 109, --精力界面点击加号后使用的物品ID（类，id）
+    MonthCardActiveAwards = 110, --月卡立即获得道具
+    MonthCardDailyAwards = 111, --月卡每日领取道具
+    MonthCardAddDay = 112, --月卡的天数
+    PrivilegeUpkeep = 113, --特权身上装备耐久低于这个百分比自动维修
+    MonthRecharge = 114, --月卡充值商品Id
+    DuraCostRate = 115, --耐久度消耗系数
+    TaskDistanceDetection = 116, --任务传送距离检测
+    MonthCardPrice = 119, --月卡价格
+    StateBackSpeed = 120, --击退速度
+}
+
+--装备筛选枚举
+Constant.TYPEFILTER = {
+    LEVELUP = 1,        --装备升级
+    STRENGTHNEN = 2,    --装备强化
+    BLESSING = 3,       --装备祝福
+    COMPOSELEFT = 4,    --装备合成左
+    INHERITLEFT = 5,    --装备继承左
+    RECASTING = 6,      --装备重铸
+    PURIFY = 7,         --装备净化
+    COMPOSERIGHT = 8,   --装备合成右
+    INHERITRIGHT = 9,   --装备继承右
+    TRANSFORM = 10,     --装备转换
+    MOTIVATE = 11,      --首饰套激发
+    REFINELEFT = 12,    --首饰套精炼左
+    REFINERIGHT = 13,   --首饰套精炼右
+}
+
+-- 装备转换类型
+Constant.TRANSFORMTYPE = {
+	ARMSTYPE = 1,           --武器种类转换
+	CLOTHESGENDER = 2,      --防具性别转换
+}
+
+-- 主界面下方tips提示枚举
+Constant.SYSTEMTIPS = {
+    REVIVE = 0,             --复活
+	MAIL = 1,               --邮件
+    ADDPOINT = 2,           --加点
+    Friend = 3,             --好友
+    INVITETEAM = 4,         --邀请入队
+    INVITEGUILD = 5,        --邀请入会
+    APPLYTEAM = 6,          --申请入队
+}
+
+-- 属性类型
+Constant.AFFIXTYPES = {
+	DURABILITY = 19,        --耐久度
+}
+
+--技能最大等级
+Constant.MAXLEVEL = 30
+
+--持有金币上限
+Constant.COIN_LIMITE = 2000000000
+
+--学习技能类型
+Constant.ENTER_TYPES = {
+    LEARN = 2,          --学习技能
+    FORGET = 6,         --遗忘技能
+}
+
+Constant.Appearance = {
+    Hair = 1,   -- 染发
+    Halo = 2,   -- 光环
+    Skin = 3,   -- 换肤
+}
+
+--组队最大人数上限
+Constant.MAX_TEAM_NUMBER = 6
+
+--组队大厅类型
+Constant.TEAMHALL_TYPES = {
+    LEVEL = 1,          --等级
+    DUNGEON = 2,        --副本
+}
+
+--主界面左上角类型
+Constant.LEFT_CORNER = {
+    TASK = 0,       --任务
+    TEAM = 1,       --队伍
+    TARGET = 2,     --目标
+}
+
+Constant.SkillHide = {
+    None = 0,   -- 正常状态
+    Hide = 1,   -- 隐蔽状态
+}
+
+--方向基于格子
+Constant.MN_DIR = {
+    [0] = {-1, 0},
+    [1] = {-1, 1},
+    [5] = {1, -1},
+    [2] = {0, 1},
+    [3] = {1, 1},
+    [7] = {-1, -1},
+    [4] = {1, 0},
+    [6] = {0, -1},
+}
+   
+-- 服务器错误码
+Constant.ErrorCode = {
+    Success = 0,
+    Miss    = 1011,
+    RangeOut= 1016,
+}
+
+-- 客户端自己定义的错误码返回
+Constant.ClientErrorCode = {
+    AMMUNITION_NO_USE    = 1001, --弹药不能使用
+}
+
+-- 技能特殊效果码
+Constant.EXTRE_CODE = {
+    SUCCESS = 1,
+    FAIL    = 1011,
+}
+
+--角色升级特效类型
+Constant.LEVELUP_TYPE = {
+    SLAYER = 976,   --人类
+    VAMPIRE = 975,  --吸血鬼
+    OUSTERS = 974,  --魔灵
+}
+
+-- 特效类型
+Constant.EFFECT = {
+    ACTION  = "Action",
+    PROCESS = "Process",
+    SELF    = "Self",
+    HIT     = "Hit",
+}
+
+-- 特效播放方式
+Constant.EFFECT_PLAY_TYPE = {
+    PARALLEL = 1,
+    QUEUE    = 2,
+    SPECIAL  = 3,
+    RANDOM   = 4,
+}
+
+-- 子弹弹道类型
+Constant.BULLET_TYPE = {
+    NORMAL        = "Normal",        -- 普通只有单一弹道
+    WINDDIVIDER = "WindDivider", -- 多段并行
+    LINEAR        = "Linear",        -- 线性
+}
+
+--npc类型
+Constant.NPC_TYPE = {
+    NORMAL = 0,     --其他的
+    STATUE = 1,     --雕像
+    TRANSMIT = 2,   --魔灵传送柱
+}
+
+Constant.BLT_TYPE =
+{
+	BLT_NORMAL = 0,
+	BLT_EFFECT = 1,
+	BLT_SHADOW = 2,
+	BLT_SCREEN = 3,
+};
+
+-- 换色颜色偏移
+Constant.GL_COLOR_OFFSET = {
+    ZERO = 0.0,
+    BIT8 = 0.03,
+    BIT16 = 0.063,
+}
+
+--设置类型枚举(待补充)
+Constant.COMPONENT_TYPES = {
+    TYPE1 = 1,      --滑块+开关+下拉
+    TYPE2 = 2,      --单滑块带框
+    TYPE3 = 3,      --单开关
+    TYPE4 = 4,      --单滑块不带框
+    TYPE5 = 5,      --滑块+开关
+    TYPE6 = 6,      --单滑块不带框 (反向)
+}
+
+--设置枚举(待补充)
+Constant.SETTINGS_TYPES = {
+    SLAYER_HP      = 1,     --生命值低于({value})%自动使用({table})(人族)(完成)
+    VAMPIRE_HP     = 2,     --生命值低于({value})%自动使用({table})(鬼族)(完成)
+    OUSTERS_HP     = 3,     --生命值低于({value})%自动使用({table})(魔族)(完成)
+    SLAYER_MP      = 4,     --魔法值低于({value})%自动使用({table})(人族)(完成)
+    OUSTERS_EP     = 5,     --灵力值低于({value})%自动使用({table})(魔族)(完成)
+    SHOW_PLAYERS   = 6,     --最多显示附近({value})位玩家
+    SHOW_BOOTH     = 7,     --显示玩家摊位(TODO)
+    DISCARD_SURE   = 8,     --丢弃物品时弹窗二次确认(完成)
+    ALLOW_TRACE    = 9,     --允许其他玩家使用技能“灵魂锁链”追踪(TODO)
+    BAG_OPACITY    = 10,    --背包窗口半透明(完成)
+    EQUIP_OPACITY  = 11,    --装备窗口半透明(完成)
+    INFO_OPACITY   = 12,    --个人信息窗口半透明(完成)
+    TASK_OPACITY   = 13,    --任务窗口半透明(完成)
+    TEAM_OPACITY   = 14,    --组队窗口半透明(完成)
+    MAP_OPACITY    = 15,    --小地图栏半透明(完成)
+    CHAT_OPACITY   = 16,    --聊天窗口半透明(完成)
+    QUICK_OPACITY  = 17,    --快捷道具栏半透明(完成)
+    WINDOW_OPACITY = 18,    --窗口背景透明度(完成)
+    EFFECT_SOUND   = 19,    --游戏音效(完成)
+    MUSIC_SOUND    = 20,    --背景音乐(完成)
+    MAP_SCALE      = 21,    --视野范围
+    EQUIP_AUTOUSE  = 22,    --开启装备自动穿戴
+    LEFT_OFFSET    = 23,    --左侧屏幕边缘偏移
+    RIGHT_OFFSET   = 24,    --右侧屏幕边缘偏移
+    LUA_JIT_JIT    = 25,    --性能模式开关(用于luajit中jit的开关)
+    AUTO_PICKUP    = 26,    --自动战斗时开启自动拾取
+    SHOW_PING      = 27,    --ping值
+
+}
+
+--任务类型枚举
+Constant.TASK_TYPES = {
+    DAILY = 1,          --每日
+    WEEKLY = 2,         --每周
+    TRUNK = 3,          --主线
+    BRANCH = 4,         --支线
+    ADVANCE = 5,	    --转职
+    SYSTEM = 6,	        --系统任务(归入支线任务)
+    BRANCH2 = 7,	    --分支任务(归入支线任务)
+}
+
+--任务状态枚举
+Constant.TASK_STATE = {
+    NOSTART = 0,        --未开始
+    START = 1,          --进行中
+    FINISH = 2,         --已完成
+    REWARD = 3,         --已领奖
+}
+
+--任务种类枚举
+Constant.TASK_FINISH_TYPES = {
+    KILLMONSTER = 1,    --打怪任务
+    NPCTALK = 7,        --npc对话
+    SEARCH = 9,         --物品收集任务
+    WAREHOUSE = 13,     --仓库类任务
+    OUSTERSPILLAR = 31, --解锁魔灵石柱
+}
+
+--商店类型
+Constant.SHOP_TYPE = {
+    POINT = 1,          --点券
+    SCORE = 2,          --积分
+    JINBI = 3,          --游戏币
+}
+
+--商品限购类型
+Constant.QUOTA_TYPE = {
+    UNLIMITE = 0,       --不限购
+    DAY = 1,            --日
+    WEEK = 2,           --周
+    MONTH = 3,          --月
+    ALWAYS = 4,         --永久
+}
+
+--目标选择类型
+Constant.TARGET_TYPE = {
+    RACE = 1,           --种族
+    TEAM = 2,           --组队
+    GUILD = 3,          --公会
+    ALL = 4,            --全体
+}
+
+Constant.TARGET_TYPE_STR = {
+    [Constant.TARGET_TYPE.RACE] = "种族",           --种族
+    [Constant.TARGET_TYPE.TEAM] = "组队",           --组队
+    [Constant.TARGET_TYPE.GUILD] = "公会",           --公会
+    [Constant.TARGET_TYPE.ALL] = "全体",           --全体
+}
+
+Constant.WEATHER_TYPE ={
+	WEATHER_CLEAR = 0, -- 晴天
+	WEATHER_RAINY = 1,  -- 下雨天
+	WEATHER_SNOWY = 2,-- 下雪天
+	WEATHER_SPOT = 3,
+	WEATHER_MAX = 4
+}
+
+Constant.PET_MAX_SURVIVE = 30       --最大存活显示天数
+Constant.WHOLE_DAY = 86400          --一天的秒数
+Constant.SEVEN_DAY_IN = 1003001     --七天内复活的宠物道具id
+Constant.SEVEN_DAY_OUT = 1003002    --七天外复活的宠物道具id
+Constant.PET_MIN_LVL = 10
+
+-- 安全区种族映射
+Constant.SAFE_RACE = {
+    [1] = 1, -- 人族
+    [2] = 2, -- 鬼族
+    [3] = 16,-- 魔族
+}
+
+Constant.SYSTEM_TYPES = {
+    TEAM  = 1,       --组队
+    GUILD = 2,      --公会
+    ROLE  = 3,       --角色
+    PET   = 4,        --宠物
+}
+
+--人族
+Constant.ADVANCE_TASK1 = {
+    ALTAR = 510004,     --进入祭坛入口需要完成的任务id
+    DYEING = 510006,    --染色任务
+    HOSTAGE = 510008,   --解救人质任务
+    COLUMN = 510012,    --保护柱子任务
+}
+
+--鬼族
+Constant.ADVANCE_TASK2 = {
+    ALTAR = 520004,     --进入祭坛入口需要完成的任务id
+    DYEING = 520006,    --染色任务
+    HOSTAGE = 520008,   --解救人质任务
+    COLUMN = 520012,    --保护柱子任务
+}
+
+--魔族
+Constant.ADVANCE_TASK3 = {
+    ALTAR = 530004,     --进入祭坛入口需要完成的任务id
+    DYEING = 530006,    --染色任务
+    HOSTAGE = 530008,   --解救人质任务
+    COLUMN = 530012,    --保护柱子任务
+}
+
+Constant.ATTRIBUTES_TYPE = {
+    HP          = 4,   -- 生命力
+    MP          = 6,   -- 魔法力
+    HP_ABSORB   = 8,   -- 生命力吸收
+    HP_RELIVE   = 9,   -- 生命力再生
+    MP_ABSORB   = 10,  -- 魔法力吸收
+    MP_RELIVE   = 11,  -- 魔法力再生
+}
+
+--物品绑定类型
+Constant.BOUND_TYPE = {
+    NO_BOUND        = 0,   -- 不绑定
+    FIXED_BOUND     = 1,   -- 固定绑定
+    MONTH_BOUND     = 2,   -- 月卡绑定
+    DOUBLE_BOUND    = 3,   -- 固定绑定+月卡绑定(算固定绑定)
+}
+
+-- 地图id
+Constant.MAP_CODE = {
+    GATEOFALTAR     = "4001", -- 祭坛入口
+    ALTAROFBLOOD    = "4002", -- 血之祭坛
+    MIRROROFABYSS   = "4003", -- 深渊的镜子
+    ADAMHOLYLAND    = "72",   --亚当圣地中
+    ASYLION_DUNGEON_LOW = "1013"  --阿斯里昂地牢
+}
+
+-- 移动模式 2:行走 1:钻地 4:飞行
+Constant.MOVE_TYPE = {
+    UNDERGROUND = 1,
+    WALK = 2,
+    FLY = 4,
+}
+
+--引导Id
+Constant.GUIDE_ID = {
+    --第一个弹窗引导
+    FIRST_GUIDE = 1,
+    --魔族地图传送
+    OUSTERS_TRANSMIT = 24001,
+    --人族地图传送
+    SLAYER_TRANSMIT1 = 25001,
+    SLAYER_TRANSMIT2 = 25002,
+    --人族购买道具
+    SLAYER_BUYITEM = 26001,
+    --鬼族购买道具
+    VAMPIRE_BUYITEM = 26002,
+    --魔族购买道具
+    OUSTERS_BUYITEM = 26003,
+    --人族出售道具
+    SLAYER_SELLITEM = 27001,
+    --鬼族出售道具
+    VAMPIRE_SELLITEM = 27002,
+    --魔族出售道具
+    OUSTERS_SELLITEM = 27003,
+    --鬼族技能学习
+    VAMPIRE_SKILL = 28001,
+    --精力值
+    ENERGY1 = 30001,
+    ENERGY2 = 30002,
+    --布局编辑
+    SKILL_EDIT1 = 35001,
+    SKILL_EDIT2 = 35002,
+    SKILL_EDIT3 = 35003,
+    SKILL_EDIT4 = 35004,
+    SKILL_EDIT5 = 35005,
+    SKILL_EDIT6 = 35006,
+    SKILL_EDIT7 = 35007,
+    SKILL_EDIT8 = 35008,
+    SKILL_EDIT9 = 35009,
+    --了解宠物
+    PETFIGHT1 = 40001,
+    PETFIGHT2 = 40002,
+    PETFIGHT3 = 40003,
+    PETFIGHT4 = 40004,
+    PETFIGHT5 = 40005,
+    --宠物出战
+    PETFIGHT11 = 40011,
+    PETFIGHT12 = 40012,
+    PETFIGHT13 = 40013,
+    PETFIGHT14 = 40014,
+    PETFIGHT15 = 40015,
+    --宠物喂养
+    PETFEED1 = 40101,
+    PETFEED2 = 40102,
+    PETFEED3 = 40103,
+    PETFEED4 = 40104,
+    PETFEED5 = 40105,
+    PETFEED6 = 40106,
+    --物品存储
+    WAREHOUSE = 45001,
+    --了解公会
+    GUILD1 = 57001,
+    GUILD2 = 57002,
+    GUILD3 = 57003,
+    GUILD4 = 57004,
+    --了解交易行
+    TRANSACTION1 = 62001,
+    TRANSACTION2 = 62002,
+    TRANSACTION3 = 62003,
+    --装备传承
+    INHERIT1 = 63001,
+    INHERIT2 = 63002,
+    INHERIT3 = 63003,
+    INHERIT4 = 63004,
+    INHERIT5 = 63005,
+    INHERIT6 = 63006,
+    INHERIT7 = 63007,
+    --装备转换
+    TRANSFORM1 = 64001,
+    TRANSFORM2 = 64002,
+    TRANSFORM3 = 64003,
+    TRANSFORM4 = 64004,
+    TRANSFORM5 = 64005,
+    TRANSFORM6 = 64006,
+    --装备洗炼
+    PURIFY1 = 65001,
+    PURIFY2 = 65002,
+    PURIFY3 = 65003,
+    PURIFY4 = 65004,
+    PURIFY5 = 65005,
+    PURIFY6 = 65006,
+    --装备升级
+    LEVELUP1 = 66001,
+    LEVELUP2 = 66002,
+    LEVELUP3 = 66003,
+    LEVELUP4 = 66004,
+    LEVELUP5 = 66005,
+    --装备附魔
+    ENCHANT1 = 67001,
+    ENCHANT2 = 67002,
+    ENCHANT3 = 67003,
+    ENCHANT4 = 67004,
+    ENCHANT5 = 67005,
+    ENCHANT6 = 67006,
+    ENCHANT7 = 67007,
+    --坐骑系统
+    MOUNT1 = 68001,
+    MOUNT2 = 68002,
+    MOUNT3 = 68003,
+}
+
+-- 装备属性显示类型
+Constant.EqAttrShowType = {
+	DURABILITY  = 1,
+	PROTECTION  = 2,
+	MINDAMAGE   = 3,
+    MAXDAMAGE   = 4,
+    HIT         = 5,
+    RANGE       = 6,
+    SPEED       = 7,
+    DEFENCE     = 8,
+    CRITICALHIT = 9,
+    SILVERMAX   = 10,
+    MPBONUS     = 11,
+    PDAM        = 12,
+    MDAM        = 13,
+    PPRO        = 14,
+    MPRO        = 15,
+    STR         = 16,
+    DEX         = 17,
+    INT         = 18,
+    ELEMENTTYPE = 19,
+    LUCK        = 20,
+    TYPE        = 21,
+    REQUIRE     = 22,
+    ATTR        = 23,
+    DBTM        = 24,
+    DBTP        = 25,
+    SCORE       = 26,
+}
+
+
+-- 魔族坐骑ID
+Constant.OUTSET_MOUNTID = {
+    FAIRY   = 3001,         -- 蝴蝶
+    PEGASUS = 3002,         -- 独角兽
+}
+
+-- 人族坐骑索引
+Constant.SLAYER_MOUNTKEY = {
+    B2MONSTER      = 1001,           -- B2-野兽
+    DTOMAHAWK      = 1002,           -- D-战斧
+    REDFLAMESPORTSCAR   = 1003,      -- 赤焰跑车
+    UFOFIGHTERJET   = 1004,          -- 战斗巡航者
+    AIRGAITER      = 1005,           -- 空气绑腿
+    HELIINJECTOR   = 1006,           -- 直升机
+    JEEP           = 1007,           -- 吉普
+    FLOATINGFIGHTERR= 1008,           -- 悬浮战机
+}
+
+-- 人族道具ID  -- 使用道具直接变身
+Constant.SLAYER_MOUNTID = {
+    SCORPION_KEY   = 502001,         -- 磁体钥匙
+}
+
+
+-- 坐骑道具使用对应坐骑ID
+Constant.MOUNT_ITEMS = {
+    [Constant.SLAYER_MOUNTID.SCORPION_KEY] = { lv = 1, adv = 0},
+    [Constant.SLAYER_MOUNTKEY.B2MONSTER] = { lv = 1, adv = 1},
+    [Constant.SLAYER_MOUNTKEY.DTOMAHAWK] = { lv = 2, adv = 1},
+    [Constant.SLAYER_MOUNTKEY.REDFLAMESPORTSCAR] = { lv = 3, adv = 1},
+    [Constant.SLAYER_MOUNTKEY.UFOFIGHTERJET] = { lv = 4, adv = 1},
+    [Constant.SLAYER_MOUNTKEY.AIRGAITER] = { lv = 5, adv = 1},
+    [Constant.SLAYER_MOUNTKEY.HELIINJECTOR] = { lv = 6, adv = 1},
+    [Constant.SLAYER_MOUNTKEY.JEEP] = { lv = 7, adv = 1},
+    [Constant.SLAYER_MOUNTKEY.FLOATINGFIGHTERR] = { lv = 8, adv = 1},
+    [Constant.OUTSET_MOUNTID.FAIRY] = { lv = 1, adv = 0},
+    [Constant.OUTSET_MOUNTID.PEGASUS] = { lv = 2, adv = 0},
+}
+
+-- 人族转职类型3  替换人物模型
+Constant.MOUNT_ADVANCED_ITEMS3 = {
+    [Constant.SLAYER_MOUNTKEY.HELIINJECTOR] = true,
+    [Constant.SLAYER_MOUNTKEY.JEEP] = true,
+    [Constant.SLAYER_MOUNTKEY.FLOATINGFIGHTERR] = true,
+}
+
+-- 人族转职类型2  acitonId(9,10) 要转换(12,18)&人物模型要隐藏
+Constant.MOUNT_ADVANCED_ITEMS2 = {
+    [Constant.SLAYER_MOUNTKEY.REDFLAMESPORTSCAR] = true,
+    [Constant.SLAYER_MOUNTKEY.UFOFIGHTERJET] = true,
+    [Constant.SLAYER_MOUNTKEY.AIRGAITER] = true,
+}
+
+-- 人族转职类型1  acitonId(9,10) 要转换(12,18)&人物模型不隐藏
+Constant.MOUNT_ADVANCED_ITEMS1 = {
+    [Constant.SLAYER_MOUNTKEY.B2MONSTER] = true,
+    [Constant.SLAYER_MOUNTKEY.DTOMAHAWK] = true,
+}
+
+Constant.BASIS_DIRECTION_LOW = 0.35
+Constant.BASIS_DIRECTION_HIGH= 3.0
+
+-- windows键盘
+Constant.KEY_VALUE = {
+    [146] = cc.p(0, 2), -- W
+    [142] = cc.p(0,-2), -- S
+    [124] = cc.p(-2,0), -- A
+    [127] = cc.p(2,0),  -- D
+
+    [28] = cc.p(0, 1), -- 上
+    [29] = cc.p(0,-1), -- 下
+    [26] = cc.p(-1,0), -- 左
+    [27] = cc.p(1,0),  -- 右
+}
+
+Constant.EaseType = 
+{
+    Linear	= 0,	
+    SineIn	= 1,	
+    SineOut	= 2,	
+    SineInOut	= 3,	
+    QuadIn	= 4,
+    QuadOut	= 5,
+    QuadInOut	= 6,
+    CubicIn	= 7,
+    CubicOut	= 8,
+    CubicInOut	= 9,
+    QuartIn	= 10,
+    QuartOut	= 11,
+    QuartInOut	= 12,
+    QuintIn	= 13,
+    QuintOut	= 14,
+    QuintInOut	= 15,
+    ExpoIn	= 16,
+    ExpoOut	= 17,	
+    ExpoInOut	= 18,	
+    CircIn	= 19,
+    CircOut	= 20,	
+    CircInOut	= 21,	
+    ElasticIn	= 22,	
+    ElasticOut	= 23,	
+    ElasticInOut	= 24,	
+    BackIn	= 25,
+    BackOut	= 26,	
+    BackInOut	= 27,	
+    BounceIn	= 28,	
+    BounceOut	= 29,	
+    BounceInOut	= 30,	
+    Custom	= 31,
+}
+
+Constant.MAX_ANGLE = 2048;
+Constant.MAX_ANGLE2 = Constant.MAX_ANGLE*2;
+Constant.MAX_ANGLE_1 = Constant.MAX_ANGLE-1;
+Constant.MAX_ANGLE2_1 = Constant.MAX_ANGLE2-1;
+Constant.MAX_ANGLE_HALF = Constant.MAX_ANGLE/2;
+Constant.FPI		= Constant.MAX_ANGLE_HALF;
+Constant.FPI2		= Constant.MAX_ANGLE;
+
+Constant.ANGLE_0	= 0;
+Constant.ANGLE_30	= Constant.FPI/6;
+Constant.ANGLE_45	= Constant.FPI/4;
+Constant.ANGLE_60	= Constant.FPI/3;
+Constant.ANGLE_90	= Constant.FPI/2;
+Constant.ANGLE_120	= Constant.ANGLE_90 + Constant.ANGLE_30;
+Constant.ANGLE_135 = Constant.ANGLE_90 + Constant.ANGLE_45;
+Constant.ANGLE_150	= Constant.ANGLE_90 + Constant.ANGLE_60;
+Constant.ANGLE_180 = Constant.FPI;
+Constant.ANGLE_210	= Constant.ANGLE_180 + Constant.ANGLE_30;
+Constant.ANGLE_225 = Constant.ANGLE_180+Constant.ANGLE_45;
+Constant.ANGLE_240	= Constant.ANGLE_180 + Constant.ANGLE_60;
+Constant.ANGLE_270 = Constant.FPI*3/2;
+Constant.ANGLE_300	= Constant.ANGLE_270 + Constant.ANGLE_30;
+Constant.ANGLE_315 = Constant.ANGLE_270+Constant.ANGLE_45;
+Constant.ANGLE_330	= Constant.ANGLE_270 + Constant.ANGLE_60;
+Constant.ANGLE_360 = Constant.FPI2;
+
+---用于快速计算反正切值（arctan），避免在运行时进行复杂的数学计算
+Constant.FArcTanTab = {
+0xffffff80, 0xffffff80, 0xffffff80, 0xffffff80, 0xffffff80, 
+0xffffff80, 0xffffff80, 0xffffff80, 0xffffff80, 0xffffff80, 
+0xffffff80, 0xffffff81, 0xffffff81, 0xffffff81, 0xffffff81, 
+0xffffff81, 0xffffff81, 0xffffff81, 0xffffff81, 0xffffff81, 
+0xffffff81, 0xffffff81, 0xffffff81, 0xffffff82, 0xffffff82, 
+0xffffff82, 0xffffff82, 0xffffff82, 0xffffff82, 0xffffff82, 
+0xffffff82, 0xffffff82, 0xffffff82, 0xffffff82, 0xffffff82, 
+0xffffff83, 0xffffff83, 0xffffff83, 0xffffff83, 0xffffff83, 
+0xffffff83, 0xffffff83, 0xffffff83, 0xffffff83, 0xffffff83, 
+0xffffff83, 0xffffff83, 0xffffff84, 0xffffff84, 0xffffff84, 
+0xffffff84, 0xffffff84, 0xffffff84, 0xffffff84, 0xffffff84, 
+0xffffff84, 0xffffff84, 0xffffff84, 0xffffff84, 0xffffff85, 
+0xffffff85, 0xffffff85, 0xffffff85, 0xffffff85, 0xffffff85, 
+0xffffff85, 0xffffff85, 0xffffff85, 0xffffff85, 0xffffff85, 
+0xffffff85, 0xffffff86, 0xffffff86, 0xffffff86, 0xffffff86, 
+0xffffff86, 0xffffff86, 0xffffff86, 0xffffff86, 0xffffff86, 
+0xffffff86, 0xffffff86, 0xffffff87, 0xffffff87, 0xffffff87, 
+0xffffff87, 0xffffff87, 0xffffff87, 0xffffff87, 0xffffff87, 
+0xffffff87, 0xffffff87, 0xffffff87, 0xffffff87, 0xffffff88, 
+0xffffff88, 0xffffff88, 0xffffff88, 0xffffff88, 0xffffff88, 
+0xffffff88, 0xffffff88, 0xffffff88, 0xffffff88, 0xffffff88, 
+0xffffff89, 0xffffff89, 0xffffff89, 0xffffff89, 0xffffff89, 
+0xffffff89, 0xffffff89, 0xffffff89, 0xffffff89, 0xffffff89, 
+0xffffff89, 0xffffff8a, 0xffffff8a, 0xffffff8a, 0xffffff8a, 
+0xffffff8a, 0xffffff8a, 0xffffff8a, 0xffffff8a, 0xffffff8a, 
+0xffffff8a, 0xffffff8a, 0xffffff8b, 0xffffff8b, 0xffffff8b, 
+0xffffff8b, 0xffffff8b, 0xffffff8b, 0xffffff8b, 0xffffff8b, 
+0xffffff8b, 0xffffff8b, 0xffffff8b, 0xffffff8c, 0xffffff8c, 
+0xffffff8c, 0xffffff8c, 0xffffff8c, 0xffffff8c, 0xffffff8c, 
+0xffffff8c, 0xffffff8c, 0xffffff8c, 0xffffff8c, 0xffffff8d, 
+0xffffff8d, 0xffffff8d, 0xffffff8d, 0xffffff8d, 0xffffff8d, 
+0xffffff8d, 0xffffff8d, 0xffffff8d, 0xffffff8d, 0xffffff8d, 
+0xffffff8e, 0xffffff8e, 0xffffff8e, 0xffffff8e, 0xffffff8e, 
+0xffffff8e, 0xffffff8e, 0xffffff8e, 0xffffff8e, 0xffffff8e, 
+0xffffff8e, 0xffffff8f, 0xffffff8f, 0xffffff8f, 0xffffff8f, 
+0xffffff8f, 0xffffff8f, 0xffffff8f, 0xffffff8f, 0xffffff8f, 
+0xffffff8f, 0xffffff90, 0xffffff90, 0xffffff90, 0xffffff90, 
+0xffffff90, 0xffffff90, 0xffffff90, 0xffffff90, 0xffffff90, 
+0xffffff90, 0xffffff91, 0xffffff91, 0xffffff91, 0xffffff91, 
+0xffffff91, 0xffffff91, 0xffffff91, 0xffffff91, 0xffffff91, 
+0xffffff91, 0xffffff91, 0xffffff92, 0xffffff92, 0xffffff92, 
+0xffffff92, 0xffffff92, 0xffffff92, 0xffffff92, 0xffffff92, 
+0xffffff92, 0xffffff92, 0xffffff93, 0xffffff93, 0xffffff93, 
+0xffffff93, 0xffffff93, 0xffffff93, 0xffffff93, 0xffffff93, 
+0xffffff93, 0xffffff93, 0xffffff94, 0xffffff94, 0xffffff94, 
+0xffffff94, 0xffffff94, 0xffffff94, 0xffffff94, 0xffffff94, 
+0xffffff94, 0xffffff94, 0xffffff95, 0xffffff95, 0xffffff95, 
+0xffffff95, 0xffffff95, 0xffffff95, 0xffffff95, 0xffffff95, 
+0xffffff95, 0xffffff95, 0xffffff96, 0xffffff96, 0xffffff96, 
+0xffffff96, 0xffffff96, 0xffffff96, 0xffffff96, 0xffffff96, 
+0xffffff96, 0xffffff96, 0xffffff97, 0xffffff97, 0xffffff97, 
+0xffffff97, 0xffffff97, 0xffffff97, 0xffffff97, 0xffffff97, 
+0xffffff97, 0xffffff97, 0xffffff98, 0xffffff98, 0xffffff98, 
+0xffffff98, 0xffffff98, 0xffffff98, 0xffffff98, 0xffffff98, 
+0xffffff98, 0xffffff99, 0xffffff99, 0xffffff99, 0xffffff99, 
+0xffffff99, 0xffffff99, 0xffffff99, 0xffffff99, 0xffffff99, 
+0xffffff99, 0xffffff9a, 0xffffff9a, 0xffffff9a, 0xffffff9a, 
+0xffffff9a, 0xffffff9a, 0xffffff9a, 0xffffff9a, 0xffffff9a, 
+0xffffff9b, 0xffffff9b, 0xffffff9b, 0xffffff9b, 0xffffff9b, 
+0xffffff9b, 0xffffff9b, 0xffffff9b, 0xffffff9b, 0xffffff9b, 
+0xffffff9c, 0xffffff9c, 0xffffff9c, 0xffffff9c, 0xffffff9c, 
+0xffffff9c, 0xffffff9c, 0xffffff9c, 0xffffff9c, 0xffffff9d, 
+0xffffff9d, 0xffffff9d, 0xffffff9d, 0xffffff9d, 0xffffff9d, 
+0xffffff9d, 0xffffff9d, 0xffffff9d, 0xffffff9e, 0xffffff9e, 
+0xffffff9e, 0xffffff9e, 0xffffff9e, 0xffffff9e, 0xffffff9e, 
+0xffffff9e, 0xffffff9e, 0xffffff9e, 0xffffff9f, 0xffffff9f, 
+0xffffff9f, 0xffffff9f, 0xffffff9f, 0xffffff9f, 0xffffff9f, 
+0xffffff9f, 0xffffff9f, 0xffffffa0, 0xffffffa0, 0xffffffa0, 
+0xffffffa0, 0xffffffa0, 0xffffffa0, 0xffffffa0, 0xffffffa0, 
+0xffffffa0, 0xffffffa1, 0xffffffa1, 0xffffffa1, 0xffffffa1, 
+0xffffffa1, 0xffffffa1, 0xffffffa1, 0xffffffa1, 0xffffffa1, 
+0xffffffa2, 0xffffffa2, 0xffffffa2, 0xffffffa2, 0xffffffa2, 
+0xffffffa2, 0xffffffa2, 0xffffffa2, 0xffffffa2, 0xffffffa3, 
+0xffffffa3, 0xffffffa3, 0xffffffa3, 0xffffffa3, 0xffffffa3, 
+0xffffffa3, 0xffffffa3, 0xffffffa4, 0xffffffa4, 0xffffffa4, 
+0xffffffa4, 0xffffffa4, 0xffffffa4, 0xffffffa4, 0xffffffa4, 
+0xffffffa4, 0xffffffa5, 0xffffffa5, 0xffffffa5, 0xffffffa5, 
+0xffffffa5, 0xffffffa5, 0xffffffa5, 0xffffffa5, 0xffffffa5, 
+0xffffffa6, 0xffffffa6, 0xffffffa6, 0xffffffa6, 0xffffffa6, 
+0xffffffa6, 0xffffffa6, 0xffffffa6, 0xffffffa7, 0xffffffa7, 
+0xffffffa7, 0xffffffa7, 0xffffffa7, 0xffffffa7, 0xffffffa7, 
+0xffffffa7, 0xffffffa7, 0xffffffa8, 0xffffffa8, 0xffffffa8, 
+0xffffffa8, 0xffffffa8, 0xffffffa8, 0xffffffa8, 0xffffffa8, 
+0xffffffa9, 0xffffffa9, 0xffffffa9, 0xffffffa9, 0xffffffa9, 
+0xffffffa9, 0xffffffa9, 0xffffffa9, 0xffffffa9, 0xffffffaa, 
+0xffffffaa, 0xffffffaa, 0xffffffaa, 0xffffffaa, 0xffffffaa, 
+0xffffffaa, 0xffffffaa, 0xffffffab, 0xffffffab, 0xffffffab, 
+0xffffffab, 0xffffffab, 0xffffffab, 0xffffffab, 0xffffffab, 
+0xffffffab, 0xffffffac, 0xffffffac, 0xffffffac, 0xffffffac, 
+0xffffffac, 0xffffffac, 0xffffffac, 0xffffffac, 0xffffffad, 
+0xffffffad, 0xffffffad, 0xffffffad, 0xffffffad, 0xffffffad, 
+0xffffffad, 0xffffffad, 0xffffffae, 0xffffffae, 0xffffffae, 
+0xffffffae, 0xffffffae, 0xffffffae, 0xffffffae, 0xffffffae, 
+0xffffffaf, 0xffffffaf, 0xffffffaf, 0xffffffaf, 0xffffffaf, 
+0xffffffaf, 0xffffffaf, 0xffffffaf, 0xffffffb0, 0xffffffb0, 
+0xffffffb0, 0xffffffb0, 0xffffffb0, 0xffffffb0, 0xffffffb0, 
+0xffffffb0, 0xffffffb1, 0xffffffb1, 0xffffffb1, 0xffffffb1, 
+0xffffffb1, 0xffffffb1, 0xffffffb1, 0xffffffb1, 0xffffffb2, 
+0xffffffb2, 0xffffffb2, 0xffffffb2, 0xffffffb2, 0xffffffb2, 
+0xffffffb2, 0xffffffb2, 0xffffffb3, 0xffffffb3, 0xffffffb3, 
+0xffffffb3, 0xffffffb3, 0xffffffb3, 0xffffffb3, 0xffffffb3, 
+0xffffffb4, 0xffffffb4, 0xffffffb4, 0xffffffb4, 0xffffffb4, 
+0xffffffb4, 0xffffffb4, 0xffffffb4, 0xffffffb5, 0xffffffb5, 
+0xffffffb5, 0xffffffb5, 0xffffffb5, 0xffffffb5, 0xffffffb5, 
+0xffffffb5, 0xffffffb6, 0xffffffb6, 0xffffffb6, 0xffffffb6, 
+0xffffffb6, 0xffffffb6, 0xffffffb6, 0xffffffb7, 0xffffffb7, 
+0xffffffb7, 0xffffffb7, 0xffffffb7, 0xffffffb7, 0xffffffb7, 
+0xffffffb7, 0xffffffb8, 0xffffffb8, 0xffffffb8, 0xffffffb8, 
+0xffffffb8, 0xffffffb8, 0xffffffb8, 0xffffffb8, 0xffffffb9, 
+0xffffffb9, 0xffffffb9, 0xffffffb9, 0xffffffb9, 0xffffffb9, 
+0xffffffb9, 0xffffffba, 0xffffffba, 0xffffffba, 0xffffffba, 
+0xffffffba, 0xffffffba, 0xffffffba, 0xffffffba, 0xffffffbb, 
+0xffffffbb, 0xffffffbb, 0xffffffbb, 0xffffffbb, 0xffffffbb, 
+0xffffffbb, 0xffffffbc, 0xffffffbc, 0xffffffbc, 0xffffffbc, 
+0xffffffbc, 0xffffffbc, 0xffffffbc, 0xffffffbc, 0xffffffbd, 
+0xffffffbd, 0xffffffbd, 0xffffffbd, 0xffffffbd, 0xffffffbd, 
+0xffffffbd, 0xffffffbe, 0xffffffbe, 0xffffffbe, 0xffffffbe, 
+0xffffffbe, 0xffffffbe, 0xffffffbe, 0xffffffbe, 0xffffffbf, 
+0xffffffbf, 0xffffffbf, 0xffffffbf, 0xffffffbf, 0xffffffbf, 
+0xffffffbf, 0xffffffc0, 0xffffffc0, 0xffffffc0, 0xffffffc0, 
+0xffffffc0, 0xffffffc0, 0xffffffc0, 0xffffffc1, 0xffffffc1, 
+0xffffffc1, 0xffffffc1, 0xffffffc1, 0xffffffc1, 0xffffffc1, 
+0xffffffc1, 0xffffffc2, 0xffffffc2, 0xffffffc2, 0xffffffc2, 
+0xffffffc2, 0xffffffc2, 0xffffffc2, 0xffffffc3, 0xffffffc3, 
+0xffffffc3, 0xffffffc3, 0xffffffc3, 0xffffffc3, 0xffffffc3, 
+0xffffffc4, 0xffffffc4, 0xffffffc4, 0xffffffc4, 0xffffffc4, 
+0xffffffc4, 0xffffffc4, 0xffffffc5, 0xffffffc5, 0xffffffc5, 
+0xffffffc5, 0xffffffc5, 0xffffffc5, 0xffffffc5, 0xffffffc6, 
+0xffffffc6, 0xffffffc6, 0xffffffc6, 0xffffffc6, 0xffffffc6, 
+0xffffffc6, 0xffffffc7, 0xffffffc7, 0xffffffc7, 0xffffffc7, 
+0xffffffc7, 0xffffffc7, 0xffffffc7, 0xffffffc7, 0xffffffc8, 
+0xffffffc8, 0xffffffc8, 0xffffffc8, 0xffffffc8, 0xffffffc8, 
+0xffffffc8, 0xffffffc9, 0xffffffc9, 0xffffffc9, 0xffffffc9, 
+0xffffffc9, 0xffffffc9, 0xffffffc9, 0xffffffca, 0xffffffca, 
+0xffffffca, 0xffffffca, 0xffffffca, 0xffffffca, 0xffffffca, 
+0xffffffcb, 0xffffffcb, 0xffffffcb, 0xffffffcb, 0xffffffcb, 
+0xffffffcb, 0xffffffcb, 0xffffffcc, 0xffffffcc, 0xffffffcc, 
+0xffffffcc, 0xffffffcc, 0xffffffcc, 0xffffffcd, 0xffffffcd, 
+0xffffffcd, 0xffffffcd, 0xffffffcd, 0xffffffcd, 0xffffffcd, 
+0xffffffce, 0xffffffce, 0xffffffce, 0xffffffce, 0xffffffce, 
+0xffffffce, 0xffffffce, 0xffffffcf, 0xffffffcf, 0xffffffcf, 
+0xffffffcf, 0xffffffcf, 0xffffffcf, 0xffffffcf, 0xffffffd0, 
+0xffffffd0, 0xffffffd0, 0xffffffd0, 0xffffffd0, 0xffffffd0, 
+0xffffffd0, 0xffffffd1, 0xffffffd1, 0xffffffd1, 0xffffffd1, 
+0xffffffd1, 0xffffffd1, 0xffffffd1, 0xffffffd2, 0xffffffd2, 
+0xffffffd2, 0xffffffd2, 0xffffffd2, 0xffffffd2, 0xffffffd2, 
+0xffffffd3, 0xffffffd3, 0xffffffd3, 0xffffffd3, 0xffffffd3, 
+0xffffffd3, 0xffffffd4, 0xffffffd4, 0xffffffd4, 0xffffffd4, 
+0xffffffd4, 0xffffffd4, 0xffffffd4, 0xffffffd5, 0xffffffd5, 
+0xffffffd5, 0xffffffd5, 0xffffffd5, 0xffffffd5, 0xffffffd5, 
+0xffffffd6, 0xffffffd6, 0xffffffd6, 0xffffffd6, 0xffffffd6, 
+0xffffffd6, 0xffffffd7, 0xffffffd7, 0xffffffd7, 0xffffffd7, 
+0xffffffd7, 0xffffffd7, 0xffffffd7, 0xffffffd8, 0xffffffd8, 
+0xffffffd8, 0xffffffd8, 0xffffffd8, 0xffffffd8, 0xffffffd8, 
+0xffffffd9, 0xffffffd9, 0xffffffd9, 0xffffffd9, 0xffffffd9, 
+0xffffffd9, 0xffffffda, 0xffffffda, 0xffffffda, 0xffffffda, 
+0xffffffda, 0xffffffda, 0xffffffda, 0xffffffdb, 0xffffffdb, 
+0xffffffdb, 0xffffffdb, 0xffffffdb, 0xffffffdb, 0xffffffdc, 
+0xffffffdc, 0xffffffdc, 0xffffffdc, 0xffffffdc, 0xffffffdc, 
+0xffffffdc, 0xffffffdd, 0xffffffdd, 0xffffffdd, 0xffffffdd, 
+0xffffffdd, 0xffffffdd, 0xffffffdd, 0xffffffde, 0xffffffde, 
+0xffffffde, 0xffffffde, 0xffffffde, 0xffffffde, 0xffffffdf, 
+0xffffffdf, 0xffffffdf, 0xffffffdf, 0xffffffdf, 0xffffffdf, 
+0xffffffdf, 0xffffffe0, 0xffffffe0, 0xffffffe0, 0xffffffe0, 
+0xffffffe0, 0xffffffe0, 0xffffffe1, 0xffffffe1, 0xffffffe1, 
+0xffffffe1, 0xffffffe1, 0xffffffe1, 0xffffffe1, 0xffffffe2, 
+0xffffffe2, 0xffffffe2, 0xffffffe2, 0xffffffe2, 0xffffffe2, 
+0xffffffe3, 0xffffffe3, 0xffffffe3, 0xffffffe3, 0xffffffe3, 
+0xffffffe3, 0xffffffe3, 0xffffffe4, 0xffffffe4, 0xffffffe4, 
+0xffffffe4, 0xffffffe4, 0xffffffe4, 0xffffffe5, 0xffffffe5, 
+0xffffffe5, 0xffffffe5, 0xffffffe5, 0xffffffe5, 0xffffffe6, 
+0xffffffe6, 0xffffffe6, 0xffffffe6, 0xffffffe6, 0xffffffe6, 
+0xffffffe6, 0xffffffe7, 0xffffffe7, 0xffffffe7, 0xffffffe7, 
+0xffffffe7, 0xffffffe7, 0xffffffe8, 0xffffffe8, 0xffffffe8, 
+0xffffffe8, 0xffffffe8, 0xffffffe8, 0xffffffe8, 0xffffffe9, 
+0xffffffe9, 0xffffffe9, 0xffffffe9, 0xffffffe9, 0xffffffe9, 
+0xffffffea, 0xffffffea, 0xffffffea, 0xffffffea, 0xffffffea, 
+0xffffffea, 0xffffffeb, 0xffffffeb, 0xffffffeb, 0xffffffeb, 
+0xffffffeb, 0xffffffeb, 0xffffffeb, 0xffffffec, 0xffffffec, 
+0xffffffec, 0xffffffec, 0xffffffec, 0xffffffec, 0xffffffed, 
+0xffffffed, 0xffffffed, 0xffffffed, 0xffffffed, 0xffffffed, 
+0xffffffee, 0xffffffee, 0xffffffee, 0xffffffee, 0xffffffee, 
+0xffffffee, 0xffffffee, 0xffffffef, 0xffffffef, 0xffffffef, 
+0xffffffef, 0xffffffef, 0xffffffef, 0xfffffff0, 0xfffffff0, 
+0xfffffff0, 0xfffffff0, 0xfffffff0, 0xfffffff0, 0xfffffff1, 
+0xfffffff1, 0xfffffff1, 0xfffffff1, 0xfffffff1, 0xfffffff1, 
+0xfffffff1, 0xfffffff2, 0xfffffff2, 0xfffffff2, 0xfffffff2, 
+0xfffffff2, 0xfffffff2, 0xfffffff3, 0xfffffff3, 0xfffffff3, 
+0xfffffff3, 0xfffffff3, 0xfffffff3, 0xfffffff4, 0xfffffff4, 
+0xfffffff4, 0xfffffff4, 0xfffffff4, 0xfffffff4, 0xfffffff5, 
+0xfffffff5, 0xfffffff5, 0xfffffff5, 0xfffffff5, 0xfffffff5, 
+0xfffffff5, 0xfffffff6, 0xfffffff6, 0xfffffff6, 0xfffffff6, 
+0xfffffff6, 0xfffffff6, 0xfffffff7, 0xfffffff7, 0xfffffff7, 
+0xfffffff7, 0xfffffff7, 0xfffffff7, 0xfffffff8, 0xfffffff8, 
+0xfffffff8, 0xfffffff8, 0xfffffff8, 0xfffffff8, 0xfffffff8, 
+0xfffffff9, 0xfffffff9, 0xfffffff9, 0xfffffff9, 0xfffffff9, 
+0xfffffff9, 0xfffffffa, 0xfffffffa, 0xfffffffa, 0xfffffffa, 
+0xfffffffa, 0xfffffffa, 0xfffffffb, 0xfffffffb, 0xfffffffb, 
+0xfffffffb, 0xfffffffb, 0xfffffffb, 0xfffffffc, 0xfffffffc, 
+0xfffffffc, 0xfffffffc, 0xfffffffc, 0xfffffffc, 0xfffffffc, 
+0xfffffffd, 0xfffffffd, 0xfffffffd, 0xfffffffd, 0xfffffffd, 
+0xfffffffd, 0xfffffffe, 0xfffffffe, 0xfffffffe, 0xfffffffe, 
+0xfffffffe, 0xfffffffe, 0xffffffff, 0xffffffff, 0xffffffff, 
+0xffffffff, 0xffffffff, 0xffffffff, 0x00000000, 0x00000000, 
+0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 
+0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 
+0x00000000, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 
+0x00000001, 0x00000001, 0x00000002, 0x00000002, 0x00000002, 
+0x00000002, 0x00000002, 0x00000002, 0x00000003, 0x00000003, 
+0x00000003, 0x00000003, 0x00000003, 0x00000003, 0x00000004, 
+0x00000004, 0x00000004, 0x00000004, 0x00000004, 0x00000004, 
+0x00000004, 0x00000005, 0x00000005, 0x00000005, 0x00000005, 
+0x00000005, 0x00000005, 0x00000006, 0x00000006, 0x00000006, 
+0x00000006, 0x00000006, 0x00000006, 0x00000007, 0x00000007, 
+0x00000007, 0x00000007, 0x00000007, 0x00000007, 0x00000008, 
+0x00000008, 0x00000008, 0x00000008, 0x00000008, 0x00000008, 
+0x00000008, 0x00000009, 0x00000009, 0x00000009, 0x00000009, 
+0x00000009, 0x00000009, 0x0000000a, 0x0000000a, 0x0000000a, 
+0x0000000a, 0x0000000a, 0x0000000a, 0x0000000b, 0x0000000b, 
+0x0000000b, 0x0000000b, 0x0000000b, 0x0000000b, 0x0000000b, 
+0x0000000c, 0x0000000c, 0x0000000c, 0x0000000c, 0x0000000c, 
+0x0000000c, 0x0000000d, 0x0000000d, 0x0000000d, 0x0000000d, 
+0x0000000d, 0x0000000d, 0x0000000e, 0x0000000e, 0x0000000e, 
+0x0000000e, 0x0000000e, 0x0000000e, 0x0000000f, 0x0000000f, 
+0x0000000f, 0x0000000f, 0x0000000f, 0x0000000f, 0x0000000f, 
+0x00000010, 0x00000010, 0x00000010, 0x00000010, 0x00000010, 
+0x00000010, 0x00000011, 0x00000011, 0x00000011, 0x00000011, 
+0x00000011, 0x00000011, 0x00000012, 0x00000012, 0x00000012, 
+0x00000012, 0x00000012, 0x00000012, 0x00000012, 0x00000013, 
+0x00000013, 0x00000013, 0x00000013, 0x00000013, 0x00000013, 
+0x00000014, 0x00000014, 0x00000014, 0x00000014, 0x00000014, 
+0x00000014, 0x00000015, 0x00000015, 0x00000015, 0x00000015, 
+0x00000015, 0x00000015, 0x00000015, 0x00000016, 0x00000016, 
+0x00000016, 0x00000016, 0x00000016, 0x00000016, 0x00000017, 
+0x00000017, 0x00000017, 0x00000017, 0x00000017, 0x00000017, 
+0x00000018, 0x00000018, 0x00000018, 0x00000018, 0x00000018, 
+0x00000018, 0x00000018, 0x00000019, 0x00000019, 0x00000019, 
+0x00000019, 0x00000019, 0x00000019, 0x0000001a, 0x0000001a, 
+0x0000001a, 0x0000001a, 0x0000001a, 0x0000001a, 0x0000001a, 
+0x0000001b, 0x0000001b, 0x0000001b, 0x0000001b, 0x0000001b, 
+0x0000001b, 0x0000001c, 0x0000001c, 0x0000001c, 0x0000001c, 
+0x0000001c, 0x0000001c, 0x0000001d, 0x0000001d, 0x0000001d, 
+0x0000001d, 0x0000001d, 0x0000001d, 0x0000001d, 0x0000001e, 
+0x0000001e, 0x0000001e, 0x0000001e, 0x0000001e, 0x0000001e, 
+0x0000001f, 0x0000001f, 0x0000001f, 0x0000001f, 0x0000001f, 
+0x0000001f, 0x0000001f, 0x00000020, 0x00000020, 0x00000020, 
+0x00000020, 0x00000020, 0x00000020, 0x00000021, 0x00000021, 
+0x00000021, 0x00000021, 0x00000021, 0x00000021, 0x00000021, 
+0x00000022, 0x00000022, 0x00000022, 0x00000022, 0x00000022, 
+0x00000022, 0x00000023, 0x00000023, 0x00000023, 0x00000023, 
+0x00000023, 0x00000023, 0x00000023, 0x00000024, 0x00000024, 
+0x00000024, 0x00000024, 0x00000024, 0x00000024, 0x00000024, 
+0x00000025, 0x00000025, 0x00000025, 0x00000025, 0x00000025, 
+0x00000025, 0x00000026, 0x00000026, 0x00000026, 0x00000026, 
+0x00000026, 0x00000026, 0x00000026, 0x00000027, 0x00000027, 
+0x00000027, 0x00000027, 0x00000027, 0x00000027, 0x00000028, 
+0x00000028, 0x00000028, 0x00000028, 0x00000028, 0x00000028, 
+0x00000028, 0x00000029, 0x00000029, 0x00000029, 0x00000029, 
+0x00000029, 0x00000029, 0x00000029, 0x0000002a, 0x0000002a, 
+0x0000002a, 0x0000002a, 0x0000002a, 0x0000002a, 0x0000002b, 
+0x0000002b, 0x0000002b, 0x0000002b, 0x0000002b, 0x0000002b, 
+0x0000002b, 0x0000002c, 0x0000002c, 0x0000002c, 0x0000002c, 
+0x0000002c, 0x0000002c, 0x0000002c, 0x0000002d, 0x0000002d, 
+0x0000002d, 0x0000002d, 0x0000002d, 0x0000002d, 0x0000002e, 
+0x0000002e, 0x0000002e, 0x0000002e, 0x0000002e, 0x0000002e, 
+0x0000002e, 0x0000002f, 0x0000002f, 0x0000002f, 0x0000002f, 
+0x0000002f, 0x0000002f, 0x0000002f, 0x00000030, 0x00000030, 
+0x00000030, 0x00000030, 0x00000030, 0x00000030, 0x00000030, 
+0x00000031, 0x00000031, 0x00000031, 0x00000031, 0x00000031, 
+0x00000031, 0x00000031, 0x00000032, 0x00000032, 0x00000032, 
+0x00000032, 0x00000032, 0x00000032, 0x00000032, 0x00000033, 
+0x00000033, 0x00000033, 0x00000033, 0x00000033, 0x00000033, 
+0x00000033, 0x00000034, 0x00000034, 0x00000034, 0x00000034, 
+0x00000034, 0x00000034, 0x00000035, 0x00000035, 0x00000035, 
+0x00000035, 0x00000035, 0x00000035, 0x00000035, 0x00000036, 
+0x00000036, 0x00000036, 0x00000036, 0x00000036, 0x00000036, 
+0x00000036, 0x00000037, 0x00000037, 0x00000037, 0x00000037, 
+0x00000037, 0x00000037, 0x00000037, 0x00000038, 0x00000038, 
+0x00000038, 0x00000038, 0x00000038, 0x00000038, 0x00000038, 
+0x00000039, 0x00000039, 0x00000039, 0x00000039, 0x00000039, 
+0x00000039, 0x00000039, 0x00000039, 0x0000003a, 0x0000003a, 
+0x0000003a, 0x0000003a, 0x0000003a, 0x0000003a, 0x0000003a, 
+0x0000003b, 0x0000003b, 0x0000003b, 0x0000003b, 0x0000003b, 
+0x0000003b, 0x0000003b, 0x0000003c, 0x0000003c, 0x0000003c, 
+0x0000003c, 0x0000003c, 0x0000003c, 0x0000003c, 0x0000003d, 
+0x0000003d, 0x0000003d, 0x0000003d, 0x0000003d, 0x0000003d, 
+0x0000003d, 0x0000003e, 0x0000003e, 0x0000003e, 0x0000003e, 
+0x0000003e, 0x0000003e, 0x0000003e, 0x0000003f, 0x0000003f, 
+0x0000003f, 0x0000003f, 0x0000003f, 0x0000003f, 0x0000003f, 
+0x0000003f, 0x00000040, 0x00000040, 0x00000040, 0x00000040, 
+0x00000040, 0x00000040, 0x00000040, 0x00000041, 0x00000041, 
+0x00000041, 0x00000041, 0x00000041, 0x00000041, 0x00000041, 
+0x00000042, 0x00000042, 0x00000042, 0x00000042, 0x00000042, 
+0x00000042, 0x00000042, 0x00000042, 0x00000043, 0x00000043, 
+0x00000043, 0x00000043, 0x00000043, 0x00000043, 0x00000043, 
+0x00000044, 0x00000044, 0x00000044, 0x00000044, 0x00000044, 
+0x00000044, 0x00000044, 0x00000044, 0x00000045, 0x00000045, 
+0x00000045, 0x00000045, 0x00000045, 0x00000045, 0x00000045, 
+0x00000046, 0x00000046, 0x00000046, 0x00000046, 0x00000046, 
+0x00000046, 0x00000046, 0x00000046, 0x00000047, 0x00000047, 
+0x00000047, 0x00000047, 0x00000047, 0x00000047, 0x00000047, 
+0x00000048, 0x00000048, 0x00000048, 0x00000048, 0x00000048, 
+0x00000048, 0x00000048, 0x00000048, 0x00000049, 0x00000049, 
+0x00000049, 0x00000049, 0x00000049, 0x00000049, 0x00000049, 
+0x00000049, 0x0000004a, 0x0000004a, 0x0000004a, 0x0000004a, 
+0x0000004a, 0x0000004a, 0x0000004a, 0x0000004b, 0x0000004b, 
+0x0000004b, 0x0000004b, 0x0000004b, 0x0000004b, 0x0000004b, 
+0x0000004b, 0x0000004c, 0x0000004c, 0x0000004c, 0x0000004c, 
+0x0000004c, 0x0000004c, 0x0000004c, 0x0000004c, 0x0000004d, 
+0x0000004d, 0x0000004d, 0x0000004d, 0x0000004d, 0x0000004d, 
+0x0000004d, 0x0000004d, 0x0000004e, 0x0000004e, 0x0000004e, 
+0x0000004e, 0x0000004e, 0x0000004e, 0x0000004e, 0x0000004e, 
+0x0000004f, 0x0000004f, 0x0000004f, 0x0000004f, 0x0000004f, 
+0x0000004f, 0x0000004f, 0x0000004f, 0x00000050, 0x00000050, 
+0x00000050, 0x00000050, 0x00000050, 0x00000050, 0x00000050, 
+0x00000050, 0x00000051, 0x00000051, 0x00000051, 0x00000051, 
+0x00000051, 0x00000051, 0x00000051, 0x00000051, 0x00000052, 
+0x00000052, 0x00000052, 0x00000052, 0x00000052, 0x00000052, 
+0x00000052, 0x00000052, 0x00000053, 0x00000053, 0x00000053, 
+0x00000053, 0x00000053, 0x00000053, 0x00000053, 0x00000053, 
+0x00000054, 0x00000054, 0x00000054, 0x00000054, 0x00000054, 
+0x00000054, 0x00000054, 0x00000054, 0x00000055, 0x00000055, 
+0x00000055, 0x00000055, 0x00000055, 0x00000055, 0x00000055, 
+0x00000055, 0x00000055, 0x00000056, 0x00000056, 0x00000056, 
+0x00000056, 0x00000056, 0x00000056, 0x00000056, 0x00000056, 
+0x00000057, 0x00000057, 0x00000057, 0x00000057, 0x00000057, 
+0x00000057, 0x00000057, 0x00000057, 0x00000057, 0x00000058, 
+0x00000058, 0x00000058, 0x00000058, 0x00000058, 0x00000058, 
+0x00000058, 0x00000058, 0x00000059, 0x00000059, 0x00000059, 
+0x00000059, 0x00000059, 0x00000059, 0x00000059, 0x00000059, 
+0x00000059, 0x0000005a, 0x0000005a, 0x0000005a, 0x0000005a, 
+0x0000005a, 0x0000005a, 0x0000005a, 0x0000005a, 0x0000005b, 
+0x0000005b, 0x0000005b, 0x0000005b, 0x0000005b, 0x0000005b, 
+0x0000005b, 0x0000005b, 0x0000005b, 0x0000005c, 0x0000005c, 
+0x0000005c, 0x0000005c, 0x0000005c, 0x0000005c, 0x0000005c, 
+0x0000005c, 0x0000005c, 0x0000005d, 0x0000005d, 0x0000005d, 
+0x0000005d, 0x0000005d, 0x0000005d, 0x0000005d, 0x0000005d, 
+0x0000005e, 0x0000005e, 0x0000005e, 0x0000005e, 0x0000005e, 
+0x0000005e, 0x0000005e, 0x0000005e, 0x0000005e, 0x0000005f, 
+0x0000005f, 0x0000005f, 0x0000005f, 0x0000005f, 0x0000005f, 
+0x0000005f, 0x0000005f, 0x0000005f, 0x00000060, 0x00000060, 
+0x00000060, 0x00000060, 0x00000060, 0x00000060, 0x00000060, 
+0x00000060, 0x00000060, 0x00000061, 0x00000061, 0x00000061, 
+0x00000061, 0x00000061, 0x00000061, 0x00000061, 0x00000061, 
+0x00000061, 0x00000062, 0x00000062, 0x00000062, 0x00000062, 
+0x00000062, 0x00000062, 0x00000062, 0x00000062, 0x00000062, 
+0x00000062, 0x00000063, 0x00000063, 0x00000063, 0x00000063, 
+0x00000063, 0x00000063, 0x00000063, 0x00000063, 0x00000063, 
+0x00000064, 0x00000064, 0x00000064, 0x00000064, 0x00000064, 
+0x00000064, 0x00000064, 0x00000064, 0x00000064, 0x00000065, 
+0x00000065, 0x00000065, 0x00000065, 0x00000065, 0x00000065, 
+0x00000065, 0x00000065, 0x00000065, 0x00000065, 0x00000066, 
+0x00000066, 0x00000066, 0x00000066, 0x00000066, 0x00000066, 
+0x00000066, 0x00000066, 0x00000066, 0x00000067, 0x00000067, 
+0x00000067, 0x00000067, 0x00000067, 0x00000067, 0x00000067, 
+0x00000067, 0x00000067, 0x00000067, 0x00000068, 0x00000068, 
+0x00000068, 0x00000068, 0x00000068, 0x00000068, 0x00000068, 
+0x00000068, 0x00000068, 0x00000069, 0x00000069, 0x00000069, 
+0x00000069, 0x00000069, 0x00000069, 0x00000069, 0x00000069, 
+0x00000069, 0x00000069, 0x0000006a, 0x0000006a, 0x0000006a, 
+0x0000006a, 0x0000006a, 0x0000006a, 0x0000006a, 0x0000006a, 
+0x0000006a, 0x0000006a, 0x0000006b, 0x0000006b, 0x0000006b, 
+0x0000006b, 0x0000006b, 0x0000006b, 0x0000006b, 0x0000006b, 
+0x0000006b, 0x0000006b, 0x0000006c, 0x0000006c, 0x0000006c, 
+0x0000006c, 0x0000006c, 0x0000006c, 0x0000006c, 0x0000006c, 
+0x0000006c, 0x0000006c, 0x0000006d, 0x0000006d, 0x0000006d, 
+0x0000006d, 0x0000006d, 0x0000006d, 0x0000006d, 0x0000006d, 
+0x0000006d, 0x0000006d, 0x0000006e, 0x0000006e, 0x0000006e, 
+0x0000006e, 0x0000006e, 0x0000006e, 0x0000006e, 0x0000006e, 
+0x0000006e, 0x0000006e, 0x0000006f, 0x0000006f, 0x0000006f, 
+0x0000006f, 0x0000006f, 0x0000006f, 0x0000006f, 0x0000006f, 
+0x0000006f, 0x0000006f, 0x0000006f, 0x00000070, 0x00000070, 
+0x00000070, 0x00000070, 0x00000070, 0x00000070, 0x00000070, 
+0x00000070, 0x00000070, 0x00000070, 0x00000071, 0x00000071, 
+0x00000071, 0x00000071, 0x00000071, 0x00000071, 0x00000071, 
+0x00000071, 0x00000071, 0x00000071, 0x00000072, 0x00000072, 
+0x00000072, 0x00000072, 0x00000072, 0x00000072, 0x00000072, 
+0x00000072, 0x00000072, 0x00000072, 0x00000072, 0x00000073, 
+0x00000073, 0x00000073, 0x00000073, 0x00000073, 0x00000073, 
+0x00000073, 0x00000073, 0x00000073, 0x00000073, 0x00000073, 
+0x00000074, 0x00000074, 0x00000074, 0x00000074, 0x00000074, 
+0x00000074, 0x00000074, 0x00000074, 0x00000074, 0x00000074, 
+0x00000074, 0x00000075, 0x00000075, 0x00000075, 0x00000075, 
+0x00000075, 0x00000075, 0x00000075, 0x00000075, 0x00000075, 
+0x00000075, 0x00000075, 0x00000076, 0x00000076, 0x00000076, 
+0x00000076, 0x00000076, 0x00000076, 0x00000076, 0x00000076, 
+0x00000076, 0x00000076, 0x00000076, 0x00000077, 0x00000077, 
+0x00000077, 0x00000077, 0x00000077, 0x00000077, 0x00000077, 
+0x00000077, 0x00000077, 0x00000077, 0x00000077, 0x00000078, 
+0x00000078, 0x00000078, 0x00000078, 0x00000078, 0x00000078, 
+0x00000078, 0x00000078, 0x00000078, 0x00000078, 0x00000078, 
+0x00000079, 0x00000079, 0x00000079, 0x00000079, 0x00000079, 
+0x00000079, 0x00000079, 0x00000079, 0x00000079, 0x00000079, 
+0x00000079, 0x00000079, 0x0000007a, 0x0000007a, 0x0000007a, 
+0x0000007a, 0x0000007a, 0x0000007a, 0x0000007a, 0x0000007a, 
+0x0000007a, 0x0000007a, 0x0000007a, 0x0000007b, 0x0000007b, 
+0x0000007b, 0x0000007b, 0x0000007b, 0x0000007b, 0x0000007b, 
+0x0000007b, 0x0000007b, 0x0000007b, 0x0000007b, 0x0000007b, 
+0x0000007c, 0x0000007c, 0x0000007c, 0x0000007c, 0x0000007c, 
+0x0000007c, 0x0000007c, 0x0000007c, 0x0000007c, 0x0000007c, 
+0x0000007c, 0x0000007c, 0x0000007d, 0x0000007d, 0x0000007d, 
+0x0000007d, 0x0000007d, 0x0000007d, 0x0000007d, 0x0000007d, 
+0x0000007d, 0x0000007d, 0x0000007d, 0x0000007d, 0x0000007e, 
+0x0000007e, 0x0000007e, 0x0000007e, 0x0000007e, 0x0000007e, 
+0x0000007e, 0x0000007e, 0x0000007e, 0x0000007e, 0x0000007e, 
+0x0000007e, 0x0000007f, 0x0000007f, 0x0000007f, 0x0000007f, 
+0x0000007f, 0x0000007f, 0x0000007f, 0x0000007f, 0x0000007f, 
+0x0000007f, 0x0000007f, 0x0000007f, 0x00000080, 0x00000080, 
+0x00000080, 0x00000080, 0x00000080, 0x00000080, 0x00000080, 
+0x00000080, 0x00000080, 0x00000080, 0x00000080 };
+
+Constant.STEPMULTIPLE = {
+    ONE = 1,
+    TWO = 2,
+}
+
+Constant.WILD_WOLF_ATTACK_MODE = 
+{
+    WILD_WOLF_MODE_ATTACK_1ST = 0,     -- First attack
+    WILD_WOLF_MODE_MOVE_1ST = 1,		-- Movement
+    WILD_WOLF_MODE_ATTACK_2ND =2,		-- Second attack
+    WILD_WOLF_MODE_MOVE_2ST = 3,		-- Movement (Note: '2st' should likely be '2nd')
+    WILD_WOLF_MODE_ATTACK_3RD =4,		-- Third attack
+    WILD_WOLF_MODE_REMOVE = 5,			-- Removal
+};
+
+Constant.FAKE_CREATURE_TYPE = {
+    STAND = 0,               -- Standing still
+    WANDER = 1,              -- Wandering
+    FADE_ACTION = 2,         -- Single action with fading appearance then disappears
+    TO_PORTAL = 3,           -- Character entering portal (vampire)
+    TURNING_MOVE = 4,        -- Spinning movement (test)
+    FAST_MOVE_ACTION = 5,    -- Fast movement then attack [New technique]
+    BRIGHTNESS = 6,          -- Render with brightness
+    TRACE = 7,               -- Tracking
+    GHOST = 8,               -- Zildrey rare ghost
+    ROCKET = 9,              -- Rocket launcher
+    WILD_WOLF = 10,          -- Wild wolf attack
+    DRAGON_TORNADO = 11,     -- Dragon tornado
+    RANDOM_MOVE = 12,        -- Random movement in area
+    XRL_ROCKET = 13          -- XRL rocket launcher
+}
+
+Constant.CLONETAG = {
+    ---------------------------------------------------
+    -- 角色用
+    BLAZE_WALK = "BLAZE_WALK",
+    SHADOW_DACING = "SHADOW_DACING",
+    CROSS_COUNTER = "CROSS_COUNTER",
+    ILLENDUE = "ILLENDUE",
+    ILLUSIONINVERSION = "ILLUSIONINVERSION",
+
+    ---------------------------------------------------
+    -- 怪物用
+    DUPLICATESELF = "DUPLICATESELF",
+
+    ---------------------------------------------------
+    -- npc用
+    NPCDEFAULT = "NPCDEFAULT", -- npc给一个前缀防止和服务器id冲突
+}
+
+Constant.CLIENTIDNAME = {
+    TRAPTOP = "_trap_top",
+    TRAPBOTTOM = "_trap_bottom",
+}
+
+Constant.NPC_CASKET = {
+    NPC11 = 11,
+    NPC13 = 13,
+}
+
+-- 迷幻术随机怪物列表
+Constant.HALLUMODLE = { 2, 3, 4, 5, 6, 59, 60, 38, 39, 40, 41, 46, 55, 57, 58, 60, 62 }
+
+-- 魔族战斗技能
+Constant.OUSTERS_SKILL1 = {13007, 13002, 13001, 13008, 13005, 13009, 13012, 13011, 13015, 13018, 13014, 13006, 13017, 13013, 13016, 13010, 13021, 13019, 13020, 13022, 13023, 13024, 13025, 13026, 13028, 13027, 17003, 13029, 13031, 13030}
+-- 魔族魔法技能
+Constant.OUSTERS_SKILL2 = {13001, 13002, 14001, 15001, 13005, 16001, 16002, 15002, 16003, 16004, 14002, 15003, 13003, 15004, 14003, 16005, 15005, 14004, 13006, 15006, 15007, 14005, 16006, 13004, 16007, 15008, 14006, 15009, 16008, 14007, 14008, 15010, 15011, 16009, 16010, 14009, 15012, 17003, 16011, 16012, 14011, 14010, 15013, 15014}
+
+-- 怪物模型 2 特效技能id(利用技能表buff)
+Constant.MONSTER2SKILLID = {
+    [738] = 996,	-- 地雷爆炸外观
+    [739] = 997,	-- 愉悦引爆外观
+    [814] = 973,    -- 城地牢BOSS守护者领袖外观
+}
+
+--仅变色的道具ID
+Constant.ONLY_CHANGE_COLOR_PROP_IDS = {
+    [901001] = true,
+    [901002] = true,
+    [901003] = true,
+    [901004] = true,
+    [901005] = true,
+    [901006] = true,
+    [901007] = true,
+    [901008] = true
+}
+
+-- 是否是爆炸物
+Constant.EXPLOSION = {
+    [739]  = true, -- 地雷
+    [1081] = true, -- 破片雷
+    [738]  = true, -- 愉悦引爆外观
+}
+
+Constant.ROLEEFFECT = {
+    989,	-- 人族100级
+    988,	-- 人族130级
+    987,	-- 人族150级
+    986,	-- 鬼族100级
+    985,	-- 鬼族130级
+    984,	-- 鬼族150级
+    983,	-- 魔族100级
+    982,	-- 魔族130级
+    981,	-- 魔族150级
+}
+
+
+Constant.SHARK_SCREEN_TYPE = {
+    EVENTID_METEOR_SHAKE = 1,
+}
+
+--- 充值类型
+-- 1.充值
+-- 2.周常活动礼包-神秘异界礼包
+-- 3.周常活动礼包-深渊之魇礼包
+-- 4.周常活动礼包-神秘异界秘宝激活
+-- 5.周常活动礼包-深渊之魇秘宝激活
+-- 6.常置活动-特权激活
+-- 7.开服活动-新手礼包
+-- 8.常置活动-月卡激活
+-- 9.常置活动-周卡激活
+-- 10.开服活动-百抽狂欢
+-- 11.开服活动-超值礼包
+-- 12.开服活动-七日礼包
+-- 13.常置活动-首充礼包
+-- 14.常置活动-成长基金
+-- 15.常置活动-试炼基金
+-- 16.常置活动-周期礼包
+-- 17.常置活动-触发礼包
+-- 18.运营活动-缤纷礼包
+Constant.RechargeType = {
+    Normal = 1,
+    WeekGitOfMysterious = 2,
+    --TODO
+}
+
+-- 1.点券
+-- 2.代金券
+-- 3.首充
+-- 4.月卡
+-- 5.开服活动-七日礼包
+-- 6.开服活动-每日超值礼包
+Constant.RechargeShopType = {
+    POINT = 1,   --点券
+    VOUCHER = 2, --代金券
+}
+
+--技能释放开关
+Constant.SkillOpen = {
+    LongPress = 1,
+    MoveLongPress = 2,
+    TouchEnd = 3
+}
+
+--地图区域
+Constant.MapArea = {
+    External = 0, -- 外部
+    Ground = 1, --地上
+    UnderGround = 2, --地下
+}
+
+--系统消息类型
+Constant.MessageType = {
+    Sys = 0,
+    PropUp = 1, -- 属性提升
+    PropDown = 2, --属性降低
+    KillNotSameRace = 3, --敌方种族被击杀
+    KillSameRace = 4, --我方种族被击杀
+    Lantern = 101, --跑马灯
+    BossAppearEvent = 102, --Boss出现信息
+    BossDieEvent = 103, --Boss死亡信息
+    MapEvent = 501, --系统消息（地图）
+}
+
+--系统消息类型
+Constant.MessageNoticeId = {
+    KillSameRaceId = 10007, -- [%s]%s在%s击败了[%s]%s
+    AotoRecycle = 50001, --已出售%s件物品，共获得%s金币
+}
+
+--人族角色模型其他部件
+Constant.SlayerPos = {
+    HelMet = 1, -- 头盔
+    Hair = 2,   -- 头发
+    Pants = 3   --裤子
+}
+
+
+
+-- action 映射表
+Constant.ActionComb = {
+    SlayerMale = 0, -- 人族男
+    SlayerFemale = 1,-- 人族女
+    VampireMale = 2, -- 鬼族男
+    VampireFemale = 3, --鬼族女
+    MonsterDie = 4, --死尸（中间是怪物Id）
+    NPC = 10, --npc
+    Ousters = 651, --魔族
+    --Other TODO 
+}
+
+Constant.SoundEffect = {
+    --装备/道具拾取掉落穿戴音效
+    ClothItemMoveSound = "ITEM_MOVE_CLOTH",
+    SwordItemMoveSound = "ITEM_MOVE_SWORD",
+    GunItemMoveSound = "ITEM_MOVE_GUN",
+    ShieldItemMoveSound = "ITEM_MOVE_SHIELD",
+    BraceletItemMoveSound = "ITEM_MOVE_BRACELET",
+    ShoesItemMoveSound = "ITEM_MOVE_SHOES",
+    GloveItemMoveSound = "ITEM_MOVE_GLOVE",
+    HelmItemMoveSound = "ITEM_MOVE_HELM",
+    BeltItemMoveSound = "ITEM_MOVE_BELT",
+    ArmsbandItemMoveSound = "OUSTERS_ARMSBAND",
+    BootsItemMoveSound = "OUSTERS_BOOTS",
+    ChakramItemMoveSound = "OUSTERS_CHAKRAM",
+    CircletItemMoveSound = "OUSTERS_CIRCLET",
+    CoatItemMoveSound = "OUSTERS_COAT",
+    ElementalStoneItemMoveSound = "OUSTERS_ELEMENTAL_STONE",
+    PendantItemMoveSound = "OUSTERS_PENDANT",
+    RingItemMoveSound = "OUSTERS_RING",
+    WristletItemMoveSound = "OUSTERS_WRISTLET",
+    MagazineItemMoveSound = "ITEM_MOVE_MAGAZINE",
+    JewelItemMoveSound = "ITEM_MOVE_JEWEL",
+    --系统音效
+    OustersSkillInfoSound = "OUSTERS_SKILLINF",   --魔族的技能学习界面的UI切换
+    ItemUseMagazineSound = "ITEM_USE_MAGAZINE",   --人族子弹上膛
+    ItemNoMagazineSound = "ITEM_NO_MAGAZINE",     --人族子弹耗尽
+    EventFanfare = "EVENT_FANFARE",               --装备强化成功音效
+}
+
+Constant.FilterEquipType = {
+    RoleEquip = 1,  --身上装备
+    BagEquip = 2,   --背包装备
+}
+
+-- 自动回收  设置类型
+Constant.SettingsType = {
+    ItemType   = 1,   -- 道具类型（此处填道具大类,小类[如不存在小类则为0]）
+    ItemID     = 2,   -- 物品ID（1=道具/2=装备，IdxID） 优先级最高
+    EquipType  = 3,   -- 装备类型（此处填装备大类，小类[如不存在小类则为0]）
+    EquipLv    = 4,   -- 装备等级（装备原始穿戴等级最小值，最大值）
+    EquipProp  = 5,   -- 装备穿戴属性要求（装备原始穿戴属性最小值，最大值）
+    EquipAffix = 6,   -- 装备词条数量
+}
+
+Constant.ROLE_MAINIDX = {
+    ROLE = 1,
+    MAGIC = 2,
+    LOWCLS = 3,
+    SUPERCLS = 4,
+    TRANSFER = 5
+}
+
+Constant.STRENGTHEN_TYPE = {
+    LEVELUP = 1,    --升级
+    ENCHANT = 2,    --附魔
+    FUSION = 3,     --融合
+    SUCCINCT = 4,   --洗炼
+}
+
+Constant.SUB_TYPE = {
+    SUBTYPE1 = 1,    --类型1
+    SUBTYPE2 = 2,    --类型2
+}
+
+--首充
+Constant.FIRSTRECHARGEGIFT = {
+    JUNIOR = 0,--初始
+    ADVANCED = 1,--进阶
+    LUXURY = 2,--豪华
+    MAX = 3--总量
+}
+
+Constant.GETREWARDSTATES = {
+    ERROR = 0,--初始
+    GETOVER = 1,--已领取
+    CANREWARD = 2,--当前可领
+    TIMEOUT = 3--时间未到
+}
+Constant.WELFARESTATE = {
+    TIMEOUT = 0,--未到
+    CANREWARD = 1,--可以领取
+    GETOVER = 2,--已领取
+}
+Constant.ON_OFF_IINE = 
+{
+    [0] = "离线",
+    [1] = "在线",
+}
+
+--活动类型
+Constant.ActivityType = {
+    SEVENDAY     = 1,    --七日
+    DAILYGIFT    = 2,    --每日特惠
+    DAYDAYCHARGE = 3,    --天天日充值
+}
+
+-- 天天充值状态
+Constant.DayDayChargeState = {
+    NODRAW = 1,    --未领取
+    DRAWED = 2,    --已领取
+}
+
+--ALTreasure 表里面的 活跃度类型
+Constant.ALType = {
+    DAILY    = 1,     --日常
+    WEEKLY   = 2,     --周常
+    SEVENDAY = 3,     --七日
+}
+
+Constant.ERROR_CODE = {
+    BAGFULL = 1026,   --背包已满
+}
+
+Constant.CLEANPOINTSCOST = 1000000  --鬼族清洗属性点单次消耗
+
+
+--商店 类型
+Constant.RECHARGE_TYPE = {
+    POINT         = 1,    --点券
+    SCORE         = 2,    --积分
+    GAME_CURRENCY = 3, --游戏币
+    RECHARGE      = 4, --充值
+}
+
+--活动红点类型
+Constant.ACTIVITY_RED_TYPE = {
+    MONTHCARD = 1,
+}
+
+-- 天之炼狱 end
+---------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------
+-- 循环动画相关 start
+-- 发攻击包（特效播放）对应的帧数
+Constant.MUL_FRAME = {
+    -- 枪
+    [Constant.ACTION_SLAYER_GUN_SG] = 7, 
+    [Constant.ACTION_SLAYER_GUN_SMG] = 8,
+    [Constant.ACTION_SLAYER_GUN_AR] = 7,
+    [Constant.ACTION_SLAYER_GUN_SR] = 10,
+ 
+    -- 其他
+    [Constant.ACTION_SLAYER_BLADE_2] = 13, -- 断月斩  喷流 锯刃风暴 动作16
+    [Constant.ACTION_SLAYER_SWORD_2] = 8,  -- 电光铁手 烈炎剑 无限闪电 天雷火花 动作15
+    [Constant.ACTION_ATTACK] = 5, --暴力幻影
+}
+
+-- 重复播放的帧数
+Constant.MUL_FRAME_REPEAT = {
+    -- 枪
+    [Constant.ACTION_SLAYER_GUN_SG] = 8, 
+    [Constant.ACTION_SLAYER_GUN_SMG] = 5,
+    [Constant.ACTION_SLAYER_GUN_AR] = 6,
+    [Constant.ACTION_SLAYER_GUN_SR] = 10,
+
+    -- 其他
+    [Constant.ACTION_SLAYER_BLADE_2] = 13, -- 断月斩  喷流 锯刃风暴 动作16
+    [Constant.ACTION_SLAYER_SWORD_2] = 11, -- 电光铁手 烈炎剑 无限闪电 天雷火花 动作15
+    [Constant.ACTION_ATTACK] = 8, --暴力幻影
+}
+
+-- 重复动画起始帧
+Constant.MUL_FRAME_REPEAT_START = {
+    -- 枪
+    [Constant.ACTION_SLAYER_GUN_SG] = 7,
+    [Constant.ACTION_SLAYER_GUN_SMG] = 8,
+    [Constant.ACTION_SLAYER_GUN_AR] = 7,
+    [Constant.ACTION_SLAYER_GUN_SR] = 4,
+
+    -- 其他
+    [Constant.ACTION_SLAYER_BLADE_2] = 13, -- 断月斩 喷流 锯刃风暴 动作16
+    [Constant.ACTION_SLAYER_SWORD_2] = 8,  -- 电光铁手 烈炎剑 无限闪电 天雷火花 动作15
+    [Constant.ACTION_ATTACK] = 4, --暴力幻影
+}
+
+-- 根据技能获取发包对应的帧数，重复播放的帧数，重复动画起始帧
+Constant.MUL_FRAME_TABLE = {
+    -- 3029	-- 离子火箭发射器
+    [3029] = {
+        [Constant.ACTION_SLAYER_GUN_SG] = { MUL_FRAME = 5, MUL_FRAME_REPEAT = 10, MUL_FRAME_REPEAT_START = 5 },
+        [Constant.ACTION_SLAYER_GUN_SMG] = { MUL_FRAME = 1, MUL_FRAME_REPEAT = 10, MUL_FRAME_REPEAT_START = 1 },
+        [Constant.ACTION_SLAYER_GUN_AR] = { MUL_FRAME = 1, MUL_FRAME_REPEAT = 10, MUL_FRAME_REPEAT_START = 1 },
+        [Constant.ACTION_SLAYER_GUN_SR] = { MUL_FRAME = 5, MUL_FRAME_REPEAT = 10, MUL_FRAME_REPEAT_START = 5 },
+    },
+
+    -- 3032	-- XRL 炸裂导弹
+    [3032] = {
+        [Constant.ACTION_SLAYER_GUN_SG] = { MUL_FRAME = 5, MUL_FRAME_REPEAT = 10, MUL_FRAME_REPEAT_START = 5 },
+        [Constant.ACTION_SLAYER_GUN_SMG] = { MUL_FRAME = 1, MUL_FRAME_REPEAT = 10, MUL_FRAME_REPEAT_START = 1 },
+        [Constant.ACTION_SLAYER_GUN_AR] = { MUL_FRAME = 1, MUL_FRAME_REPEAT = 10, MUL_FRAME_REPEAT_START = 1 },
+        [Constant.ACTION_SLAYER_GUN_SR] = { MUL_FRAME = 5, MUL_FRAME_REPEAT = 10, MUL_FRAME_REPEAT_START = 5 },
+    }
+}
+
+Constant.TRANSFORM_STATE = {
+    APPEAR = 1, --变身开始
+    DISAPPEAR = 2 --变身结束
+}
+
+-- 技能按钮条件分类
+Constant.SLOT_CONDITION_TYPE = {
+    HPMP = 1, --血蓝条件
+    TARGET = 2, --目标类型条件
+    ITEM = 3, --道具条件满足
+    DIE = 4, --人物死亡
+    EQUIP = 5, --装备穿戴类
+    LEVEL = 6, --等级变化
+    BUFF = 7, -- buff 变化
+}
+
+-- 攻击模式
+Constant.ATTACK_MODE = {
+    RACE = 1,
+    TEAM = 2,
+    GUILD = 3,
+    ALL = 4,
+}
+
+-- 技能可以选择的目标类型
+Constant.TARGET_TYPE_SELECT = {
+    NONE = 0,
+    ENEMY = 1,
+    SELF = 2,
+    ENEMY_SELF = 3,
+    FRIEND = 4,
+    ENEMY_FRIEND = 5, --只有全体模式才会触发对友方的
+    SELF_FRIEND = 6,
+    ALL = 7,
+}
+
+-- 循环动画相关 end
+-------------------------------------------------------------------------------------------------------------------------------
+
+-- map obj 对应图集加载的数量
+Constant.MAP_OBJ_ATLAS_COUNT = {
+    [1001] = 2,
+    [1003] = 2,
+    [1121] = 2,
+    [1118] = 2,
+    [1116] = 2,
+    [1024] = 2,
+    [1011] = 2,
+    [1006] = 2,
+    [1004] = 2,
+    [1041] = 2,
+    [1120] = 2,
+    [1119] = 2,
+    [1030] = 2,
+    [1106] = 2,
+    [1021] = 2,
+    [1095] = 2,
+    [1014] = 2,
+    [1012] = 2,
+    [1010] = 2,
+    [1002] = 3,
+    [1031] = 3,
+    [1032] = 3,
+    [1033] = 3,
+    [1034] = 3,
+    [1150] = 3,
+}
+
+Constant.CHANGE_TYPE = {
+    HAIR = 1,
+    SKIN = 2
+}
+
+Constant.CREATE_ROLES_MAX = 3
+
+Constant.FITER_MOUNT_TYPE = {
+    MOUNT = 1, --坐骑
+    HALO  = 2, --光环
+}
+Constant.SIGHT_SCALE = 1000
+
+-- 按钮长按加点相关定时参数
+Constant.BUTTON_LONG_PRESS_TIME = 2
+Constant.BUTTON_CHECK_TIMES = 8
+
+Constant.MAX_BTN_COUNT = 39
+
+Constant.PET_SKILL_TYPE = {
+    CAPSULE = 1,
+    RACE    = 2,
+}
+
+Constant.PETLEARNSKILL = {
+    START   = 1,
+    SUCCESS = 2,
+}
+
+Constant.PETCOMPOSE = {
+    SUCCESS = 1,
+}
+
+Constant.PRICE2INDEX = {
+    [6]   = "01",
+    [30]  = "02",
+    [98]  = "03",
+    [198] = "04",
+    [328] = "05",
+    [648] = "06",
+    [12]  = "07",
+    [68]  = "08", 
+    [128] = "09",
+}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+
+Constant.PRICE2INDEX = {
+    [6]   = "01",
+    [30]  = "02",
+    [98]  = "03",
+    [198] = "04",
+    [328] = "05",
+    [648] = "06",
+    [12]  = "07",
+    [68]  = "08", 
+    [128] = "09",
+}
+
+-- 排行榜 类型
+Constant.RANK_TYPES  = {
+    LEVEL   = 1, --等级
+    SCORE   = 2, --评分
+    WEALTH  = 3, --财富
+}
+
+Constant.TIPSTYPE = {
+    EQUIPTIPS = 1,
+    ITEMTIPS  = 2,
+}
+
+Constant.COLOR_PING = {
+    {max = 200, color = cc.c3b(0, 255, 0)},   
+    {max = 1000, color = cc.c3b(255, 255, 0)}, 
+    {max = math.huge, color = cc.c3b(255, 0, 0)}
+}
+
+return Constant

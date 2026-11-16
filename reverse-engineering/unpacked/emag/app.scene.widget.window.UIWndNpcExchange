@@ -1,0 +1,166 @@
+--- Npc兑换
+---@class UIWndNpcExchange:UIWindowBase
+local UIWndNpcExchange = class("UIWndNpcExchange", lt.UIWindowBase)
+
+UIWndNpcExchange.ChangeSkinConf = {
+    ["CommonTL"] = {
+        ["frame"] = {
+            bg = "bg_common_dahaobg_01"
+        }
+    }
+}
+
+local CacheManager = lt.CacheManager
+local AgentManager = lt.AgentManager
+local NtfManager = lt.NtfManager
+local NpcModule = lt.NpcModule
+
+function UIWndNpcExchange:ctor(param)
+    UIWndNpcExchange.super.ctor(self, param)
+    self._exchangeList = nil
+    self._npcHead = nil
+    self._npcName = nil
+    self._npcIntro = nil
+    self._list = nil
+    self._mainItem = nil
+    self._subItem = nil
+end
+
+function UIWndNpcExchange:onClear()
+    self:unregisterAllComponent()
+    self._exchangeList = nil
+    self._npcHead = nil
+    self._npcName = nil
+    self._npcIntro = nil
+    self._mainItem = nil
+    self._subItem = nil
+    if self._list then
+        self._list:removeChildrenToPool()
+        self._list:removeItemRenderer()
+        self._list = nil
+    end
+    UIWndNpcExchange.super.onClear(self)
+end
+   
+function UIWndNpcExchange:onInit()
+    self:registerComponent("UICompExchangeItem", "UICompItem")
+    UIWndNpcExchange.super.onInit(self, _GURL.WndNpcExchange)
+
+    self._npcHead = self:getChild("npcHead")
+    self._npcName = self:getChild("title")
+    self._npcIntro = self:getChild("intro")
+    self._list = self:getChild("list")
+    self._list:setItemRenderer(handler(self, self.renderListItem))
+
+    self:initNpcInfo()
+end
+
+function UIWndNpcExchange:onShown()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_EXCHANGE_ITEM, handler(self, self.exchangeItemResult), "UIWndNpcExchange:exchangeItemResult")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_EXCHANGE_MAINSELECT, handler(self, self.selectMainId), "UIWndNpcExchange:selectMainId")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_EXCHANGE_SUBSELECT, handler(self, self.selectSubId), "UIWndNpcExchange:selectSubId")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CANCEL_TRADE_CHOOSE, handler(self, self.resetSelectItem), "UIWndNpcExchange:resetSelectItem")
+    
+    self:resetSelectItem()
+    self:initNpcInfo()
+end
+
+function UIWndNpcExchange:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndNpcExchange:exchangeItemResult")
+    NtfManager:removeNtfListenerByTag("UIWndNpcExchange:selectMainId")
+    NtfManager:removeNtfListenerByTag("UIWndNpcExchange:selectSubId")
+    NtfManager:removeNtfListenerByTag("UIWndNpcExchange:resetSelectItem")
+
+    UIWndNpcExchange.super.onHide(self)
+end
+
+function UIWndNpcExchange:initNpcInfo()
+    local param = (self:getParam() or {}).param
+    if not param then
+        return
+    end
+
+    local viewParam = param.viewParam
+    local npcId = NpcModule:getNpcId()
+    
+    -- npc 信息显示
+    local worldAgent = AgentManager:getWorldAgent()
+    local npcName = worldAgent:getNpcNameById(npcId)
+    local name,_ = unpack(string.split(npcName, "-"))
+    -- 括号判断换行
+    local index = string.find(name, "%（")
+    if index then
+        name = string.sub(name, 1, index - 1) .. "<br/>" .. string.sub(name, index)
+    end
+    self._npcName:setText(name)
+    local meta = CacheManager:queryNpc(npcId)
+    local headId = meta:getNpcHeadId()
+    self._npcHead:setURL(string.format(_GURL.NPCHeadURL, headId))
+
+    -- 下次再来
+    local back = self:getChild("back")
+    back:setObjInfo({content = viewParam.answerStr, index = 1, callback = handler(self, self.onClickCallback)})
+
+    -- 提示信息
+    self._npcIntro:setText(viewParam.dialogueStr)
+
+    -- 兑换列表
+    self._exchangeList = NpcModule:getExchangeBoxList()
+    self._list:setNumItems(#self._exchangeList)
+end
+
+function UIWndNpcExchange:onClickCallback()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndNpcExchange", close = true})
+end
+
+function UIWndNpcExchange:renderListItem(index, obj)
+    local exchangeCfg = self._exchangeList[index+1]
+    if not exchangeCfg then
+        return
+    end
+    obj.index = index
+    obj:setRegClass(self)
+    obj:setInfo(exchangeCfg)
+    obj:insertObjectToFactory(self)
+end
+
+--兑换回调
+function UIWndNpcExchange:exchangeItemResult()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_NPC_TRADE_TIPS10})
+    --刷新界面
+    self:resetSelectItem()
+    self._list:setNumItems(#self._exchangeList)
+end
+
+function UIWndNpcExchange:selectMainId(event)
+    if self._mainItem then
+        self._mainItem:setMainSelect(false)
+    end
+    local childIndex = event.param.index
+    local context = self._list:getChildAt(childIndex)
+    self._mainItem = context
+    self._mainItem:setMainSelect(true)
+end
+
+function UIWndNpcExchange:selectSubId(event)
+    if self._subItem then
+        self._subItem:setSubSelect(false)
+    end
+    local childIndex = event.param.index
+    local context = self._list:getChildAt(childIndex)
+    self._subItem = context
+    self._subItem:setSubSelect(true)
+end
+
+function UIWndNpcExchange:resetSelectItem()
+    if self._mainItem then
+        self._mainItem:setMainSelect(false)
+    end
+    self._mainItem = nil
+    if self._subItem then
+        self._subItem:setSubSelect(false)
+    end
+    self._subItem = nil
+end
+
+return UIWndNpcExchange

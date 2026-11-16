@@ -1,0 +1,58 @@
+local GameTimer = class("GameTimer")
+
+local ScheduleUtil = lt.ScheduleUtil
+local NtfManager = lt.NtfManager
+local Timetable = lt.Timetable
+
+function GameTimer:ctor(param)
+    self.serverTime = self:parseTime(param.serverTime)  -- 解析服务器时间
+    self.gameTime = self:parseTime(param.gameTime)      -- 解析游戏时间
+    self.timeRatio = 24 * 60 * 60 / 3600               -- 1天=1小时，转换为秒
+end
+
+function GameTimer:parseTime(timeStr)
+    -- 将时间字符串解析为时间戳
+    local year, month, day, hour, minute, second = timeStr:match("(%d+)-(%d+)-(%d+) (%d+):(%d+):(%d+)")
+    local time = Timetable.new(year, month, day, hour, minute, second):timestamp()
+    return time
+end
+
+function GameTimer:start()
+    if self.scheduleId then
+        return
+    end
+
+    -- 每秒更新游戏时间
+    self.scheduleId = ScheduleUtil:scheduleGlobal(function()
+        self:updateGameTime()
+    end, 1)  -- 每秒调用一次
+end
+
+function GameTimer:stop()
+    if self.scheduleId then
+        ScheduleUtil:unscheduleGlobal(self.scheduleId)
+        self.scheduleId = nil
+    end
+end
+
+function GameTimer:updateGameTime()
+    if not self.gameTime then return end
+    self.gameTime = self.gameTime + (1 * self.timeRatio)  -- 每秒增加相应的游戏时间
+    -- local elapsedTime = os.difftime(os.time(), self.serverTime)  -- 计算从服务器时间到现在的经过时间
+    -- self.gameTime = self.gameTime + (elapsedTime / self.timeRatio)  -- 根据时间比率更新游戏时间
+
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_GAME_TIME_UPDATE)
+end
+
+function GameTimer:getGameTime()
+    local info = Timetable.new_from_timestamp(self.gameTime)
+    local ymd = string.format("%04u/%02u/%02u", info.year, info.month, info.day)
+    local hms = string.format("%02u:%02u:%02u", info.hour, info.min, info.sec)
+    return ymd,hms  -- 格式化游戏时间为字符串
+end
+
+function GameTimer:getServerTime()
+    return os.date("%Y-%m-%d %H:%M:%S", self.serverTime)  -- 格式化服务器时间为字符串
+end
+
+return GameTimer

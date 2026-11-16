@@ -1,0 +1,21 @@
+local AutoRecycleSettingsDao = {}
+
+function AutoRecycleSettingsDao:queryAll()
+    local mapTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM AutoRecycleSettings") do
+        local meta = lt.AutoRecycleSettingsMeta.new(row)
+        mapTable[#mapTable+1] = meta
+    end
+    return mapTable
+end
+
+function AutoRecycleSettingsDao:queryByIdx(Idx)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM AutoRecycleSettings WHERE Idx=%d ;", Idx)) do
+        local meta = lt.AutoRecycleSettingsMeta.new(row)
+        return meta
+    end
+end
+
+return AutoRecycleSettingsDao

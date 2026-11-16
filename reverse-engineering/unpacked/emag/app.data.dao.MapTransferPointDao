@@ -1,0 +1,24 @@
+local MapTransferPointDao = {}
+
+function MapTransferPointDao:query(mapCode)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM MapTransferPoint WHERE MapCode=%d;", tonumber(mapCode))) do
+    	local meta = lt.MapTransferPointMeta.new(row)
+        return meta
+    end
+end
+
+function MapTransferPointDao:queryAll()
+    local map = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM MapTransferPoint") do
+        local meta = lt.MapTransferPointMeta.new(row)
+        if not map[meta:getMapGroup()] then
+            map[meta:getMapGroup()] = {}
+        end
+        table.insert(map[meta:getMapGroup()], meta)
+    end
+    return map
+end
+
+return MapTransferPointDao

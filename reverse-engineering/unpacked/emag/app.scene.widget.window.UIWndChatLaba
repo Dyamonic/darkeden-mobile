@@ -1,0 +1,267 @@
+--- 聊天喇叭界面
+---@class UIWndChatLaba:UIWindowBase
+local UIWndChatLaba = class("UIWndChatLaba", lt.UIWindowBase)
+local NtfManager = lt.NtfManager
+local CommonUtil = lt.CommonUtil
+local ChatModule = lt.ChatModule
+local Constant = lt.Constant
+local ItemModule = lt.ItemModule
+local GameModule = lt.GameModule
+
+local btnFncList = {
+    { name = "btn_send" },
+    { name = "btn_emoji" }
+}
+
+--{310001,310002,310003}
+local itemColor = {
+    [310001] = "00fb00",
+    [310002] = "59abff",
+    [310003] = "fffb00",
+}
+
+function UIWndChatLaba:ctor(param)
+    self:registerComponent("UICompChatLabaEmoji")
+    UIWndChatLaba.super.ctor(self, param)
+    self._btnFncList = {}
+end
+
+function UIWndChatLaba:onClear()
+    self._lblCount = nil
+    self._lblName  = nil
+    self._compEdit = nil
+    self._lblMsg   = nil
+    self:unregisterAllComponent()
+    UIWndChatLaba.super.onClear(self)
+end
+
+function UIWndChatLaba:onInit()
+    UIWndChatLaba.super.onInit(self, _GURL.GetChatLabaPanel)
+    self._lblCount = self:getChild("txt_count")
+    self._lblName  = self:getChild("txt_name")
+    self._compEdit = self:getChild("bg_edit")
+    self._lblMsg   = self:getChild("txt_msg")
+    for k, v in ipairs(btnFncList) do
+        local btn = self:getChild(v.name)
+        btn.name = v.name
+        if v.name == "btn_emoji" then
+            btn:setVisible(false)
+        end
+        self._btnFncList[k] = btn
+    end
+    self:initCocosInputUI()
+    self:initEmojiUI()
+end
+
+function UIWndChatLaba:onShown()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CHAT_ADDKINK_POST, handler(self, self.onChatAddLink),
+        "UIWndChatLaba:onChatAddLink")
+
+    for k, v in ipairs(self._btnFncList or {}) do
+        v:addClickListener(handler(self, self.onBtnFncClick))
+    end
+
+    local itemObjID = self:getParam().itemObjID
+    local iteminfo = ItemModule:getItemByObjId(itemObjID)
+    local count = ItemModule:getItemAllCountByItemId(iteminfo:getItemId(), iteminfo:getItemType())
+    self._lblCount:setText(count)
+    local sendman = GameModule:getHeroData():getName()
+    self._lblName:setText(sendman)
+    self._fontColor = itemColor[iteminfo:getItemId()] or "00fb00"
+
+    if self._compEmoji then
+        self._compEmoji:setVisible(false)
+        self._Input:setVisible(true)
+    end
+end
+
+function UIWndChatLaba:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndChatLaba:onChatAddLink")
+    for k, v in ipairs(self._btnFncList or {}) do
+        v:removeClickListener()
+    end
+    UIWndChatLaba.super.onHide(self)
+end
+
+function UIWndChatLaba:initCocosInputUI()
+    if not self._Input then
+        self._Input = ccui.EditBox:create(cc.size(378, 101), "", ccui.TextureResType.localType)
+        self._Input:setAnchorPoint(cc.p(0, 0))
+        -- self._Input:setPosition(65, 139)
+        self._Input:setFontName(Constant.FONT_4)
+        self._Input:setFontSize(24)
+        self._Input:setReturnType(cc.KEYBOARD_RETURNTYPE_SEND)
+        self._Input:setInputMode(cc.EDITBOX_INPUT_MODE_ANY)
+        self._Input:registerScriptEditBoxHandler(handler(self, self.editBoxEvent))
+        self._compEdit:displayObject():addChild(self._Input)
+    end
+end
+
+function UIWndChatLaba:initEmojiUI()
+    if not self._compEmoji then
+        self._compEmoji = fgui.UIPackage:createObject("Chat", "CompLabaEmoji")
+        self._compEmoji:insertObjectToFactory(self)
+        self._compEmoji:setPosition(-86, -43)
+        self:addChild(self._compEmoji)
+        self._compEmoji:setVisible(false)
+    end
+end
+
+function UIWndChatLaba:editBoxEvent(eventType, sender)
+    if eventType == "began" then
+        local str = self._lblMsg:getText()
+        sender:setText(str)
+    elseif eventType == "ended" then
+        local str = self._Input:getText()
+        self._Input:setText("")
+        self._lblMsg:setText(str)
+    elseif eventType == "changed" then
+        local str = sender:getText()
+        -- str = string.gsub(str, " ", "") --过滤掉空格
+        -- str = string.gsub(str, "\n", "")
+        -- str = CommonUtil:rmSpecChars(str)
+        local count = string.len(str)
+        local reCount = 0
+        local beginIndex = -1
+        local reString = ""
+        for i = 1, count do
+            local s = string.sub(str, i, i)
+            local t = string.byte(s)
+            if t < 128 then
+                reCount = reCount + 1 --1字节文字，长度加1
+            elseif t >= 192 then
+                reCount = reCount + 2 --1字节以上文字，长度加2
+            end
+            if reCount > 30 then
+                beginIndex = i - 1
+                break
+            end
+            beginIndex = i
+        end
+        reString = string.sub(str, 1, beginIndex)
+        sender:setText("")
+        self._Input:setText(reString)
+    elseif eventType == "return" then
+    end
+end
+
+function UIWndChatLaba:onBtnFncClick(target)
+    local name = target:getSender().name
+    if self._btnName == name then
+        return
+    end
+
+    if name == "btn_emoji" then
+        if self._compEmoji then
+            local isVis = self._compEmoji:isVisible()
+            self._compEmoji:setVisible(not isVis)
+            self._Input:setVisible(isVis)
+        end
+    elseif name == "btn_send" then -- 发送
+        self:onClickSend()
+    end
+end
+
+function UIWndChatLaba:onClickSend(addlinkstr)
+    local msg = ""
+    if type(addlinkstr) == "string" then
+        msg = addlinkstr
+    else
+        msg = self._lblMsg:getText()
+    end
+
+    if msg == "" then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_CHAT_TIPS2 })
+        return
+    end
+
+    if CommonUtil:GetUTFWidth(msg) > 60 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = string.format(GReadText.KEY_CHAT_TIPS5, 60) })
+        return
+    end
+
+    self._lblMsg:setText("")
+    msg = lt.MaskWordUtil:process(msg, "**")
+    msg = string.gsub(msg, "[\n\r]", '')
+
+    local array1 = string.split(msg, "[")
+    local array2 = string.split(msg, "]")
+    local array = {}
+    if self._setitmes then
+        for k, v in pairs(self._setitmes:getPropertyTable()) do
+            if k then
+                array[#array + 1] = { k, v }
+            end
+        end
+    end
+
+    if (#array1 ~= 1 and #array2 ~= 1) and self._setitmes then
+        msg = array1[1] .. "/?" .. self._setitmes:getObjId() .. "/?" .. json.encode(array) .. "/?" .. array2[#array2]
+    elseif (#array1 ~= 1 and #array2 ~= 1) and self._posData then
+        msg = array1[1] .. "#?" .. json.encode(self._posData) .. "#?" .. array2[#array2]
+    elseif (#array1 ~= 1 and #array2 ~= 1) and self._emoji then
+        msg = array1[1] .. "emoji?" .. json.encode(self._emoji)
+    end
+
+    local itemObjID = self:getParam().itemObjID
+    -- 继续拼接  "|?fontcolor" "|?名字"
+    local name = GameModule:getHeroData():getName()
+    local race = GameModule:getHeroRace()
+    -- msg = msg .. "|?" .. self._fontColor .. "|?" .. name .. "|?" .. race
+    local jsonMsg = {
+        msg = msg,
+        color = self._fontColor,
+        name = name,
+        race = race
+    }
+    
+    local jsonstr = json.encode(jsonMsg)
+    ChatModule:sendHornMsg(itemObjID, jsonstr)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndChatLaba", close = true })
+
+    self._setitmes = nil
+    self._posData = nil
+    self._emoji = nil
+end
+
+function UIWndChatLaba:onChatAddLink(event)
+    local proto = event.param
+    local index = proto.index
+
+    if index == 3 then
+        self._compEmoji:setVisible(false)
+        if proto.items then
+            self._lblMsg:setVisible(true)
+            local items = proto.items
+            local textstr = self._Input:getText()
+            if not textstr or textstr == "" then
+                if items then
+                    textstr = "[" .. items:getName() .. "]"
+                end
+            else
+                textstr = textstr .. "[" .. items:getName() .. "]"
+            end
+            if not self._setitmes then
+                self._setitmes = items
+                self:onClickSend(textstr)
+            end
+        elseif proto.posData then
+            local textstr = self._lblMsg:getText()
+            local info = lt.MapDao:query(proto.posData[1])
+            textstr = textstr .. "[" .. info:getMapName() .. " " .. proto.posData[2] .. "," .. proto.posData[3] .. "]"
+            if not self._posData then
+                self._posData = proto.posData
+                self:onClickSend(textstr)
+            end
+        elseif proto.emoji then
+            local textstr = self._lblMsg:getText()
+            textstr = textstr .. "[" .. proto.emoji .. "]"
+            if not self._emoji then
+                self._emoji = proto.emoji
+                self:onClickSend(textstr)
+            end
+        end
+    end
+end
+
+return UIWndChatLaba

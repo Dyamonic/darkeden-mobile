@@ -1,0 +1,108 @@
+
+local AchiveTitleData = class("AchiveTitleData")
+
+--[[
+    称号
+]]
+
+function AchiveTitleData:ctor(meta)
+
+    self:setActiveTitleMeta(meta)
+
+end
+
+function AchiveTitleData:setProtoInfo(obj)
+    self._titleTime = obj.type == 2 and -1 or obj.titleTime
+    self._leftTime  = obj.titleTime
+end
+
+function AchiveTitleData:getTime()
+    return self._titleTime or -1
+end
+
+function AchiveTitleData:getLeftTime()
+    return self._leftTime or 0
+end
+
+function AchiveTitleData:isComplete()
+    return self:getTime() >= 0
+end
+
+function AchiveTitleData:getComplete()
+    return (self:isComplete() and 1 or 0)
+end
+
+function AchiveTitleData:setState(state)
+    self._state = state
+end
+
+function AchiveTitleData:getState()  -- 外观装备--1  属性装备--2 一起装备 3
+    return self._state or 0
+end
+
+function AchiveTitleData:getId()
+    return self._meta:getId()
+end
+
+function AchiveTitleData:getTitle()
+    return self._meta:getTitle()
+end
+
+function AchiveTitleData:getTitleName()
+    return self._meta:getTabTypeTitle()
+end
+
+function AchiveTitleData:getTabType()
+    return tonumber(self._meta:getTabType())
+end
+
+function AchiveTitleData:getIcon()
+    return self._meta:getIcon()
+end
+
+function AchiveTitleData:getCondition()
+    return self._meta:getCondition()
+end
+
+function AchiveTitleData:getJob()
+    return self._meta:getJob()
+end
+
+function AchiveTitleData:getSex()
+    return self._meta:getSex()
+end
+
+function AchiveTitleData:getDes(job)
+    return self._meta:getDes(job)
+end
+
+function AchiveTitleData:getPropertys(job)
+    return self._meta:getPropertys(job)
+end
+
+-- function AchiveTitleData:getKind()
+--     return self._achiveMeta:getKind()
+-- end
+
+function AchiveTitleData:setActiveTitleMeta(meta)
+    self._meta = meta
+end
+
+function AchiveTitleData:getAchiveTitleMeta()
+    return self._meta
+end
+
+function AchiveTitleData:getTimeType()
+    return self._meta:getTimeType()
+end
+
+function AchiveTitleData:getTimeValue()
+    return self._meta:getTime()
+end
+
+function AchiveTitleData:isCustomize()
+    return self._meta:isCustomize()
+end
+
+return AchiveTitleData
+

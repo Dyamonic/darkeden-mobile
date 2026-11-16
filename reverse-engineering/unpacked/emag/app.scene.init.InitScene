@@ -1,0 +1,64 @@
+
+local InitScene = class("InitScene", lt.BaseScene)
+
+InitScene._initLayerAccount = nil
+InitScene._initLayerServer  = nil
+InitScene._account          = nil
+
+function InitScene:ctor(showServer)
+    -- 关闭调试参数
+    if device.platform ~= "windows" and device.platform ~= "mac" then
+        DEBUG = 0
+    end
+    InitScene.super.ctor(self)
+    self._account = ""
+    self._initLayerAccount = lt.InitLayerAccount.new(self)
+    self:addChild(self._initLayerAccount)
+
+    self._initLayerServer = lt.InitLayerServer.new(self)
+    self:addChild(self._initLayerServer)
+
+    if false then
+        self:showInitLayerServer()
+    else
+        self:showInitLayerAccount()
+    end
+end
+
+function InitScene:onClear()
+    lt.LogUtil:debug("InitScene:onClear")
+
+    self._initLayerAccount = nil
+    self._initLayerServer  = nil
+    self._account          = nil
+    InitScene.super.onClear(self)
+    
+end
+
+function InitScene:onEnter()
+    lt.LogUtil:debug("InitScene:onEnter")
+end
+
+function InitScene:onExit()
+    lt.LogUtil:debug("InitScene:onExit")
+end
+
+function InitScene:showInitLayerAccount()
+    self._initLayerAccount:show()
+    self._initLayerServer:hide()
+end
+
+function InitScene:showInitLayerServer()
+    self._initLayerAccount:hide()
+    self._initLayerServer:show()
+end
+
+function InitScene:setAccount(account)
+    self._account = account
+end
+
+function InitScene:getAccount()
+    return self._account
+end
+
+return InitScene

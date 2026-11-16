@@ -1,0 +1,73 @@
+local SIGN_KEY = "8r3wiPJN6bz0hKqBt7PI6aCGptHirMI9"
+
+
+local StarterHttpApi = {}
+
+local StarterHttpClient = require("starter.StarterHttpClient")
+
+-- 游戏埋点统计 正式服启用判断
+function StarterHttpApi:reportGameStage(stage)
+    -- 正式服为2
+    if not _G_OFFICIAL_SERVER then
+        return
+    end
+
+    if device.platform ~= "android" and device.platform ~= "ios" then
+        return
+    end
+
+    local url = "https://yfdb.yofijoy.com/v1/report/event"
+
+    local deviceId = cpp.GamePlatform:getDeviceId()
+    local channelId = cpp.SdkService:shared():getChannelType()
+    if not _G_START_APP_TIME then
+        _G_START_APP_TIME = cc.UserDefault:getInstance():getIntegerForKey("startAppTime", 0) or 0
+    end
+
+    local params = {
+        appid  = 100,
+        appkey = "YiRR0WmOzBrHHlRDUCvV50eLIjEg0I7K",
+        data = {
+            type="track",
+            device_id = tostring(deviceId),
+            event_name = tostring(stage),
+            properties={
+                game = "tianZhiLianYu", -- 游戏简拼 单个游戏在所有环境都是一致的 可以直接写死
+                center_flag = _G_API_CENTER_FLAG,-- 专区标识 和拉区服的一样
+                channel_id = tostring(channelId),
+                activation_time= _G_START_APP_TIME -- 激活时间(首次打开app)秒
+            }
+        }
+    }
+
+    local paramsString = json.encode(params)
+    local httpClient = StarterHttpClient.new(url, paramsString, function (data)
+         yflog:Info("StarterHttpApi:reportGameStage success:%s",data)
+    end, function (data)
+        yflog:Info("StarterHttpApi:reportGameStage failed:%s",data)
+    end)
+
+    httpClient:post(false)
+end
+
+
+-- 签名方法
+function StarterHttpApi:urlSign(theHashTable)
+    local keyArray = {}
+    for k,_ in pairs(theHashTable) do
+        keyArray[#keyArray + 1] = k
+    end
+    table.sort(keyArray, function(key1, key2)
+        return key1 < key2
+    end)
+
+    local sign = "";
+    for _,key in ipairs(keyArray) do
+        sign = sign .. key .. "=" .. theHashTable[key] .. "&"
+    end
+    sign = sign .. SIGN_KEY
+    -- print("HttpApi:urlSign:",sign)
+    return crypto.md5(sign)
+end
+
+return StarterHttpApi

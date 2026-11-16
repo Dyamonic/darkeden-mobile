@@ -1,0 +1,506 @@
+-- 交易行
+local TransactionModule           = {}
+
+local SocketApi                   = lt.SocketApi
+local CommonModule                = lt.CommonModule
+local netcmd_pb                   = lt.netcmd_pb
+local ServerCmdDef                = lt.ServerCmdDef
+local ClientCmdDef                = lt.ClientCmdDef
+local NtfManager                  = lt.NtfManager
+local CacheManager                = lt.CacheManager
+local GameModule                  = lt.GameModule
+local ItemModule                  = lt.ItemModule
+local Constant                    = lt.Constant
+
+TransactionModule.MarkKey         = 1000 --我的关注
+TransactionModule._defaultList    = nil
+TransactionModule._simpleInfoList = {}   -- 简易版列表
+TransactionModule._detailList     = {}   -- 详细列表
+
+TransactionModule._sellList       = {}   -- 出售列表
+TransactionModule._collectList    = {}   -- 收藏列表
+TransactionModule._tradingInfo    = {}   -- 交易记录
+
+
+--0 ,收藏  1，个人售卖列表 2,查看具体物品
+TransactionModule.TRANSACTIONTYPE = {
+    COLLECT       = 0,
+    PERSONAL_SELL = 1,
+    ITEM_DETAIL   = 2
+}
+TransactionModule.MAXSELLPRICE    = 9999999 --公示最大出售价格
+function TransactionModule:init()
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_TRANSACTION_LIST_RESP),
+        handler(self, self.onTransactionListResp), "TransactionModule:onTransactionListResp")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_TRANSACTION_SIMPLE_LIST_RESP),
+        handler(self, self.onTransactionSimpleListResp), "TransactionModule:onTransactionSimpleListResp")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PUT_ON_SALE_RESP),
+        handler(self, self.onPutOnSaleResp), "TransactionModule:onPutOnSaleResp")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_TAKE_DOWN_THE_SALE_RESP),
+        handler(self, self.onTakeDownTheSaleResp), "TransactionModule:onTakeDownTheSaleResp")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_ONCE_AGAIN_PUT_ON_SALE_RESP),
+        handler(self, self.onOnceAgainPutOnSaleResp), "TransactionModule:onOnceAgainPutOnSaleResp")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_MARK_RESP),
+        handler(self, self.onMarkResp), "TransactionModule:onMarkResp")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_BUY_TRANSACTION_RESP),
+        handler(self, self.onBuyTransactionResp), "TransactionModule:onBuyTransactionResp")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_TRADING_LOG_RESP),
+        handler(self, self.onBuyTradingLogResp), "TransactionModule:onBuyTradingLogResp")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_BIDDING_RESP),
+        handler(self, self.onBuyBiddingResp), "TransactionModule:onBuyBiddingResp")
+end
+
+function TransactionModule:clear()
+    SocketApi:removeProtoListenerByTag("TransactionModule:onTransactionListResp")
+    SocketApi:removeProtoListenerByTag("TransactionModule:onTransactionSimpleListResp")
+    SocketApi:removeProtoListenerByTag("TransactionModule:onPutOnSaleResp")
+    SocketApi:removeProtoListenerByTag("TransactionModule:onTakeDownTheSaleResp")
+    SocketApi:removeProtoListenerByTag("TransactionModule:onOnceAgainPutOnSaleResp")
+    SocketApi:removeProtoListenerByTag("TransactionModule:onMarkResp")
+    SocketApi:removeProtoListenerByTag("TransactionModule:onBuyTransactionResp")
+    SocketApi:removeProtoListenerByTag("TransactionModule:onBuyTradingLogResp")
+    SocketApi:removeProtoListenerByTag("TransactionModule:onBuyBiddingResp")
+    self._defaultList = nil
+    self._simpleInfoList = nil
+    self._detailList = nil
+    self._sellList = nil
+    self._collectList = nil
+    self._tradingInfo = nil
+end
+
+--交易行 list 请求 回包
+function TransactionModule:onTransactionListResp(event)
+    local proto = event.param
+    local ret = proto.ret
+    local transactionInfo = proto.transactionInfo
+    if self._type == TransactionModule.TRANSACTIONTYPE.PERSONAL_SELL then
+        self._sellList = transactionInfo
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSACTION_LIST_RESP, { type = self._type })
+    elseif self._type == TransactionModule.TRANSACTIONTYPE.COLLECT then
+        self._collectList = transactionInfo
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSACTION_DETAIL_LIST_CHANGE)
+    elseif self._type == TransactionModule.TRANSACTIONTYPE.ITEM_DETAIL then
+        self._detailList = transactionInfo
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSACTION_DETAIL_LIST_CHANGE)
+    end
+    self._type = nil
+end
+
+--交易行 简易版列表 回包
+function TransactionModule:onTransactionSimpleListResp(event)
+    local proto = event.param
+    local ret = proto.ret
+    local simpleInfo = proto.simpleInfo
+    if self._hadPrice == 1 then
+        self._detailList = simpleInfo
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSACTION_DETAIL_LIST_CHANGE)
+    else
+        self._simpleInfoList = simpleInfo
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSACTION_SIMPLE_LIST_CHANGE)
+    end
+    self._hadPrice = nil
+end
+
+--交易行 上架商品 回包
+function TransactionModule:onPutOnSaleResp(event)
+    local proto = event.param
+    self._sellList = proto.transactionInfo
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSACTION_LIST_RESP,
+        { type = TransactionModule.TRANSACTIONTYPE.PERSONAL_SELL })
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_TRANSACTION_TIPS3 })
+end
+
+--交易行 下架商品 回包
+function TransactionModule:onTakeDownTheSaleResp(event)
+    local proto = event.param
+    self._sellList = proto.transactionInfo or {}
+    self._itemUniqueId = nil
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSACTION_LIST_RESP,
+        { type = TransactionModule.TRANSACTIONTYPE.PERSONAL_SELL })
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_TRANSACTION_TIPS4 })
+end
+
+--交易行 重新上架商品 回包
+function TransactionModule:onOnceAgainPutOnSaleResp(event)
+    local proto = event.param
+    self._sellList = proto.transactionInfo or {}
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSACTION_LIST_RESP,
+        { type = TransactionModule.TRANSACTIONTYPE.PERSONAL_SELL })
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_TRANSACTION_TIPS5 })
+end
+
+--交易行 标记 商品 回包
+function TransactionModule:onMarkResp(event)
+    local proto = event.param
+    local ret = proto.ret
+    if ret ~= 0 then
+        return
+    end
+    if self._mark == 0 then
+        --删除
+        for i = 1, #self._collectList do
+            if self._collectList[i].itemUniqueId == self._itemUniqueId then
+                table.remove(self._collectList, i)
+                break
+            end
+        end
+    else
+        --增加
+        for i = 1, #self._detailList do
+            if self._detailList[i].itemUniqueId == self._itemUniqueId then
+                table.insert(self._collectList, self._detailList[i])
+                break
+            end
+        end
+    end
+    self._itemUniqueId = nil
+    self._mark = nil
+
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSACTION_DETAIL_LIST_CHANGE)
+end
+
+--交易行 购买商品 回包
+function TransactionModule:onBuyTransactionResp(event)
+    local proto        = event.param
+    local ret          = proto.ret
+    -- 这边缓存没意义 别人操作导致数据变化 直接重新拉一次
+    self._itemUniqueId = nil
+    self._cofingId     = nil
+    self._num          = nil
+    self._price        = nil
+    -- NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSACTION_DETAIL_LIST_CHANGE)
+
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSACTION_BUY_RESP)
+    if ret == 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_TRANSACTION_TIPS8 })
+    end
+end
+
+--交易行 交易记录 回包
+function TransactionModule:onBuyTradingLogResp(event)
+    local proto = event.param
+    self._sellNum = proto.sellNum
+    self._costMap = proto.costMap
+    self._tradingInfo = proto.tradingInfo
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSACTION_RECORD_RESP)
+end
+
+--交易行 竞价商品 回包
+function TransactionModule:onBuyBiddingResp(event)
+    local proto = event.param
+    local transactionInfo = proto.transactionInfo
+
+    local playerId = GameModule:getHeroData():getPlayerId()
+    for i = 1, #self._detailList do
+        if self._detailList[i].itemUniqueId == self._itemUniqueId then
+            self._detailList[i].curBiddingPrice = self._biddingPrice
+            self._detailList[i].curBiddingPlayerId = tostring(playerId)
+            break
+        end
+    end
+    self._collectList = transactionInfo
+    self._itemUniqueId = nil
+    self._biddingPrice = nil
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSACTION_DETAIL_LIST_CHANGE)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_TRANSACTION_TIPS9 })
+end
+
+---------------------------请求--------------------------
+--交易行 list 请求
+function TransactionModule:sendTransactionListReq(type, cofingId, isBidding)
+    local msg = netcmd_pb.CS_TransactionListReq()
+    msg.type = type -- 0 ,收藏  1，个人售卖列表 2,查看具体物品
+    msg.isBidding = isBidding or 0
+    if cofingId then msg.cofingId = cofingId end
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_TRANSACTION_LIST_REQ), msg)
+    self._type = type
+end
+
+--交易行 简易版列表 请求
+function TransactionModule:sendTransactionSimpleListReq(Ids, hadPrice, isBidding)
+    local msg = netcmd_pb.CS_TransactionSimpleListReq()
+    msg.hadPrice = hadPrice -- 0 不带价格 1 带价格
+    msg.itemIds = Ids
+    msg.isBidding = isBidding or 0
+    self._hadPrice = hadPrice
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_TRANSACTION_SIMPLE_LIST_REQ), msg)
+end
+
+--交易行 上架商品 请求
+function TransactionModule:sendPutOnSaleReq(sItemUid, sellPrice, sellNum)
+    local msg = netcmd_pb.CS_PutOnSaleReq()
+    msg.sItemUid = sItemUid   --// 物品 背包中 唯一id
+    msg.sellPrice = sellPrice --// 售卖单价
+    msg.sellNum = sellNum     --// 售卖个数
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_PUT_ON_SALE_REQ), msg)
+end
+
+--交易行 下架商品 请求
+function TransactionModule:sendTakeDownTheSaleReq(itemUniqueId)
+    local msg = netcmd_pb.CS_TakeDownTheSaleReq()
+    msg.itemUniqueId = itemUniqueId --// 商品唯一id
+    self._itemUniqueId = itemUniqueId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_TAKE_DOWN_THE_SALE_REQ), msg)
+end
+
+--交易行 重新 上架商品 请求
+function TransactionModule:sendOnceAgainPutOnSaleReq(itemUniqueId)
+    local msg = netcmd_pb.CS_OnceAgainPutOnSaleReq()
+    msg.itemUniqueId = itemUniqueId --// 商品唯一id
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_ONCE_AGAIN_PUT_ON_SALE_REQ), msg)
+end
+
+--交易行 购买商品 请求
+function TransactionModule:sendBuyTransactionReq(itemUniqueId, cofingId, num, price)
+    local msg = netcmd_pb.CS_BuyTransactionReq()
+    if itemUniqueId then
+        msg.itemUniqueId = itemUniqueId --// 商品唯一id
+    else
+        msg.cofingId = cofingId         --// cofingId
+        msg.num = num
+        msg.price = price
+    end
+    self._itemUniqueId = itemUniqueId
+    self._cofingId = cofingId
+    self._num = num
+    self._price = price
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_BUY_TRANSACTION_REQ), msg)
+end
+
+--交易行 竞价商品 请求
+function TransactionModule:sendBiddingReq(itemUniqueId, biddingPrice)
+    local msg = netcmd_pb.CS_BiddingReq()
+    msg.itemUniqueId = itemUniqueId --// 商品唯一id
+    msg.biddingPrice = biddingPrice
+    self._itemUniqueId = itemUniqueId
+    self._biddingPrice = biddingPrice
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_BIDDING_REQ), msg)
+end
+
+--交易行 标记 商品 请求
+function TransactionModule:sendMarkReq(itemUniqueId, mark)
+    local msg = netcmd_pb.CS_MarkReq()
+    msg.itemUniqueId = itemUniqueId --// 商品唯一id
+    msg.mark = mark                 --// 0 未标记 1 标记
+    self._itemUniqueId = itemUniqueId
+    self._mark = mark
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_MARK_REQ), msg)
+end
+
+--交易行 交易记录 请求
+function TransactionModule:sendTradingLogReq()
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_TRADING_LOG_REQ))
+end
+
+-----------------------------------------------------
+-- 根据种族分类
+function TransactionModule:getTransactionData()
+    local myrace = GameModule:getHeroData():getRace()
+    local firstList = CacheManager:getTransactionsDefaultMap()
+    local mapTable = {}
+    for i, meta in ipairs(firstList or {}) do
+        local condi = meta:getCondition() or 0
+        if condi == 0 or myrace == condi then
+            local first = meta:getFirst()
+            local second = meta:getSecond()
+            if not mapTable[first] then
+                mapTable[first] = {}
+            end
+            if not mapTable[first][second] then
+                mapTable[first][second] = {}
+            end
+            table.insert(mapTable[first][second], meta)
+        end
+    end
+    return mapTable
+end
+
+function TransactionModule:getTransactionDataByItemIdAndType(_itemId, _type)
+    _itemId = tonumber(_itemId) or 0
+    _type = tonumber(_type) or 0
+    local list = CacheManager:getTransactionsDefaultMap()
+    for i, meta in ipairs(list or {}) do
+        local itemId = meta:getItemId() or 0
+        local type = meta:getType() or 0
+        if itemId == _itemId and type == _type then
+            return meta
+        end
+    end
+
+    return nil
+end
+
+function TransactionModule:getTransactionFilterData()
+    local unordered = self:getTransactionData()
+    local keys = {}
+    for key in pairs(unordered) do
+        table.insert(keys, key)
+    end
+    -- 插入 我的关注
+    table.insert(keys, TransactionModule.MarkKey)
+    table.sort(keys, function(a, b)
+        if a == TransactionModule.MarkKey then
+            return true
+        end
+        if b == TransactionModule.MarkKey then
+            return false
+        end
+        return a < b
+    end)
+
+    local ordered = {}
+    for _, key in ipairs(keys) do
+        if key == TransactionModule.MarkKey then
+            table.insert(ordered, {})
+        else
+            table.insert(ordered, unordered[key])
+        end
+    end
+
+    return ordered
+end
+
+function TransactionModule:getTransactionCurData()
+    if not self._defaultList then
+        self._defaultList = self:getTransactionFilterData()
+    end
+    return self._defaultList
+end
+
+function TransactionModule:getTransactionCurMeta(mainIdx, subIdx)
+    local itemList = nil
+    if mainIdx == 1 then -- 我的关注
+        --TODO 请求列表
+    else
+        local filterData = self:getTransactionDefaultData()
+        itemList = filterData[mainIdx][subIdx]
+    end
+    return itemList
+end
+
+--获得个人出售列表
+function TransactionModule:getTransactionSellList()
+    return self._sellList or {}
+end
+
+--根据id获得出售数量
+function TransactionModule:getNumbyId(id, types)
+    local num = 0
+    for i = 1, #self._simpleInfoList do
+        if self._simpleInfoList[i].cofingId == id then
+            num = num + self._simpleInfoList[i].itemNum
+        end
+    end
+    return num
+end
+
+--获得出售详细列表
+function TransactionModule:getTransactionDetailList(filter, sortPrice, isShow)
+    local list = {}
+    if filter == 99 then
+        list = self:getOriginDetailList()
+    else
+        for i = 1, #self._detailList do
+            local cofingId = self._detailList[i].cofingId
+            if cofingId then
+                local meta = CacheManager:getTransactionsById(cofingId)
+                local itemType = meta:getType()
+                if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+                    local sid = meta:getItemId()
+                    local itemMeta = CacheManager:getItemMeta(sid)
+                    if itemMeta:getQuality() == filter then
+                        table.insert(list, self._detailList[i])
+                    end
+                end
+            else
+                local itemInfo = ItemModule:getItemDataByProperty(self._detailList[i].objProperty)
+                if itemInfo:getQuality() == filter then
+                    table.insert(list, self._detailList[i])
+                end
+            end
+        end
+    end
+    table.sort(list, function(a, b)
+        if isShow then -- 公示列表
+            if sortPrice == 0 then
+                return a.curBiddingPrice < b.curBiddingPrice
+            else
+                return a.curBiddingPrice > b.curBiddingPrice
+            end
+        else -- 购买列表
+            if sortPrice == 0 then
+                return a.sellPrice < b.sellPrice
+            else
+                return a.sellPrice > b.sellPrice
+            end
+        end
+    end)
+    return list
+end
+
+--获得初始出售详细列表
+function TransactionModule:getOriginDetailList()
+    return self._detailList or {}
+end
+
+--获得个人收藏列表
+function TransactionModule:getCollectList(filter, sortPrice)
+    local list = {}
+    if filter == 99 then
+        list = self:getOriginCollectList()
+    else
+        for i = 1, #self._collectList do
+            local itemInfo = ItemModule:getItemDataByProperty(self._collectList[i].objProperty)
+            if itemInfo:getQuality() == filter then
+                table.insert(list, self._collectList[i])
+            end
+        end
+    end
+    table.sort(list, function(a, b)
+        if sortPrice == 0 then
+            return a.curBiddingPrice < b.curBiddingPrice
+        else
+            return a.curBiddingPrice > b.curBiddingPrice
+        end
+    end)
+    return list
+end
+
+--获得初始收藏列表
+function TransactionModule:getOriginCollectList()
+    return self._collectList or {}
+end
+
+--是否为个人收藏
+function TransactionModule:getIsCollectByUid(itemUniqueId)
+    local list = self:getOriginCollectList()
+    for i = 1, #list do
+        if list[i].itemUniqueId == itemUniqueId then
+            return true
+        end
+    end
+    return false
+end
+
+--获得交易记录
+function TransactionModule:getTradingInfo()
+    return self._tradingInfo or {}
+end
+
+--获得交易总数
+function TransactionModule:getTradingSellNum()
+    return self._sellNum or 0
+end
+
+--获得交易消耗累计值
+function TransactionModule:getTradingCostById(itemId)
+    local costMap = self._costMap or {}
+    for k, v in pairs(costMap) do
+        if v.key == itemId then
+            return v.value
+        end
+    end
+    return 0
+end
+
+return TransactionModule

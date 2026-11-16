@@ -1,0 +1,43 @@
+return [[
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoord;
+
+//uniform sampler2D u_Texture;
+uniform vec3 u_OriginalColor1; // 第一种要替换的颜色
+uniform vec3 u_TargetColor1;   // 第一种目标颜色
+uniform vec3 u_OriginalColor2; // 第二种要替换的颜色
+uniform vec3 u_TargetColor2;   // 第二种目标颜色
+uniform float u_Threshold;      // 相似度阈值
+
+uniform sampler2D u_texture;
+
+void main()
+{
+    vec4 src_color = texture2D(u_texture, v_texCoord); // 获取原始纹理颜色
+    gl_FragColor = src_color;
+    // 检查当前像素与第一种原始颜色的相似度
+    float threshold = u_Threshold; // 颜色相似度阈值
+    if (length(u_OriginalColor1) > 0.0 && // 判断是否第一种颜色有效
+        abs(src_color.r - u_OriginalColor1.r) < threshold &&
+        abs(src_color.g - u_OriginalColor1.g) < threshold &&
+        abs(src_color.b - u_OriginalColor1.b) < threshold) {
+        src_color.rgb = u_TargetColor1; // 替换为第一种目标颜色
+    }
+
+    // 如果有第二种颜色，则检查并替换
+    if (length(u_OriginalColor2) > 0.0 && // 判断是否第二种颜色有效
+        abs(src_color.r - u_OriginalColor2.r) < threshold &&
+        abs(src_color.g - u_OriginalColor2.g) < threshold &&
+        abs(src_color.b - u_OriginalColor2.b) < threshold) {
+        src_color.rgb = u_TargetColor2; // 替换为第二种目标颜色
+        
+    }
+    
+    gl_FragColor = src_color; // 输出最终颜色
+}
+
+
+]]

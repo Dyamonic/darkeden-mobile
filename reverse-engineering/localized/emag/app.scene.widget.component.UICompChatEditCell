@@ -1,0 +1,77 @@
+---@class UICompChatEditCell
+--- 文本编辑cell
+local UICompChatEditCell = class("UICompChatEditCell", lt.UIGButtonBase)
+local ChatModule = lt.ChatModule
+local MapModule = lt.MapModule
+local NtfManager = lt.NtfManager
+local PrefManager = lt.PrefManager
+
+local quickStr = {
+    [1] = "Achievements with unlimited possibilities",
+    [2] = "Sharing moments of glory",
+    [3] = "Our journey is in the sea of stars",
+    [4] = "Use dreams as horses and live up to your time!",
+    [5] = "If there is light in your heart, there will be a path under your feet",
+    [6] = "I make my own decisions about my life",
+}
+
+UICompChatEditCell.ChangeSkinConf = {
+    ["Chat"] = {
+        ["n0"] = "bg_liaotian_di4",
+    },
+}
+
+function UICompChatEditCell:ctor()
+    UICompChatEditCell.super.ctor(self)
+end
+
+function UICompChatEditCell:onEnter()
+    UICompChatEditCell.super.onEnter(self)
+    self._btnEdit:addClickListener(handler(self, self.onFunction))
+    self._btn:addClickListener(handler(self, self.onClickItem))
+end
+
+function UICompChatEditCell:onExit()
+    self._btnEdit:removeClickListener()
+    self._btn:removeClickListener()
+    UICompChatEditCell.super.onExit(self)
+end
+
+function UICompChatEditCell:onClear()
+    self._lblMsg  = nil
+    self._btnEdit = nil
+    UICompChatEditCell.super.onClear(self)
+end
+
+function UICompChatEditCell:onConstruct()
+    self._lblMsg   = self:getChild("lbl")
+    self._btnEdit  = self:getChild("btn_edit")
+    self._btn_item = self:getChild("btn_edit")
+    self._btn      = self:getChild("n0")
+end
+
+function UICompChatEditCell:setInfo(index)
+    local strEdit = PrefManager:getUserValueByKey(ChatModule.CHAT_SETTING_CHATEDIT .. (index + 1)) or ""
+    if strEdit == "" then
+        strEdit = quickStr[index + 1] or ""
+    end
+    self._lblMsg:setText(strEdit)
+    self._str = strEdit
+    self._index = index
+end
+
+function UICompChatEditCell:onFunction()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_CHATEDIT_MESSAGE_BOX, {
+        content = self._str,
+        confirmCallback = function(str)
+            PrefManager:setUserValueByKey(ChatModule.CHAT_SETTING_CHATEDIT .. (self._index + 1), str)
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_CHAT_EDIT, {})
+        end,
+    })
+end
+
+function UICompChatEditCell:onClickItem(index)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_CHAT_ADDKINK_POST, { messageStr = self._str, index = 1 })
+end
+
+return UICompChatEditCell

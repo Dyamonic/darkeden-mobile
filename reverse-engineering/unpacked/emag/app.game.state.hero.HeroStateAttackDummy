@@ -1,0 +1,179 @@
+local HeroStateAttackDummy = class("HeroStateAttackDummy", lt.HeroStateBase)
+local Constant = lt.Constant
+local CacheManager = lt.CacheManager
+local ActionManager = lt.ActionManager
+
+HeroStateAttackDummy._skillId     = nil
+HeroStateAttackDummy._direction   = nil
+HeroStateAttackDummy._targetObjId = nil
+HeroStateAttackDummy._targetM     = nil
+HeroStateAttackDummy._targetN     = nil
+HeroStateAttackDummy._skilllevel  = nil
+HeroStateAttackDummy._code        = nil
+
+HeroStateAttackDummy._isAttacking = nil
+HeroStateAttackDummy._timeTrigger = nil
+HeroStateAttackDummy._speedRate   = 1
+
+
+function HeroStateAttackDummy:ctor(heroAgent, cmd)
+    HeroStateAttackDummy.super.ctor(self, heroAgent)
+
+
+    self._skillId     = cmd:getSkillId()
+    self._direction   = cmd:getDirection()
+    self._targetObjId = cmd:getTargetObjId()
+    self._targetM     = cmd:getTargetM()
+    self._targetN     = cmd:getTargetN()
+    self._skilllevel  = cmd:getSkillLevel()
+    self._code        = cmd:getCode()
+    self._extraCode   = cmd:getExtraCode()
+
+    self._fromObjId = heroAgent:getObjId()
+
+    self._isAttacking = false
+
+    local leftCount = heroAgent:getCmdSystem():getCmdCount()
+    if leftCount > 0 then
+        self._speedRate = 1 + leftCount * 0.3
+    end
+    local action = CacheManager:getStartActionBySkillId(self._skillId)
+    action = lt.SkillManager:getSlayerAction(heroAgent, self._skillId, action)
+    if action == nil then
+        action = Constant.ROLE_ACTION_IDLE
+    end
+
+    local count, step = ActionManager:getActorFrameCount(self._heroAgent:getHeroData():getModelName(), action, self._heroAgent:getDirection(),self._heroAgent:getTransformId(),self._heroAgent:getCurStepMultiple(self._skillId))
+    self._totalTime = (count) * step
+    self._timeTrigger = lt.TimeTrigger.new(self._totalTime)
+end
+
+function HeroStateAttackDummy:onClear()
+    self._timeTrigger = nil
+    HeroStateAttackDummy.super.onClear(self)
+
+end
+
+function HeroStateAttackDummy:onEnter()
+    self._isAttacking = true
+    self._heroAgent:setDirection(self._direction)
+    --self._heroAgent:playAction(Constant.ROLE_ACTION_ATTACK)
+
+    local targetAgentId = 0
+    local targetAgent = lt.AgentManager:getWorldAgent():getAgent(self._targetObjId)
+    if targetAgent then
+        targetAgentId = targetAgent:getAgentId()
+    end
+
+    local params = {
+        skillId = self._skillId, 
+        fromAgentId =  self._heroAgent:getAgentId(), 
+        targetAgentId = targetAgentId,
+        mTouch = self._targetM, 
+        nTouch = self._targetN, 
+        skilllevel = self._skilllevel, 
+        code = self._code, 
+        extraCode = self._extraCode,
+    }
+
+    lt.SkillManager:playSkill(params)
+end
+
+function HeroStateAttackDummy:onExit()
+end
+
+function HeroStateAttackDummy:onUpdate()
+    local deltaTime = lt.GameBoard:getDeltaTime()
+
+    if self._isAttacking then
+        if self._timeTrigger:tick(deltaTime) then
+            self._isAttacking = false
+            self._timeTrigger:reset(self._totalTime)          -- 延迟0.6秒，以防刚换到Idle就收到CmdAttack
+
+            self._heroAgent:playAction(Constant.ROLE_ACTION_ATTACK_IDLE)
+            
+            --- 反击假身清理
+            if string.find(self._fromObjId, Constant.CLONETAG.CROSS_COUNTER) then
+                yflog:Info("HeroStateAttackDummy 清理反击假身")
+                local worldAgent = lt.AgentManager:getWorldAgent()
+                worldAgent:deleteAgent(self._fromObjId) 
+                return 
+            end
+            
+            self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+        end
+    else
+        if self._timeTrigger:tick(deltaTime) then
+            self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+            return
+
+        else
+            local cmd = self._heroAgent:getCmdSystem():get()
+            if cmd then
+                if cmd:getCmdId() == Constant.CmdId.CMD_ATTACK then
+                    if self._timeTrigger:getTimeElapsed() >= (0.3 / self._speedRate) then
+                        self._heroAgent:getCmdSystem():pop()
+
+                        local leftCount = self._heroAgent:getCmdSystem():getCmdCount()
+                        if leftCount > 0 then
+                            self._speedRate = 1 + leftCount * 0.3
+                        else
+                            self._speedRate = 1
+                        end
+
+                        self._skillId   = cmd:getSkillId()
+                        self._direction   = cmd:getDirection()
+                        self._targetObjId = cmd:getTargetObjId()
+                        self._targetM     = cmd:getTargetM()
+                        self._targetN     = cmd:getTargetN()
+                        self._skilllevel  = cmd:getSkillLevel()
+                        self._extraCode   = cmd:getExtraCode()
+                        
+                        
+                        self._isAttacking = true
+                        self._timeTrigger:reset(0.6 / self._speedRate)
+
+                        self._heroAgent:setDirection(self._direction)
+
+                        local targetAgentId = 0
+                        local targetAgent = lt.AgentManager:getWorldAgent():getAgent(self._targetObjId)
+                        if targetAgent then
+                            targetAgentId = targetAgent:getAgentId()
+                        end
+                        local params = {
+                            skillId = self._skillId, 
+                            fromAgentId =  self._heroAgent:getAgentId(), 
+                            targetAgentId = targetAgentId,
+                            mTouch = self._targetM, 
+                            nTouch = self._targetN, 
+                            skilllevel = self._skilllevel, 
+                            code = self._code, 
+                            extraCode = self._extraCode,
+                        }
+                        lt.SkillManager:playSkill(params)
+                    end
+                else
+                    self._heroAgent:getCmdSystem():pop()
+                    self._heroAgent:handleCmd(cmd)
+                end
+            end
+        end
+    end
+end
+
+function HeroStateAttackDummy:onMessage(msg)
+end
+
+function HeroStateAttackDummy:getStateId()
+    return Constant.HERO_STATE_ATTACK_DUMMY
+end
+
+function HeroStateAttackDummy:getStateName()
+    return "HeroStateAttackDummy"
+end
+
+function HeroStateAttackDummy:getSkillId()
+    return self._skillId
+end
+
+return HeroStateAttackDummy

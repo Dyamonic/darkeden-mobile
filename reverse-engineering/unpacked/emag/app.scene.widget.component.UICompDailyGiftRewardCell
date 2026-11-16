@@ -1,0 +1,166 @@
+---@class UICompDailyGiftRewardCell
+--- 每日特惠单元对象
+local UICompDailyGiftRewardCell = class("UICompDailyGiftRewardCell", lt.UICompBase)
+
+local Constant                 = lt.Constant
+local CacheManager             = lt.CacheManager
+local NtfManager               = lt.NtfManager
+local ItemModule               = lt.ItemModule
+local SevenDayModule           = lt.SevenDayModule
+local RechargeModule           = lt.RechargeModule
+
+function UICompDailyGiftRewardCell:ctor(param)
+    UICompDailyGiftRewardCell.super.ctor(self,param)
+end
+
+function UICompDailyGiftRewardCell:onClear()
+    if self._listReward then
+        self._listReward:removeChildrenToPool()
+        self._listReward:removeEventListener(fgui.UIEventType.ClickItem)
+        self._listReward:removeItemRenderer()
+        self._listReward = nil
+    end
+    if self._btnRecharge then
+        self._btnRecharge:removeClickListener()
+        self._btnRecharge = nil
+    end
+    self._data          = nil
+    self._textDiscount  = nil
+    self._bgDiscount    = nil
+    self._textTitle     = nil
+    self._textBuyCount  = nil
+    self._iconRight     = nil
+    self._bgTitle       = nil
+    self._btnRecharge   = nil
+    self._listReward    = nil
+    self._menuIndex     = nil
+    UICompDailyGiftRewardCell.super.onClear(self)
+end
+
+function UICompDailyGiftRewardCell:onConstruct()
+    self._textDiscount     = self:getChild("discount")
+    self._bgDiscount     = self:getChild("n13")
+    self._textTitle    = self:getChild("title")
+    self._textBuyCount    = self:getChild("buycount")
+    self._iconRight = self:getChild("initial_right")
+    self._bgTitle = self:getChild("titlebg")
+    self._btnRecharge = self:getChild("btnget")
+    self._listReward = self:getChild("listreward")
+
+    self._listReward:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+    self._btnRecharge:addClickListener(handler(self, self.onBtnGotoClick))
+    self._listReward:setItemRenderer(handler(self, self.onRenderItem))
+end
+
+function UICompDailyGiftRewardCell:setInfo(data,menuIndex)
+    self._data = data
+    self._menuIndex = menuIndex
+
+    self._textTitle:setText(data:getGiftName())
+
+    local diacount = data:getDiscount()
+    self._textDiscount:setVisible(diacount > 0)
+    self._bgDiscount:setVisible(diacount > 0)
+    self._textDiscount:setText(GReadText.KEY_SUPER_VALUE_TIPS..diacount .. "%")
+
+    -- 价格
+    local price = data:getPrice() or 0
+
+    local nowcount,maxcount = 0,data:getBuyLimit()
+    local giftId = self._data:getGiftId()
+    self._iconGrayed = false
+    if RechargeModule:getDayGiftData(giftId) then
+        --已领取
+        if RechargeModule:getDayGiftData(giftId) then
+            nowcount = 1
+        end
+        self._btnRecharge:setTitle(GReadText.KET_MAIL_TIPS10)
+        self._btnRecharge:setGrayed(true)
+        self._btnRecharge:setTouchable(false)
+        self._btnRecharge:getChild("red"):setVisible(false)
+        self._iconGrayed = true
+    elseif RechargeModule:getDayRechargeData(giftId) then
+        --可以领奖
+        self._btnRecharge:setTitle(GReadText.KET_MAIL_TIPS11)
+        self._btnRecharge:setGrayed(false)
+        self._btnRecharge:getChild("red"):setVisible(true)
+        self._btnRecharge:setTouchable(true)
+    elseif price == 0 then
+        --免费
+        self._btnRecharge:setTitle(GReadText.KET_MAIL_TIPS11)
+        self._btnRecharge:setGrayed(false)
+        self._btnRecharge:getChild("red"):setVisible(true)
+        self._btnRecharge:setTouchable(true)
+    else
+        --需购买
+        self._btnRecharge:setTitle("¥" .. price)
+        self._btnRecharge:setGrayed(false)
+        self._btnRecharge:getChild("red"):setVisible(false)
+        self._btnRecharge:setTouchable(true)
+    end
+    nowcount = maxcount - nowcount
+    self._textBuyCount:setText(string.format("%d/%d",nowcount,maxcount))
+
+    self._rewardData = data:getFixAward()
+    self._listReward:setNumItems(#self._rewardData)
+end
+
+function UICompDailyGiftRewardCell:onRenderItem(index, obj)
+    local itemData = self._rewardData[index + 1]
+    local itemType = tonumber(itemData[2])
+    local itemMeta = ""
+    local iconPath = ""
+    if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+        iconPath = "prop"
+        itemMeta = CacheManager:getItemMeta(tonumber(itemData[3]))
+    elseif itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+        iconPath = "equip"
+        itemMeta = CacheManager:queryEquipMeta(tonumber(itemData[3]))
+    end
+    local resUrl = string.format("ui://Item/%s_%s", iconPath, itemMeta:getIconId())
+    obj:setInfo(resUrl,iconPath,itemMeta:getIconId())
+    obj:setItemNums(itemData[4])
+    if self._iconGrayed then
+        obj:setGrayed(true)
+    else
+        obj:setGrayed(false)
+    end
+    obj.itemData = itemData
+    obj.itemMeta = itemMeta
+    obj:insertObjectToFactory(self:getRegClass())
+end
+
+function UICompDailyGiftRewardCell:onClickItem(context)
+    local data     = context:getData()
+    local itemData = data.itemData
+    if tonumber(itemData[2]) == Constant.ItemType.ITEM_TYPE_PROP then
+        local itemMeta = CacheManager:getItemMeta(tonumber(itemData[3]))
+        local itemInfo = ItemModule:getItemDataByConfig(itemMeta, nil, tonumber(itemData[4]))
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,
+            { itemInfo = itemInfo, tipsType = Constant.PROPTIPS_FORM.WILD })
+    elseif tonumber(itemData[2]) == Constant.ItemType.ITEM_TYPE_EQUIP then
+        local itemMeta = CacheManager:queryEquipMeta(tonumber(itemData[3]))
+        local itemInfo = ItemModule:getItemDataByConfig(itemMeta, nil, tonumber(itemData[4]))
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,
+            { itemInfo = itemInfo, tipsType = Constant.EquipShowTipsType.Display })
+    end
+end
+
+function UICompDailyGiftRewardCell:onBtnGotoClick(target)
+    -- 拉起支付 or 领取
+    local giftId = self._data:getGiftId()
+    local price = self._data:getPrice()
+    if RechargeModule:getDayGiftData(giftId) then
+        
+    elseif RechargeModule:getDayRechargeData(giftId) then
+        --可以领奖
+        RechargeModule:sendGetDayGiftRewardReq(giftId)
+    elseif price == 0 and not RechargeModule:getDayGiftData(giftId) then
+        RechargeModule:sendGetDayGiftRewardReq(giftId)
+    else
+        --需购买
+        RechargeModule:sendCreateOrder(self._data:getRechargeId())
+    end
+end
+
+return UICompDailyGiftRewardCell

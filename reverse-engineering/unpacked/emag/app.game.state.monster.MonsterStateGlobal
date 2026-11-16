@@ -1,0 +1,31 @@
+
+local MonsterStateGlobal = class("MonsterStateGlobal", lt.MonsterStateBase)
+
+function MonsterStateGlobal:ctor(monsterAgent)
+    MonsterStateGlobal.super.ctor(self, monsterAgent)
+end
+
+function MonsterStateGlobal:onClear()
+end
+
+function MonsterStateGlobal:onEnter()
+end
+
+function MonsterStateGlobal:onExit()
+end
+
+function MonsterStateGlobal:onUpdate()
+end
+
+function MonsterStateGlobal:onMessage(msg)
+end
+
+function MonsterStateGlobal:getStateId()
+    return lt.Constant.MONSTER_STATE_GLOBAL
+end
+
+function MonsterStateGlobal:getStateName()
+    return "MonsterStateGlobal"
+end
+
+return MonsterStateGlobal

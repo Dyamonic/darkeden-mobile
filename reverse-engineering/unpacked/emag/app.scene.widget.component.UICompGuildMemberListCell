@@ -1,0 +1,92 @@
+--- 公会成员列表Cell
+---@class UICompGuildMemberListCell
+local UICompGuildMemberListCell          = class("UICompGuildMemberListCell", lt.UIGButtonBase)
+
+local NtfManager                         = lt.NtfManager
+local CommonModule                       = lt.CommonModule
+local Constant                           = lt.Constant
+local GuildModule                        = lt.GuildModule
+local GameModule                         = lt.GameModule
+local CommonUtil                         = lt.CommonUtil
+
+UICompGuildMemberListCell.ChangeSkinConf = {
+    ["Guild"] = {
+        ["bg"] = "bg_gonghuixt_03",
+    },
+}
+
+function UICompGuildMemberListCell:ctor()
+    UICompGuildMemberListCell.super.ctor(self)
+    self._playerInfo = nil
+end
+
+function UICompGuildMemberListCell:onEnter()
+    UICompGuildMemberListCell.super.onEnter(self)
+    self:addClickListener(handler(self, self.onClickBtn))
+end
+
+function UICompGuildMemberListCell:onExit()
+    self:removeClickListener()
+    UICompGuildMemberListCell.super.onExit(self)
+end
+
+function UICompGuildMemberListCell:onClear()
+    self._imgJob       = nil
+    self._lblName      = nil
+    self._lblLv        = nil
+    self._lblDuty      = nil
+    self._lblLoginTime = nil
+    self._bgSelect     = nil
+    self._playerInfo   = nil
+    UICompGuildMemberListCell.super.onClear(self)
+end
+
+function UICompGuildMemberListCell:onConstruct()
+    self._imgJob       = self:getChild("bg_guildIcon")
+    self._lblName      = self:getChild("lbl_name")
+    self._lblLv        = self:getChild("lbl_lv")
+    self._lblDuty      = self:getChild("lbl_post")
+    self._lblLoginTime = self:getChild("lbl_logintime")
+    self._bgSelect     = self:getChild("bg_select")
+end
+
+function UICompGuildMemberListCell:setInfo(info, index)
+    self._lblName:setText(info.name)
+    local isAdvanve = info.advanceState
+    if isAdvanve == Constant.AdvState.NotAdv then
+        local level = info.level or 0
+        self._lblLv:setText("Lv." .. level)
+    else
+        local level = info.advanceLv or 1
+        self._lblLv:setText("Av." .. level)
+    end
+    self._lblDuty:setText(Constant.GuildDutyStr[info.duty])
+    self._lblLoginTime:setText(GuildModule:getLastTimeStr(info.lastLogoutTime)) --最后一次登录时间 0表示在线
+    self._imgJob:setURL(string.format(_GURL.GetImageJob, info.iconId))
+    local myplayerId = GameModule:getHeroData():getPlayerId()
+    local color = (myplayerId == info.playerId) and CommonUtil:convertColorWithX("#dda411") or
+        CommonUtil:convertColorWithX("#ffffff")
+    local isOnline = info.lastLogoutTime == 0
+    self._lblName:setAlpha(isOnline and 1 or 0.5)
+    self._lblName:setColor(color)
+    self._lblLv:setAlpha(isOnline and 1 or 0.5)
+    self._lblLv:setColor(color)
+    self._lblDuty:setAlpha(isOnline and 1 or 0.5)
+    self._lblDuty:setColor(color)
+    local ontimeColor = isOnline and CommonUtil:convertColorWithX("#71bf42") or
+        CommonUtil:convertColorWithX("#ffffff")
+    self._lblLoginTime:setColor(ontimeColor)
+    self._lblLoginTime:setAlpha(isOnline and 1 or 0.5)
+
+    self._playerInfo = info
+end
+
+function UICompGuildMemberListCell:setSelected(select)
+    self._bgSelect:setVisible(select)
+end
+
+function UICompGuildMemberListCell:onClickBtn(obj)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_GUILDMEMBER_LIST_SELECT, { data = self })
+end
+
+return UICompGuildMemberListCell

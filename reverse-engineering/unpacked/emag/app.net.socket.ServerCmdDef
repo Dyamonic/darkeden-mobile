@@ -1,0 +1,373 @@
+
+---------------服务器端发往客户端消息----------------
+local ServerCmdDef = {}
+
+-----------基础功能协议定义从100开始到199------------
+ServerCmdDef.BILLBOARD			    = 100  --登录时的公告窗口
+ServerCmdDef.HERO_DATA_INFO         = 101   --上线通知角色属性
+ServerCmdDef.ENTER_GS_NOTIFY        = 102   --上线通知协议
+ServerCmdDef.APPEAR_MAP_PROPERTY    = 103   --出现在地图的地图属性
+ServerCmdDef.OBJ_APPEAR             = 104   --对象出现包
+ServerCmdDef.OBJ_DISAPPEAR          = 105   --对象消失包
+ServerCmdDef.OBJ_MOVE               = 106   --对象移动包
+ServerCmdDef.OBJ_ATTACK             = 107   --对象攻击包
+ServerCmdDef.OBJ_DIE                = 108   --对象死亡包
+ServerCmdDef.OBJ_APPEARANCE_CHANGE  = 109   --对象外观改变
+ServerCmdDef.HERO_PROPERTY_CHANGE   = 110   --角色属性改变
+ServerCmdDef.HP_MP_CHANGE           = 111   --角色红蓝变化包
+ServerCmdDef.MOVE_ACK               = 112   --移动反馈
+ServerCmdDef.ATTACK_ACK             = 113   --攻击反馈
+ServerCmdDef.POP_MSG                = 115   --pop msg，类似于经验增加XX
+ServerCmdDef.CHAT_MSG               = 116   --聊天消息
+ServerCmdDef.RELIVE_ACK             = 117   --复活
+ServerCmdDef.ALL_BODY_STATUS        = 118   --buff
+ServerCmdDef.BODY_STATUS            = 119   --buff
+ServerCmdDef.OBJ_JUMP               = 122   -- 飞行或短距离瞬移跳转包
+ServerCmdDef.CANCEL_TRANSFORM       = 123   -- 取消变身
+ServerCmdDef.NPC_CLOSE              = 124   -- 关闭npc对话框
+ServerCmdDef.NAME_COLOR             = 125   -- 名字颜色
+ServerCmdDef.S_WARNING_EFFECT       = 126   -- 对象预警
+ServerCmdDef.COUNT_DOWN		        = 128	-- 倒计时
+ServerCmdDef.S_KICKOUT              = 127   -- T人
+ServerCmdDef.ACTIVITY_UPDATE_ACK    = 131   -- 在线活动回应与推送
+ServerCmdDef.ACTIVITY_UPDATE_FINISH = 132	-- 在线活动回应与推送完成
+
+ServerCmdDef.NpcOperation_JumpMap         =  135 -- NPC操作-地图传送
+ServerCmdDef.NpcOperation_Recover         =  136 -- NPC操作-回复满血   
+ServerCmdDef.NpcOperation_ExchangeItem    =  137 -- NPC操作-道具兑换              
+ServerCmdDef.NpcOperation_BuyStorge       =  138 -- NPC操作-购买仓库      
+ServerCmdDef.NpcOperation_FindMotorcycle  =  139 -- NPC操作-摩托车找回  
+
+ServerCmdDef.S_USEITEM_ACK			= 206   --客户端传来的是假物品
+
+----------物品装备协议200开始---------------------------
+ServerCmdDef.PACKAGEITEM			= 200   --返回包裹中的物品
+ServerCmdDef.EQUIPMENT				= 201   --返回装备
+ServerCmdDef.STORAGEITEM		    = 202   --仓库中的物品信息
+ServerCmdDef.ITEM_INTO_PACKAGE		= 203   --物品到包裹中
+ServerCmdDef.ITEM_EQUIP_ACK		    = 204   --物品装备成功或失败
+ServerCmdDef.ITEM_UNEQUIP_ACK		= 205   --物品卸载成功或失败
+ServerCmdDef.ITEM_AUTOTIDY			= 207   --自动整理物品完毕
+ServerCmdDef.ITEM_TAKEN_ACK		    = 208   --从仓库取回物品结果
+ServerCmdDef.ITEM_STORED_ACK		= 209   --存仓结果
+ServerCmdDef.POP_BAG			    = 210   --弹出买卖等物品托盘
+ServerCmdDef.ITEM_RECYCLE_ACK		= 211   --回收物品结果
+ServerCmdDef.TAKEBACK_ITEM			= 212   --服务器收回玩家包裹物品
+ServerCmdDef.ITEM_PROPERTY_CHANGE   = 215   -- 刷新物品属性
+ServerCmdDef.PECK_ITEM_ACK          = 220   -- 物品丢弃结果
+ServerCmdDef.CLEAR_PACK             = 221   -- 清空背包
+ServerCmdDef.PICKUP_ERROR			= 226	-- 捡物品失败
+ServerCmdDef.S_BELT_ITEM            = 228   -- 腰带位列表
+ServerCmdDef.EXPAND_BAG_LIST        = 231   -- 拓展背包List
+ServerCmdDef.EXPAND_BAG             = 232   -- 拓展穿上背包
+ServerCmdDef.S_BELT_ITEM_OPERATE    = 233   -- 腰带放入、卸下
+ServerCmdDef.EQUIP_LEVELUP_OPERATE  = 234   -- 装备升级/升阶结果
+ServerCmdDef.EQUIP_BLESSING_OPERATE = 235   -- 装备祝福结果
+ServerCmdDef.EQUIP_STRENGTHEN_OPERATE = 236 -- 装备词条强化结果
+ServerCmdDef.EQUIP_COMPOSE_OPERATE  = 237   -- 装备合成结果
+ServerCmdDef.EQUIP_INHERIT_OPERATE  = 238   -- 装备传承结果
+ServerCmdDef.EQUIP_RECASTING_OPERATE= 239   -- 装备重铸结果
+ServerCmdDef.EQUIP_PURIFY_OPERATE   = 240   -- 装备净化结果
+ServerCmdDef.OPEN_SHOP_OPERATE      = 241   -- 打开商店标签结果
+ServerCmdDef.EQUIP_REPAIR_OPERATE   = 244   -- 维修结果
+ServerCmdDef.EQUIP_SELL_OPERATE     = 245   -- 出售结果
+
+----------技能协议300开始---------------------------
+ServerCmdDef.S_SINGLE_SKILL         = 300 -- 单个技能信息
+ServerCmdDef.S_SKILL_LIST           = 301 -- 所有技能信息
+ServerCmdDef.S_LEARN_SKILL          = 302 -- 学习技能
+ServerCmdDef.S_SKILL_DELETE         = 303 -- 删除技能
+ServerCmdDef.S_PASSIVE_SKILL_LIST   = 304 -- 所有被动技能信息
+ServerCmdDef.S_UPGRADE_SKILL        = 305 -- 升级技能
+ServerCmdDef.S_RETURN_SKIL          = 306 -- 回退技能
+ServerCmdDef.S_CROSS_COUNTER_NOTIFY = 307 -- 反击技能
+
+
+ServerCmdDef.S_CleanClassSkill      = 670 -- 清除阶级技能
+ServerCmdDef.S_AssignAttributePoint = 671
+
+--组队
+ServerCmdDef.S_HALL_INFO_RESP               = "PROTOID_CS_HALL_INFO_RESP_ENUM"              --组队大厅信息返回
+ServerCmdDef.S_APPLY_IN_TEAM_RESP           = "PROTOID_CS_APPLY_IN_TEAM_RESP_ENUM"          --申请加入队伍返回
+ServerCmdDef.S_ONE_KEY_APPLY_IN_TEAM_RESP   = "PROTOID_CS_ONE_KEY_APPLY_IN_TEAM_RESP_ENUM"  --一键申请加入队伍返回
+ServerCmdDef.S_MY_TEAM_INFO_RESP            = "PROTOID_CS_MY_TEAM_INFO_RESP_ENUM"           --我的队伍信息返回
+ServerCmdDef.S_SIGN_ALLOW_RESP              = "PROTOID_CS_SIGN_ALLOW_RESP_ENUM"             --是否允许被邀请标记返回
+ServerCmdDef.S_CREATE_TEAM_RESP             = "PROTOID_CS_CREATE_TEAM_RESP_ENUM"            --创建队伍返回
+ServerCmdDef.S_FAST_JOIN_IN_TEAM_RESP       = "PROTOID_CS_FAST_JOIN_IN_TEAM_RESP_ENUM"      --快速组队返回
+ServerCmdDef.S_APPLY_TEAM_LIST_RESP         = "PROTOID_CS_APPLY_TEAM_LIST_RESP_ENUM"        --组队申请列表返回
+ServerCmdDef.S_AGREE_IN_TEAM_RESP           = "PROTOID_CS_AGREE_IN_TEAM_RESP_ENUM"          --(申请列表) 同意入队返回
+ServerCmdDef.S_REJECT_IN_TEAM_RESP          = "PROTOID_CS_REJECT_IN_TEAM_RESP_ENUM"         --(申请列表) 拒绝入队返回
+ServerCmdDef.S_CLEAR_APPLY_TEAM_LIST_RESP   = "PROTOID_CS_CLEAR_APPLY_TEAM_LIST_RESP_ENUM"  --清空申请列表返回
+ServerCmdDef.S_KICK_TEAM_RESP               = "PROTOID_CS_KICK_TEAM_RESP_ENUM"              --踢出队伍返回
+ServerCmdDef.S_SET_TEAM_BASE_INFO_RESP      = "PROTOID_CS_SET_TEAM_BASE_INFO_RESP_ENUM"     --设置队伍信息返回
+ServerCmdDef.S_INVITE_TEAM_RESP             = "PROTOID_CS_INVITE_TEAM_RESP_ENUM"            --邀请组队返回
+ServerCmdDef.S_AGREE_TO_TEAM_RESP           = "PROTOID_CS_AGREE_TO_TEAM_RESP_ENUM"          --(邀请入队)同意入队返回
+ServerCmdDef.S_REJECT_TO_TEAM_RESP          = "PROTOID_CS_REJECT_TO_TEAM_RESP_ENUM"         --(邀请入队)拒绝入队返回
+ServerCmdDef.S_EXIT_TEAM_RESP               = "PROTOID_CS_EXIT_TEAM_RESP_ENUM"              --退出队伍返回
+ServerCmdDef.S_TRANSFER_CAPTAIN_RESP        = "PROTOID_CS_TRANSFER_CAPTAIN_RESP_ENUM"       --转让队长返回
+ServerCmdDef.S_IN_TEAM_NTF                  = "PROTOID_CS_IN_TEAM_NTF_ENUM"                 --进入队伍成功通知
+ServerCmdDef.S_APPLY_TEAM_LIST_NTF          = "PROTOID_CS_APPLY_TEAM_LIST_NTF_ENUM"         --申请列表又变动通知
+ServerCmdDef.S_KICK_OF_TEAM_NTF             = "PROTOID_CS_KICK_OF_TEAM_NTF_ENUM"            --被踢出队伍通知
+ServerCmdDef.S_INVITE_TEAM_NTF              = "PROTOID_CS_INVITE_TEAM_NTF_ENUM"             --被邀请人通知
+ServerCmdDef.S_REJECT_INVITED_NTF           = "PROTOID_CS_REJECT_INVITED_NTF_ENUM"          --邀请人被拒绝通知
+ServerCmdDef.S_REJECTED_NTF                 = "PROTOID_CS_REJECTED_NTF_ENUM"                --通知被拒绝者
+
+
+ServerCmdDef.S_CHAT_RESP                    = "PROTOID_CS_CHAT_RESP_ENUM"                     --聊天回包
+ServerCmdDef.S_CHAT_INFO_NTF                = "PROTOID_CS_CHAT_INFO_NTF_ENUM"                 --聊天通知
+ServerCmdDef.S_CHAT_NUM_RESP                = "PROTOID_CS_CHAT_NUM_RESP_ENUM"                 --聊天次数
+
+--邮件
+ServerCmdDef.S_GET_MAIL_LIST_RESP           = "PROTOID_CS_GET_MAIL_LIST_RESP_ENUM"          --获取邮件列表返回
+ServerCmdDef.S_GET_MAIL_INFO_RESP           = "PROTOID_CS_GET_MAIL_INFO_RESP_ENUM"          --获取邮件信息返回
+ServerCmdDef.S_DELETE_MAIL_RESP             = "PROTOID_CS_DELETE_MAIL_RESP_ENUM"            --删除邮件返回
+ServerCmdDef.S_EMAIL_ONE_CLICK_READ_RESP    = "PROTOID_CS_EMAIL_ONE_CLICK_READ_RESP_ENUM"   --一键已读邮件返回
+ServerCmdDef.S_MAIL_UPDATE_NTF              = "PROTOID_CS_MAIL_UPDATE_NTF_ENUM"             --邮件数据更新（读取状态，附件领取等）通知
+ServerCmdDef.S_NEW_MEAIL_NTF                = "PROTOID_CS_NEW_MEAIL_NTF_ENUM"               --新邮件通知
+
+--跳转点
+ServerCmdDef.S_JUMP_TO_TRANSFER_POINT_RESP  = "PROTOID_CS_JUMP_TO_TRANSFER_POINT_RESP_ENUM" --跳转点返回
+ServerCmdDef.S_MAP_CHANGED_NTF              = "PROTOID_CS_MAP_CHANGED_NTF_ENUM"             --地图变更通知其他人(如：队友)
+ServerCmdDef.S_QUERY_TEAMMATE_POS_RESP      = "PROTOID_CS_QUERY_TEAMMATE_POS_RESP_ENUM"     --查询队友位置返回
+
+-- 好友
+ServerCmdDef.S_FRIEND_LLIST_RESP             = "PROTOID_CS_FRIEND_LLIST_RESP_ENUM"          --好友 列表 resp
+ServerCmdDef.S_FRIEND_APPLY_LIST_RESP        = "PROTOID_CS_FRIEND_APPLY_LIST_RESP_ENUM"     --好友 申请列表 resp
+ServerCmdDef.S_FRIEND_APPLY_RESP             = "PROTOID_CS_FRIEND_APPLY_RESP_ENUM"          --好友 申请 resp
+ServerCmdDef.S_FRIEND_ACCEPT_RESP            = "PROTOID_CS_FRIEND_ACCEPT_RESP_ENUM"         --好友 接受申请 resp
+ServerCmdDef.S_NTF_NEW_FRIEND                = "PROTOID_CS_NTF_NEW_FRIEND_ENUM"             --好友申请被通过 通知ntf
+ServerCmdDef.S_FRIEND_DELETE_RESP            = "PROTOID_CS_FRIEND_DELETE_RESP_ENUM"         --好友 删除 resp
+ServerCmdDef.S_FRIEND_ALLOW_ADD_SIGN_RESP    = "PROTOID_CS_FRIEND_ALLOW_ADD_SIGN_RESP_ENUM" --好友 设置允许添加标记 resp
+ServerCmdDef.S_RECOVER_TENDENCIES_RESP      = "PROTOID_CS_RECOVER_TENDENCIES_RESP_ENUM"     --npc回复善恶值返回
+
+-- 公会
+ServerCmdDef.S_CREATE_GUILD_RESP             = "PROTOID_CS_CREATE_GUILD_RESP_ENUM"          --公会创建 resp
+ServerCmdDef.S_GUILD_LIST_RESP               = "PROTOID_CS_GUILD_LIST_RESP_ENUM"            --公会列表 resp
+ServerCmdDef.S_GUILD_DETAIL_RESP             = "PROTOID_CS_GUILD_DETAIL_RESP_ENUM"          --公会详情 resp
+ServerCmdDef.S_GUILD_APPLY_RESP              = "PROTOID_CS_GUILD_APPLY_RESP_ENUM"           --公会申请 resp
+ServerCmdDef.S_GUILD_APPLY_LIST_RESP         = "PROTOID_CS_GUILD_APPLY_LIST_RESP_ENUM"      --公会申请列表 resp
+ServerCmdDef.S_GUILD_APPLY_OPT_RESP          = "PROTOID_CS_GUILD_APPLY_OPT_RESP_ENUM"       --公会申请操作 resp
+ServerCmdDef.S_GUILD_INVITE_SEND_RESP        = "PROTOID_CS_GUILD_INVITE_SEND_RESP_ENUM"     --公会邀请 resp
+ServerCmdDef.S_GUILD_INVITE_OPT_RESP         = "PROTOID_CS_GUILD_INVITE_OPT_RESP_ENUM"      --公会邀请操作 resp
+ServerCmdDef.S_GUILD_LEAVE_RESP              = "PROTOID_CS_GUILD_LEAVE_RESP_ENUM"           --离开公会 resp
+ServerCmdDef.S_GUILD_KICK_RESP               = "PROTOID_CS_GUILD_KICK_RESP_ENUM"            --踢人 resp
+ServerCmdDef.S_GUILD_DELETE_RESP             = "PROTOID_CS_GUILD_DELETE_RESP_ENUM"          --解散公会 resp
+ServerCmdDef.S_GUILD_SET_DUTY_RESP           = "PROTOID_CS_GUILD_SET_DUTY_RESP_ENUM"        --设置职位 resp
+ServerCmdDef.S_GUILD_MEMBER_JOIN_NTF         = "PROTOID_CS_GUILD_MEMBER_JOIN_NTF_ENUM"      --玩家加入 ntf
+ServerCmdDef.S_GUILD_MEMBER_LEAVE_NTF        = "PROTOID_CS_GUILD_MEMBER_LEAVE_NTF_ENUM"     --玩家离开 ntf
+ServerCmdDef.S_GUILD_MEMBER_UPDATE_NTF       = "PROTOID_CS_GUILD_MEMBER_UPDATE_NTF_ENUM"    --玩家信息更新 ntf
+ServerCmdDef.S_GUILD_INVITE_NTF              = "PROTOID_CS_GUILD_INVITE_NTF_ENUM"           --收到公会邀请 ntf
+ServerCmdDef.S_GUILD_UPDATE_NTF              = "PROTOID_CS_GUILD_UPDATE_NTF_ENUM"           --公会基础信息更新 ntf
+ServerCmdDef.S_GUILD_SET_NOTICE_RESP         = "PROTOID_CS_GUILD_SET_NOTICE_RESP_ENUM"      --设置公告 resp
+ServerCmdDef.S_GUILDPLAYERAPPLYLISTNTF       = "PROTOID_CS_GUILD_PLAYER_APPLY_LIST_NTF_ENUM"--申请列表 ntf
+ServerCmdDef.S_GUILD_HAS_APPLY_NTF           = "PROTOID_CS_GUILD_HAS_APPLY_NTF_ENUM"        --公会有人申请 ntf
+ServerCmdDef.S_CANCEL_GUILD_APPLY_RESP       = "PROTOID_CS_CANCEL_GUILD_APPLY_RESP_ENUM"    --取消公会申请 resp
+
+--任务
+ServerCmdDef.S_TASK_LIST_RESP               = "PROTOID_CS_TASK_LIST_RESP_ENUM"              --任务列表返回
+ServerCmdDef.S_TASK_LEADING_RESP            = "PROTOID_CS_TASK_LEADING_RESP_ENUM"           --接取任务返回
+ServerCmdDef.S_TASK_COMMIT_RESP             = "PROTOID_CS_TASK_COMMIT_RESP_ENUM"            --完成任务返回
+ServerCmdDef.S_TASK_RECEIVE_REWARD_RESP     = "PROTOID_CS_TASK_RECEIVE_REWARD_RESP_ENUM"    --领取任务奖励返回
+ServerCmdDef.S_TASK_GIVE_UP_RESP            = "PROTOID_CS_TASK_GIVE_UP_RESP_ENUM"           --放弃任务返回
+ServerCmdDef.S_TASK_JUMP_UP_RESP            = "PROTOID_CS_TASK_JUMP_UP_RESP_ENUM"           --任务传送地图返回
+ServerCmdDef.S_RECEIVE_TASK_BOX_REWARD_RESP = "PROTOID_CS_RECEIVE_TASK_BOX_REWARD_RESP_ENUM"--领取宝箱奖励返回
+ServerCmdDef.S_RECEIVE_ALL_TASK_REWARD_RESP = "PROTOID_CS_RECEIVE_ALL_TASK_REWARD_RESP_ENUM"--一键领取任务奖励返回
+ServerCmdDef.S_TALK_NPC_RESP                = "PROTOID_CS_TALK_NPC_RESP_ENUM"               --npc对话任务返回
+ServerCmdDef.S_TASK_INFO_NTF                = "PROTOID_CS_TASK_INFO_NTF_ENUM"               --任务更新通知NTF
+
+ServerCmdDef.S_HOLYBOOK_LIST_RESP           = "PROTOID_CS_HOLYBOOK_LIST_RESP_ENUM"          --圣书列表
+ServerCmdDef.S_HOLYBOOK_BORROW_RESP         = "PROTOID_CS_HOLYBOOK_BORROW_RESP_ENUM"        --借圣书
+ServerCmdDef.S_SET_RELIVE_POINT_RESP        = "PROTOID_CS_SET_RELIVE_POINT_RESP_ENUM"       --指定复活点返回
+ServerCmdDef.S_NPC_SIGN_CONTRACT_RESP       = "PROTOID_CS_NPC_SIGN_CONTRACT_RESP_ENUM"      --签约(魔族)返回
+
+--商城
+ServerCmdDef.S_SHOPPING_MALL_LIST_RESP      = "PROTOID_CS_SHOPPING_MALL_LIST_RESP_ENUM"     --商城列表返回
+ServerCmdDef.S_SHOPPING_MALL_BUY_RESP       = "PROTOID_CS_SHOPPING_MALL_BUY_RESP_ENUM"      --购买商品返回
+ServerCmdDef.S_SPECIAL_TIME_NTF             = "PROTOID_CS_SPECIAL_TIME_NTF_ENUM"            --特殊整点通知NTF
+
+--宠物
+ServerCmdDef.S_PET_LIST_RESP                = "PROTOID_CS_PET_LIST_RESP_ENUM"               --宠物列表返回
+ServerCmdDef.S_PET_DETAIL_RESP              = "PROTOID_CS_PET_DETAIL_RESP_ENUM"             --宠物详情返回
+ServerCmdDef.S_PET_CAPTURE_RESP             = "PROTOID_CS_PET_CAPTURE_RESP_ENUM"            --宠物捕捉返回
+ServerCmdDef.S_PET_UPDATE_NTF               = "PROTOID_CS_PET_UPDATE_NTF_ENUM"              --宠物数据更新NTF
+ServerCmdDef.S_PET_CAPTURE_NTF              = "PROTOID_CS_PET_CAPTURE_NTF_ENUM"             --宠物捕获结果NTF
+ServerCmdDef.S_PET_FIGHT_RESP               = "PROTOID_CS_PET_FIGHT_RESP_ENUM"              --宠物出战或休息返回
+ServerCmdDef.S_PET_TAKEOUT_RESP             = "PROTOID_CS_PET_TAKEOUT_RESP_ENUM"            --宠物取出返回
+ServerCmdDef.S_PET_OPENDIG_RESP             = "PROTOID_CS_PET_OPENDIG_RESP_ENUM"            --宠物开启挖掘返回
+ServerCmdDef.S_PET_SIGN_RESP                = "PROTOID_CS_PET_SIGN_RESP_ENUM"               --宠物签名返回
+ServerCmdDef.S_PET_RAISE_RESP               = "PROTOID_CS_PET_RAISE_RESP_ENUM"              --宠物驯养返回
+ServerCmdDef.S_PET_FEED_RESP                = "PROTOID_CS_PET_FEED_RESP_ENUM"               --宠物喂食返回
+ServerCmdDef.S_PET_RELIVE_RESP              = "PROTOID_CS_PET_RELIVE_RESP_ENUM"             --宠物复活返回
+ServerCmdDef.S_PET_CAPSULE_RESP             = "PROTOID_CS_PET_CAPSULE_RESP_ENUM"            --宠物胶囊返回
+ServerCmdDef.S_PET_COMPOSE_RESP             = "PROTOID_CS_PET_COMPOSE_RESP_ENUM"            --宠物合成返回
+ServerCmdDef.S_PET_STORE_LIST_RESP          = "PROTOID_CS_PET_STORE_LIST_RESP_ENUM"         --宠物仓库返回
+ServerCmdDef.S_PET_MAXSTORAGE_NTF           = "PROTOID_CS_PET_MAXSTORAGE_NTF_ENUM"          --宠物仓库最大数量更新NTF
+ServerCmdDef.S_PET_STOREITEM_RESP           = "PROTOID_CS_PET_STOREITEM_RESP_ENUM"          --宠物道具存仓返回
+ServerCmdDef.S_PET_TAKEOUT_STOREITEM_RESP   = "PROTOID_CS_PET_TAKEOUT_STOREITEM_RESP_ENUM"  --宠物道具仓库取出返回
+ServerCmdDef.S_PET_SKIN_LVUPRESP            = "PROTOID_CS_PET_SKIN_LVUP_RESP_ENUM"          --宠物皮肤升级返回
+ServerCmdDef.S_PET_SKINNTF                  = "PROTOID_CS_PET_SKIN_NTF_ENUM"                --宠物皮肤更新
+ServerCmdDef.S_PET_SKIN_WEAR_RESP           = "PROTOID_CS_PET_SKIN_WEAR_RESP_ENUM"          --宠物皮肤穿戴返回
+ServerCmdDef.S_PET_SKIN_UNWEAR_RESP         = "PROTOID_CS_PET_SKIN_UNWEAR_RESP_ENUM"        --宠物皮肤卸下返回
+ServerCmdDef.S_PET_USEITEMRESP              = "PROTOID_CS_PET_USEITEM_RESP_ENUM"            --宠物使用道具返回
+
+-- 副本
+ServerCmdDef.S_NPC_VAMPIRE_LAIR_INFO_NTF    = "PROTOID_CS_NPC_VAMPIRE_LAIR_INFO_NTF_ENUM"    --副本状态协议
+ServerCmdDef.S_NPC_VAMPIRE_LAIR_INFO_RESP   = "PROTOID_CS_NPC_VAMPIRE_LAIR_INFO_RESP_ENUM"   --副本状态
+ServerCmdDef.S_TRANSFER_BY_CONFIG_RESP      = "PROTOID_CS_TRANSFER_BY_CONFIG_RESP_ENUM"      --地图跳转反馈
+
+-- Vip
+ServerCmdDef.S_VIP_RESP                     = "PROTOID_CS_VIP_RESP_ENUM" 
+ServerCmdDef.S_BUY_VIP_RESP                 = "PROTOID_CS_BUY_VIP_RESP_ENUM" 
+ServerCmdDef.S_RECEIVE_VIP_REWARD_RESP      = "PROTOID_CS_RECEIVE_VIP_REWARD_RESP_ENUM" 
+-- 交易行
+ServerCmdDef.S_TRANSACTION_LIST_RESP        = "PROTOID_CS_TRANSACTION_LIST_RESP_ENUM"
+ServerCmdDef.S_TRANSACTION_SIMPLE_LIST_RESP = "PROTOID_CS_TRANSACTION_SIMPLE_LIST_RESP_ENUM"
+ServerCmdDef.S_PUT_ON_SALE_RESP             = "PROTOID_CS_PUT_ON_SALE_RESP_ENUM"
+ServerCmdDef.S_TAKE_DOWN_THE_SALE_RESP      = "PROTOID_CS_TAKE_DOWN_THE_SALE_RESP_ENUM"
+ServerCmdDef.S_ONCE_AGAIN_PUT_ON_SALE_RESP  = "PROTOID_CS_ONCE_AGAIN_PUT_ON_SALE_RESP_ENUM"
+ServerCmdDef.S_MARK_RESP                    = "PROTOID_CS_MARK_RESP_ENUM"
+ServerCmdDef.S_BUY_TRANSACTION_RESP         = "PROTOID_CS_BUY_TRANSACTION_RESP_ENUM"
+ServerCmdDef.S_TRADING_LOG_RESP             = "PROTOID_CS_TRADING_LOG_RESP_ENUM"
+ServerCmdDef.S_BIDDING_RESP                 = "PROTOID_CS_BIDDING_RESP_ENUM"
+
+--引导
+ServerCmdDef.S_GUIDE_STR_RESP               = "PROTOID_CS_GUIDE_STR_RESP_ENUM"
+ServerCmdDef.S_SET_GUIDE_STR_RESP           = "PROTOID_CS_SET_GUIDE_STR_RESP_ENUM"
+
+--副本任务
+ServerCmdDef.S_GATE_OF_ALTAR_NTF            = "PROTOID_CS_GATE_OF_ALTAR_NTF_ENUM"
+ServerCmdDef.S_ALTAR_OF_BLOOD_COMMIT_RESP   = "PROTOID_CS_ALTAR_OF_BLOOD_COMMIT_RESP_ENUM"
+ServerCmdDef.S_ALTAR_OF_BLOOD_NTF           = "PROTOID_CS_ALTAR_OF_BLOOD_NTF_ENUM"
+ServerCmdDef.S_MIRROR_OF_ABYSS_NTF          = "PROTOID_CS_MIRROR_OF_ABYSS_NTF_ENUM"
+ServerCmdDef.S_ADVANCE_NTF                  = "PROTOID_CS_ADVANCE_NTF_ENUM"
+
+-- 排行榜
+ServerCmdDef.S_RANK_LIST_RESP               = "PROTOID_CS_RANK_LIST_RESP_ENUM"
+ServerCmdDef.S_QUERY_PLAYER_RESP            = "PROTOID_CS_QUERY_PLAYER_RESP_ENUM"
+
+-- 成就
+ServerCmdDef.S_ACHIEVE_LIST_RESP            = "PROTOID_CS_ACHIEVE_LIST_RESP_ENUM"
+ServerCmdDef.S_ACHIEVE_REWARD_RESP          = "PROTOID_CS_ACHIEVE_REWARD_RESP_ENUM"
+ServerCmdDef.S_ACHIEVE_UPDATE_NTF           = "PROTOID_CS_ACHIEVE_UPDATE_NTF_ENUM"
+
+--交换转职装备
+ServerCmdDef.S_TRANSFORM_EQUIP_RESP         = "PROTOID_CS_TRANSFORM_EQUIP_RESP_ENUM"
+ServerCmdDef.S_ADVANCE_EQUIP_TRANSFORM_INFO_RESP = "PROTOID_CS_ADVANCE_EQUIP_TRANSFORM_INFO_RESP_ENUM"
+
+ServerCmdDef.S_ACHIEVE_JUMP_MAP_RESP        = "PROTOID_CS_ACHIEVE_JUMP_MAP_RESP_ENUM"
+
+
+ServerCmdDef.CS_CREATE_RECHARGE_ORDER_RESP   =   "PROTOID_CS_CREATE_RECHARGE_ORDER_RESP_ENUM";-- 创建订单响应
+
+-- vip自动售卖
+ServerCmdDef.S_VIP_AUTO_SELL_RESP             = "PROTOID_CS_VIP_AUTO_SELL_RESP_ENUM"
+
+-- 七日活动
+ServerCmdDef.S_QUERY_SEVEN_DAY_RESP             = "PROTOID_CS_QUERY_SEVEN_DAY_RESP_ENUM"--查询七日嘉年华数据
+ServerCmdDef.S_SEVEN_DAY_INFO_NTF               = "PROTOID_CS_SEVEN_DAY_INFO_NTF_ENUM"--七日嘉年华数据更新通知
+ServerCmdDef.S_GET_SEVEN_DAY_REWARD_RESP        = "PROTOID_CS_GET_SEVEN_DAY_REWARD_RESP_ENUM"--获取奖励
+ServerCmdDef.S_GET_SEVEN_DAY_ALREWARD_RESP      = "PROTOID_CS_GET_SEVEN_DAY_ALREWARD_RESP_ENUM" --活跃度奖励
+ServerCmdDef.S_SEVEN_DAY_TASK_JUMP_MAP_RESP     = "PROTOID_CS_SEVEN_DAY_TASK_JUMP_MAP_RESP_ENUM" --任务跳地图
+
+-- 服务端当前版本
+ServerCmdDef.CS_VERSION_RESP = "PROTOID_CS_VERSION_RESP_ENUM"
+
+-- 搜索怪物
+ServerCmdDef.CS_SEARCH_MONSTER_RESP = "PROTOID_CS_SEARCH_MONSTER_RESP_ENUM"
+
+-- 奖励展示
+ServerCmdDef.S_REWARD_NTF = "PROTOID_CS_REWARD_NTF_ENUM"
+
+-- 天天充值
+ServerCmdDef.S_DAILYRECHARGENTF             = "PROTOID_CS_DAILY_RECHARGE_NTF_ENUM"
+ServerCmdDef.S_GETDAILYRECHARGEREWARDRESP   = "PROTOID_CS_GET_DAILY_RECHARGE_REWARD_RESP_ENUM"
+
+
+--七日签到
+ServerCmdDef.CS_GET_SEVEN_DAY_SIGN_REWARD_RESP = "PROTOID_CS_GET_SEVEN_DAY_SIGN_REWARD_RESP_ENUM"   --签到奖励
+ServerCmdDef.CS_SEVEN_DAY_SIGN_NTF             = "PROTOID_CS_SEVEN_DAY_SIGN_NTF_ENUM"               --签到数据通知
+--等级礼包
+ServerCmdDef.CS_LEVELGIFT_REWARD_RESP          = "PROTOID_CS_LEVELGIFT_REWARD_RESP_ENUM"            --等级礼包领奖
+ServerCmdDef.CS_LEVELGIFT_INIT_RESP            = "PROTOID_CS_LEVELGIFT_INIT_RESP_ENUM"              --等级礼包初始化
+-----------------------------------------------------------------------------
+
+ServerCmdDef.ATTACK_MODE            = 412   -- 攻击状态
+ServerCmdDef.TEAM_INFO_REFURBISH    = 432   -- 队伍信息更新
+
+ServerCmdDef.RES_NEW_MEAIL          = 500    --新邮件
+ServerCmdDef.RES_MEAIL_UPDATE       = 501    --新邮件
+ServerCmdDef.RES_MEAIL_DELETE       = 502    --邮件删除
+ServerCmdDef.RES_EMAIL_LIST         = 503    --发送邮件列表
+ServerCmdDef.RES_EMAIL_INFO         = 504    --发送特定邮件具体信息
+ServerCmdDef.RES_EMAIL_READ         = 505    --一键邮件已读
+ServerCmdDef.SERVER_PHASE           = 528   -- 通知客户端服务器阶段
+ServerCmdDef.RED_DOT_NOTICE         = 529   -- 红点通知
+ServerCmdDef.SET_GAME_CONFIG        = 552   -- 发送设置信息
+ServerCmdDef.CHANGE_OF_NAME_RES     = 564   -- 改名结果
+
+ServerCmdDef.S_Daily_Task           = 622   --每日任务
+
+
+ServerCmdDef.S_VampireTunnel	= 675   -- --血之漩涡传送
+
+
+ServerCmdDef.S_DigCorpse         = 673  -- 怪物挖掘返回
+
+ServerCmdDef.S_CLEANAttributePoint  = 674  -- 清洗属性点返回
+
+ServerCmdDef.CS_TRANSFER_RESP = 10044 -- 地图跳转反馈
+ServerCmdDef.CS_CANCEL_BLOODDRAIN_BUFF_RESP           =   10806; --取消buff
+
+ServerCmdDef.CS_WEATHER_NTF                  =   10039;  -- 游戏中的天气
+ServerCmdDef.CS_DARK_LIGHT_NTF               =   10040;  -- 游戏中的光照
+ServerCmdDef.CS_LIGHTNING_NTF                =   10041;  -- 游戏中的闪电
+
+ServerCmdDef.CS_SOUL_CHAIN_RESP                =   10046;  -- 追踪灵魂锁链
+ServerCmdDef.CS_SET_DENY_TRACE_RESP           =   10048;-- 设置屏蔽追踪开关
+
+-- 客户端本地流量统计
+ServerCmdDef.C_STATISTIC_BYTES = 8888
+
+ServerCmdDef.CS_GIFT_CODE_RESP             = "PROTOID_CS_GIFT_CODE_RESP_ENUM"-- 礼包码兑换请求下行
+
+
+ServerCmdDef.CS_QUERY_FIRST_RECHARGER_RESP             = "PROTOID_CS_QUERY_FIRST_RECHARGER_RESP_ENUM"-- 查询首充信息
+ServerCmdDef.CS_FIRST_RECHARGE_GET_REWARD_RESP         = "PROTOID_CS_FIRST_RECHARGE_GET_REWARD_RESP_ENUM"-- 领取奖励首充
+ServerCmdDef.CS_FIRST_RECHARGE_NTF_RESP                = "PROTOID_CS_FIRST_RECHARGE_NTF_ENUM"--通知接口首充项购买
+
+ServerCmdDef.CS_DAY_GIFT_RESP                          = "PROTOID_CS_DAY_GIFT_RESP_ENUM"-- 查询每日
+ServerCmdDef.CS_DAY_GIFT_REWARD_RESP                   = "PROTOID_CS_DAY_GIFT_REWARD_RESP_ENUM"-- 领取奖励每日
+ServerCmdDef.CS_DAY_GIFT_NTF                           = "PROTOID_CS_DAY_GIFT_NTF_ENUM"--通知接口每日特惠
+ServerCmdDef.CS_MONTHCARD_REWARD_RESP                  = "PROTOID_CS_MONTHCARD_REWARD_RESP_ENUM"--月卡领取奖励回调
+ServerCmdDef.CS_MONTHCARD_INIT_RESP                    = "PROTOID_CS_MONTHCARD_INIT_RESP_ENUM"--月卡初始化回调
+ServerCmdDef.CS_MONTHCARD_UPDATE_NTF                   = "PROTOID_CS_MONTHCARD_UPDATE_NTF_ENUM"--月卡数据更新
+
+-- 坐骑
+ServerCmdDef.S_QUERY_MOUNT_RESP                        = "PROTOID_CS_QUERY_MOUNT_RESP_ENUM"  -- 查询返回
+ServerCmdDef.S_USE_MOUNT_RESP                          = "PROTOID_CS_USE_MOUNT_RESP_ENUM"    -- 使用坐骑
+ServerCmdDef.S_UPGRADE_MOUNT_RESP                      = "PROTOID_CS_UPGRADE_MOUNT_RESP_ENUM"-- 升级/激活坐骑
+
+ServerCmdDef.S_QUERY_HALO_RESP                         = "PROTOID_CS_QUERY_HALO_RESP_ENUM"   -- 查询光环
+ServerCmdDef.S_USE_HALO_RESP                           = "PROTOID_CS_USE_HALO_RESP_ENUM"     -- 使用光环
+ServerCmdDef.S_UPGRADE_HALO_RESP                       = "PROTOID_CS_UPGRADE_HALO_RESP_ENUM" -- 升级/激活光环
+ServerCmdDef.CS_EQUIP_MOTIVATE_RESP         = "PROTOID_CS_EQUIP_MOTIVATE_RESP_ENUM"  --首饰套激发
+ServerCmdDef.CS_EQUIP_UPGRADE_RESP          = "PROTOID_CS_EQUIP_UPGRADE_RESP_ENUM"   --首饰套精炼
+ServerCmdDef.CS_EQUIP_UPRANK_RESP           = "PROTOID_CS_EQUIP_UPRANK_RESP_ENUM"   --装备进阶
+
+ServerCmdDef.CS_GET_CLEARABLE_ATTRIBUTE_POINT_RESP  = "PROTOID_CS_GET_CLEARABLE_ATTRIBUTE_POINT_RESP_ENUM"  --获取可洗出属性点
+
+ServerCmdDef.CS_ENERGY_NTF                  = "PROTOID_CS_ENERGY_NTF_ENUM"   --查询精力数据
+ServerCmdDef.CS_GET_ENERGY_ITEMS_RESP       = "PROTOID_CS_GET_ENERGY_ITEMS_RESP_ENUM"   --领取精力道具
+ServerCmdDef.CS_USE_ITEM_BY_INDEX_RESP      = "PROTOID_CS_USE_ITEM_BY_INDEX_RESP_ENUM"  --使用道具
+
+ServerCmdDef.S_CONSUME_VOUCHER_RESP = "PROTOID_CS_CONSUME_VOUCHER_RESP_ENUM" -- 代金券
+
+ServerCmdDef.CS_WORLD_BOSS_LIST_RESP = "PROTOID_CS_WORLD_BOSS_LIST_RESP_ENUM" -- 世界boss
+
+-- 触发礼包
+ServerCmdDef.CS_TRIGGER_GIFT_RESP                  = "PROTOID_CS_TRIGGER_GIFT_RESP_ENUM"   --信息返回
+ServerCmdDef.CS_TRIGGER_GIFT_NTF                   = "PROTOID_CS_TRIGGER_GIFT_NTF_ENUM"    --信息变动 NTF
+
+ServerCmdDef.CS_FUNCTIONTOGGLENTF_NTF  = "PROTOID_CS_FUNCTION_TOGGLE_NTF_ENUM"  --功能开启【服务器数据】
+ServerCmdDef.CS_FUNCTION_CLOSED_RESP  = "PROTOID_CS_FUNCTION_CLOSED_RESP_ENUM"  --功能开启服务器拦截消息
+return  ServerCmdDef

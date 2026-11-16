@@ -1,0 +1,117 @@
+local MissionMeta = class("MissionMeta")
+
+local CommonFunc = lt.CommonFunc
+
+
+function MissionMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function MissionMeta:initWithRow(row)
+    self._missionId         = row.MissionId
+    self._missionType       = row.MissionType
+    self._afterMissionId    = row.AfterMissionId
+    self._race              = row.Race
+    self._missionName       = row.MissionName
+    self._missionDescript   = row.MissionDescript
+    self._missionObject     = row.MissionObject
+    self._objectType        = row.ObjectType
+    self._aLReward          = row.ALReward
+    self._arrowCueType      = row.ArrowCueType
+    self._time              = row.Time
+    self._functionId        = row.FunctionId
+    self._acceptanceNPCID   = row.AcceptanceNPCID
+    self._handingOverNPCID  = row.HandingOverNPCID
+    self._clickComplete     = row.ClickComplete
+    self._triggerMission    = row.TriggerMission
+    self._npcInterface      = row.NPCInterface
+    self._missionSkip       = row.MissionSkip
+
+    self._missionTarget     = json.decode(row.MissionTarget)
+    if row.Reward == "" then
+        self._reward = nil
+    else
+        self._reward = json.decode(row.Reward)
+    end
+    if row.NeedLv == "" then
+        self._needLv = {0, 0}
+    else
+        self._needLv = CommonFunc:analysisJsonToTable(row.NeedLv, true)
+    end
+    if row.RequireSum == "" then
+        self._requireSum = nil
+    else
+        self._requireSum = CommonFunc:analysisJsonToTable(row.RequireSum, true)
+    end
+    if row.NeedClass == "" then
+        self._needClass = {0, 0}
+    else
+        self._needClass = CommonFunc:analysisJsonToTable(row.NeedClass, true)
+    end
+    if row.ArrowCue == "" then
+        self._arrowCue = {}
+    else
+        self._arrowCue = CommonFunc:analysisJsonToTable(row.ArrowCue, true)
+    end
+    if row.TransferPoint == "" then
+        self._transferPoint = nil
+    else
+        self._transferPoint = CommonFunc:analysisJsonToTable(row.TransferPoint, true)
+    end
+end
+
+function MissionMeta:getMissionTarget()
+    return self._missionTarget
+end
+
+function MissionMeta:getReward()
+    return self._reward
+end
+
+function MissionMeta:getNeedLv()
+    return self._needLv
+end
+
+function MissionMeta:getRequireSum()
+    return self._requireSum
+end
+
+function MissionMeta:getNeedClass()
+    return self._needClass
+end
+
+function MissionMeta:getArrowCue()
+    return self._arrowCue
+end
+
+function MissionMeta:getTransferPoint()
+    return self._transferPoint
+end
+
+function MissionMeta:getMissionSkip()
+    return self._missionSkip
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function MissionMeta:getMissionId() return self._missionId end
+function MissionMeta:getMissionType() return self._missionType end
+function MissionMeta:getAfterMissionId() return self._afterMissionId end
+function MissionMeta:getRace() return self._race end
+function MissionMeta:getMissionName() return self._missionName end
+function MissionMeta:getMissionDescript() return self._missionDescript end
+function MissionMeta:getMissionObject() return self._missionObject end
+function MissionMeta:getObjectType() return self._objectType end
+function MissionMeta:getALReward() return self._aLReward end
+function MissionMeta:getArrowCueType() return self._arrowCueType end
+function MissionMeta:getTime() return self._time end
+function MissionMeta:getFunctionId() return self._functionId end
+function MissionMeta:getAcceptanceNPCID() return self._acceptanceNPCID end
+function MissionMeta:getHandingOverNPCID() return self._handingOverNPCID end
+function MissionMeta:getClickComplete() return self._clickComplete end
+function MissionMeta:getTriggerMission() return self._triggerMission end
+function MissionMeta:getNpcInterface() return self._npcInterface end
+
+-- AUTO GENERATED GETTERS END
+return MissionMeta

@@ -1,0 +1,88 @@
+local SevenDayMissionMeta = class("SevenDayMissionMeta")
+
+local CommonFunc = lt.CommonFunc
+
+
+function SevenDayMissionMeta:ctor(row)
+    self:initWithRow(row)
+end
+
+function SevenDayMissionMeta:initWithRow(row)
+    self._missionId        = row.MissionId
+    self._race             = row.Race
+    self._activityDay      = row.ActivityDay
+    self._activityDayTitle = row.ActivityDayTitle
+    self._missionName      = row.MissionName
+    self._missionObject    = row.MissionObject
+    self._objectType       = row.ObjectType
+    self._missionTarget    = row.MissionTarget
+    self._reward           = row.RewardDisplay
+    self._aLReward         = row.ALReward
+    self._arrowCueType     = row.ArrowCueType
+    self._arrowCue         = row.ArrowCue
+    self._time             = row.Time
+    self._record           = row.Record
+    self._missionLimit     = row.MissionLimit
+    self._transferPoint    = row.TransferPoint
+    self._functionId       = row.FunctionId
+    -- self._missionTargetConvert = json.decode(self._missionTarget)
+
+    if self._reward == "" then
+        self._rewardConvert =  {}
+    else
+        self._rewardConvert = json.decode(self._reward)
+    end
+
+    if row.MissionTarget == "" then
+        self._missionTargetConvert = nil
+    else
+        self._missionTargetConvert = json.decode(row.MissionTarget)
+    end
+    if self._arrowCue == "" then
+        self._arrowCueConvert = {}
+    end
+    self._arrowCueConvert = CommonFunc:analysisJsonToTable(self._arrowCue, true)
+
+    if self._transferPoint == "" then
+        self._transferPointConvert = {}
+    end
+    self._transferPointConvert = CommonFunc:analysisJsonToTable(self._transferPoint, true)
+    
+end
+
+function SevenDayMissionMeta:getMissionTarget()
+    return self._missionTargetConvert
+end
+
+function SevenDayMissionMeta:getReward()
+    return self._rewardConvert
+end
+
+function SevenDayMissionMeta:getArrowCue()
+    return self._arrowCueConvert
+end
+
+function SevenDayMissionMeta:getTransferPoint()
+    return self._transferPointConvert
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function SevenDayMissionMeta:getMissionId() return self._missionId end
+function SevenDayMissionMeta:getRace() return self._race end
+function SevenDayMissionMeta:getActivityDay() return self._activityDay end
+function SevenDayMissionMeta:getActivityDayTitle() return self._activityDayTitle end
+function SevenDayMissionMeta:getMissionName() return self._missionName end
+function SevenDayMissionMeta:getMissionDescript() return self._missionDescript end
+function SevenDayMissionMeta:getMissionObject() return self._missionObject end
+function SevenDayMissionMeta:getObjectType() return self._objectType end
+function SevenDayMissionMeta:getALReward() return self._aLReward end
+function SevenDayMissionMeta:getArrowCueType() return self._arrowCueType end
+function SevenDayMissionMeta:getTime() return self._time end
+function SevenDayMissionMeta:getRecord() return self._record end
+function SevenDayMissionMeta:getMissionLimit() return self._missionLimit end
+function SevenDayMissionMeta:getFunctionId() return self._functionId end
+
+-- AUTO GENERATED GETTERS END
+return SevenDayMissionMeta

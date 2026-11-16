@@ -1,0 +1,114 @@
+
+local ShopGoodsData = class("ShopGoodsData")
+
+local Constant = lt.Constant
+local StringManager = lt.StringManager
+local ItemModule = lt.ItemModule
+
+ShopGoodsData._maxNum    = nil
+-- ShopGoodsData._canBuyNum = nil
+ShopGoodsData._itemMeta  = nil
+ShopGoodsData._itemType  = nil
+ShopGoodsData._buyNum    = nil
+ShopGoodsData._costArray = nil
+
+function ShopGoodsData:ctor(goodsMeta, hasBuy)
+
+    self._hasBuy = hasBuy or 0
+    self:initShopGoodsData(goodsMeta)
+end
+
+function ShopGoodsData:initShopGoodsData(goodsMeta)
+    self._goodsId = goodsMeta:getGoodsId()
+    self._maxNum = goodsMeta:getMaxNum()
+    -- self._canBuyNum = self._maxNum - self._hasBuy
+    local itemMeta, num, itemType = self:getItemMetaByStr(goodsMeta:getGoods())
+    self._itemMeta = itemMeta
+    self._itemType = itemType
+    self._buyNum = num
+
+    self._costArray = {}
+    local returnMsg = string.split(goodsMeta:getCostGoods(), ";")
+    for i,v in ipairs(returnMsg) do
+        local itemMeta, num, itemType = self:getItemMetaByStr(v)
+        local msg = {}
+        msg.itemMeta = itemMeta
+        msg.num = tonumber(num)
+        msg.type = itemType
+        msg.id = itemMeta:getItemId()
+        msg.icon = itemMeta:getIconId()
+        msg.name = itemMeta:getName()
+        table.insert(self._costArray, msg)
+    end
+end
+
+function ShopGoodsData:getCurOwnNum()
+    return ItemModule:getItemNumByIdAndType(self._itemType, self._itemMeta:getItemId())
+end
+
+function ShopGoodsData:getItemNumByIdAndType(type, id)
+    return ItemModule:getItemNumByIdAndType(type, id)
+end
+
+function ShopGoodsData:getMaxNum()
+    return self._maxNum
+end
+
+function ShopGoodsData:getBuyNum()
+    return self._buyNum
+end
+
+function ShopGoodsData:setHasNum(num)
+    self._hasBuy = num
+end
+
+function ShopGoodsData:getCanBuyNum()
+    return self._maxNum - self._hasBuy
+end
+
+function ShopGoodsData:getGoodsId()
+    return self._goodsId
+end
+
+function ShopGoodsData:getItemMeta()
+    return self._itemMeta
+end
+
+function ShopGoodsData:getItemType()
+    return self._itemType
+end
+
+function ShopGoodsData:getName()
+    return self._itemMeta:getName()
+end
+
+function ShopGoodsData:getItemId()
+    return self._itemMeta:getItemId()
+end
+
+function ShopGoodsData:getCostArray()
+    return self._costArray
+end
+
+function ShopGoodsData:getItemMetaByStr(str)
+    local msg = string.split(str, ":")
+    local itemType = tonumber(msg[1])
+    local itemIdx = msg[2]
+    local num = msg[3]
+    local itemMeta = nil
+    if itemType == 1 then
+        itemMeta = lt.ItemDao:query(itemIdx)
+    elseif itemType == 2 then
+        itemMeta = lt.EquipDao:query(itemIdx)
+    elseif itemType == 3 then
+        itemMeta = lt.BookDao:query(itemIdx)
+    end
+    return itemMeta, num, itemType
+end
+
+function ShopGoodsData:dump()
+    lt.LogUtil:debug(">>>>>>>>>>>>>>>>>>>> ShopGoodsData >>>>>>>>>>>>>>>>>>>>")
+    lt.LogUtil:debug("<<<<<<<<<<<<<<<<<<<< ShopGoodsData <<<<<<<<<<<<<<<<<<<<")
+end
+
+return ShopGoodsData

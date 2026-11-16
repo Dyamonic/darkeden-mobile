@@ -1,0 +1,362 @@
+---@触发礼包 界面
+---@class UIWndTriggerGift:UIWindowBase
+local UIWndTriggerGift  = class("UIWndTriggerGift", lt.UIWindowBase)
+
+local NtfManager        = lt.NtfManager
+local Constant          = lt.Constant
+local GameModule        = lt.GameModule
+local CacheManager      = lt.CacheManager
+local ItemModule        = lt.ItemModule
+local ScheduleUtil      = lt.ScheduleUtil
+local TriggerGiftModule = lt.TriggerGiftModule
+local RechargeModule    = lt.RechargeModule
+local TimeCounter       = lt.TimeCounter
+
+function UIWndTriggerGift:ctor(param)
+    UIWndTriggerGift.super.ctor(self, param)
+    self._triggerGiftArray      = {} -- 服务器数据
+    self._itemArray             = {}
+    self._meta                  = nil
+    self._timer                 = 0
+    self._isCanFreshTime        = false
+    self._triggerGiftCacheTable = CacheManager:getTriggerGiftTable() -- 表数据
+end
+
+function UIWndTriggerGift:onShown()
+    self:enableUpdateEvent(true)
+
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_TRIGGERGIFT_LIST_CHANGE,
+        handler(self, self.refreshList), "UIWndTriggerGift:refreshList")
+
+    self._btnBuy:addClickListener(handler(self, self.onBtnBuyClick))
+    self._listMenu:addEventListener(fgui.UIEventType.ScrollEnd, handler(self, self.onListScrollEnd))
+    self._listItem:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onItemClick))
+    self._listMenuLess:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onMenuLessClick))
+    self._listMenu:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onMenuClick))
+    self._btnLeft:addClickListener(handler(self, self.onLeftClick))
+    self._btnRight:addClickListener(handler(self, self.onRightClick))
+
+    TriggerGiftModule:onTriggerGiftReq()
+end
+
+function UIWndTriggerGift:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndTriggerGift:refreshList")
+
+    self._btnBuy:removeClickListener()
+    self._listMenu:removeEventListener(fgui.UIEventType.ScrollEnd)
+    self._listMenu:removeEventListener(fgui.UIEventType.ClickItem)
+    self._listItem:removeEventListener(fgui.UIEventType.ClickItem)
+    self._listMenuLess:removeEventListener(fgui.UIEventType.ClickItem)
+    self._btnLeft:removeClickListener()
+    self._btnRight:removeClickListener()
+
+
+    UIWndTriggerGift.super.onHide(self)
+end
+
+function UIWndTriggerGift:onClear()
+    self._lblTime               = nil
+    self._lblDesc               = nil
+    self._btnBuy                = nil
+    self._controlTab            = nil
+    self._btnLeft               = nil
+    self._btnRight              = nil
+    self._listMenu              = nil
+    self._listItem              = nil
+    self._listMenuLess          = nil
+    self._lblLimit              = nil
+    self._lblGiftName           = nil
+
+    self._triggerGiftArray      = nil
+    self._itemArray             = nil
+    self._triggerGiftCacheTable = nil
+    self._meta                  = nil
+    UIWndTriggerGift.super.onClear(self)
+end
+
+function UIWndTriggerGift:onInit()
+    UIWndTriggerGift.super.onInit(self, _GURL.TriggerGiftPanel)
+    self._lblLimit     = self:getChild("lbl_limit")
+    self._lblTime      = self:getChild("lbl_time")
+    self._lblDesc      = self:getChild("lbl_desc")
+    self._btnBuy       = self:getChild("btn_buy")
+    self._controlTab   = self:getController("c1")
+    self._btnLeft      = self:getChild("btn_Left")
+    self._btnRight     = self:getChild("btn_Right")
+    self._listMenu     = self:getChild("list_menu")
+    self._listItem     = self:getChild("list_item")
+    self._listMenuLess = self:getChild("list_menuLess")
+    self._lblGiftName  = self:getChild("lbl_giftName")
+
+    self._listMenu:setItemRenderer(handler(self, self.onMenuRender))
+    self._listMenu:setVirtualAndLoop()
+    self._listItem:setItemRenderer(handler(self, self.onItemRender))
+    self._listMenuLess:setItemRenderer(handler(self, self.onMenuLessRender))
+end
+
+function UIWndTriggerGift:refreshList()
+    self:initUI()
+end
+
+function UIWndTriggerGift:onItemRender(index, obj)
+    local index = index + 1
+    if self._itemArray[index] then
+        local meta = self._itemArray[index]
+        local resUrl = ""
+        local itemMeta = nil
+        local iconPath = ""
+        if meta[1] == Constant.ItemType.ITEM_TYPE_PROP then
+            iconPath = "prop"
+            itemMeta = CacheManager:getItemMeta(meta[2])
+        elseif meta[1] == Constant.ItemType.ITEM_TYPE_EQUIP then
+            iconPath = "equip"
+            itemMeta = CacheManager:queryEquipMeta(meta[2])
+        end
+        resUrl = string.format("ui://Item/%s_%s", iconPath, itemMeta:getIconId())
+        obj:getChild("icon"):setURL(resUrl)
+        obj:getChild("lbl_num"):setText(meta[3])
+        obj.itemMeta = itemMeta
+    end
+    obj.index = index
+end
+
+function UIWndTriggerGift:onItemClick(context)
+    local obj = context:getData()
+    local itemMeta = obj.itemMeta
+    if itemMeta then
+        ItemModule:showTipsByType(itemMeta)
+    end
+end
+
+function UIWndTriggerGift:onMenuRender(index, obj)
+    local index = index + 1
+    local smeta = self._triggerGiftArray[index]
+    if smeta then
+        local meta = self._triggerGiftCacheTable[smeta.id]
+        if meta then
+            obj:getChild("lbl_index"):setText(meta:getGiftName())
+        end
+    end
+
+    obj:setPivot(0.5, 0.5)
+    obj.index = index
+end
+
+function UIWndTriggerGift:onMenuLessRender(index, obj)
+    local index = index + 1
+    local smeta = self._triggerGiftArray[index]
+    if smeta then
+        local meta = self._triggerGiftCacheTable[smeta.id]
+        if meta then
+            obj:getChild("lbl_index"):setText(meta:getGiftName())
+        end
+    end
+
+    obj:setPivot(0.5, 0.5)
+    obj.index = index
+end
+
+function UIWndTriggerGift:onBtnBuyClick(target)
+    if self._meta then
+        local rechargeId = self._meta:getRechargeId()
+        -- local limitNumber = self._meta:getLimitNumber()
+        yflog:Info("------------------rechargeId==%s", rechargeId)
+        RechargeModule:sendCreateOrder(rechargeId)
+    end
+end
+
+function UIWndTriggerGift:onMenuLessClick(context)
+    local obj = context:getData()
+    local curIndex = obj.index - 1
+    self:onRefreshUI(curIndex)
+    self:onSelectItem(curIndex)
+end
+
+function UIWndTriggerGift:initUI()
+    local triggerGiftTable = TriggerGiftModule:onGetTriggerGiftTable() -- 服务器数据
+    local array = {}
+    for i, v in pairs(triggerGiftTable) do
+        table.insert(array, v)
+    end
+    table.sort(array, function(a, b)
+        return a.id < b.id
+    end)
+
+    self._triggerGiftArray = array
+
+    local length = #self._triggerGiftArray
+    if #array > 2 then
+        self._controlTab:setSelectedIndex(0)
+        self._listMenu:setNumItems(length)
+        self._listMenu:scrollToView(length - 1)
+        self:onListScrollEnd()
+    else
+        self._controlTab:setSelectedIndex(1)
+        self._listMenuLess:setNumItems(length)
+        if length > 0 then
+            self:onRefreshUI(0)
+            self:onSelectItem(0)
+        end
+    end
+end
+
+function UIWndTriggerGift:onRefreshUI(curIndex)
+    local smeta = self._triggerGiftArray[curIndex + 1]
+    if not smeta then
+        return
+    end
+    local cacheMeta = self._triggerGiftCacheTable[smeta.id]
+    if cacheMeta then
+        self:onInitItemListUI(cacheMeta)
+        self._isCanFreshTime = true
+        self:onFreshTime()
+    end
+end
+
+function UIWndTriggerGift:onInitItemListUI(meta)
+    local itemArray = {}
+    if meta then
+        local myRace = GameModule:getHeroData():getRace()
+        if myRace == Constant.RaceType.Slayer then
+            itemArray = meta:getGiftS()
+        elseif myRace == Constant.RaceType.Vampire then
+            itemArray = meta:getGiftV()
+        elseif myRace == Constant.RaceType.Ousters then
+            itemArray = meta:getGiftO()
+        end
+        self._lblDesc:setText(string.format(GReadText.KEY_TRIGGERGIFT_TIPS1, meta:getGiftDiscount()))
+        self._lblLimit:setText(string.format(GReadText.KEY_TRIGGERGIFT_TIPS2, meta:getLimitNumber()))
+        self._lblGiftName:setText(meta:getGiftName())
+    end
+    self._meta = meta
+    self._itemArray = itemArray
+    self._listItem:setNumItems(#itemArray)
+end
+
+function UIWndTriggerGift:onUpdate(dt)
+    if not self._isCanFreshTime then
+        return
+    end
+    self._timer = self._timer + dt
+    if self._timer < 1 then
+        return
+    end
+    self._timer = 0
+    self:onFreshTime()
+end
+
+function UIWndTriggerGift:onFreshTime()
+    local id               = self._meta:getId()
+    local triggerGiftTable = TriggerGiftModule:onGetTriggerGiftTable() -- 服务器数据
+    local smeta            = triggerGiftTable[id]
+    if smeta then
+        local serverTime = TimeCounter:serverTime()
+        local lastTime = smeta.endTime - serverTime
+        if lastTime <= 0 then
+            self._isCanFreshTime = false
+            return
+        end
+        local day, hour, minite = lt.CommonFunc:secondsToTime(lastTime)
+        local strs = ""
+        if day > 0 then
+            strs = day .. GReadText.KEY_EQUIP_TIPS40 .. hour ..
+                GReadText.KEY_EQUIP_TIPS41 --.. minite .. GReadText.KEY_EQUIP_TIPS42
+        elseif hour > 0 then
+            strs = hour .. GReadText.KEY_EQUIP_TIPS41 .. minite .. GReadText.KEY_EQUIP_TIPS42
+        else
+            if minite == 0 then minite = 1 end
+            strs = minite .. GReadText.KEY_EQUIP_TIPS42
+        end
+        self._lblTime:setVisible(true)
+        self._lblTime:setText(strs)
+    else
+        self._lblTime:setVisible(false)
+        self._isCanFreshTime = false
+    end
+end
+
+function UIWndTriggerGift:onListScroll()
+    local midX = self._listMenu:getScrollPane():getPosX() + self._listMenu:getViewWidth() / 2
+    local cnt = self._listMenu:numChildren()
+    for i = 0, cnt - 1 do
+        local obj = self._listMenu:getChildAt(i)
+        local dist = math.abs(midX - obj:getX() - obj:getWidth() / 2)
+        local url = string.format(_GURL.GetTriggerGiftImg, "btn_czhk_yeqian01")
+        obj:getChild("bg"):setURL(url)
+        if (dist > obj:getWidth()) then --no intersection
+            obj:setScale(1, 1)
+        else
+            local ss = 1 + (1 - dist / obj:getWidth()) * 0.24
+            obj:setScale(ss, ss)
+        end
+    end
+end
+
+function UIWndTriggerGift:onListScrollEnd()
+    local curIndex = (self._listMenu:getFirstChildInView() + 1) % self._listMenu:getNumItems()
+
+    local cnt = self._listMenu:numChildren()
+    for i = 0, cnt - 1 do
+        local obj = self._listMenu:getChildAt(i)
+        if obj then
+            local url = ""
+            if i == 1 then
+                url = string.format(_GURL.GetTriggerGiftImg, "btn_czhk_yeqian01_1")
+            else
+                url = string.format(_GURL.GetTriggerGiftImg, "btn_czhk_yeqian01")
+            end
+            obj:getChild("bg"):setURL(url)
+        end
+    end
+    self:onRefreshUI(curIndex)
+end
+
+function UIWndTriggerGift:onSelectItem(curIndex)
+    local cnt = self._listMenuLess:numChildren()
+    if cnt == 0 then
+        return
+    end
+    for i = 0, cnt - 1 do
+        local obj = self._listMenuLess:getChildAt(i)
+        if obj then
+            local url = ""
+            if i == curIndex then
+                url = string.format(_GURL.GetTriggerGiftImg, "btn_czhk_yeqian01_1")
+            else
+                url = string.format(_GURL.GetTriggerGiftImg, "btn_czhk_yeqian01")
+            end
+            obj:getChild("bg"):setURL(url)
+        end
+    end
+end
+
+function UIWndTriggerGift:onMenuClick(context)
+    local obj = context:getData()
+    local index = obj.index - 1
+
+    local maxLength = self._listMenu:getNumItems()
+    local curIndex = (self._listMenu:getFirstChildInView() + 1) % maxLength
+    local objIndex = index % maxLength
+    local diffIndex = objIndex - curIndex
+    if diffIndex == 1 or diffIndex == -(maxLength - 1) then
+        self:onRightClick()
+    elseif diffIndex == -1 or diffIndex == (maxLength - 1) then
+        self:onLeftClick()
+    end
+end
+
+function UIWndTriggerGift:onLeftClick(context)
+    self._listMenu:getScrollPane():scrollLeft()
+    ScheduleUtil:performWithDelayGlobal(function()
+        self:onListScrollEnd()
+    end, 0.01)
+end
+
+function UIWndTriggerGift:onRightClick(context)
+    self._listMenu:getScrollPane():scrollRight()
+    ScheduleUtil:performWithDelayGlobal(function()
+        self:onListScrollEnd()
+    end, 0.01)
+end
+
+return UIWndTriggerGift

@@ -1,0 +1,114 @@
+-- MLinearEffect.lua
+
+local MLinearEffect = class("MLinearEffect", lt.MMovingEffect)
+local SkillEnum = lt.SkillEnum
+function MLinearEffect:ctor(blt_type)
+
+    -- 初始化成员变量
+    self._targetX = 0
+    self._targetY = 0
+    self._targetZ = 0
+
+    self._stepX = 0
+    self._stepY = 0
+    self._stepZ = 0
+    self._stepPixel = 0
+
+    self._len = 0
+
+    -- 其他成员变量
+    self._bltType = blt_type
+    self._pixelX = 0
+    self._pixelY = 0
+    self._pixelZ = 0
+    self._direction = 0
+    self._endFrame = 0
+    self._currentFrame = 0
+    self._actionInfo = nil
+    self._light = 0
+
+    return self
+end
+
+function MLinearEffect:setTarget(x, y, z, step_pixel)
+    -- 保存目标位置
+    self._targetX = x
+    self._targetY = y
+    self._targetZ = z
+
+    -- 计算移动方向
+    local moveX = self._targetX - self._pixelX
+    local moveY = self._targetY - self._pixelY
+    local moveZ = self._targetZ - self._pixelZ
+
+    -- 设置移动方向
+    self._direction = lt.MapUtil:getDirectionToPosition(self._pixelX, self._pixelY, self._targetX, self._targetY)
+
+    -- 计算移动长度
+    self._len = math.sqrt(moveX * moveX + moveY * moveY + moveZ * moveZ)
+
+    if self._len == 0 then
+        self._stepX = 0
+        self._stepY = 0
+        self._stepZ = 0
+    else
+        -- 计算单位移动步长
+        self._stepX = moveX / self._len * step_pixel
+        self._stepY = moveY / self._len * step_pixel
+        self._stepZ = moveZ / self._len * step_pixel
+    end
+
+    self._stepPixel = step_pixel
+end
+
+function MLinearEffect:onUpdate()
+    -- 检查是否继续更新
+    if self.g_CurrentFrame < self._endFrame then
+        -- 更新像素坐标
+        self._pixelX = self._pixelX + self._stepX
+        self._pixelY = self._pixelY + self._stepY
+        self._pixelZ = self._pixelZ + self._stepZ
+
+        -- 检查是否到达目标位置
+        if math.abs(self._pixelX - self._targetX) < self._stepPixel and
+           math.abs(self._pixelY - self._targetY) < self._stepPixel and
+           math.abs(self._pixelZ - self._targetZ) < self._stepPixel then
+            self._pixelX = self._targetX
+            self._pixelY = self._targetY
+            self._pixelZ = self._targetZ
+
+            self._stepX = 0
+            self._stepY = 0
+            self._stepZ = 0
+
+            -- 特殊情况处理
+            -- if self:getActionInfo() == SkillEnum.SKILL_HALO then
+            --     if self._endFrame > self.g_CurrentFrame + 8 then
+            --         self._endFrame = self.g_CurrentFrame + 8
+            --     end
+            -- else
+            --     self._endFrame = 0
+            --     return false
+            -- end
+        end
+
+        -- 更新 Sector 坐标
+        self:affectPosition()
+
+        -- 更新帧
+        self:nextFrame()
+
+        --TODO
+        -- if self._bltType == BLT_EFFECT then
+        --     self._light = g_pTopView.m_EffectAlphaFPK[self._frameID][self._direction][self._currentFrame]:getLight()
+        -- end
+
+        return true
+    end
+
+    return false
+end
+
+
+
+return MLinearEffect

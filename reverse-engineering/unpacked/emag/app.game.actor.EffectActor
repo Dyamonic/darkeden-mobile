@@ -1,0 +1,482 @@
+local EffectActor = class("EffectActor", function()
+    return display.newNode()
+end)
+local EffectInfo = lt.EffectInfo
+--[[
+    单个序列帧特效
+
+    anchorPoint:存在旋转的需要加锚点
+]]
+
+local EffectManager = lt.EffectManager
+local TimeTrigger = lt.TimeTrigger
+local SkillEnum = lt.SkillEnum
+local Constant = lt.Constant
+function EffectActor:ctor(actionInfoMeta, direction, anchorPoint, isloop, step)
+    self._actionInfoMeta = actionInfoMeta
+    self._direction = direction
+    self._isloop = isloop
+
+    -- local sp1 = display.newSprite()
+    local sp = lt.EffectPoolManager:popSprite()
+    if anchorPoint then
+        sp:setAnchorPoint(anchorPoint.x, anchorPoint.y)
+    else
+        sp:setAnchorPoint(0.5, 0.5)
+    end
+
+    self._anchorPoint = anchorPoint or cc.p(0.5, 0.5)
+
+    self:addChild(sp)
+
+    self._spriteEffect = sp
+
+    self._effectLoopCount = 0
+    self._nextEffectFrameIndex = 1
+
+    self._timeTrigger = TimeTrigger.new()
+    
+    self._delayTime = 0
+    self._timeDelayTrigger = TimeTrigger.new()
+
+    -- 特效旋转轨迹
+    self._isTransformEllipse = nil
+    self._ellipseTime = nil
+    self._ellipseDirSpeed = nil
+    self._zorder = nil
+    self._randomDraw = false
+
+    self:showEffect()
+    self:playEffect(actionInfoMeta, direction)
+    -- self:registerScriptHandler(function(state)
+    --      yflog:Info("[EffectActor] state:%s", state)
+    --     if state == "cleanup" then
+    --         if self._spriteEffect then
+    --             --跳转的时候因为父类隐藏而触发
+    --             self._spriteEffect = lt.EffectPoolManager:retrieveSprite(self._spriteEffect,"onClear触发回收")
+    --         end
+    --     end
+    -- end)
+end
+
+-- function EffectActor:setResName(des)
+--     if self._spriteEffect then
+--         self._spriteEffect.R_Name = des
+--     end
+-- end
+
+function EffectActor:onClear()
+    self:stopAllActions()
+    self:removeFromParent()
+
+    if self._spriteEffect then
+        lt.EffectPoolManager:retrieveSprite(self._spriteEffect)
+    end
+    self._isEndEffect = nil
+    self._effectInfo = nil
+
+    -- self:removeAllChildren()
+    self._timeTrigger = nil
+    self._timeDelayTrigger = nil
+
+    self._isTransformEllipse = nil
+    self._ellipseTime = nil
+    self._ellipseDirSpeed = nil
+end
+
+function EffectActor:setNextEffectFrameIndex(nextEffectFrameIndex)
+    self._nextEffectFrameIndex = nextEffectFrameIndex
+
+    self:gotoNextEffectFrame()
+end
+
+function EffectActor:setPositionEx(x, y)
+    self:setPosition(x, y)
+end
+
+function EffectActor:onUpdate()
+    self:onUpdateEffect()
+end
+
+function EffectActor:onUpdateEffect()
+    self:calculateEllipse()
+    if not self._isEndEffect then
+		return
+	end
+    -- 外置干预强行停止Effect
+    if self._stopEffect then
+        self:closeLoopEffect()
+        return
+    end
+
+    local effectInfo = self._effectInfo
+    if not effectInfo then
+        return
+    end
+   
+    -- 默认循环1次
+    local loop = effectInfo:getLoop()
+    local frameCount = effectInfo:getSpriteFrameCount()
+    
+    if loop ~= -1 and frameCount > 0  and (self._effectLoopCount >= loop or self._nextEffectFrameIndex > frameCount) then
+        self:closeLoopEffect()
+        return
+    end
+  
+    if self._timeDelayTrigger then
+        if not self._timeDelayTrigger:tick() then
+            return
+        end
+        -- self._timeDelayTrigger:reset(0)
+        self._timeDelayTrigger = nil
+    end
+    
+
+    if self._timeTrigger:tick() then
+        self:randomDraw(frameCount)
+
+        self:gotoNextEffectFrame()
+
+        -- 循环数已到,添加循环次数
+        if frameCount > 0 and self._nextEffectFrameIndex > frameCount then
+            self._nextEffectFrameIndex = 1
+            self._effectLoopCount = self._effectLoopCount + 1
+
+            if self:loopEnd(self._effectLoopCount, loop) then
+                -- 关闭显示 
+                self:closeLoopEffect()
+            end
+        end
+    end
+end
+
+function EffectActor:setStep(step)
+    if not step then
+        step = 1 / Constant.FPS_TL
+    end
+    self._effectInfo:setStep(step)
+
+end
+
+function EffectActor:gotoNextEffectFrame()
+    if self._show then
+        self:updateEffectFrame(self._spriteEffect, self._nextEffectFrameIndex, self._effectInfo, self._anchorPoint)
+    else
+        self._spriteEffect:setVisible(false) 
+    end
+    self._nextEffectFrameIndex = self._nextEffectFrameIndex + 1
+end
+
+-- 显示特效
+function EffectActor:updateEffectFrame(effectSprite, frameIdx, effectInfo, anchorPoint)
+    effectSprite:setVisible(true)
+
+    local frame = effectInfo:getSpriteFrame(frameIdx)
+    local bltType = effectInfo:getBltType()
+    if frame then
+        local sprite = frame.sprite
+        if sprite == nil then
+            return
+        end
+        effectSprite:setSpriteFrame(sprite)
+        if bltType == lt.Constant.BLT_TYPE.BLT_SCREEN then
+            effectSprite:setBlendFunc(({src = ccb.BlendFactor.ONE, dst = ccb.BlendFactor.ONE}))
+        end
+
+        local pos = self:conversionOffsetPoint(cc.p(0, 0), cc.p(frame.x, frame.y), frame.size, anchorPoint)
+        effectSprite:setPosition(pos)
+
+        if self._degree ~= nil then
+            effectSprite:setRotation(self._degree)
+        end
+    end
+end
+
+function EffectActor:setActorRotation(degree)
+    self._degree = degree
+end
+
+-- 循环次数是否结束
+function EffectActor:loopEnd(loop, maxLoop)
+    if maxLoop == -1 then
+        return false
+    end
+
+    if loop >= maxLoop then
+        return true
+    end
+
+    return false
+end
+
+function EffectActor:closeLoopEffect()
+    self._spriteEffect:setVisible(false)
+
+    -- 随时清理
+    self:endEffect()
+    self:setEffectActorClose(true)
+
+    self:finish()
+end
+
+-- 停止effect
+function EffectActor:stopEffect()
+    self._stopEffect = true
+end
+
+-- 显示与隐藏当前特效
+function EffectActor:showEffect()
+    self._show = true
+end
+
+function EffectActor:hideEffect()
+    self._show = false
+end
+
+function EffectActor:endEffect()
+    if self._spriteEffect then
+        self._spriteEffect = lt.EffectPoolManager:retrieveSprite(self._spriteEffect)
+    end
+    self._isEndEffect = false
+    self._effectInfo = nil
+
+end
+
+-- 加入播放列表 
+function EffectActor:playEffect(actionInfoMeta, direction)
+    -- local step = actionInfoMeta:getStep()
+    local effectId = actionInfoMeta:getEffectId()
+    local skillId = actionInfoMeta:getSkillId()
+
+    local step = nil
+    if actionInfoMeta:getStep() then
+        step = actionInfoMeta:getStep()/1000
+    else
+        step = SkillEnum.SKILL_EFFECT_TIME
+    end
+    self._effectInfo = EffectInfo.new(effectId, direction or 0, actionInfoMeta:bltType(),step)
+    if self._isloop then
+        self._effectInfo:setLoop(-1)
+    else
+        local loopCount = 1 
+        if actionInfoMeta and actionInfoMeta.getLoopCount then
+            loopCount = actionInfoMeta:getLoopCount()
+        end
+        local loopCount = loopCount
+        self._effectInfo:setLoop(loopCount)
+    end
+
+    -- FIXME 原来是 步数/500,最后特效统一0.05s
+    -- if step ~= nil then
+    --     self._effectInfo:setStep(step/500)
+    -- end
+    
+    -- -- 特效固定0.05
+    -- self._effectInfo:setStep(actionInfoMeta:getStep() or SkillEnum.SKILL_EFFECT_TIME)
+
+    self._timeTrigger:reset(self._effectInfo:getStep())
+    self:startEffect()
+end
+
+function EffectActor:startEffect(bltType)
+    self._effectLoopCount = 0
+    self._nextEffectFrameIndex = 1
+    if self:getSkillId() == SkillEnum.SKILL_HALO then
+        self._nextEffectFrameIndex = 2
+    end
+
+    self._isEndEffect = true
+end
+
+-- 改变特效方向
+function EffectActor:changeDirection(direction)
+    if not direction then
+       return 
+    end
+    self._direction = direction
+    self:playEffect(self._actionInfoMeta, self._direction)
+end
+
+function EffectActor:finish()
+    local cb = self._removeCallback
+    if cb then
+        cb(self._key)
+    end
+end
+
+function EffectActor:setRemoveCallback(cb, key)
+    self._removeCallback = cb
+    self._key = key
+end
+
+function EffectActor:getSkillId()
+    return self._actionInfoMeta:getSkillId()
+end
+
+function EffectActor:setDelayTime(delayTime)
+    self._delayTime = delayTime
+
+    self._timeDelayTrigger:reset(delayTime)
+end
+
+function EffectActor:setEffectActorClose(b)
+    self._isEffectActorClose = b
+end
+
+function EffectActor:getEffectActorClose()
+    return self._isEffectActorClose
+end
+
+function EffectActor:isEndEffect()
+    return not self._isEndEffect
+end
+
+--[[
+    天炼换算偏移值坐标
+    天炼坐标系     手游坐标系
+   ├──────────     │ 
+   │      x        │y
+   │y              │     x
+   │               ├──────────
+
+    newX = x + offsetX + width/2
+    newY = x + offsetY + height/2
+]]
+function EffectActor:conversionOffsetPoint(point, offset, size, anchorPoint)
+    local conX, conY
+
+    conX = point.x + offset.x + size.width*anchorPoint.x
+    conY = point.y - offset.y - size.height*(1-anchorPoint.y)
+
+    local effectOffset = EffectManager:getEffectOffset(self._actionInfoMeta:getEffectId(),self._direction)
+    if effectOffset then
+        conX = conX + effectOffset.x or 0
+        conY = conY + effectOffset.y or 0
+    end
+
+    return cc.p(conX, conY)
+end
+
+function EffectActor:getLoop()
+    if self._effectInfo then
+        return self._effectInfo:getLoop()
+    end
+    return 1
+end
+function EffectActor:setLoop(loop)
+    if self._effectInfo then
+        self._effectInfo:setLoop(loop) 
+    end
+end
+
+function EffectActor:getNextEffectFrameIndex()
+    return self._nextEffectFrameIndex
+end
+
+function EffectActor:setEffectInfoZorder(zorder)
+    self._zorder = zorder
+end
+
+function EffectActor:getEffectInfoZorder()
+    if self._zorder then
+        return self._zorder
+    end
+
+    if not self._effectInfo then
+        return
+    end
+
+    -- 旋转轨迹层级
+    if self._isTransformEllipse then
+        local posY = self:getPositionY() - 15
+        local zorder = 3
+        if posY > 0 then
+            zorder = 1
+        end
+
+        return zorder
+    end
+
+    -- 层级设置
+    local frameCount = self._effectInfo:getSpriteFrameCount()
+    local nextEffectFrameIndex = self._nextEffectFrameIndex or 0
+    local effectId = self._effectInfo:getEffectId()
+    local zorder = EffectManager:getEffectZorder(effectId,nextEffectFrameIndex,frameCount,self._direction) or 3
+
+    if self:getSkillId() == SkillEnum.SKILL_TANK_ATTACK then
+        if effectId == 539 then
+            zorder = 1
+        end
+    end
+
+    return zorder
+end
+
+function EffectActor:setTransformEllipse(transformEllipse)
+    self._isTransformEllipse = transformEllipse
+end
+
+function EffectActor:setEllipseTime(ellipseTime)
+    self._ellipseTime = ellipseTime
+end
+
+function EffectActor:setEllipseDirSpeed(ellipseDirSpeed)
+    self._ellipseDirSpeed = ellipseDirSpeed
+end
+
+function EffectActor:setRandomDraw()
+    self._randomDraw = true
+end
+
+-- 特效椭圆旋转
+function EffectActor:calculateEllipse()
+    if self._isTransformEllipse then
+        if not self._ellipseTime then
+            self._ellipseTime = 0
+        end
+        
+        if not self._ellipseDirSpeed then
+            self._ellipseDirSpeed = 1
+        end
+
+        local function calculateEllipsePoint(a, b, t)
+            local x = a * math.cos(t)
+            local y = b * math.sin(t)
+            return x, y
+        end
+        local delta = lt.GameBoard:getDeltaTime()
+        self._ellipseTime = self._ellipseTime + delta * self._ellipseDirSpeed
+        local x, y = calculateEllipsePoint(self._isTransformEllipse[1] or 48, self._isTransformEllipse[2] or 24, self._ellipseTime)
+        self:setPositionEx(x-25, y+15)
+    end
+end
+
+function EffectActor:randomDraw(frameCount)
+   if self._randomDraw then
+        if self._nextEffectFrameIndex < frameCount then
+            self._show = math.random(0, 2 ) == 0
+        end
+    end
+end
+
+-- 重新设置effectInfo
+function EffectActor:setEffectInfoByDir(actionInfoMeta, dir, isloop)
+    local effectId = actionInfoMeta:getEffectId()
+    local skillId = actionInfoMeta:getSkillId()
+
+    local step = nil
+    if actionInfoMeta:getStep() then
+        step = actionInfoMeta:getStep()/1000
+    else
+        step = SkillEnum.SKILL_EFFECT_TIME
+    end
+    
+
+    self._effectInfo = EffectInfo.new(effectId, dir or 0, actionInfoMeta:bltType(), step)
+    self._effectLoopCount = 0
+    self._nextEffectFrameIndex = 1
+    local loopCount = isloop == true and -1 or 1
+    self._effectInfo:setLoop(loopCount)
+end
+
+return EffectActor

@@ -1,0 +1,14 @@
+
+local MonsterStateBase = class("MonsterStateBase", lt.BaseState)
+
+MonsterStateBase._monsterAgent = nil
+
+function MonsterStateBase:ctor(monsterAgent)
+    self._monsterAgent = monsterAgent
+end
+
+function MonsterStateBase:onClear()
+    self._monsterAgent = nil
+end
+
+return MonsterStateBase

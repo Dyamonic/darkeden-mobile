@@ -1,0 +1,87 @@
+local DailyTaskModule = {}
+
+local SocketApi = lt.SocketApi
+local Constant = lt.Constant
+local ServerCmdDef = lt.ServerCmdDef
+local NtfManager = lt.NtfManager
+local ClientCmdDef = lt.ClientCmdDef
+local netcmd_pb = lt.netcmd_pb
+
+DailyTaskModule.ButtonTag = {
+    GiveTask = 1, --放弃任务
+    DoTask   = 2, --完成任务
+    UptStar  = 3, --刷星消耗选择
+    BuyTask  = 4, --接任务是否满星 
+}
+
+function DailyTaskModule:init()
+    SocketApi:addProtoListener(ServerCmdDef.S_Daily_Task, handler(self, self.onRecvTaskInfo), "DailyTaskModule:onRecvTaskInfo")
+    -- lt.NtfManager:addNtfListener(lt.NtfManager.NTF.NTF_UPDATE_HERO_EVENT, handler(self, self.onUpdateHeroData), "DailyTaskModule:onUpdateHeroData")
+    self:initShowTips()
+end
+
+function DailyTaskModule:clear()
+    SocketApi:removeProtoListenerByTag("DailyTaskModule:onRecvTaskInfo")
+    -- lt.NtfManager:removeNtfListenerByTag("DailyTaskModule:onUpdateHeroData")
+end
+
+function DailyTaskModule:onUpdateHeroData(event)
+    -- lt.LogUtil:debugTable("onUpdateHeroData")
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPT_DAILYTASK_VIEW,{data = nil}) 
+end
+
+function DailyTaskModule:initShowTips()
+    if not self._init then
+        self._taskTipArr = {false, false, false, false}
+        for i=1,#self._taskTipArr do
+            local szTaskTips = "dailyTaskTips"..tostring(i)
+            local taskTip = lt.PrefManager:getUserValueByKey(szTaskTips)
+            if not taskTip or taskTip == 1 then
+                self._taskTipArr[i] = true
+            else
+                self._taskTipArr[i] = false
+            end
+        end
+        self._init = true
+    end
+end
+
+function DailyTaskModule:setShowTips(iTag, isShow)
+    local taskTips = self._taskTipArr[iTag]
+    if taskTips then
+        if taskTips ~= isShow then
+            self._taskTipArr[iTag] = isShow
+            local szTaskTips = "dailyTaskTips"..tostring(iTag)
+            lt.PrefManager:setUserValueByKey(szTaskTips, isShow and 1 or 0)
+        end
+    end
+end
+
+function DailyTaskModule:getTaskTipsByTag(btnTag)
+    return self._taskTipArr[btnTag]
+end
+
+
+function DailyTaskModule:onRecvTaskInfo(event)
+    -- lt.LogUtil:debugTable("onRecvTaskInfo")
+    local param = event.param
+
+    local recvCode = param.code or 0 --0表示成功 其它为错误码 (放弃任务1 重新请求)
+    local recvMesg = param.taskmsg or "" --任务提示
+    -- if recvCode == 0 then
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPT_DAILYTASK_VIEW,{code = recvCode, data = recvMesg}) 
+    -- end
+end
+
+function DailyTaskModule:reqTaskItems(taskId, lqType) --任务ID、领取type
+    local req = netcmd_pb.C2S_DailyTask()
+    req.type  = taskId 
+    if lqType then
+      req.id  = lqType  
+    end
+    SocketApi:sendToGs(ClientCmdDef.C_DAILYTASK, req)
+
+    -- lt.LogUtil:debugTable("发送每日任务请求 type: "..taskId)
+end
+
+return DailyTaskModule

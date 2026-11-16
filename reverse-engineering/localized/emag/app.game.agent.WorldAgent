@@ -1,0 +1,2481 @@
+local WorldAgent = class("WorldAgent", lt.BaseAgent)
+
+local Constant = lt.Constant
+local CmdDie = lt.CmdDie
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+local CacheManager = lt.CacheManager
+local AutoFightManager = lt.AutoFightManager
+WorldAgent._gameLayer = nil
+
+WorldAgent._mapAgent = nil
+WorldAgent._heroAgent = nil
+WorldAgent._pickTable = nil -- 配合捡东西
+WorldAgent._pickLockTable = nil
+WorldAgent._agentTable = nil
+
+-- 记录跨地图寻路状态
+WorldAgent._mapLinkArray = nil
+WorldAgent._mapLinkMTarget = nil
+WorldAgent._mapLinkNTarget = nil
+
+--npc/怪物箭头
+WorldAgent._npcArrowCue = {}
+WorldAgent._monsterArrowCue = {}
+
+--自动拾取四个方向向量
+local autoList = { cc.p(1, 0), cc.p(0, 1), cc.p(-1, 0), cc.p(0, -1) }
+
+function WorldAgent:ctor(gameLayer)
+    WorldAgent.super.ctor(self, Constant.AGENT_TYPE_WORLD)
+
+    self._gameLayer = gameLayer
+
+    --local heroX, heroY = 25632, -8656
+    local heroX, heroY = 381 * 64 - 32, -(279 * 32 - 16)
+
+    -- MapAgent
+    self._mapAgent = lt.MapAgent.new()
+    self._gameLayer:addChild(self._mapAgent:getMapActor())
+
+
+    -- HeroAgent
+    -- self._heroAgent = lt.HeroAgent.new(heroX, heroY, true)
+    -- self._mapAgent:addHeroAgent(self._heroAgent)
+
+    -- self._mapAgent:adjustPosition(heroX, heroY)
+
+    -- agentTable
+    self._agentTable = {}
+
+    self._pickTable = {}
+    self._pickLockTable = {}
+    self._darknessTrapMNs = {} --黑暗之触坐标点
+    self._playerList = nil
+    self._bossList = {}
+    self._crossCount = 1       --反击假身计数
+    lt.AgentManager:setWorldAgent(self)
+end
+
+function WorldAgent:onClear()
+    lt.LogUtil:debug("WorldAgent:onClear()")
+    --self._heroAgent:onClear()
+
+    for key, agent in pairs(self._agentTable) do
+        agent:onClear()
+        self._agentTable[key] = nil
+    end
+
+    self._mapAgent:onClear()
+
+    self._heroAgent = nil
+    self._mapAgent = nil
+    self._agentTable = nil
+    self._pickTable = nil
+    self._pickLockTable = nil
+    self:clearVisibleList()
+end
+-- local fame = {"场景","地图","英雄","怪物","NPC","道具","技能","TARP","CAKE","元素"}
+function WorldAgent:onUpdate(delta)
+    -- self:upDateAgentTable(delta)
+    -- local agent_count = {}
+    for _, agent in pairs(self._agentTable) do
+        agent:onUpdate(delta)
+        -- local _type = agent:getAgentType()
+        -- agent_count[_type] = agent_count[_type] or 0
+        -- agent_count[_type] = agent_count[_type] + 1
+    end
+    lt.GameModule:onUpdate()
+    lt.SkillCdManager:onUpdate()
+    lt.BulletManager:onUpdate()
+    lt.BulletSystem:onUpdate()
+
+    lt.AudioManager:onUpdate()
+    -- MapAgent
+    self._mapAgent:onUpdate()
+
+    if self._heroAgent then
+        local heroX, heroY = self._heroAgent:getPosition()
+        self._mapAgent:adjustPosition(heroX, heroY)
+        local m, n = self._heroAgent:getMN()
+        self._mapAgent:updateMusic(m, n)
+        self._mapAgent:updateSafeArea(m, n)
+        self:checkHaloRange()
+    end
+    -- if lt.TimeCounter:serverTime() ~= self._time then
+    --     self._time = lt.TimeCounter:serverTime()
+    --     local names = ""
+    --     for k,va in pairs(agent_count) do
+    --         names = names..fame[k]..va.."个，"
+    --     end
+    --     print(string.format("总刷新个数:%d 执行时间%f", table.nums(self._agentTable),delta),names)
+    -- end
+end
+
+function WorldAgent:upDateAgentTable(delta)
+    if self._heroAgent then
+        self._heroAgent:onUpdate(delta)
+    end
+    local dalaylevel = 0
+    if delta >= 0.05 then
+        --20帧[严重阻塞]
+        dalaylevel = 4
+    elseif delta >= 0.034 then
+        --30帧[比较拥堵]
+        dalaylevel = 3
+    elseif delta >= 0.0222 then
+        --45帧[一般]
+        dalaylevel = 2
+    else
+        --55+[丝滑]
+        dalaylevel = 1
+    end
+    local count, dcount = 1, 0
+    local _Tdistance = self._mapAgent:resetCameraMN() --重置地图边界
+    if dalaylevel == 4 then
+        for _, agent in pairs(self._agentTable) do
+            local mHero, nHero = self._heroAgent:getMNExactly()
+            local mTarget, nTarget = agent:getMNExactly()
+            local distance = math.max(math.abs(mTarget - mHero), math.abs(nTarget - nHero))
+            if self._mapAgent:inMapCamera(mTarget, nTarget) then
+                if self._heroAgent ~= agent and agent:getAgentType() == Constant.AGENT_TYPE_HERO then
+                    if distance <= _Tdistance*0.4 then--极端的卡顿靠近边缘20%约1格的用户不立刻刷新
+                        agent:onUpdate(delta)
+                        count = count + 1
+                    else
+                        agent:onDelayUpdate(delta, dalaylevel)
+                        dcount = dcount + 1
+                    end
+                elseif agent:getAgentType() == Constant.AGENT_TYPE_MONSTER then
+                    if distance <= _Tdistance*0.3 then--极端的卡顿靠近边缘20%约2格的怪物不立刻刷新
+                        agent:onUpdate(delta)
+                        count = count + 1
+                    else
+                        agent:onDelayUpdate(delta, dalaylevel)
+                        dcount = dcount + 1
+                    end
+                elseif agent:getAgentType() == Constant.AGENT_TYPE_TRAP then
+                    if distance <= _Tdistance*0.4 then--极端的卡顿靠近边缘20%约1格陷阱特性不立刻刷新
+                        agent:onUpdate(delta)
+                        count = count + 1
+                    else
+                        agent:onDelayUpdate(delta, dalaylevel)
+                        dcount = dcount + 1
+                    end
+                else
+                    if agent.onDelayUpdate then
+                        agent:onDelayUpdate(delta, dalaylevel)
+                        dcount = dcount + 1
+                    else
+                        agent:onUpdate(delta)
+                        count = count + 1
+                    end
+                end
+            end
+        end
+    elseif dalaylevel == 3 then
+        for _, agent in pairs(self._agentTable) do
+            local mHero, nHero = self._heroAgent:getMNExactly()
+            local mTarget, nTarget = agent:getMNExactly()
+            local distance = math.max(math.abs(mTarget - mHero), math.abs(nTarget - nHero))
+            if self._heroAgent ~= agent then
+                if self._mapAgent:inMapCamera(mTarget, nTarget) then
+                    if agent:getAgentType() == Constant.AGENT_TYPE_TRAP or agent:getAgentType() == Constant.AGENT_TYPE_MONSTER then
+                        if distance <= _Tdistance*0.5 then--角色正常刷新按照不追帧进行
+                            agent:onUpdate(delta, 2)
+                            count = count + 1
+                        else
+                            agent:onDelayUpdate(delta, dalaylevel)
+                            dcount = dcount + 1
+                        end
+                    else
+                        if agent.onDelayUpdate then
+                            agent:onDelayUpdate(delta, dalaylevel)
+                            dcount = dcount + 1
+                        else
+                            agent:onUpdate(delta)
+                            count = count + 1
+                        end
+                    end
+                end
+            end
+        end
+    elseif dalaylevel == 2 then
+        for _, agent in pairs(self._agentTable) do
+            --满足正常刷新需求
+            local mTarget, nTarget = agent:getMNExactly()
+            if self._mapAgent:inMapCamera(mTarget, nTarget) then
+                if self._heroAgent ~= agent then
+                    if agent.onDelayUpdate then
+                        agent:onDelayUpdate(delta, dalaylevel)
+                        count = count + 1
+                    else
+                        agent:onUpdate(delta)
+                        count = count + 1
+                    end
+                end
+            end
+        end
+    else
+        for _, agent in pairs(self._agentTable) do
+            if self._heroAgent ~= agent then
+                --正常刷新切补上之前的挤压
+                local mTarget, nTarget = agent:getMNExactly()
+                if self._mapAgent:inMapCamera(mTarget, nTarget) then
+                    agent:onUpdate(delta)
+                    count = count + 1
+                end
+            end
+        end
+    end
+    -- if dalaylevel >= 4 then
+    --     --极端的卡顿先刷新英雄
+    --     for _, agent in pairs(self._heroTable) do
+    --         local mHero,nHero = self._heroAgent:getMNExactly()
+    --         local mTarget,nTarget = agent:getMNExactly()
+    --         local distance = math.max(math.abs(mTarget - mHero), math.abs(nTarget - nHero))
+    --         if self._heroAgent ~= agent and distance < 16 then
+    --             agent:onUpdate(delta)
+    --         end
+    --     end
+    -- else
+    --     for _, agent in pairs(self._agentTable) do
+    --         local mHero,nHero = self._heroAgent:getMNExactly()
+    --         local mTarget,nTarget = agent:getMNExactly()
+    --         local distance = math.max(math.abs(mTarget - mHero), math.abs(nTarget - nHero))
+    --         if self._heroAgent ~= agent and distance < 16 then
+    --             agent:onUpdate(delta)
+    --         end
+    --     end
+    -- end
+end
+
+function WorldAgent:onTouch(posInScreen)
+    local x, y = self._mapAgent:calcPositionInMap(posInScreen)
+    local m, n = lt.MapUtil:calcMN(x, y)
+    self._heroAgent:moveToward(m, n)
+
+    -- lt.LogUtil:debug("x, y:%f,%f", x, y)
+    -- lt.LogUtil:debug("m, n:%f,%f", m, n)
+    -- self:adjustPosition(x, y)
+
+    -- if DEBUG > 1 then
+    --     local sprite = display.newSprite("debug/shadow.png")
+    --     sprite:setAnchorPoint(0.5, 0.5)
+    --     sprite:setPosition(x, y)
+    --     self._mapAgent:getMapActor():addChild(sprite)
+
+    --     sprite:runAction(cc.Sequence:create({
+    --         cc.DelayTime:create(0.5),
+    --         cc.RemoveSelf:create()
+    --     }))
+    -- end
+end
+
+function WorldAgent:onScroll(scrollY)
+    self._mapAgent:onScroll(scrollY)
+end
+
+-- 注: 获取npcagent使用getNpcAgentById(npcId)方法
+function WorldAgent:getAgent(objId)
+    if not self._agentTable then
+        return
+    end
+    return self._agentTable[objId]
+end
+
+function WorldAgent:getNpcAgentByName(name)
+    for _, agent in pairs(self._agentTable) do
+        if agent:getAgentType() == Constant.AGENT_TYPE_NPC and agent:getName() == name then
+            return agent:getObjId()
+        end
+    end
+
+    return nil
+end
+
+function WorldAgent:setNpcAgentVisibleByName(name, isVisible)
+    for _, agent in pairs(self._agentTable) do
+        if agent:getAgentType() == Constant.AGENT_TYPE_NPC and agent:getName() == name then
+            agent:changeVisible(isVisible)
+            return
+        end
+    end
+end
+
+function WorldAgent:getNpcAgentById(npcId)
+    if not npcId then
+        return
+    end
+    local objId = lt.Constant.CLONETAG.NPCDEFAULT .. npcId
+    return self._agentTable[objId]
+end
+
+function WorldAgent:getNpcAgentByNpcName(name)
+    for _, agent in pairs(self._agentTable) do
+        if agent:getAgentType() == Constant.AGENT_TYPE_NPC and agent:getName() == name then
+            return agent
+        end
+    end
+    return nil
+end
+
+function WorldAgent:getNpcNameById(id)
+    local agent = self:getNpcAgentById(id)
+    if agent then
+        return agent:getName()
+    end
+    return nil
+end
+
+-- 判断m,n位置是否有ItemAgent
+function WorldAgent:hasItemAgent(mTarget, nTarget)
+    for _, agent in pairs(self._agentTable) do
+        if agent:getAgentType() == Constant.AGENT_TYPE_ITEM then
+            local m, n = agent:getMNExactly()
+            if m == mTarget and n == nTarget then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+function WorldAgent:queryItemAgentArray(mTarget, nTarget)
+    local agentArray = {}
+
+    for _, agent in pairs(self._agentTable) do
+        if agent:getAgentType() == Constant.AGENT_TYPE_ITEM then
+            local m, n = agent:getMNExactly()
+            if m == mTarget and n == nTarget then
+                agentArray[#agentArray + 1] = agent
+            end
+        end
+    end
+
+    return agentArray
+end
+
+-- function WorldAgent:queryNearbyRedItemAgent(mTarget, nTarget)
+--     for _, agent in pairs(self._agentTable) do
+--         if agent:getAgentType() == Constant.AGENT_TYPE_ITEM then
+--             if lt.AutoManager:isItemRed(agent:getItemData()) then
+--                 local m, n = agent:getMNExactly()
+
+--                 if not self._mapAgent:isBlocked(m, n) then
+--                     local disM = math.abs(m - mTarget)
+--                     local disN = math.abs(n - nTarget)
+
+--                     if disM == 0 then
+--                         if disN == 1 or disN == 2 then
+--                             return agent
+--                         end
+--                     elseif disM == 1 then
+--                         if disN == 0 or disN == 1 then
+--                             return agent
+--                         end
+--                     elseif disM == 2 then
+--                         if disN == 0 or disN == 2 then
+--                             return agent
+--                         end
+--                     end
+--                 end
+--             end
+--         end
+--     end
+
+--     return nil
+-- end
+
+-- function WorldAgent:selectItemAgent(heroAgent, isHangup, bagFull, onlyRed)
+--     -- print("WorldAgent:selectItemAgent isHangup:", isHangup, "bagFull:", bagFull)
+--     heroAgent = heroAgent or self._heroAgent
+
+--     local distanceMin = nil
+--     local agentMin = nil
+--     local pickCount = 0
+
+--     if not self._mapAgent then
+--         return agentMin, distanceMin
+--     end
+
+--     local mHero, nHero = heroAgent:getMNExactly()
+--     for _, agent in pairs(self._agentTable) do
+--         while true do
+--             if agent:getAgentType() ~= Constant.AGENT_TYPE_ITEM then
+--                 break
+--             end
+
+--             local m, n = agent:getMNExactly()
+--             if self._mapAgent:isBlocked(m, n) then
+--                 -- 这个点被人占了
+--                 break
+--             end
+
+--             -- 判断是否是想捡的
+--             local itemData = agent:getItemData()
+--             if not itemData then
+--                 break
+--             end
+
+--             if onlyRed then
+--                 -- 只捡重要的(标红物品)
+--                 if not lt.AutoManager:isItemRed(itemData) then
+--                     break
+--                 end
+--             end
+
+--             if bagFull then
+--                 -- 背包已满 只拾取货币
+--                 if itemData:getItemType() == 1 and itemData:getMetaKind() == 6 then
+--                 else
+--                     break
+--                 end
+--             end
+
+--             if isHangup then
+--                 if not lt.AutoManager:isItemPickHangup(itemData) then
+--                     break
+--                 end
+
+--                 -- 自己的东西不捡
+--                 if itemData:getMasterObjId() == heroAgent:getObjId() then
+--                     break
+--                 end
+--             else
+--                 if not lt.AutoManager:isItemPick(itemData) then
+--                     break
+--                 end
+--             end
+
+--             -- 判断格子捡过了
+--             pickCount = self:queryPick(m ,n)
+--             if pickCount <= 0 then
+--                 break
+--             end
+
+--             local distance = math.max(math.abs(m - mHero), math.abs(n - nHero))
+--             if not agentMin or distance < distanceMin then
+--                 distanceMin = distance
+--                 agentMin = agent
+--             end
+
+--             break
+--         end
+--     end
+
+--     return agentMin, distanceMin
+-- end
+
+-- 寻找目标
+function WorldAgent:nextTargetAgent(selectTargetType)
+    if not self._heroAgent then
+        return
+    end
+
+    local mHero, nHero = self._heroAgent:getMNExactly()
+    local curTargetAgentId = self._heroAgent:getTargetAgentId()
+    local attackMode = self._heroAgent:getAttackMode()
+    local heroData = lt.GameModule:getHeroData()
+
+    local agentArray = {}
+    local agentPriority = {}
+    local idx = 1
+    for _, agent in pairs(self:getVisibleList()) do
+        while true do
+            if not agent:isRoleAgent() or agent:getIsOutOfGame() or agent == self._heroAgent then
+                break
+            end
+
+            -- 忽略宠物 忽略守卫
+            if (agent:getAgentType() == Constant.AGENT_TYPE_MONSTER and (agent:isPet() or agent:getRace() == lt.MonsterMeta.RACE.SHOUWEI1 or agent:getRace() == lt.MonsterMeta.RACE.SHOUWEI2)) then
+                break
+            end
+
+            if selectTargetType and agent:getAgentType() ~= selectTargetType then
+                break
+            end
+
+            --隐身
+            -- local selfHeroAgent = self:getMapAgent():getSelfHeroAgent()
+            -- if agent:hasBuffer(lt.BuffEnum.EFFECT_CLASS_INVISIBILITY)
+            -- and not selfHeroAgent:isVampire()
+            -- and not selfHeroAgent:hasBuffer(BuffEnum.EFFECT_CLASS_DETECT_INVISIBILITY)
+            -- then
+            --    break
+            -- end
+
+            -- 狙击
+            if agent:hasBuffer(BuffEnum.EFFECT_CLASS_SNIPING_MODE) then
+                break
+            end
+
+            -- 攻击模式(只有人物需要判断攻击模式)
+            if selectTargetType == Constant.AGENT_TYPE_HERO then
+                if attackMode == Constant.TARGET_TYPE.RACE and agent:getHeroData():getRace() == heroData:getRace() then
+                    break
+                elseif attackMode == Constant.TARGET_TYPE.TEAM then
+                    local myTeamData = lt.TeamModule:getMyTeam()
+                    if myTeamData then
+                        local memberList = myTeamData.memberInfoArray or {}
+                        local isTeam = false
+                        for i = 1, #memberList do
+                            if memberList[i].playerId == agent:getHeroData():getPlayerId() then
+                                isTeam = true
+                                break
+                            end
+                        end
+                        if isTeam then break end
+                    end
+                elseif attackMode == Constant.TARGET_TYPE.GUILD then
+                    local guildlist = lt.GuildModule:getGuildList()
+                    local isGuild = false
+                    for i = 1, #guildlist do
+                        if guildlist[i].playerId == agent:getHeroData():getPlayerId() then
+                            isGuild = true
+                            break
+                        end
+                    end
+                    if isGuild then break end
+                end
+            end
+
+            local m, n = agent:getMNExactly()
+
+            if math.abs(mHero - m) > 11 or math.abs(nHero - n) > 13 then
+                break
+            end
+
+            agentArray[idx] = agent
+            idx = idx + 1
+
+            local priority = 1
+
+            --- 距离排序TODO 等案子排期（目标选择系统）
+            local distance = math.max(math.abs(m - mHero), math.abs(n - nHero))
+            priority = distance
+
+
+            agentPriority[agent:getAgentId()] = priority
+            break
+        end
+    end
+
+    -- if attackMode == Constant.ATTACK_MODE.GUILD then
+    --     table.sort(agentArray, function(agent1, agent2)
+    --         local priority1 = agentPriority[agent1:getAgentId()]
+    --         local priority2 = agentPriority[agent2:getAgentId()]
+    --         if priority1 == priority2 then
+    --             return agent1:getAgentId() < agent2:getAgentId()
+    --         else
+    --             return priority1 < priority2
+    --         end
+    --     end)
+    -- else
+    --     table.sort(agentArray, function(agent1, agent2)
+    --         return agent1:getAgentId() < agent2:getAgentId()
+    --     end)
+    -- end
+
+
+    table.sort(agentArray, function(agent1, agent2)
+        local priority1 = agentPriority[agent1:getAgentId()]
+        local priority2 = agentPriority[agent2:getAgentId()]
+        if priority1 == priority2 then
+            return agent1:getAgentId() < agent2:getAgentId()
+        else
+            return priority1 < priority2
+        end
+    end)
+
+    if not self._heroAgent:getLastAttackMode() then
+        self._heroAgent:setLastAttackMode(attackMode)
+    end
+
+    local startIdx = 0
+    if self._lastIdx == nil then
+        self._lastIdx = 1
+    end
+    if curTargetAgentId then
+        for i, agent in ipairs(agentArray) do
+            if agent:getAgentId() == curTargetAgentId then
+                startIdx = i
+                break
+            end
+        end
+        if startIdx < #agentArray and (startIdx == 1 or startIdx == self._lastIdx) then
+            startIdx = startIdx + 1
+        else
+            startIdx = 1
+        end
+    else
+        startIdx = 1
+    end
+
+    self._heroAgent:setLastAttackMode(attackMode)
+
+    if self._heroAgent then
+        if agentArray[startIdx] then
+            self._heroAgent:setTargetAgentId(agentArray[startIdx]:getAgentId(), nil, true)
+            lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_SELECT_TARGET, { agent = agentArray[startIdx] })
+        end
+    end
+
+    self._lastIdx = startIdx
+end
+
+-- 视野列表逻辑
+--[[
+TODO 子弹类视野管理
+ for k, bullet in pairs(lt.BulletManager:getBulletList()) do
+        bullet:setVisible(isVisible)
+    end
+]]
+function WorldAgent:getVisiblePlayers(observer)
+    self._visiblePlayers = {}
+    local agentPerVisible = {} -- agent显示标识
+    local obRaceType = observer:getRaceType()
+    for _, agent in pairs(self._agentTable) do
+        agent:visibleActor(false)
+        if agent.isSkillHide and agent:isSkillHide() then
+            agentPerVisible[agent:getAgentId()] = agent:getActor():isVisible()
+        end
+
+        if agent:isRoleAgent() then
+            -- local raceType = agent:isHeroAgent() and agent:getRaceType()
+            if agent == observer then
+                if not agent:isStateTelePort() then           -- 快速滑行中...
+                    table.insert(self._visiblePlayers, agent) -- 玩家自己总是可见
+                end
+            else
+                if obRaceType == 1 then                           -- 人类
+                    if observer:hasBuffer(BuffEnum.EFFECT_CLASS_LIGHTNESS) then
+                        table.insert(self._visiblePlayers, agent) -- 人类可以看到所有玩家
+                    elseif observer:hasBuffer(BuffEnum.EFFECT_CLASS_DARKNESS) or observer:hasBuffer(BuffEnum.EFFECT_CLASS_GRAY_DARKNESS) then
+                        -- 看不到其他玩家
+                    elseif agent:hasBuffer(BuffEnum.EFFECT_CLASS_DARKNESS) or agent:hasBuffer(BuffEnum.EFFECT_CLASS_GRAY_DARKNESS) then
+                        -- 被隐藏的玩家不显示
+                    elseif agent:hasBuffer(BuffEnum.EFFECT_GROUND_VISIBLE) then
+                        -- 土精灵隐身buff
+                    elseif agent:hasBuffer(BuffEnum.EFFECT_CLASS_INVISIBILITY) and not observer:hasBuffer(BuffEnum.EFFECT_CLASS_DETECT_INVISIBILITY) then
+                        -- 鬼族隐身buff
+                    elseif agent:hasBuffer(BuffEnum.EFFECT_CLASS_SNIPING_MODE) and not observer:hasBuffer(BuffEnum.EFFECT_CLASS_DETECT_INVISIBILITY) then
+                        -- 人族狙击
+                    elseif agent:isSkillHide() and ((not observer:hasBuffer(BuffEnum.EFFECT_DETECT_HIDDEN)) and (not observer:hasBuffer(BuffEnum.EFFECT_REVEALER))) then
+                        -- 隐蔽 (探测术buff 启示者buff)
+                    elseif agent:isStateTelePort() then
+                        -- 快速滑行中...
+                    else
+                        table.insert(self._visiblePlayers, agent)
+                    end
+                elseif obRaceType == 2 then -- 吸血鬼
+                    if observer:getCasketActor():isInCasket() then
+                        if agent:getCasketActor() then
+                            agent:getCasketActor():setVisibleEx(false)
+                        end
+                    else
+                        if agent:getCasketActor() then
+                            agent:getCasketActor():setVisibleEx(true)
+                        end
+                        if agent:hasBuffer(BuffEnum.EFFECT_GROUND_VISIBLE) then
+                            -- 土精灵隐身buff
+                        elseif agent:hasBuffer(BuffEnum.EFFECT_CLASS_SNIPING_MODE) then
+                            -- 狙击
+                        elseif observer:hasBuffer(BuffEnum.EFFECT_SLAYER_FLARE) then
+                            -- 人族光耀之环只能看到附近1格的敌人
+                            local heroMN = cc.p(observer:getMNExactly())
+                            local agentMN = cc.p(agent:getMNExactly())
+                            local isInRange = lt.MapUtil:isInRange(heroMN, agentMN, 1)
+                            if isInRange then
+                                table.insert(self._visiblePlayers, agent)
+                            end
+                        elseif agent:isStateTelePort() then
+                            -- 快速滑行中...
+                        else
+                            table.insert(self._visiblePlayers, agent) -- 吸血鬼可以看到其他吸血鬼
+                        end
+                    end
+                elseif obRaceType == 3 then                       -- 魔灵
+                    if observer:hasBuffer(BuffEnum.EFFECT_CLASS_LIGHTNESS) then
+                        table.insert(self._visiblePlayers, agent) -- 魔灵可以看到所有玩家
+                    elseif observer:hasBuffer(BuffEnum.EFFECT_CLASS_DARKNESS) or observer:hasBuffer(BuffEnum.EFFECT_CLASS_GRAY_DARKNESS) then
+                        -- 看不到其他玩家
+                    elseif agent:hasBuffer(BuffEnum.EFFECT_CLASS_DARKNESS) or agent:hasBuffer(BuffEnum.EFFECT_CLASS_GRAY_DARKNESS) then
+                        -- 被隐藏的玩家不显示
+                    elseif agent:hasBuffer(BuffEnum.EFFECT_CLASS_INVISIBILITY) and not observer:getBufferLvlLimit(BuffEnum.EFFECT_GNOMES_WHISPER, 15) then
+                        -- 鬼族隐身buff
+                    elseif agent:hasBuffer(BuffEnum.EFFECT_CLASS_SNIPING_MODE) then
+                        -- 狙击
+                    elseif agent:isSkillHide() and not observer:getBufferLvlLimit(BuffEnum.EFFECT_GNOMES_WHISPER, 15) then
+                        -- 隐蔽
+                    elseif observer:hasBuffer(BuffEnum.EFFECT_SLAYER_FLARE) then
+                        -- 人族光耀之环只能看到附近1格的敌人
+                        local heroMN = cc.p(observer:getMNExactly())
+                        local agentMN = cc.p(agent:getMNExactly())
+                        local isInRange = lt.MapUtil:isInRange(heroMN, agentMN, 1)
+                        if isInRange then
+                            table.insert(self._visiblePlayers, agent)
+                        end
+                    elseif agent:isStateTelePort() then
+                        -- 快速滑行中...
+                    else
+                        table.insert(self._visiblePlayers, agent)
+                    end
+                end
+            end
+        else
+            if not agent:isNpcAgent() then
+                table.insert(self._visiblePlayers, agent)
+            else
+                -- npc显示相关
+                local npcVisible = agent:getNpcVisible()
+                agent:visibleActor(npcVisible)
+            end
+        end
+    end
+
+    --进行最大可见人数过滤
+    self:filterMaxPeopleNums()
+
+    --取消当前目标
+    local targetAgent = observer:getTargetAgent()
+    if targetAgent and not targetAgent:getActor():isVisible() then
+        observer:setTargetAgentId(nil)
+    end
+
+    -- 隐蔽对比之前是否显示刷新阻挡点
+    for agentId, isVisible in pairs(agentPerVisible) do
+        local agent = lt.AgentManager:getAgent(agentId)
+        if agent and agent:getActor():isVisible() ~= isVisible then
+            local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+            mapAgent:resetAgentMN(agent) -- 根据模式重置阻挡点
+        end
+    end
+
+    -- for _, visiblePlayer in ipairs(self._visiblePlayers) do
+    --     visiblePlayer:visibleActor(true)
+    -- end
+
+    return self._visiblePlayers
+end
+
+--进行最大可见人数过滤
+function WorldAgent:filterMaxPeopleNums()
+    local maxHeroNumList = {} --最大可见人数（含假身和自己）
+    local heroList = {}       --不含假身和自己（用于其他功能模块）
+    local bossList = {}
+    local otherList = {}
+    local visibleList = {}
+    local ignoreAgentNum = 0
+    for index, agent in pairs(self._visiblePlayers) do
+        -- agent:visibleActor(false)
+
+        if agent:getAgentType() == Constant.AGENT_TYPE_HERO then
+            --忽略假身
+            local isFakeAgent = agent:getRoleData():isCrossCount()
+            --忽略自己
+            local isSelf = agent == self:getHeroAgent()
+            if isFakeAgent or isSelf then
+                ignoreAgentNum = ignoreAgentNum + 1
+            end
+
+            if not isFakeAgent and not isSelf then
+                table.insert(heroList, agent)
+            end
+            table.insert(maxHeroNumList, agent)
+        else
+            if agent:getAgentType() == Constant.AGENT_TYPE_MONSTER then
+                local monsterData = agent:getHeroData()
+                if monsterData:isAlive() then
+                    if monsterData:IsBoss() then
+                        table.insert(bossList, agent)
+                    elseif monsterData:getMonsterId() == 792 then
+                        self._column = agent
+                    end
+                end
+            end
+            table.insert(otherList, agent)
+        end
+    end
+
+    local m, n = self._heroAgent:getMNExactly()
+    table.sort(maxHeroNumList, function(a, b)
+        local am, an = a:getMNExactly()
+        local bm, bn = b:getMNExactly()
+        local distance_a = lt.MapUtil:getMNDistance(m, n, am, an)
+        local distance_b = lt.MapUtil:getMNDistance(m, n, bm, bn)
+        return distance_a < distance_b
+    end)
+
+    table.sort(heroList, function(a, b)
+        local am, an = a:getMNExactly()
+        local bm, bn = b:getMNExactly()
+        local distance_a = lt.MapUtil:getMNDistance(m, n, am, an)
+        local distance_b = lt.MapUtil:getMNDistance(m, n, bm, bn)
+        return distance_a < distance_b
+    end)
+
+
+    --设置可见人数
+    local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.SHOW_PLAYERS)
+    local max = editTable.value + ignoreAgentNum
+    for i = 1, #maxHeroNumList do
+        if i <= max then
+            local agent = maxHeroNumList[i]
+            agent:visibleActor(true)
+            table.insert(visibleList, agent)
+        end
+    end
+
+    for _, agent in ipairs(otherList) do
+        agent:visibleActor(true)
+        table.insert(visibleList, agent)
+    end
+    self._visibleList = visibleList
+
+    -- 仅人物和boss 数量发生变更才进行刷新
+    local isRefreshTarget = false
+    if not self._playerList or (self._playerList and #heroList ~= #self._playerList)  then
+        isRefreshTarget = true
+    end
+    if self._bossList and #bossList ~= #self._bossList then
+        isRefreshTarget = true
+    end
+
+    self._playerList = heroList
+    self._bossList = bossList
+
+    if isRefreshTarget then
+        lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_REFRESH_TARGET)
+    end
+end
+
+function WorldAgent:clearVisibleList()
+    self._visiblePlayers = nil
+    self._visibleList = nil
+    self._playerList = nil
+    self._bossList = nil
+    self._column = nil
+end
+
+function WorldAgent:getVisibleList()
+    return self._visibleList or {}
+end
+
+-- 根据目标点查询怪物
+function WorldAgent:findDestAgent(mMove, nMove, maxRange)
+    local distanceMin = 999999999
+    local agentMin = nil
+
+    for _, agent in pairs(self:getVisibleList()) do
+        while true do
+            if not agent:isRoleAgent() or agent:getIsOutOfGame() then
+                break
+            end
+
+            if agent == self._heroAgent then
+                break
+            end
+
+            -- if not agent:getRoleData():isFullHp() then
+            --     break
+            -- end
+
+            local m, n = agent:getMNExactly()
+            if math.abs(mMove - m) > maxRange or math.abs(nMove - n) > maxRange then
+                break
+            end
+
+            if self._mapAgent:isTrans(m, n) then
+                break
+            end
+
+            local distance = math.max(math.abs(m - mMove), math.abs(n - nMove))
+            if distance < distanceMin then
+                distanceMin = distance
+                agentMin = agent
+            end
+
+            break
+        end
+    end
+
+    if agentMin then
+        local m, n = agentMin:getMNExactly()
+        local mHero, nHero = self._heroAgent:getMNExactly()
+        if math.abs(mHero - m) > maxRange or math.abs(nHero - n) > maxRange then
+            return
+        end
+        self._heroAgent:setTargetAgentId(agentMin:getAgentId(), nil, true)
+    end
+end
+
+-- 根据目标点查询范围内所有怪物及敌人
+function WorldAgent:findRectEnemys(mMove, nMove, maxRange, targetAgentId)
+    local enemys = {}
+    for _, agent in pairs(self:getVisibleList()) do
+        while true do
+            if agent:getIsOutOfGame() then
+                break
+            end
+
+            if agent == self._heroAgent then
+                break
+            end
+            if targetAgentId and agent:getAgentId() == targetAgentId then
+                table.insert(enemys, agent)
+            end
+
+            if agent:getAgentType() ~= Constant.AGENT_TYPE_HERO and agent:getAgentType() ~= Constant.AGENT_TYPE_MONSTER then
+                break
+            end
+
+            if agent:getAgentType() == Constant.AGENT_TYPE_HERO then
+                if agent:isPeaceAgent() then
+                    break
+                end
+            end
+
+
+            local m, n = agent:getMNExactly()
+            if math.abs(mMove - m) > maxRange or math.abs(nMove - n) > maxRange then
+                break
+            end
+
+            if self._mapAgent:isTrans(m, n) then
+                break
+            end
+
+            local m, n = agent:getMNExactly()
+            if math.abs(mMove - m) < maxRange and math.abs(nMove - n) < maxRange then
+                table.insert(enemys, agent)
+            end
+
+            break
+        end
+    end
+    return enemys
+end
+
+-- 选择最近的可攻击目标
+function WorldAgent:selectTargetAgent(skillId)
+    if not self._heroAgent then
+        return 
+    end
+
+    local mHero, nHero = self._heroAgent:getMNExactly()
+
+    if self._heroAgent:getTargetAgentId() then
+        -- 存在当前目标
+        local targetAgent = self:getAgent(self._heroAgent:getTargetAgentId())
+        if targetAgent and targetAgent:isRoleAgent() and not targetAgent:getIsOutOfGame() then
+            -- print("使用当前目标")
+            return targetAgent
+        end
+    end
+
+
+    local distanceMin = 999999999
+    local agentMin = nil
+    local attackMode = self._heroAgent:getAttackMode()--当前攻击模式
+    local teamId = self._heroAgent:getTeamId()--我的队伍id
+    local guildId = self._heroAgent:getHeroData():getGuildId()--我的公会id
+    for _, agent in pairs(self:getVisibleList()) do
+        while true do
+            if not agent:isRoleAgent() or agent:getIsOutOfGame() then
+                break
+            end
+            if agent == self._heroAgent then
+                break
+            end
+            if not agent then
+                break
+            end
+            if self._agentTable[agent:getObjId()] == nil then
+                --已经移除的目标会再下次update移除
+                break
+            end
+            --宠物不能作为目标
+            if agent:getAgentType() == Constant.AGENT_TYPE_MONSTER and agent:isPet() then
+                break
+            end
+            ---仅选人物尸体
+            if SkillEnum.HERO_CORPSE_SKILL_ID_TABLE[skillId] then
+                if not agent:isHeroAgent() or not agent:isDead() then
+                    break
+                end
+                if agent:isHeroAgent() and not agent:isDead() then
+                    break
+                end
+            end
+
+            ---仅选怪物尸体
+            if SkillEnum.MONSTER_CORPSE_SKILL_ID_TABLE[skillId] then
+                if not agent:isMonsterAgent() or not agent:isDead() then
+                    break
+                end
+                if agent:isMonsterAgent() and not agent:isDead() then
+                    break
+                end
+            end
+
+            --其他技能忽略尸体
+            if not SkillEnum.HERO_CORPSE_SKILL_ID_TABLE[skillId] and not SkillEnum.MONSTER_CORPSE_SKILL_ID_TABLE[skillId] then
+                if agent:isDead() then
+                    break
+                end
+                if attackMode == Constant.ATTACK_MODE.ALL then
+                    --全体
+                elseif attackMode == Constant.ATTACK_MODE.RACE then
+                    -- 忽略同族
+                    if agent:getAgentType() == Constant.AGENT_TYPE_HERO then
+                        if agent:isPeaceAgent() then
+                            break
+                        end
+                    end
+                elseif attackMode == Constant.ATTACK_MODE.TEAM then
+                    --忽略组队
+                    if agent:getAgentType() == Constant.AGENT_TYPE_HERO then
+                        if agent:getTeamId() == teamId and teamId > 0 then
+                            break
+                        end
+                    end
+                elseif attackMode == Constant.ATTACK_MODE.GUILD then
+                    --忽略公会
+                    if agent:getAgentType() == Constant.AGENT_TYPE_HERO then
+                        if agent:getHeroData():getGuildId() == guildId and guildId > 0 then
+                            break
+                        end
+                    end
+                end
+            end
+
+            --隐身
+            local selfHeroAgent = self:getMapAgent():getSelfHeroAgent()
+            if agent:hasBuffer(BuffEnum.EFFECT_CLASS_INVISIBILITY)
+                and not selfHeroAgent:isVampire()
+                and not selfHeroAgent:hasBuffer(BuffEnum.EFFECT_CLASS_DETECT_INVISIBILITY)
+            then
+                break
+            end
+
+            -- 狙击
+            if agent:hasBuffer(BuffEnum.EFFECT_CLASS_SNIPING_MODE) then
+                break
+            end
+
+            if (agent:getAgentType() == Constant.AGENT_TYPE_MONSTER and (agent:isPet() or agent:getRace() == lt.MonsterMeta.RACE.SHOUWEI1 or agent:getRace() == lt.MonsterMeta.RACE.SHOUWEI2)) then
+                break
+            end
+
+
+            -- if heroAgent:isFriendAgent(agent) then
+            --     break
+            -- end
+
+            -- if onlyFull and not agent:getRoleData():isFullHp() then
+            --     break
+            -- end
+
+            local m, n = agent:getMNExactly()
+
+            -- if isHangup and self._mapAgent:isTrans(m, n) then
+            --     break
+            -- end
+
+            local route = lt.MapUtil:route(mHero, nHero, m, n)
+            if not route then
+                break
+            end
+
+            local distance = math.max(math.abs(m - mHero), math.abs(n - nHero))
+            if distance < distanceMin then
+                distanceMin = distance
+                agentMin = agent
+            end
+
+            break
+        end
+    end
+
+    return agentMin, distanceMin
+end
+
+function WorldAgent:selectPkTargetAgent()
+    if not self._heroAgent then
+        return
+    end
+
+    local mode = self._heroAgent:getAttackMode()
+    if mode == Constant.ATTACK_MODE.PEACE then
+        lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_FLOAT_TIP,
+            { content = lt.StringManager:getString(lt.StringManager.KEY_NOT_PK_MODE) })
+        return
+    end
+
+    local mHero, nHero = self._heroAgent:getMNExactly()
+    local color = self._heroAgent:getHeroData():getNameColor()
+
+    local function getPriority(color)
+        -- 橙名——红名——黄名——褐名——白名
+        local constantColor = Constant.NameColor
+        if color == constantColor.ORANGE then
+            return 5
+        elseif color == constantColor.RED then
+            return 4
+        elseif color == constantColor.YELLOW then
+            return 3
+        elseif color == constantColor.BROWN then
+            return 2
+        else
+            return 1
+        end
+    end
+
+    local agentArray = {}
+    local agentPriority = {}
+    local agentDistance = {}
+
+    for _, agent in pairs(self:getVisibleList()) do
+        while true do
+            if not agent:isRoleAgent() or agent:getIsOutOfGame() or agent == self._heroAgent then
+                break
+            end
+
+            -- 忽略宠物 忽略守卫
+            if (agent:getAgentType() == Constant.AGENT_TYPE_MONSTER and (agent:isPet() or agent:getRace() == lt.MonsterMeta.RACE.SHOUWEI1 or agent:getRace() == lt.MonsterMeta.RACE.SHOUWEI2)) then
+                break
+            end
+
+            if agent:getAgentType() ~= Constant.AGENT_TYPE_HERO then
+                break
+            end
+
+            local m, n = agent:getMNExactly()
+
+            if math.abs(mHero - m) > 6 or math.abs(nHero - n) > 8 then
+                break
+            end
+
+            local priority = getPriority(agent:getHeroData():getNameColor())
+            local distance = lt.MapUtil:getPonitDistance(mHero, nHero, m, n)
+
+            agentArray[#agentArray + 1] = agent
+            agentPriority[agent:getAgentId()] = priority
+            agentDistance[agent:getAgentId()] = distance
+            break
+        end
+    end
+
+    local curTargetAgentId = self._heroAgent:getTargetAgentId()
+
+    if #agentArray > 0 then
+        table.sort(agentArray, function(agent1, agent2)
+            local priority1 = agentPriority[agent1:getAgentId()]
+            local distance1 = agentDistance[agent1:getAgentId()]
+
+            local priority2 = agentPriority[agent2:getAgentId()]
+            local distance2 = agentDistance[agent2:getAgentId()]
+            if priority1 == priority2 then
+                if distance1 == distance2 then
+                    return agent1:getAgentId() < agent2:getAgentId()
+                else
+                    return distance1 < distance2
+                end
+            else
+                return priority1 > priority2
+            end
+        end)
+
+        local firstAgent = agentArray[1]
+        local secondAgent = nil
+        if agentArray[2] and agentPriority[agentArray[2]:getAgentId()] == agentPriority[firstAgent:getAgentId()] then
+            secondAgent = agentArray[2]
+        end
+
+        if not curTargetAgentId then
+            self._heroAgent:setTargetAgentId(firstAgent:getAgentId(), nil, true)
+        else
+            if curTargetAgentId == firstAgent:getAgentId() then
+                if secondAgent then
+                    self._heroAgent:setTargetAgentId(secondAgent:getAgentId(), nil, true)
+                else
+                    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_FLOAT_TIP,
+                        { content = lt.StringManager:getString(lt.StringManager.KEY_LOCK_TARGET) ..
+                        "(" .. firstAgent:getName() .. ")" })
+                end
+            else
+                self._heroAgent:setTargetAgentId(firstAgent:getAgentId(), nil, true)
+            end
+        end
+    else
+        lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_FLOAT_TIP,
+            { content = lt.StringManager:getString(lt.StringManager.KEY_NOT_PK_TARGET) })
+    end
+end
+
+function WorldAgent:queryHeroAgent(tarM, tarN)
+    for _, agent in pairs(self._agentTable) do
+        if agent:getAgentType() == Constant.AGENT_TYPE_HERO then
+            local m, n = agent:getMNExactly()
+            if m == tarM and n == tarN then
+                return agent
+            end
+        end
+    end
+
+    return nil
+end
+
+-- 判断目标周围是否存在空格子
+function WorldAgent:isAroundThrough(heroAgent)
+    local mHero, nHero = heroAgent:getMNExactly()
+
+    for i = -1, 1 do
+        for j = -1, 1 do
+            if self._mapAgent:isThrough(mHero + i, nHero + j) then
+                if not self._mapAgent:isTrans(mHero + i, nHero + j) then
+                    return true
+                end
+            end
+        end
+    end
+
+    return false
+end
+
+-- 判断周围N格内存在的怪物数量
+function WorldAgent:queryAroundTargetAgentCount(heroAgent, padding)
+    heroAgent = heroAgent or self._heroAgent
+    padding = padding or 1
+
+    local mHero, nHero = heroAgent:getMNExactly()
+    return self:_queryAroundTargetAgentCount(mHero, nHero, padding, heroAgent)
+end
+
+function WorldAgent:_queryAroundTargetAgentCount(m, n, padding, heroAgent)
+    local count = 0
+
+    for _, agent in pairs(self._agentTable) do
+        while true do
+            if not agent:isRoleAgent() or agent:getIsOutOfGame() then
+                break
+            end
+
+            if heroAgent:isFriendAgent(agent) then
+                break
+            end
+
+            local mTar, nTar = agent:getMNExactly()
+            local distance = math.max(math.abs(mTar - m), math.abs(nTar - n))
+            if distance <= padding then
+                count = count + 1
+            end
+
+            break
+        end
+    end
+
+    return count
+end
+
+function WorldAgent:hasPet(masterObjId)
+    local hasPet = false
+    for _, agent in pairs(self._agentTable) do
+        if agent:getAgentType() == Constant.AGENT_TYPE_MONSTER and agent:getMonsterData():getMasterObjId() == masterObjId then
+            return true
+        end
+    end
+
+    return false
+end
+
+function WorldAgent:getPetArray(masterObjId)
+    local agentArray = {}
+    for _, agent in pairs(self._agentTable) do
+        if agent:getAgentType() == Constant.AGENT_TYPE_MONSTER and agent:getMonsterData():getMasterObjId() == masterObjId then
+            agentArray[#agentArray + 1] = agent
+        end
+    end
+
+    return agentArray
+end
+
+--[[ 赶尸判断有没有尸体(特殊技能)
+function WorldAgent:aroundHasBody()
+    local m0, n0 = self._heroAgent:getMNExactly()
+    for _, agent in pairs(self._agentTable) do
+        if agent.isDead and agent:isDead() and not (agent:getAgentType() == Constant.AGENT_TYPE_MONSTER and agent:getRace() == lt.MonsterMeta.RACE.SHILING) then
+            local m1, n1 = agent:getMNExactly()
+            if math.abs(m1 - m0) <= 10 and math.abs(n1 - n0) <= 8 then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+]]
+
+function WorldAgent:queryAroundHeroDataArray()
+    local heroDataArray = {}
+
+    for _, agent in pairs(self._agentTable) do
+        if agent:getAgentType() == Constant.AGENT_TYPE_HERO and agent ~= self._heroAgent then
+            heroDataArray[#heroDataArray + 1] = agent:getHeroData():getSimpleData()
+        end
+    end
+
+    return heroDataArray
+end
+
+------------------------------------
+-- 服务器指令
+------------------------------------
+function WorldAgent:loadMap(mapCode)
+    -- 理论上所有的agent都已经被移除了
+    local hasAgent = false
+    for _, agent in pairs(self._agentTable) do
+        hasAgent = true
+        agent:onClear()
+    end
+    self._agentTable = {}
+    self._heroAgent = nil
+
+    if hasAgent then
+        print("There are objects that have not been cleared.")
+    end
+
+    local mapMeta = lt.CacheManager:getMapMeta(mapCode)
+    self._mapAgent:loadMap(mapMeta)
+    self:loadNpc()
+    --转职副本显示初始化
+    self._blackSprites = {}
+    self._mapAgent:resetBlackArea()
+    self._mapAgent:initAdvanceDungeon()
+end
+
+function WorldAgent:loadNpc()
+    local mapCode = self:getMapCode()
+    local curMapAllNpc = lt.CacheManager:queryNpcByMapId(mapCode)
+    local race = lt.GameModule:getHeroRace()
+    for _, npcMeta in pairs(curMapAllNpc) do
+        local objId = npcMeta:getClientNpcId()
+        local modelId = npcMeta:getNpcFigure()
+        local name = npcMeta:getNpcName()
+        local npcX, npcY = npcMeta:getNpcPos()
+        local fixDirection = npcMeta:getNpcDirection()
+        if npcMeta:getDisplay() == 0 or npcMeta:getDisplay() == race then
+            print("Create Npc:", objId, modelId, name, npcX, npcY, fixDirection, mapCode)
+            self:createNpcAgent(objId, modelId, name, npcX, npcY, fixDirection, npcMeta)
+        end
+    end
+end
+
+-- 创建并添加hero代理
+function WorldAgent:createHeroAgent(heroData, m, n, direction, isSelf, hasEffect)
+    if isSelf then
+        -- lt.EffectPoolManager:reset()
+        self._heroAgent = lt.HeroAgent.new(heroData, m, n, direction, true)
+        self._agentTable[heroData:getObjId()] = self._heroAgent
+        self._mapAgent:addHeroAgent(self._heroAgent)
+        self._mapAgent:setSelfHeroAgent(self._heroAgent)
+
+        -- 需要玩家种族信息，所以初始化，需要放到人物创建以后
+        self._mapAgent:initSafeProtalData()
+
+        local heroX, heroY = lt.MapUtil:calcMNMid(m, n)
+        self._mapAgent:adjustPosition(heroX, heroY, true)
+
+        -- 恢复buff
+        self._heroAgent:resumeAllBuffer()
+
+        if hasEffect then
+            self._heroAgent:showAppearEffect()
+        end
+        self._heroAgent:changeDarkness(heroData:getDarkness())
+
+        --- 刷新技能面板
+        lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_UPT_SKILL_SLOT_CONDITION,
+            { type = Constant.SLOT_CONDITION_TYPE.BUFF })
+
+        --初始化自动挂机技能数据
+        self._heroAgent:updateAutoSettingSkills()
+
+        --判断是否自动挂机
+        if AutoFightManager:getOldAuto() then
+            AutoFightManager:setOldAuto(false)
+            AutoFightManager:startAutoFight(true)
+        end
+        
+        return self._heroAgent
+    else
+        local heroAgent = self._agentTable[heroData:getObjId()]
+        if heroAgent then
+            -- 判断是否服务器重复发送
+            local mHero, nHero = heroAgent:getMNExactly()
+            if mHero ~= m or nHero ~= n then
+                self._mapAgent:changeAgentMN(heroAgent, m, n)
+                heroAgent:setPosition(lt.MapUtil:calcMNMid(m, n))
+                heroAgent:setDirection(direction)
+            end
+        else
+            heroAgent = lt.HeroAgent.new(heroData, m, n, direction, false)
+            self._agentTable[heroData:getObjId()] = heroAgent
+            self._mapAgent:addHeroAgent(heroAgent)
+        end
+        if heroData then
+            heroAgent:changeDarkness(heroData:getDarkness())
+        end
+
+        heroAgent:roleRemoveAnentMN()
+
+
+        if hasEffect then
+            self._heroAgent:showAppearEffect()
+        end
+
+        if self._heroAgent and self._heroAgent:getStackTargetObjId() and self._heroAgent:getStackTargetObjId() == heroData:getObjId() then
+            -- 重新设定目标
+            self._heroAgent:setTargetAgentId(heroAgent:getAgentId())
+        end
+
+        -- 隐蔽状态刷新
+        local agentTarget = self._agentTable[heroData:getObjId()]
+        if agentTarget then
+            agentTarget:getActor():changeSkillHide(true)
+        end
+
+        -------------------------------------------------------------------------------
+        -- 迷幻术
+        local selfAgent = self:getHeroAgent()
+        if selfAgent and selfAgent:hasBuffer(BuffEnum.EFFECT_HALLUCINATION) then
+            heroAgent:setHalluCreature()
+        end
+        -------------------------------------------------------------------------------
+
+        return heroAgent
+    end
+end
+
+function WorldAgent:addHeroExp(...)
+    -- body
+end
+
+function WorldAgent:createMonsterAgent(monsterData, m, n, direction, hasEffect)
+    local monsterAgent = self._agentTable[monsterData:getObjId()]
+    if monsterAgent then
+        -- 判断是否服务器重复发送
+        local mMonster, nMonster = monsterAgent:getMNExactly()
+        if mMonster ~= m or nMonster ~= n then
+            self._mapAgent:changeAgentMN(monsterAgent, m, n)
+            monsterAgent:setPosition(lt.MapUtil:calcMNMid(m, n))
+            monsterAgent:setDirection(direction)
+        end
+    else
+        monsterAgent = lt.MonsterAgent.new(monsterData, m, n, direction)
+        self._agentTable[monsterData:getObjId()] = monsterAgent
+        self._mapAgent:addMonsterAgent(monsterAgent)
+
+        -- boss monster
+        if monsterData:isAlive() and (monsterData:IsBoss() or monsterData:IsElite()) then
+            lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_BOSS_APPEAR, { bossData = monsterData })
+
+            ----------------------------------------------------------------------------------------------------------------
+            -- 434 特普兹 出现，刷新棺材状态（npcId 11 和 13）：
+            -- 特普兹行宫
+            -- 复制的特普兹行宫
+            if monsterData:getMonsterId() == 434 then
+                self:changCasketOpen()
+            end
+            ----------------------------------------------------------------------------------------------------------------
+        end
+
+        if hasEffect then
+            monsterAgent:showAppearEffect()
+            monsterAgent:playAppearAudio()
+        end
+
+
+        -- 隐蔽状态刷新
+        local agentTarget = self._agentTable[monsterData:getObjId()]
+        if agentTarget then
+            agentTarget:getActor():changeSkillHide(true)
+        end
+        -------------------------------------------------------------------------------
+        -- 迷幻术
+        local selfAgent = self:getHeroAgent()
+        if selfAgent and selfAgent:hasBuffer(BuffEnum.EFFECT_HALLUCINATION) then
+            monsterAgent:setHalluCreature()
+        end
+        -------------------------------------------------------------------------------
+    end
+
+    if monsterAgent:isAlive() then
+        self:checkNeedShowArrow(monsterAgent)
+    end
+
+    if self._heroAgent and self._heroAgent:getStackTargetObjId() and self._heroAgent:getStackTargetObjId() == monsterData:getObjId() then
+        -- 重新设定目标
+        self._heroAgent:setTargetAgentId(monsterAgent:getAgentId())
+    end
+
+    -- 查询是否死亡，死亡并挖掘，则需要移除占用格
+    monsterAgent:roleRemoveAnentMN()
+
+    return monsterAgent
+end
+
+function WorldAgent:createNpcAgent(objId, modelId, name, m, n, direction, npcMeta)
+    local npcAgent = self._agentTable[objId]
+    if npcAgent then
+        -- 判断是否服务器重复发送
+        local mNpc, nNpc = npcAgent:getMNExactly()
+        if mNpc ~= m or nNpc ~= n then
+            self._mapAgent:changeAgentMN(npcAgent, m, n)
+            npcAgent:setPosition(lt.MapUtil:calcMNMid(m, n))
+            npcAgent:setDirection(direction)
+        end
+    else
+        npcAgent = lt.NpcAgent.new(npcMeta)
+        self._agentTable[objId] = npcAgent
+        self._mapAgent:addNpcAgent(npcAgent)
+    end
+
+    self:checkNeedShowArrow(npcAgent)
+
+    return npcAgent
+end
+
+--- 元素
+function WorldAgent:createElementAgent(objId, m, n, direction, ownerId, skillId)
+    local elementAgent = self._agentTable[objId]
+    if elementAgent then
+        local mEle, nEle = elementAgent:getMNExactly()
+        if mEle ~= m or nEle ~= n then
+            self._mapAgent:changeAgentMN(elementAgent, m, n)
+            elementAgent:setPosition(lt.MapUtil:calcMNMid(m, n))
+            elementAgent:setDirection(direction)
+        end
+    else
+        elementAgent = lt.ElementAgent.new(objId, m, n, direction, ownerId, skillId)
+        self._agentTable[objId] = elementAgent
+        self._mapAgent:addElementAgent(elementAgent)
+    end
+
+    return elementAgent
+end
+
+function WorldAgent:removeElementAgent(objId)
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    if not worldAgent then
+        return
+    end
+    local agent = worldAgent:getAgent(objId)
+    if agent then
+        agent:onClear()
+        worldAgent:getMapAgent():removeAgentMN(agent, agent:getMNExactly())
+    end
+    worldAgent:getAgentTable()[objId] = nil
+end
+
+function WorldAgent:createItemAgent(itemData, m, n)
+    local itemAgent = self._agentTable[itemData:getObjId()]
+    if itemAgent then
+        -- 判断是否服务器重复发送
+        local mItem, nItem = itemAgent:getMNExactly()
+        if mItem ~= m or nItem ~= n then
+            itemAgent:setMNExactly(m, n)
+            itemAgent:setPosition(lt.MapUtil:calcMNMid(m, n))
+        end
+    else
+        itemAgent = lt.ItemAgent.new(itemData, m, n)
+        self._agentTable[itemData:getObjId()] = itemAgent
+        self._mapAgent:addItemAgent(itemAgent)
+        --播放音效
+        lt.ItemModule:playSoundByItemInfo(itemData)
+        -- 记录可拾取
+        self:pushPickTable(m, n)
+    end
+
+    --宠物捡东西
+    self:checkPetPickUp(itemAgent)
+
+    return itemAgent
+end
+
+function WorldAgent:createTrapAgent(trapData, m, n)
+    local trapAgent = self._agentTable[trapData:getObjId()]
+    if trapAgent then
+        -- 判断是否服务器重复发送
+        local mItem, nItem = trapAgent:getMNExactly()
+        if mItem ~= m or nItem ~= n then
+            trapAgent:setMNExactly(m, n)
+            trapAgent:setPosition(lt.MapUtil:calcMNMid(m, n))
+        end
+    else
+        trapAgent = lt.TrapAgent.new(trapData, m, n)
+        self._agentTable[trapData:getObjId()] = trapAgent
+        self._mapAgent:addTrapAgent(trapAgent)
+
+        -------------------------------------------------------------------
+        -- 只有可移动的trap才赋予状态机并切idle
+        if trapData:isMoveTrap() then
+            trapAgent:changeState(lt.TrapStateIdle.new(trapAgent))
+        end
+        -------------------------------------------------------------------
+    end
+
+    return trapAgent
+end
+
+function WorldAgent:checkHaloRange()
+    local isRange = false
+    for objId, agent in pairs(self._agentTable) do
+        if agent:isHeroAgent() then
+            if agent:hasBuffer(BuffEnum.EFFECT_CLASS_HALO) then
+                local buffer = agent:getBuffer(BuffEnum.EFFECT_CLASS_HALO)
+                buffer:checkRange()
+            end
+        end
+    end
+end
+
+function WorldAgent:createTrapAgentTop(trapData, m, n)
+    -- yflog:Info("createTrapAgent trap top", m, n, trapData:getObjId(), trapData:getSkillId())
+
+    local clientObjId = string.format("%s" .. Constant.CLIENTIDNAME.TRAPTOP, trapData:getObjId())
+    trapData:setClientObjId(clientObjId)
+    local trapAgent = lt.TrapAgent.new(trapData, m, n)
+    self._agentTable[clientObjId] = trapAgent
+    self._mapAgent:addTrapAgent(trapAgent)
+
+    return trapAgent
+end
+
+function WorldAgent:createTrapAgentBottom(trapData, m, n)
+    -- yflog:Info("createTrapAgent trap bottom", m, n, trapData:getObjId(), trapData:getSkillId())
+
+    local clientObjId = string.format("%s" .. Constant.CLIENTIDNAME.TRAPBOTTOM, trapData:getObjId())
+    trapData:setClientObjId(clientObjId)
+    local trapAgent = lt.TrapAgent.new(trapData, m, n)
+    self._agentTable[clientObjId] = trapAgent
+    self._mapAgent:addTrapAgent(trapAgent)
+
+    return trapAgent
+end
+
+function WorldAgent:deleteObjFromTable(objId)
+    if self._agentTable[objId] then
+        local agent = self._agentTable[objId]
+        self._agentTable[objId] = nil
+        agent:onClear()
+    end
+end
+
+function WorldAgent:deleteAgent(objId)
+    local agent = self:getAgent(objId)
+
+    if objId == lt.GameModule:getHeroObjId() then
+        -- 切换地图
+        -- 注：npc会在此时清除
+        for _, agent in pairs(self._agentTable) do
+            if agent.getMNExactly then
+                self._mapAgent:removeAgentMN(agent, agent:getMNExactly())
+            end
+            agent:onClear()
+            -- lt.LogUtil:debug("WorldAgent:deleteAgent 切换地图:" .. objId)
+        end
+
+        self._agentTable = {}
+        lt.TaskModule:onClickNpcCloseAll()
+        self._heroAgent = nil
+        self._mapAgent:prepareLoadMap()
+        self.tickNum = 0
+    else
+        -- 普通移除
+        if not agent then
+            return
+        end
+
+        if agent:getAgentType() == Constant.AGENT_TYPE_SKILL or agent:getAgentType() == Constant.AGENT_TYPE_ITEM or agent:getAgentType() == Constant.AGENT_TYPE_CAKE then
+            agent:onClear()
+            self._agentTable[objId] = nil
+            if agent:getAgentType() == Constant.AGENT_TYPE_ITEM then
+                self:popPickTable(agent:getMNExactly())
+            end
+        elseif agent:getAgentType() == Constant.AGENT_TYPE_TRAP then
+            -- 陷阱移除
+            if agent:isClearImmediately() then
+                agent:onClear()
+                self._agentTable[objId] = nil
+            else
+                agent:playClearEffect()
+            end
+
+            self._mapAgent:removeAgentMN(agent, agent:getMNExactly())
+        else
+            if self._heroAgent and self._heroAgent:getTargetAgentId() and self._heroAgent:getTargetAgentId() == agent:getAgentId() then
+                if agent.getObjId then
+                    self._heroAgent:setStackTargetObjId(agent:getObjId())
+                end
+                self._heroAgent:setTargetAgentId(nil)
+            end
+
+            self._mapAgent:removeAgentMN(agent, agent:getMNExactly())
+            agent:onClear()
+
+            self._agentTable[objId] = nil
+            lt.TaskModule:onObjDisappear(objId)
+
+            -- 从小地图移除
+            -- lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_MINIMAP_DEL_MN, {agentId=agent:getAgentId()})
+            lt.GameModule:addUpdateEventMiniMap(lt.NtfManager.NTF.NTF_MINIMAP_DEL_MN, { agentId = agent:getAgentId() })
+
+            if agent:getAgentType() == Constant.AGENT_TYPE_MONSTER and (agent:getMonsterData():IsBoss() or agent:getMonsterData():IsElite()) then
+                lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_BOSS_DISAPPEAR, { bossData = agent:getMonsterData() })
+            end
+        end
+    end
+end
+
+--[[
+    对象死亡
+    objId: 死亡对象
+
+    killerObjId: 被谁击杀
+]]
+function WorldAgent:dieAgent(objId, m, n, direction, killerObjId)
+    -- 本角色
+    if objId == lt.GameModule:getHeroObjId() then
+        yflog:Info("self-death killerObjId:%s", killerObjId)
+        lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_HERO_DIE)
+
+        if self._heroAgent then
+            self._heroAgent:changeState(lt.HeroStateDie.new(self._heroAgent))
+        end
+    else
+        if self._heroAgent then
+            local curTargetAgent = self._heroAgent:getTargetAgentMini()
+            if curTargetAgent and curTargetAgent:getObjId() == objId then
+                self._heroAgent:setTargetAgentId(nil)
+            end
+        end
+
+        local agent = self:getAgent(objId)
+        if agent then
+            -- 怪物或角色
+            if agent:isRoleAgent() then
+                local cmdDie = CmdDie.new(m, n, direction, killerObjId)
+                agent:getCmdSystem():push(cmdDie)
+                if agent.checkDieDelayUpdate then
+                    agent:checkDieDelayUpdate()
+                end
+            end
+            -- 提前设置，避免选中已经死亡的怪物
+            if not agent:isHeroAgent() then
+                agent:setIsOutOfGame(true)
+            end
+
+            -- 怪物或者首领死亡需要发送通知
+            if agent:isMonsterAgent() and (agent:getMonsterData():IsBoss() or agent:getMonsterData():IsElite()) then
+                lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_BOSS_DISAPPEAR, { bossData = agent:getMonsterData() })
+                ----------------------------------------------------------------------------------------------------------------
+                -- 432 巴托里 只会出现在以下副本：
+                -- 巴托里行宫
+                -- 复制的巴托里行宫
+
+                -- 434 特普兹 只会出现在以下副本：
+                -- 特普兹行宫
+                -- 复制的特普兹行宫
+                if agent:getMonsterId() == 432 or agent:getMonsterId() == 434 then
+                    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_DUNGEON_MONSTER_CHANGE, { m = m, n = n, state = 2 })
+                end
+                ----------------------------------------------------------------------------------------------------------------
+            end
+
+            -- 移除地图上的生物(生物会占用格子)
+            if not agent:isRoleAgent() then
+                self._mapAgent:removeAgentMN(agent, agent:getMNExactly())
+            end
+        else
+            yflog:Info("----------------- dieAgent objId:", objId)
+        end
+    end
+end
+
+function WorldAgent:damageLabelAction(label)
+    local moveBy1 = cc.MoveBy:create(0.6, cc.p(0, 30))
+    local moveBy2 = cc.MoveBy:create(0.6, cc.p(0, 30))
+    local fadeOut = cc.FadeOut:create(0.6)
+    local spawn = cc.Spawn:create(moveBy2, fadeOut)
+    local func = cc.CallFunc:create(function()
+        label:stopAllActions()
+        label:removeSelf()
+    end)
+
+    local sequence = cc.Sequence:create(moveBy1, spawn, func)
+    label:runAction(sequence)
+end
+
+function WorldAgent:onHpChange(targetObjId, value, skillId, bAttacked, fromObjId)
+    local agent = self:getAgent(targetObjId)
+    if not agent then
+        return
+    end
+    local fromAgent = self:getAgent(fromObjId)
+    if fromAgent and fromAgent:isMonsterAgent() then
+        if math.random() > 0.3 then --怪物攻击只有30%概率触发受击动作
+            bAttacked = false
+        end
+    end
+
+    if fromObjId == targetObjId then
+        bAttacked = false
+    end
+
+    -- 受击动作
+    if value < 0 and bAttacked then
+        local skillMeta = CacheManager:queryMetaBySkillId(skillId)
+        local needHitAction = true
+        if skillMeta then
+            needHitAction = skillMeta:needHitAction()
+        end
+        if needHitAction then
+            local delayTime = CacheManager:getHitActionDelayTimeBySkillId(skillId)
+            agent:onMessage({msgId=Constant.MSG_ON_HIT, delayTime = delayTime})
+        end
+    end
+
+    -- 受到怪物攻击停止自动战斗寻路状态
+    if fromAgent and fromAgent:isMonsterAgent() and value < 0 then
+        if AutoFightManager:isAuto() then
+            -- 此处用通知发送，下一帧再处理
+            lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_STOP_AUTO_ROUTE, {})
+        end
+    end
+
+    -- yflog:Info("伤害目标对象:【%s】 技能Id:【%s】伤害数字:【%s】", agent:getHeroData():getName(), skillId, value)
+
+    -- 伤害数字
+    local x, y = agent:getPosition()
+    y = y + 100
+    local fntName = "font/chs/font_battle_0.fnt"
+    if value > 0 then
+        value = "+" .. value
+        fntName = "font/chs/font_battle_3.fnt"
+    elseif value < 0 then
+        fntName = "font/chs/font_battle_2.fnt"
+    end
+
+    local label = cc.Label:createWithBMFont(fntName, tostring(value), cc.TEXT_ALIGNMENT_CENTER)
+    label:setPosition(x, y)
+    self._mapAgent:getMapActor():addChild(label, 99999999)
+    label:setVisible(agent:getActor():isVisible())
+    self:damageLabelAction(label)
+end
+
+-- Setter && Getter
+function WorldAgent:getMapAgent()
+    return self._mapAgent
+end
+
+function WorldAgent:getMapCode()
+    if not self._mapAgent then
+        return -1
+    end
+
+    return self._mapAgent:getMapCode()
+end
+
+function WorldAgent:getHeroAgent()
+    return self._heroAgent
+end
+
+function WorldAgent:setMapLinkRouteInfo(mapLinkArray, mTarget, nTarget, params)
+    self._mapLinkArray = mapLinkArray
+    self._mapLinkMTarget = mTarget
+    self._mapLinkNTarget = nTarget
+    self._mapLinkParams = params
+end
+
+function WorldAgent:getMapLinkRouteInfo()
+    return self._mapLinkArray, self._mapLinkMTarget, self._mapLinkNTarget, self._mapLinkParams
+end
+
+function WorldAgent:clearMapLinkRouteInfo()
+    self._mapLinkArray = nil
+    self._mapLinkMTarget = nil
+    self._mapLinkNTarget = nil
+    self._mapLinkParams = nil
+end
+
+function WorldAgent:pushPickTable(m, n)
+    self._pickTable[m] = self._pickTable[m] or {}
+    self._pickTable[m][n] = (self._pickTable[m][n] or 0) + 1
+end
+
+function WorldAgent:popPickTable(m, n)
+    if self._pickTable[m] then
+        if self._pickTable[m][n] then
+            self._pickTable[m][n] = math.max(self._pickTable[m][n] - 1, 0)
+        end
+    end
+    if self._pickLockTable[m] then
+        if self._pickLockTable[m][n] then
+            self._pickLockTable[m][n] = math.max(self._pickLockTable[m][n] - 1, 0)
+        end
+    end
+end
+
+function WorldAgent:lockPickTable(m, n)
+    self._pickLockTable[m] = self._pickLockTable[m] or {}
+    self._pickLockTable[m][n] = (self._pickLockTable[m][n] or 0) + 1
+end
+
+function WorldAgent:queryPick(m, n)
+    local count1 = 0
+    local count2 = 0
+    if self._pickTable[m] then
+        count1 = self._pickTable[m][n] or 0
+    end
+    if self._pickLockTable[m] then
+        count2 = self._pickLockTable[m][n] or 0
+    end
+
+    return math.max(count1 - count2, 0)
+end
+
+function WorldAgent:resetPickTable(m, n)
+    self._pickLockTable[m] = self._pickLockTable[m] or {}
+    self._pickLockTable[m][n] = (self._pickLockTable[m][n] or 0)
+
+    -- 解锁
+    local itemAgentArray = self:queryItemAgentArray(m, n)
+    for _, itemAgent in ipairs(itemAgentArray) do
+        itemAgent:setPickFlag(false)
+    end
+end
+
+-- 是否有召唤物
+function WorldAgent:hasSummonEntity(heroAgent)
+    if not heroAgent then
+        return false
+    end
+
+    for _, agent in pairs(self._agentTable) do
+        if agent:getAgentType() == Constant.AGENT_TYPE_MONSTER and agent:getMasterObjId() == heroAgent:getObjId() then
+            local monsterData = agent:getMonsterData()
+            if monsterData and (monsterData:getGrade() ~= lt.MonsterMeta.GRADE.LINSHOU and monsterData:getGrade() ~= lt.MonsterMeta.GRADE.ZHAOHUAN2) then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+function WorldAgent:getAgentTable()
+    return self._agentTable
+end
+
+--寻找掉落物或未挖掘过的尸体
+function WorldAgent:queryItemAndBodyAgent(mTarget, nTarget)
+    for _, agent in pairs(self._agentTable) do
+        local m, n = agent:getMN()
+        if m == mTarget and n == nTarget then
+            if agent:isItemAgent() then
+                local itemData = agent:getItemData()
+                local isRace = itemData:getMetaRace() == 0 or itemData:getMetaRace() == self._heroAgent:getRoleRace()
+                if isRace then
+                    local ownerObjId = itemData:getOwnerObjId()
+                    local ownerTimeout = itemData:getOwnerTimeout()
+                    local serverTime = lt.TimeCounter:serverTime()
+                    if ownerObjId == self._heroAgent:getObjId() or serverTime > ownerTimeout then
+                        return agent
+                    end
+                end
+            elseif agent:isMonsterAgent() and agent:isDead() then
+                --是否挖掘 判断
+                if not agent:isDig() then
+                    return agent
+                end
+            end
+        end
+    end
+    return nil
+end
+
+function WorldAgent:queryMonsterAgent(mTarget, nTarget, isAbsorbSoulFlag)
+    for _, agent in pairs(self._agentTable) do
+        local m, n = agent:getMN()
+        if m == mTarget and n == nTarget then
+            if agent:isMonsterAgent() and agent:isDead() then
+                if isAbsorbSoulFlag then --灵魂吸收标记
+                    if agent:getHeroData():getAborbSoulFlag() == 0 then
+                        return agent
+                    end
+                else
+                    return agent
+                end
+            end
+        end
+    end
+    return nil
+end
+
+--获取npc在地图中位置
+function WorldAgent:getNpcPositionList(mapCode)
+    local race = lt.GameModule:getHeroRace()
+    local mapCode = mapCode or self:getMapCode()
+    local curMapAllNpc = lt.CacheManager:queryNpcByMapId(mapCode)
+    local npclist = {}
+    for _, npcMeta in pairs(curMapAllNpc) do
+        local name = npcMeta:getNpcName()
+        local npcX, npcY = npcMeta:getNpcPos()
+        local npcType = npcMeta:getNpcType()
+        local npcId = npcMeta:getNpcId()
+        local isDisplay = npcMeta:getDisplay()
+        if npclist[name] then
+            npclist[name .. "|" .. npcId] = { npcId = npcId, npcX = npcX, npcY = npcY, npcType = npcType, isDisplay =
+            isDisplay }
+        else
+            npclist[name] = { npcId = npcId, npcX = npcX, npcY = npcY, npcType = npcType, isDisplay = isDisplay }
+        end
+    end
+    return npclist
+end
+
+--按距离排序获得附近玩家
+function WorldAgent:getAroundPlayer()
+    return self._playerList or {}
+end
+
+--按照距离获取怪物是boss的
+function WorldAgent:getAroundBoss()
+    if not self._heroAgent or not self._bossList then return {} end
+    local m, n = self._heroAgent:getMNExactly()
+    table.sort(self._bossList, function(a, b)
+        local am, an = a:getMNExactly()
+        local bm, bn = b:getMNExactly()
+        local distance_a = lt.MapUtil:getMNDistance(m, n, am, an)
+        local distance_b = lt.MapUtil:getMNDistance(m, n, bm, bn)
+        return distance_a > distance_b
+    end)
+    return self._bossList
+end
+
+function WorldAgent:getColumn()
+    return self._column
+end
+
+--获得可以挖掘的怪物(宠物)
+function WorldAgent:getCanDigMonster()
+    local pet = self:getOwnPet()
+    if pet == nil then return nil end
+    for _, agent in pairs(self._agentTable) do
+        if agent:getAgentType() == Constant.AGENT_TYPE_MONSTER and agent:isDead() and not agent:isDig() then
+            if agent:getKillObjId() == self._heroAgent:getObjId() then
+                local digTimes = agent:getDigTimes()
+                local petInfo = lt.PetModule:getPetByUid(pet:getPetUid())
+                if petInfo then
+                    if not petInfo.dig and digTimes == 1 then
+                    else
+                        return agent
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+--获得自己的宠物
+function WorldAgent:getOwnPet()
+    if not self._heroAgent then
+        return
+    end
+    for _, agent in pairs(self._agentTable) do
+        if agent:getAgentType() == Constant.AGENT_TYPE_MONSTER then
+            local monsterData = agent:getMonsterData()
+            if monsterData:isPet() and monsterData:getMasterObjId() == self._heroAgent:getObjId() then
+                return agent
+            end
+        end
+    end
+    return nil
+end
+
+--获得离自己最近的小怪
+function WorldAgent:getNearestMonster(distance1, distance2)
+    local visiblePlayers = self._visiblePlayers
+    if visiblePlayers == nil then
+        visiblePlayers = self._agentTable
+    end
+    local minDistance1 = distance1
+    local minDistance2 = distance2
+    local monsterAgent1 = nil
+    local monsterAgent2 = nil
+    local m1, n1 = self._heroAgent:getMNExactly()
+    for _, agent in pairs(visiblePlayers) do
+        if agent:getAgentType() == Constant.AGENT_TYPE_MONSTER and agent:isAlive() then
+            if agent:getMasterObjId() == 0 and agent:getHeroData():getSkillHide() == 0 then
+                local monsterData = agent:getMonsterData()
+                if monsterData:getCurHp() > 0 then
+                    local m2, n2 = agent:getMNExactly()
+                    local dis = lt.MapUtil:getMNDistance(m1, n1, m2, n2)
+                    local route = lt.MapUtil:route(m1, n1, m2, n2)
+                    if dis <= minDistance1 and route then
+                        monsterAgent1 = agent
+                        minDistance1 = dis
+                    end
+                    if minDistance2 and dis <= minDistance2 and route then
+                        monsterAgent2 = agent
+                        minDistance2 = dis
+                    end
+                end
+            end
+        end
+    end
+    return monsterAgent1, monsterAgent2
+end
+
+--根据距离获得目标周围的怪物,到指定数量就停
+function WorldAgent:getAroundMonster(targetAgent, distance, num)
+    local visiblePlayers = self._visiblePlayers
+    if visiblePlayers == nil then
+        visiblePlayers = self._agentTable
+    end
+    targetAgent = targetAgent or self._heroAgent
+    num = num or 1
+    local monsters = 0
+    for _, agent in pairs(visiblePlayers) do
+        if agent:getAgentType() == Constant.AGENT_TYPE_MONSTER and agent:isAlive() then
+            if agent:getMasterObjId() == 0 and agent:getHeroData():getSkillHide() == 0 then
+                if agent:getCurMoveMode() == Constant.MOVE_TYPE.WALK then
+                    if distance then
+                        local m1, n1 = targetAgent:getMNExactly()
+                        local m2, n2 = agent:getMNExactly()
+                        local dis = lt.MapUtil:getMNDistance(m1, n1, m2, n2)
+                        if dis <= distance then
+                            monsters = monsters + 1
+                        end
+                    else
+                        monsters = monsters + 1
+                    end
+                end
+            end
+        end
+        if monsters >= num then
+            return true
+        end
+    end
+    return false
+end
+
+--根据距离获得目标周围的死的怪物或者掉落物
+function WorldAgent:getAroundDig(heroAgent)
+    if not heroAgent then
+        return nil
+    end
+
+    --没有掉落和尸体返回
+    if table.nums(self._agentTable) <= 0 then
+        return nil
+    end
+
+    --初始化数据
+    self:initDigArray()
+
+    local mHero, nHero = heroAgent:getMNExactly()
+    for k, v in ipairs(self._digArray) do
+        local m = mHero + v.x
+        local n = nHero + v.y
+        local agent = lt.GameModule:checkCurDropAndBodyGridMap(m, n)
+        if agent then
+            -- 判断点是否被阻挡
+            if not self._mapAgent:isBlocked(m, n) then
+                return agent
+            end
+        end
+    end
+
+    return nil
+end
+
+--初始化拾取地格顺序(半径12格)
+function WorldAgent:initDigArray()
+    if self._digArray then
+        return
+    end
+
+    self._digArray = {}
+    local offsetX = 0
+    local offsetY = 0
+    table.insert(self._digArray, cc.p(offsetX, offsetY))
+    local listIdx = 1
+    for i = 1, 24 do
+        for k = 1, 2 do
+            for j = 1, i do
+                offsetX = offsetX + autoList[listIdx].x
+                offsetY = offsetY + autoList[listIdx].y
+                table.insert(self._digArray, cc.p(offsetX, offsetY))
+            end
+            listIdx = listIdx + 1
+            if listIdx > 4 then
+                listIdx = 1
+            end
+        end
+    end
+end
+
+function WorldAgent:getDigArray()
+    if not self._digArray then
+        self:initDigArray()
+    end
+    return self._digArray
+end
+
+--改变玩家名字颜色
+function WorldAgent:checkPlayersNameColor()
+    for _, agent in pairs(self._agentTable) do
+        if agent:getAgentType() == Constant.AGENT_TYPE_HERO and agent ~= self:getHeroAgent() then
+            agent:changeRedName()
+        end
+    end
+end
+
+--寻找任务怪物
+function WorldAgent:findMissionMonster()
+    self._npcArrowCue = {}
+    self._monsterArrowCue = {}
+    local mainTask = lt.TaskModule:getMainTask()
+    local isComplete = false
+    if mainTask then
+        isComplete = lt.TaskModule:checkTaskComplete(mainTask)
+        if not isComplete then
+            local meta = lt.CacheManager:getMissionMeta(mainTask.taskId)
+            local targets = meta:getArrowCue()
+            local arrowCueType = meta:getArrowCueType()
+            if arrowCueType == 1 then
+                for i = 1, #targets do
+                    table.insert(self._npcArrowCue, targets[i])
+                end
+            else
+                for i = 1, #targets do
+                    table.insert(self._monsterArrowCue, targets[i])
+                end
+            end
+        end
+    end
+
+    local advanceTask = lt.TaskModule:getAdvanceTask()
+    if advanceTask then
+        isComplete = lt.TaskModule:checkTaskComplete(advanceTask)
+        if not isComplete then
+            local meta = lt.CacheManager:getMissionMeta(advanceTask.taskId)
+            local targets = meta:getArrowCue()
+            local arrowCueType = meta:getArrowCueType()
+            if arrowCueType == 1 then
+                for i = 1, #targets do
+                    table.insert(self._npcArrowCue, targets[i])
+                end
+            else
+                for i = 1, #targets do
+                    table.insert(self._monsterArrowCue, targets[i])
+                end
+            end
+        end
+    end
+
+    local tasklist = lt.TaskModule:getTaskListCache(Constant.TASK_TYPES.BRANCH)
+    for i = 1, #tasklist do
+        isComplete = lt.TaskModule:checkTaskComplete(tasklist[i])
+        if not isComplete and tasklist[i].taskState ~= Constant.TASK_STATE.NOSTART then
+            local meta = lt.CacheManager:getMissionMeta(tasklist[i].taskId)
+            local targets = meta:getArrowCue()
+            local arrowCueType = meta:getArrowCueType()
+            if arrowCueType == 1 then
+                for j = 1, #targets do
+                    table.insert(self._npcArrowCue, targets[j])
+                end
+            else
+                for j = 1, #targets do
+                    table.insert(self._monsterArrowCue, targets[j])
+                end
+            end
+        end
+    end
+
+    for _, agent in pairs(self._agentTable) do
+        local show = false
+        if agent:isMonsterAgent() and agent:isAlive() then
+            --怪物
+            local monsterData = agent:getHeroData()
+            for i = 1, #self._monsterArrowCue do
+                if self._monsterArrowCue[i] == monsterData:getMonsterId() then
+                    show = true
+                    break
+                end
+            end
+            agent:updateTargetArrow(show)
+        elseif agent:isNpcAgent() then
+            --npc
+            local npcId = agent:getObjId()
+            for i = 1, #self._npcArrowCue do
+                if self._npcArrowCue[i] == npcId then
+                    show = true
+                    break
+                end
+            end
+            agent:updateTargetArrow(show)
+        end
+    end
+    return nil
+end
+
+--检测是否需要显示箭头
+function WorldAgent:checkNeedShowArrow(agent)
+    local show = false
+    if agent:isMonsterAgent() and agent:isAlive() then
+        --怪物
+        local monsterData = agent:getHeroData()
+        for i = 1, #self._monsterArrowCue do
+            if self._monsterArrowCue[i] == monsterData:getMonsterId() then
+                show = true
+                break
+            end
+        end
+        agent:updateTargetArrow(show)
+    elseif agent:isNpcAgent() then
+        --npc
+        local npcId = agent:getObjId()
+        for i = 1, #self._npcArrowCue do
+            if self._npcArrowCue[i] == npcId then
+                show = true
+                break
+            end
+        end
+        agent:updateTargetArrow(show)
+    end
+end
+
+-- 客户端技能陷阱
+function WorldAgent:createClientTrap(skillId, fromObjId, targetObjId, targetM, targetN, index)
+    local objId = string.format("CLIENT_TRAP%s%s%s%s", fromObjId, targetObjId, skillId, index or "")
+    local trapData = lt.TrapData.new(objId, {
+        { properCode = 11004, intValue = skillId },
+        { properCode = 11015, intValue = targetObjId },
+    })
+
+    return self:createTrapAgent(trapData, targetM, targetN)
+end
+
+function WorldAgent:changeToHalluCreature()
+    for _, agent in pairs(self._agentTable) do
+        if agent:isHeroAgent() and not agent:getIsSelf() then
+            agent:setHalluCreature()
+        end
+
+        if agent:isMonsterAgent() and not agent:isPet() then
+            agent:setHalluCreature()
+        end
+    end
+end
+
+function WorldAgent:removeHalluCreature()
+    for _, agent in pairs(self._agentTable) do
+        if agent:isHeroAgent() and not agent:getIsSelf() then
+            agent:unSetHalluCreature()
+        end
+
+        if agent:isMonsterAgent() and not agent:isPet() then
+            agent:unSetHalluCreature()
+        end
+    end
+end
+
+function WorldAgent:changCasketOpen()
+    local npcAgent = self:getNpcAgentById(Constant.NPC_CASKET.NPC11) or self:getNpcAgentById(Constant.NPC_CASKET.NPC13)
+    if npcAgent then
+        npcAgent:changCasketOpen()
+    end
+end
+
+--- 反击假身
+function WorldAgent:createCrossCounterAgents(fromObjId, targetObjId, skillId)
+    if not skillId then
+        return
+    end
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    if not worldAgent then
+        return
+    end
+    local agent = worldAgent:getAgent(fromObjId)
+    if not agent then
+        return
+    end
+    local targetAgent = worldAgent:getAgent(targetObjId)
+    if not targetAgent then
+        return
+    end
+
+    --- 客户端自己创建一个反身agent
+    local heroData = clone(agent:getHeroData())
+    local tDirection = targetAgent:getDirection()
+
+    local direction = tDirection + 4
+    if direction > 7 then
+        direction = direction - 8
+    end
+
+    self._crossCount = self._crossCount + 1
+    local cloneObjId = fromObjId .. Constant.CLONETAG.CROSS_COUNTER .. self._crossCount
+    heroData:setObjId(cloneObjId)
+    heroData:setDirection(direction)
+
+    local mAgent, nAgent = targetAgent:getMNExactly()
+
+    heroData:setCrossCounter(true)
+    local cloneM, cloneN = mAgent + Constant.MN_DIR[tDirection][1], nAgent + Constant.MN_DIR[tDirection][2]
+    worldAgent:createHeroAgent(heroData, cloneM, cloneN, direction, false, false)
+
+    local cloneAgent = worldAgent:getAgent(cloneObjId)
+    cloneAgent:setIsOutOfGame(true)
+    cloneAgent:getActor():setLocalZOrder(agent:getActor():getLocalZOrder() - 1)
+    cloneAgent:setDirection(direction)
+    local cmdAttack = lt.CmdAttack.new(skillId, 1, direction, targetObjId, nil, nil)
+    cloneAgent:getCmdSystem():push(cmdAttack)
+end
+
+--检测宠物拾取物品
+function WorldAgent:checkPetPickUp(itemAgent)
+    local pet = self:getOwnPet()
+    if pet then
+        local itemData = itemAgent:getItemData()
+        local dropOwnerId = itemData:getDropOwnerId()
+        local heroObjId = self._heroAgent:getObjId()
+        --是自己扔的不捡
+        if dropOwnerId == heroObjId then
+            return
+        end
+        local petInfo = lt.PetModule:getPetByUid(pet:getPetUid())
+        if petInfo then
+            local petMeta = CacheManager:getPetMeta(petInfo:getId())
+            if petMeta:getPick() == 1 then
+                local isRace = itemData:getMetaRace() == 0 or itemData:getMetaRace() == self._heroAgent:getRoleRace()
+                if isRace then
+                    local ownerObjId = itemData:getOwnerObjId()
+                    local ownerTimeout = itemData:getOwnerTimeout()
+                    local serverTime = lt.TimeCounter:serverTime()
+                    if ownerObjId == heroObjId or serverTime > ownerTimeout then
+                        self._heroAgent:pickUpDrop(itemAgent, pet)
+                    end
+                end
+            end
+        end
+    end
+end
+
+return WorldAgent

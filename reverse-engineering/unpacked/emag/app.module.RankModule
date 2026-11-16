@@ -1,0 +1,73 @@
+local RankModule   = {}
+
+local SocketApi    = lt.SocketApi
+local netcmd_pb    = lt.netcmd_pb
+local CommonModule = lt.CommonModule
+local ServerCmdDef = lt.ServerCmdDef
+local ClientCmdDef = lt.ClientCmdDef
+local NtfManager   = lt.NtfManager
+
+RankModule._ranks  = {}
+function RankModule:init()
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_RANK_LIST_RESP),
+        handler(self, self.onRankListResp), "RankModule:onRankListResp")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_QUERY_PLAYER_RESP),
+        handler(self, self.onQueryPlayerResp), "RankModule:onQueryPlayerResp")
+end
+
+function RankModule:clear()
+    SocketApi:removeProtoListenerByTag("RankModule:onRankListResp")
+    SocketApi:removeProtoListenerByTag("RankModule:onQueryPlayerResp")
+    self._ranks = {}
+end
+
+----------------------------回调----------------------------
+function RankModule:onRankListResp(event)
+    local proto  = event.param
+    local vRank  = proto.vRank  -- 列表
+    local myRank = proto.myRank -- 自己排名
+    local id     = proto.id     -- 类型
+
+    if not self._ranks[id] then
+        self._ranks[id] = {}
+    end
+
+    self._ranks[id].array = vRank or {}
+    self._ranks[id].myRank = myRank or 0
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_RANK_LIST_CHANGE)
+end
+
+function RankModule:onQueryPlayerResp(event)
+    local proto = event.param
+    local ret   = proto.ret
+    local role  = proto.role
+    if ret == 0 then
+        lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_DLG_MAIN_VIEW,
+            { class = "UIWndCheckRoleInfo", role = role })
+    end
+end
+
+----------------------------请求----------------------------
+function RankModule:onRankListReq(id)
+    local msg = netcmd_pb.CS_RankListReq()
+    msg.id = id --类型
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_RANK_LIST_REQ), msg)
+end
+
+-- 查看个人信息
+function RankModule:onQueryPlayerReq(sPlayerId)
+    local msg = netcmd_pb.CS_QueryPlayerReq()
+    msg.sPlayerId = sPlayerId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_QUERY_PLAYER_REQ), msg)
+end
+
+----------------------------方法----------------------------
+
+function RankModule:getRankById(id)
+    if self._ranks[id] then
+        return self._ranks[id]
+    end
+    return nil
+end
+
+return RankModule

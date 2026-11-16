@@ -1,0 +1,138 @@
+---@class UICompAchievementDescCell
+--- 成就描述Cell
+local UICompAchievementDescCell = class("UICompAchievementDescCell", lt.UIGButtonBase)
+
+local Constant                  = lt.Constant
+local CacheManager              = lt.CacheManager
+local NtfManager                = lt.NtfManager
+local ItemModule                = lt.ItemModule
+local AchievementModule         = lt.AchievementModule
+function UICompAchievementDescCell:ctor()
+    UICompAchievementDescCell.super.ctor(self)
+    self._data = nil
+end
+
+function UICompAchievementDescCell:onEnter()
+    UICompAchievementDescCell.super.onEnter(self)
+    self._btnGet:addClickListener(handler(self, self.onBtnGetClick))
+    self._btnGoto:addClickListener(handler(self, self.onBtnGotoClick))
+    self._listItem:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+end
+
+function UICompAchievementDescCell:onExit()
+    self._btnGet:removeClickListener()
+    self._btnGoto:removeClickListener()
+    self._listItem:removeEventListener(fgui.UIEventType.ClickItem)
+    UICompAchievementDescCell.super.onExit(self)
+end
+
+function UICompAchievementDescCell:onClear()
+    self._lblTitle = nil
+    self._lblDesc  = nil
+    self._listItem = nil
+    self._icon     = nil
+    self._ctl      = nil
+    self._bar      = nil
+    self._btnGet   = nil
+    self._btnGoto  = nil
+    self._data     = nil
+    UICompAchievementDescCell.super.onClear(self)
+end
+
+function UICompAchievementDescCell:onConstruct()
+    self._lblTitle = self:getChild("lbl_tltle")
+    self._lblDesc = self:getChild("lbl_desc")
+    self._listItem = self:getChild("list_item")
+    self._listItem:setItemRenderer(handler(self, self.onRenderItem))
+    self._btnGet = self:getChild("btn_get")
+    self._btnGoto = self:getChild("btn_goto")
+    self._icon = self:getChild("icon")
+    self._ctl = self:getController("c1")
+    self._bar = self:getChild("bar")
+end
+
+function UICompAchievementDescCell:setInfo(data, index, type)
+    self._lblTitle:setText(data:getTitle())
+    local content = string.format(data:getContent(), data:getMissionTarget()[1])
+    self._lblDesc:setText(content)
+    self._data = data
+    self._listItem:setNumItems(#data:getReward())
+    local resUrl = string.format(_GURL.GetAchievementCellIcon, type)
+    self._icon:setURL(resUrl)
+    local achieveInfo = AchievementModule:getAchivementById(data:getId())
+    if achieveInfo then
+        if achieveInfo.reward then
+            self._ctl:setSelectedIndex(2)
+        else
+            local stepMax = tonumber(data:getMissionTarget()[1])
+            if achieveInfo.step >= stepMax then
+                self._ctl:setSelectedIndex(0)
+            else
+                self._ctl:setSelectedIndex(1)
+                self._bar:setMin(0)
+                self._bar:setValue(achieveInfo.step)
+                self._bar:setMax(data:getMissionTarget()[1])
+            end
+        end
+    else
+        self._ctl:setSelectedIndex(1)
+        self._bar:setMin(0)
+        self._bar:setValue(0)
+        self._bar:setMax(data:getMissionTarget()[1])
+    end
+end
+
+function UICompAchievementDescCell:onRenderItem(index, obj)
+    local index = index + 1
+    local itemData = self._data:getReward()[index]
+
+    local itemType = tonumber(itemData[1])
+    local itemMeta = ""
+    local iconPath = ""
+    if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+        iconPath = "prop"
+        itemMeta = CacheManager:getItemMeta(tonumber(itemData[2]))
+    elseif itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+        iconPath = "equip"
+        itemMeta = CacheManager:queryEquipMeta(tonumber(itemData[2]))
+    end
+    local resUrl = string.format("ui://Item/%s_%s", iconPath, itemMeta:getIconId())
+    obj:getChild("icon"):setURL(resUrl)
+    obj:getChild("lbl_count"):setText(itemData[3])
+    obj.itemData = itemData
+end
+
+function UICompAchievementDescCell:onClickItem(context)
+    local data     = context:getData()
+    local itemData = data.itemData
+    if tonumber(itemData[1]) == Constant.ItemType.ITEM_TYPE_PROP then
+        local itemMeta = CacheManager:getItemMeta(tonumber(itemData[2]))
+        local itemInfo = ItemModule:getItemDataByConfig(itemMeta, nil, tonumber(itemData[3]))
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,
+            { itemInfo = itemInfo, tipsType = Constant.PROPTIPS_FORM.Display })
+    elseif tonumber(itemData[1]) == Constant.ItemType.ITEM_TYPE_EQUIP then
+        local itemMeta = CacheManager:queryEquipMeta(tonumber(itemData[2]))
+        local itemInfo = ItemModule:getItemDataByConfig(itemMeta, nil, tonumber(itemData[3]))
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,
+            { itemInfo = itemInfo, tipsType = Constant.EquipShowTipsType.Display })
+    end
+end
+
+function UICompAchievementDescCell:onBtnGetClick(target)
+    local list = {}
+    table.insert(list, tostring(self._data:getId()))
+    AchievementModule:sendAchieveRewardReq(list)
+end
+
+function UICompAchievementDescCell:onBtnGotoClick(target)
+    local gotoMap = self._data:getGoto()
+    local gotoType = tonumber(gotoMap[1])
+    if gotoType == 1 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = gotoMap[2] })
+    else
+        local id = self._data:getId()
+        AchievementModule:sendAchieveJumpMapReq(tonumber(id))
+    end
+end
+
+return UICompAchievementDescCell

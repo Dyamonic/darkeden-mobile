@@ -1,0 +1,161 @@
+local BulletSingleEffect = class("BulletSingleEffect", lt.BulletBase)
+
+local Constant = lt.Constant
+local GameBoard = lt.GameBoard
+local CacheManager = lt.CacheManager
+local EffectActor = lt.EffectActor
+
+BulletSingleEffect._targetAgentId  = nil
+BulletSingleEffect._effectActor = nil
+
+function BulletSingleEffect:ctor(skillId,skillLevel, direction, startPos, endPos)
+    BulletSingleEffect.super.ctor(self, skillId)
+
+    self._direction = direction
+    self._endPos   = endPos
+    self._startPos = startPos
+    self:setPosition(self._startPos)
+    
+    local offsetX = -25
+    local offsetY = -Constant.MODEL_HERO_Y/2
+    self._effectNode = display.newNode()
+    self._effectNode:setPosition(offsetX, offsetY)
+    self:addChild(self._effectNode)
+
+    self._isEndEffect = false
+
+    self:addEffectActor(skillId,skillLevel)
+end
+
+function BulletSingleEffect:onClear()
+    if self._effectActor then
+        self._effectActor:onClear()
+        self._effectActor = nil
+    end
+    
+    self:removeAllChildren()
+
+    self._isEndEffect = nil
+    self._effectNode = nil
+end
+
+function BulletSingleEffect:addEffectActor(skillId,skillLevel)
+    local actionInfoMetas = CacheManager:getBulletMetas(skillId,skillLevel)
+    if not actionInfoMetas or #actionInfoMetas < 1 then
+        return
+    end
+
+    local meta = actionInfoMetas[1]
+    -- 存在旋转 所以需要加上锚点
+    local anchorPoint = self:getAnchorPointByDirection(self._direction)
+    self._effectActor = EffectActor.new(meta, self._direction, anchorPoint, true)
+    self._effectNode:addChild(self._effectActor)
+
+    self._actionInfoMeta = meta
+
+    self._isEndEffect = true
+end
+
+function BulletSingleEffect:onUpdate()
+    self:onUpdateMove()
+    self:onUpdateEffect()
+end
+
+function BulletSingleEffect:onUpdateMove()
+    local endX, endY = self._endPos.x, self._endPos.y
+
+    local offsetXY = self:getOffectXYByDirection(self._direction)
+
+    local endPos = cc.p(endX+offsetXY.x, endY+offsetXY.y)
+    local curX, curY = self:getPosition()
+
+    local speed = self._actionInfoMeta:getSpeed() or 100 
+
+    local step = speed * GameBoard:getDeltaTime()
+    local directionV = cc.pSub(endPos, cc.p(curX, curY))
+    
+    if cc.pGetLength(directionV) < step then
+        -- 到达
+        self:setPosition(endPos)
+
+        self._waitingForClear = true
+    else
+        directionV = cc.pMul(cc.pNormalize(directionV), step)
+        self:setPosition(curX + directionV.x, curY + directionV.y)
+    end
+end
+
+function BulletSingleEffect:onEnd(isLastGroupMember)
+    if isLastGroupMember then
+        if type(self._callback) == "function" then
+            self._callback()
+        end
+    end
+
+    self:onClear()
+end
+
+function BulletSingleEffect:onUpdateEffect()
+    if not self._isEndEffect then
+		return
+	end
+
+    if not self._effectActor then 
+        return
+    end
+
+    self._effectActor:onUpdateEffect()
+end
+
+function BulletSingleEffect:setEndCallBack(callback)
+    self._callback = callback
+end
+
+function BulletSingleEffect:getAnchorPointByDirection(direction)
+    local anchorPoint = cc.p(0.5,0.5)
+    if direction == Constant.DIRECTION_LEFT then
+        anchorPoint = cc.p(0, 0.5)
+    elseif direction == Constant.DIRECTION_RIGHT then
+        anchorPoint = cc.p(1, 0.5)
+    elseif direction == Constant.DIRECTION_DOWN then
+        anchorPoint = cc.p(0.5, 0)
+    elseif direction == Constant.DIRECTION_UP then
+        anchorPoint = cc.p(0.5, 1)
+    elseif direction == Constant.DIRECTION_LEFT_DOWN then
+        anchorPoint = cc.p(0, 0)
+    elseif direction == Constant.DIRECTION_LEFT_UP then
+        anchorPoint = cc.p(0, 1)
+    elseif direction == Constant.DIRECTION_RIGHT_DOWN then
+        anchorPoint = cc.p(1, 0)
+    elseif direction == Constant.DIRECTION_RIGHT_UP then
+        anchorPoint = cc.p(1, 1)
+    end
+
+    return anchorPoint
+end
+
+function BulletSingleEffect:getOffectXYByDirection(direction)
+    local offsetXY = cc.p(0,0)
+    local heroY = Constant.MODEL_HERO_Y
+    if direction == Constant.DIRECTION_LEFT then
+        offsetXY = cc.p(65, heroY/2)
+    elseif direction == Constant.DIRECTION_RIGHT then
+        offsetXY = cc.p(-65, heroY/2)
+    elseif direction == Constant.DIRECTION_DOWN then
+        offsetXY = cc.p(0, heroY/2 + 42)
+    elseif direction == Constant.DIRECTION_UP then
+        offsetXY = cc.p(0, heroY/2 - 51)
+    elseif direction == Constant.DIRECTION_LEFT_DOWN then
+        offsetXY = cc.p(55, heroY/2 + 28)
+    elseif direction == Constant.DIRECTION_LEFT_UP then
+        offsetXY = cc.p(55, heroY/2 - 34)
+    elseif direction == Constant.DIRECTION_RIGHT_DOWN then
+        offsetXY = cc.p(-55, heroY/2 + 28)
+    elseif direction == Constant.DIRECTION_RIGHT_UP then
+        offsetXY = cc.p(-55, heroY/2 - 34)
+    end
+
+    return offsetXY
+end
+
+return BulletSingleEffect

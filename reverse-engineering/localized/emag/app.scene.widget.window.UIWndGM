@@ -1,0 +1,68 @@
+---@class UIWndGM 开发者工具
+
+
+local UIWndGM = class("UIWndGM", lt.UIWindowBase)
+local GMFuncs = {
+    [1] = {name = "GM command", panel = "UICompGM", url = "ui://GM/GM"},
+    [2] = {name = "Network", panel = "UICompGMNet", url = "ui://GM/Net"},
+}
+
+
+function UIWndGM:ctor(param)
+    UIWndGM.super.ctor(self, param)
+
+
+    self._openViewType = nil
+end
+
+function UIWndGM:onInit()
+    UIWndGM.super.onInit(self, "ui://GM/GMPanel")
+    self._tabList = self:getChild("tabList")
+    self._container = self:getChild("container")
+    self:initUI()
+end
+
+function UIWndGM:onClear()
+    self._tabList = nil
+    self._container = nil
+    UIWndGM.super.onClear(self)
+end
+
+function UIWndGM:onHide()
+    self._tabList:removeEventListener(fgui.UIEventType.ClickItem);
+    UIWndGM.super.onHide(self)
+end
+
+function UIWndGM:onShown()
+    UIWndGM.super.onShown(self)
+    self._tabList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem));
+end
+
+function UIWndGM:initUI()
+    self:setTitle("Developer Tools")
+    self._tabList:setItemRenderer(handler(self, self.renderListItem))
+    self._tabList:setNumItems(#GMFuncs);
+    self._tabList:setSelectedIndex(0)
+    self:onClickItem()
+end
+
+function UIWndGM:renderListItem(index, obj)
+    local data = GMFuncs[index + 1]
+    obj:setTitle(data.name)
+end
+
+function UIWndGM:onClickItem(context)
+    local btnIndex = self._tabList:getSelectedIndex() + 1
+    local innerCompName = GMFuncs[btnIndex].panel
+    if #(self._container:getChildren()) > 0 then
+        self._container:removeChildren()
+    end
+    if innerCompName == "" then
+        return 
+    end
+    local obj = lt[innerCompName].new(GMFuncs[btnIndex])
+    self._container:addChild(obj)
+end
+
+
+return UIWndGM

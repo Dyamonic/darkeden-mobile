@@ -1,0 +1,37 @@
+
+local NormalGoodsMeta = class("NormalGoodsMeta")
+
+local CommonFunc = lt.CommonFunc
+
+function NormalGoodsMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function NormalGoodsMeta:initWithRow(row)
+    self._itemId    = row.ItemId
+    self._shopType  = row.ShopType
+    self._site      = row.Site
+    self._commodity = CommonFunc:analysisJsonToTable(row.Commodity)
+    self._price     = row.Price
+    self._addLimit  = row.AddLimit
+    self._display   = row.Display
+    self._bind      = row.Bind
+end
+
+function NormalGoodsMeta:getCommodity()
+    return self._commodity
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function NormalGoodsMeta:getItemId() return self._itemId end
+function NormalGoodsMeta:getShopType() return self._shopType end
+function NormalGoodsMeta:getSite() return self._site end
+function NormalGoodsMeta:getPrice() return self._price end
+function NormalGoodsMeta:getAddLimit() return self._addLimit end
+function NormalGoodsMeta:getDisplay() return self._display end
+function NormalGoodsMeta:getBind() return self._bind end
+
+-- AUTO GENERATED GETTERS END
+return NormalGoodsMeta

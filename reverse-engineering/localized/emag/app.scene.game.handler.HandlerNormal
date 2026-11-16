@@ -1,0 +1,328 @@
+
+local HandlerNormal = class("HandlerNormal")
+
+local Constant = lt.Constant
+local MapUtil = lt.MapUtil
+local NpcModule = lt.NpcModule
+HandlerNormal.TouchType = {
+    MONSTER = 1,
+    HERO = 2,
+    NPC = 3,
+    MOVE = 4,
+    SKILL = 5
+}
+
+HandlerNormal._touchType = nil
+HandlerNormal._touchId = nil
+HandlerNormal._touchPoint = nil
+
+function HandlerNormal:cotr()
+    self._clickElapse = 0
+    self._clickInterval = 1
+end
+
+function HandlerNormal:onEnter()
+end
+
+function HandlerNormal:onExit()
+end
+
+function HandlerNormal:onUpdate()
+    if self._touchType == lt.HandlerNormal.TouchType.MOVE and self._touchPoint then
+        self._clickElapse = self._clickElapse + lt.GameBoard:getDeltaTime()
+        if self._clickElapse > self._clickInterval then
+            self._clickElapse = self._clickElapse - self._clickInterval
+
+            -- 地图标记
+            if lt.AutoManager:getTouchMove() then
+                local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+                mapAgent:drawClickMark(self._touchPoint)
+            end
+        end
+    end
+
+    if self._clearTouchType then
+        self._clearTouchType = false
+        self._touchType = nil
+        self._touchId = nil
+        self._touchPoint = nil
+        self:resetRouteTarget()
+    end
+
+    if self._stopTouchType then
+        self._stopTouchType = false
+        self._touchType = nil
+        self._touchPoint = nil
+        self:resetRouteTarget()
+    end
+end
+
+function HandlerNormal:stopTouchType(isStopTouchType)
+    self._stopTouchType = isStopTouchType
+end
+
+function HandlerNormal:onTouchBegan(id, point)
+    ----[[
+    local agent = self:selectAgent(point)
+    local heroAgent = lt.AgentManager:getWorldAgent():getHeroAgent()
+    if not heroAgent then
+        return 
+    end
+    if not heroAgent:isAlive() then
+        return
+    end
+    if not agent 
+       
+        or (agent:getAgentType() == Constant.AGENT_TYPE_TRAP and agent:getTrapData():getSkillId() ~= lt.SkillEnum.BLOODY_TUNNEL)
+        or (agent:getAgentType() == Constant.AGENT_TYPE_TRAP and agent:getTrapData():getSkillId() == lt.SkillEnum.BLOODY_TUNNEL and heroAgent:getRoleRace() ~= Constant.RaceType.Vampire) 
+        then
+        local stopHangup = true
+
+        while true do
+          
+            if heroAgent and heroAgent:_getSkillId() then
+                local skillMeta = lt.CacheManager:querySkillMeta(heroAgent:_getSkillId())
+                if skillMeta:getTargetType() == lt.Constant.SkillTargetType.ONE_AREA or skillMeta:getTargetType() == lt.Constant.SkillTargetType.AREA then
+                    -- 准备释放技能
+                    self._touchType = lt.HandlerNormal.TouchType.MOVE
+                    break
+                end
+            end
+
+            if not lt.AutoManager:getTouchMove() then
+                -- 点击地图不处理
+                stopHangup = false
+                self._touchType = nil
+                break
+            end
+
+            local currentTime = os.time()
+
+            self._touchType = lt.HandlerNormal.TouchType.MOVE
+            self._clickTime = currentTime
+
+            break
+        end
+
+        --停止挂机
+        lt.AutoFightManager:endAutoFight()
+
+        -- 地图标记
+        if lt.AutoManager:getTouchMove() then
+            local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+            mapAgent:drawClickMark(point)
+        end
+
+        self._clickElapse = 0
+        self._clickInterval = 1
+    end
+
+    self._touchId = id
+    self._touchPoint = point
+end
+
+function HandlerNormal:onTouchMoved(id, point)
+    if self._touchId ~= id then
+        return
+    end
+
+    if self._touchType == lt.HandlerNormal.TouchType.MOVE then
+        self._touchPoint = point
+    end
+end
+
+-- 点击地图事件 end
+function HandlerNormal:onTouchEnded(id, point)
+    
+    if self._touchId ~= id then
+        return
+    end
+
+    self._clearTouchType = true
+    
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    if not worldAgent then
+        return
+    end
+
+    local heroAgent = worldAgent:getHeroAgent()
+    if not heroAgent then
+        return
+    end
+
+    local agent = self:selectAgent(point)
+    if agent and agent:getAgentId() ~= heroAgent:getAgentId() then
+        local agentType = agent:getAgentType()
+        if agentType == Constant.AGENT_TYPE_MONSTER then
+            heroAgent:setTargetAgentId(agent:getAgentId())
+            lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_SELECT_TARGET, {agent = agent})
+            --选中宠物弹tips
+            local monsterData = agent:getMonsterData()
+            local masterId = monsterData:getMasterObjId()
+            if agent:isPet() then
+                lt.PetModule:sendPetDetail(masterId, monsterData:getPetUid())
+            end
+            -- 选中怪物
+            -- if heroAgent:getJob() == lt.Constant.JOB_DS and agent:getMonsterData():getMasterObjId() == heroAgent:getObjId() then
+            --     heroAgent:setTargetAgentId(agent:getAgentId())
+            --     heroAgent:setIsSkillIdUsed(false)
+
+            -- else
+            --     -- 攻击怪物
+            --     if heroAgent:getHeroData():getJob() == lt.Constant.JOB_ZS then
+            --         heroAgent:setTargetAgentId(agent:getAgentId())
+            --         heroAgent:setSkillId(0)
+            --         heroAgent:setIsSkillIdUsed(false)
+
+            --     else
+            --         heroAgent:setTargetAgentId(agent:getAgentId())
+            --         heroAgent:setIsSkillIdUsed(false)
+            --     end
+            -- end
+
+        elseif agentType == Constant.AGENT_TYPE_HERO then
+            -- 攻击玩家
+            heroAgent:setTargetAgentId(agent:getAgentId())
+            lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_SELECT_TARGET, {agent = agent})
+            -- local heroData = lt.GameModule:getHeroData()
+            -- local mode = heroData:getAttackMode()
+            -- if tonumber(mode) ~= 1 then
+            --     heroAgent:setIsSkillIdUsed(false)
+            -- end
+        elseif agentType == Constant.AGENT_TYPE_NPC then
+            -- 选择NPC
+            lt.LogUtil:debug("Select NPC id ="..agent:getObjId())
+            -- lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_DLG_CLOSE_ALL,{closeNpcDlg = true})
+            -- lt.TaskModule:sendClickNpc(agent:getObjId())
+            self:selectNpc(heroAgent, agent)
+        elseif agentType == Constant.AGENT_TYPE_TRAP 
+            and agent:getTrapData():getSkillId() == lt.SkillEnum.BLOODY_TUNNEL 
+            and heroAgent:getRoleRace() == Constant.RaceType.Vampire then
+            print("selected trap", agent:getObjId())
+
+            -- if agent:getTrapData():getSkillId() == lt.SkillEnum.BLOODY_TUNNEL then
+                heroAgent:setBloodyTunnelId(agent)
+            -- end
+        end
+    end
+end
+
+function HandlerNormal:selectNpc(heroAgent, agent)
+    if  heroAgent:getTransformId() == 0 then
+        local mTarget, nTarget = agent:getMNExactly()
+        local mHero, nHero = heroAgent:getMNExactly()
+        if MapUtil:isMNNeighbor(mHero, nHero, mTarget, nTarget) then
+            local npcId = agent:getObjId()
+            NpcModule:onClickNpc(npcId)
+        else
+            heroAgent:setTargetAgentId(agent:getAgentId())
+            local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+            local moveType, moveDirection, mNext, nNext = mapAgent:calcTouchMove(mHero, nHero, mTarget, nTarget)
+            if moveType == Constant.MOVE_NONE then
+                return 
+            end
+            heroAgent:onMessage({msgId=Constant.MSG_MOVE_TOUCH, moveType=Constant.MOVE_RUN_NPC, moveDirection=moveDirection, mNext=mNext, nNext=nNext, isMoveToNpc = true})    
+        end
+        
+    end
+end
+
+function HandlerNormal:selectAgent(point)
+    local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+    local xPoint, yPoint = mapAgent:calcPositionInMap(point)
+
+    --[[
+    local rect = lt.AgentManager:getWorldAgent():getHeroAgent():getRect()
+    if cc.rectContainsPoint(rect, cc.p(xPoint, yPoint)) then
+        print("包含")
+    else
+        print("不包含")
+    end
+    --]]
+
+    local heroAgent = lt.AgentManager:getWorldAgent():getHeroAgent()
+
+    local selectAgentArray = {}
+    local mTarget, nTarget = mapAgent:calcMNInMap(point)
+    for m = mTarget-1, mTarget + 1 do
+        for n = nTarget+10, nTarget, -1 do
+            local agentTable = mapAgent:getAgentTableMN(m, n)
+            if agentTable then
+                for _, agent in pairs(agentTable) do
+                    if heroAgent and agent:getAgentId() == heroAgent:getAgentId() then
+                        -- 拾取当前格子
+                        heroAgent:checkPickUp()
+                    else
+                        local notDarkness = (lt.GameModule:getHeroRace() == Constant.RaceType.Vampire or agent:isRoleAgent() and agent:getHeroData():getDarkness() ~= 1 or agent:isNpcAgent()) -- 非黑暗触
+                        local notItem = agent:getAgentType() ~= Constant.AGENT_TYPE_ITEM  -- 非物品
+                        local notEle = agent:getAgentType() ~= Constant.AGENT_TYPE_ELEMENT -- 非元素
+                        local isVisible = agent:isVisibleActor() -- 显示状态
+                        local noSummonWind = not agent:isMonsterAgent() or (agent:isMonsterAgent() and agent:getModelId() ~= lt.SkillEnum.SUMMON.SUMMON_WIND) --龙卷风
+                        local noCrossCount = not (agent.isCrossCount and agent:isCrossCount()) -- 非假体
+
+                        local canTouch = notDarkness and notItem and isVisible and notEle and noSummonWind and noCrossCount
+                        if canTouch and cc.rectContainsPoint(agent:getRect(), cc.p(xPoint, yPoint)) then
+                            if agent:isRoleAgent() then
+                                if agent:isMonsterAgent() and not agent:isPet() then
+                                    -- 怪物要挖掘后，才能击穿
+                                    if not agent:isDig() then
+                                        selectAgentArray[#selectAgentArray + 1] = agent
+                                    end
+                                else
+                                    selectAgentArray[#selectAgentArray + 1] = agent
+                                end
+                            else
+                                selectAgentArray[#selectAgentArray + 1] = agent
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    local agentTypeSortValue = {
+        [lt.Constant.AGENT_TYPE_NPC] = 99,
+        [lt.Constant.AGENT_TYPE_HERO] = 50,
+        [lt.Constant.AGENT_TYPE_MONSTER] = 1,
+    }
+
+    if #selectAgentArray > 0 then
+        table.sort(selectAgentArray, function(agent1, agent2)
+            return (agentTypeSortValue[agent1:getAgentType()] or 0) > (agentTypeSortValue[agent2:getAgentType()] or 0)
+        end)
+
+        return selectAgentArray[1]
+    else
+        return nil
+    end
+end
+
+function HandlerNormal:getControlParam()
+    if self._touchType == lt.HandlerNormal.TouchType.MOVE then
+        local param = {}
+        param.touchMovePoint = self._touchPoint
+        return param
+    end
+
+    return nil
+end
+
+function HandlerNormal:resetRouteTarget()
+    self._mTarget = nil
+    self._nTarget = nil
+end
+
+function HandlerNormal:setRouteTarget(mTarget, nTarget)
+    self._mTarget = mTarget
+    self._nTarget = nTarget
+end
+
+function HandlerNormal:isSameTarget(m,n)
+    if not self._mTarget or not self._nTarget then
+        return false
+    end
+
+    return self._mTarget == m and self._nTarget == n
+end
+
+return HandlerNormal

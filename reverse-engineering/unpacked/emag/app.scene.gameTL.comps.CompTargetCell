@@ -1,0 +1,112 @@
+---@class CompTargetCell 目标选择cell
+local CompTargetCell = class("CompTargetCell", lt.UIGButtonBase, lt.UICompChangeSkin)
+
+local NtfManager = lt.NtfManager
+local Constant = lt.Constant
+local AgentManager = lt.AgentManager
+local GameModule = lt.GameModule
+
+function CompTargetCell:ctor()
+    CompTargetCell.super.ctor(self)
+    
+end
+
+function CompTargetCell:onConstruct()
+    self._bossNode = self:getChild("node_boss")
+    self._bossHpBar = self:getChild("bar_bossHp")
+    self._bossLabel = self:getChild("label_boss")
+    self._bossSelectImg = self:getChild("img_bossSelect")
+    self._bossBtn = self:getChild("img_boss")
+    self._bossBtn:addClickListener(handler(self, self.onPlayerClick))
+
+    self._playerNode = self:getChild("node_player")
+    self._nameLabel = self:getChild("label_name")
+    self._hpBar = self:getChild("bar_hp")
+    self._jobLoader = self:getChild("loader_job")
+    self._selectImg = self:getChild("img_select")
+    self._playerBtn = self:getChild("img_player")
+end
+
+function CompTargetCell:onClear()
+    self._bossNode = nil
+    self._bossHpBar = nil
+    self._bossLabel = nil
+    self._bossSelectImg = nil
+    self._bossBtn = nil
+
+    self._playerNode = nil
+    self._nameLabel = nil
+    self._hpBar = nil
+    self._jobLoader = nil
+    self._selectImg = nil
+    self._playerBtn = nil
+
+    self._agent = nil
+end
+
+function CompTargetCell:onEnter()
+    self._bossBtn:addClickListener(handler(self, self.onPlayerClick))
+    self._playerBtn:addClickListener(handler(self, self.onPlayerClick))
+end
+
+function CompTargetCell:onExit()
+    self:removeCustomClickListener(self._bossBtn)
+    self:removeCustomClickListener(self._playerBtn)
+end
+
+
+function CompTargetCell:setInfo(agent)
+    self:setVisible(agent._heroData ~= nil)
+    if agent._heroData == nil then
+        self._agent = nil
+        return
+    end
+    self._agent = agent
+    if agent:getAgentType() == Constant.AGENT_TYPE_HERO then
+        local heroData = agent:getHeroData()
+        self._nameLabel:setText(heroData:getName())
+        local isRed = GameModule:checkNameColorChange(heroData)
+        if not isRed then
+            isRed = heroData:getNameColor() == Constant.COLOR_OX_TENDENCY_4 or heroData:getNameColor() == Constant.COLOR_OX_TENDENCY_5
+        end
+        self._nameLabel:setColor(isRed and Constant.COLOR_TEXT_RED or Constant.COLOR_TEXT_WHITE_PURE)
+        self._hpBar:setFillAmount(heroData:getHpPercent())
+        self._jobLoader:setURL(string.format(_GURL.GetImageJob, heroData:getProfessionIcon()))
+        self._playerBtn:setURL(string.format(_GURL.GetImageMain, "bar_mbxzxt_wanjiadimozu"..Constant.RaceSkinRes[heroData:getRace()]))
+    elseif agent:getAgentType() == Constant.AGENT_TYPE_MONSTER then
+        local bossData = agent:getHeroData()
+        self._bossLabel:setText(bossData:getName())
+        self._bossHpBar:setFillAmount(bossData:getHpPercent())
+    end
+    self._playerNode:setVisible(agent:getAgentType() == Constant.AGENT_TYPE_HERO)
+    self._bossNode:setVisible(agent:getAgentType() == Constant.AGENT_TYPE_MONSTER)
+end
+
+function CompTargetCell:updateHp(objId)
+    if self._agent == nil then return end
+    if self._agent:getAgentType() == Constant.AGENT_TYPE_HERO then
+        local heroData = self._agent:getHeroData()
+        if heroData and objId == heroData:getObjId() then
+            self._hpBar:setFillAmount(heroData:getHpPercent())
+        end
+    elseif self._agent:getAgentType() == Constant.AGENT_TYPE_MONSTER then
+        local bossData = self._agent:getHeroData()
+        if objId == bossData:getObjId() then
+            self._bossHpBar:setFillAmount(bossData:getHpPercent())
+        end
+    end
+end
+
+function CompTargetCell:setSelected(isSelect)
+    self._selectImg:setVisible(isSelect)
+    self._bossSelectImg:setVisible(isSelect)
+end
+
+function CompTargetCell:onPlayerClick()
+    if self._agent == nil then return end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SELECT_TARGET, {agent = self._agent})
+    local heroAgent = AgentManager:getWorldAgent():getHeroAgent()
+    heroAgent:setTargetAgentId(self._agent:getAgentId())
+end
+
+return CompTargetCell

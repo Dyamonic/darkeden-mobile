@@ -1,0 +1,29 @@
+
+--[[
+Layer模板类
+--]]
+local TemplateLayer = class("TemplateLayer", lt.BaseLayer)
+
+function TemplateLayer:ctor()
+    TemplateLayer.super.ctor(self)
+end
+
+function TemplateLayer:onClear()
+    lt.LogUtil:debug("TemplateLayer:onClear")
+end
+
+function TemplateLayer:onEnter()
+    lt.LogUtil:debug("TemplateLayer:onEnter")
+    self:scheduleUpdate(handler(self, self.onUpdate))
+end
+
+function TemplateLayer:onExit()
+    lt.LogUtil:debug("TemplateLayer:onExit")
+    self:unscheduleUpdate()
+end
+
+function TemplateLayer:onUpdate(delta)
+    --lt.LogUtil:debug("TemplateLayer:onUpdate")
+end
+
+return TemplateLayer

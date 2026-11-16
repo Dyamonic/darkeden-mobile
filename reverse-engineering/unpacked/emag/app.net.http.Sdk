@@ -1,0 +1,46 @@
+local Sdk = class("Sdk")
+Sdk.channelId = 0
+
+-- function Sdk:getUUID()
+--     --TODO 获取设备ID
+--     local deviceID = "11111-00000-11111-22223"
+--     local account = _G_TOKEN or ""
+--     local uuid = deviceID .. account
+--     return uuid
+-- end
+
+function Sdk:getUUID()
+    local uuid = ""
+    if cpp.SdkService:shared().getUuid then
+        uuid = cpp.SdkService:shared():getUuid()
+    end
+    if uuid == "" then
+        local deviceID = "11111-00000-11111-22223"
+        local account = _G_TOKEN or ""
+        uuid = deviceID .. account
+    end
+
+    return uuid
+end
+
+function Sdk:getVipLevel()
+    return 0
+end
+
+function Sdk:getDeviceId()
+    --TODO 获取设备ID
+    local deviceID = "11111-00000-11111-22223"
+    local account = _G_TOKEN or ""
+    local uuid = deviceID .. account
+    return uuid
+end
+
+function Sdk:getAppName()
+    return "tzly"
+end
+
+function Sdk:getAppVersion()
+    return "0.0.1"
+end
+
+return Sdk

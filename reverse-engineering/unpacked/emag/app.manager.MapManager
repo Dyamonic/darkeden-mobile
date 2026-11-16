@@ -1,0 +1,63 @@
+
+local MapManager = {}
+
+function MapManager:init()
+    self._frameTable = {}
+    self._frameLoadedTable = {}
+end
+
+function MapManager:clear()
+    for dataFilename, frameInfo in pairs(self._frameTable) do
+        display.removeSpriteFrames(dataFilename, frameInfo.imageFilename)
+    end
+
+    self._frameTable = {}
+end
+
+-- sprite frame part
+function MapManager:loadAtlas(dataFilename, imageFilename)
+    if self._frameTable[dataFilename] then
+        self._frameTable[dataFilename].rc = self._frameTable[dataFilename].rc + 1
+
+        if self._frameLoadedTable[dataFilename] then
+            return true
+        end
+    else
+        self._frameTable[dataFilename] = {}
+        self._frameTable[dataFilename].imageFilename = imageFilename
+        self._frameTable[dataFilename].rc = 1
+
+        display.loadSpriteFrames(dataFilename, imageFilename, function()
+            if DEBUG > 2 then
+                print("MapManager:loadAtlas dataFilename", dataFilename," imageFilename",imageFilename)
+            end
+
+            self._frameLoadedTable[dataFilename] = true
+
+            lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.MAP_SPRITE_FRAME_LOADED, {dataFilename = dataFilename})
+        end)
+    end
+
+    return false
+end
+
+function MapManager:unloadAtlas(dataFilename, imageFilename)
+    if not self._frameTable[dataFilename] then
+        -- 纹理已经被释放
+        return
+    end
+
+    if self._frameTable[dataFilename].rc == 1 then
+        display.removeSpriteFrames(dataFilename, imageFilename)
+        self._frameTable[dataFilename] = nil
+        self._frameLoadedTable[dataFilename] = nil
+        if DEBUG > 2 then
+            print("MapManager:unloadAtlas dataFilename", dataFilename," imageFilename",imageFilename)
+        end
+
+    else
+        self._frameTable[dataFilename].rc = self._frameTable[dataFilename].rc - 1
+    end
+end
+
+return MapManager

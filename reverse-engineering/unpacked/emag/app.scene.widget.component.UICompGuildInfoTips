@@ -1,0 +1,158 @@
+-- 公会信息交互tips
+---@class UICompGuildInfoTips
+local UICompGuildInfoTips = class("UICompGuildInfoTips", lt.UIGButtonBase)
+
+local Constant            = lt.Constant
+local NtfManager          = lt.NtfManager
+local BtnType             = Constant.GuildTipBtns
+local FriendModule        = lt.FriendModule
+local RaceSkinRes         = Constant.RaceSkinRes
+local GameModule          = lt.GameModule
+local GuildModule         = lt.GuildModule
+local CommonUtil          = lt.CommonUtil
+
+local BTN_HEIHT           = 47
+
+local BTN_GROUPS          = {
+    [BtnType.CheckPlayer]  = { name = GReadText.KEY_GUILD_TIPS3, type = BtnType.CheckPlayer },
+    [BtnType.PrivateChat]  = { name = GReadText.KEY_CHAT_TIPS6, type = BtnType.PrivateChat },
+    [BtnType.FriendAdd]    = { name = GReadText.KEY_CHAT_TIPS7, type = BtnType.FriendAdd },
+    [BtnType.UpDuty]       = { name = GReadText.KEY_GUILD_TIPS5, type = BtnType.UpDuty },
+    [BtnType.ChangeMaster] = { name = GReadText.KEY_GUILD_TIPS6, type = BtnType.ChangeMaster },
+    [BtnType.DownDuty]     = { name = GReadText.KEY_GUILD_TIPS7, type = BtnType.DownDuty },
+    [BtnType.KickGuild]    = { name = GReadText.KEY_GUILD_TIPS8, type = BtnType.KickGuild },
+}
+
+function UICompGuildInfoTips:ctor()
+    UICompGuildInfoTips.super.ctor(self)
+    self:makeFullScreen()
+    self._touchLayer = nil
+end
+
+function UICompGuildInfoTips:onClear()
+    self._touchLayer    = nil
+    self._btnTabList    = nil
+    self._bg            = nil
+    UICompGuildInfoTips.super.onClear(self)
+end
+
+function UICompGuildInfoTips:onEnter()
+    UICompGuildInfoTips.super.onEnter(self)
+    self._btnTabList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickBtnHandler))
+    self._touchLayer:addEventListener(fgui.UIEventType.TouchBegin, handler(self, self.onLayerClick))
+end
+
+function UICompGuildInfoTips:onExit()
+    if self._btnTabList then
+        self._btnTabList:removeEventListener(fgui.UIEventType.ClickItem)
+    end
+    self._touchLayer:removeEventListener(fgui.UIEventType.TouchBegin)
+    UICompGuildInfoTips.super.onExit(self)
+end
+
+function UICompGuildInfoTips:onConstruct()
+    self._btnTabList = self:getChild("tabList")
+    self._bg         = self:getChild("bg")
+    self._touchLayer = self:getChild("touch")
+end
+
+function UICompGuildInfoTips:onLayerClick()
+    self:hideSelf()
+end
+
+function UICompGuildInfoTips:hideSelf()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_GUILDMEMBERINFO_TIPS)
+end
+
+function UICompGuildInfoTips:refreshTips(param)
+    -- 传入数据
+    self._roleData = param.roleData
+    self._btnTabList:setNumItems(0)
+    self:btnGroupsShow()
+end
+
+function UICompGuildInfoTips:btnGroupsShow()
+    local btnsGroups = {}
+    local heroData = GameModule:getHeroData()
+    local myGuildDuty = tonumber(heroData:getGuildDuty())
+    --查看信息
+    table.insert(btnsGroups, BTN_GROUPS[BtnType.CheckPlayer])
+    -- 申请好友
+    if not FriendModule:checkIsFriend(self._roleData.name) then
+        table.insert(btnsGroups, BTN_GROUPS[BtnType.FriendAdd])
+    else
+        -- 私聊
+        table.insert(btnsGroups, BTN_GROUPS[BtnType.PrivateChat])
+    end
+    if myGuildDuty == Constant.GuildDuty.Master then
+        if self._roleData.duty == Constant.GuildDuty.ViceMaster then -- 对方是副会长
+            -- 转移会长
+            table.insert(btnsGroups, BTN_GROUPS[BtnType.ChangeMaster])
+            -- 降低职务
+            table.insert(btnsGroups, BTN_GROUPS[BtnType.DownDuty])
+        else
+            -- 提升职务
+            table.insert(btnsGroups, BTN_GROUPS[BtnType.UpDuty])
+        end
+    end
+    if myGuildDuty == Constant.GuildDuty.Master then
+        -- 踢出公会
+        table.insert(btnsGroups, BTN_GROUPS[BtnType.KickGuild])
+    elseif myGuildDuty == Constant.GuildDuty.ViceMaster then
+        if self._roleData.duty == Constant.GuildDuty.Normal then -- 对方是普通成员
+            -- 踢出公会
+            table.insert(btnsGroups, BTN_GROUPS[BtnType.KickGuild])
+        end
+    end
+
+    for _, btnInfo in ipairs(btnsGroups) do
+        local btnNode = self._btnTabList:addItemFromPool()
+        btnNode:setTitle(btnInfo.name)
+        btnNode:setIcon((string.format(_GURL.GetImageDestInfoTipsIcon, RaceSkinRes[GameModule:getHeroRace()])))
+        btnNode.btnType = btnInfo.type
+    end
+
+    local originalSize = self._btnTabList:getSize()
+    self._btnTabList:setSize(originalSize.width, BTN_HEIHT * #btnsGroups + #btnsGroups * 2)
+    self._bg:setSize(self._bg:getSize().width, BTN_HEIHT * #btnsGroups + #btnsGroups * 2 + 2)
+end
+
+function UICompGuildInfoTips:onClickBtnHandler(context)
+    local btn = context:getData()
+    local type = btn.btnType
+    self:btnUseByType(type)
+    self:hideSelf()
+end
+
+function UICompGuildInfoTips:btnUseByType(type)
+    if not self._roleData then
+        return
+    end
+    if type == BtnType.CheckPlayer then
+        lt.RankModule:onQueryPlayerReq(self._roleData.playerId)
+    elseif type == BtnType.PrivateChat then
+        lt.ChatModule:openChatUI(self._roleData.name)
+    elseif type == BtnType.FriendAdd then
+        FriendModule:sendFriendApplyReq(self._roleData.playerId, self._roleData.name)
+    elseif type == BtnType.UpDuty then       --提升职务 会员->副会长
+        GuildModule:sendGuildSetDutyReq(self._roleData.playerId, Constant.GuildDuty.ViceMaster)
+    elseif type == BtnType.ChangeMaster then --转移会长
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+            content = string.format(GReadText.KEY_GUILD_TIPS22, self._roleData.name),
+            confirmCallback = function()
+                GuildModule:sendGuildSetDutyReq(self._roleData.playerId, Constant.GuildDuty.Master)
+            end,
+        })
+    elseif type == BtnType.DownDuty then  --降低职务
+        GuildModule:sendGuildSetDutyReq(self._roleData.playerId, Constant.GuildDuty.Normal)
+    elseif type == BtnType.KickGuild then --踢出公会
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+            content = string.format(GReadText.KEY_GUILD_TIPS23, self._roleData.name),
+            confirmCallback = function()
+                GuildModule:sendGuildKickReq(self._roleData.playerId)
+            end,
+        })
+    end
+end
+
+return UICompGuildInfoTips

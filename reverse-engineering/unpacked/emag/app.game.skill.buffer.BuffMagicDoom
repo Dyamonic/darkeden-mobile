@@ -1,0 +1,19 @@
+local BuffMagicDoom = class("BuffMagicDoom", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+local ScheduleUtil  = lt.ScheduleUtil
+
+--[[
+    毁灭
+]]
+function BuffMagicDoom:ctor(time, actor, skilllevel)    
+    BuffMagicDoom.super.ctor(self, BuffEnum.EFFECT_CLASS_DOOM, time, actor)
+    actor:playParallelEffect(SkillEnum.SKILL_MAGIC_DOOM, 1, true) 
+end
+
+function BuffMagicDoom:onClear()
+    self._actor:removeParalEffect(SkillEnum.SKILL_MAGIC_DOOM)
+    BuffMagicDoom.super.onClear(self)
+end
+
+return BuffMagicDoom

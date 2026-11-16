@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:compileSdkVersion="23" android:compileSdkVersionCodename="6.0-2438415" android:installLocation="auto" package="com.yofijoy.tzlyby" platformBuildVersionCode="30" platformBuildVersionName="11">
+    <queries>
+        <package android:name="com.tencent.mm"/>
+        <package android:name="com.android.creator"/>
+        <package android:name="com.zhuoyi.security.lite"/>
+        <package android:name="com.freeme.secureguard"/>
+        <package android:name="com.android.secureguard"/>
+        <package android:name="com.mdid.msa"/>
+        <package android:name="com.samsung.android.deviceidservice"/>
+        <package android:name="com.coolpad.deviceidsupport"/>
+        <package android:name="com.heytap.openid"/>
+        <package android:name="com.ss.android.ugc.aweme"/>
+        <package android:name="com.ss.android.ugc.aweme.lite"/>
+        <package android:name="com.ss.android.article.news"/>
+        <package android:name="com.ss.android.article.lite"/>
+        <package android:name="com.dragon.read"/>
+        <package android:name="com.taptap.global"/>
+        <package android:name="com.taptap.global.lite"/>
+        <package android:name="com.taptap"/>
+        <intent>
+            <action android:name="com.taptap.sdk.action"/>
+            <category android:name="android.intent.category.DEFAULT"/>
+        </intent>
+    </queries>
+    <uses-feature android:glEsVersion="0x20000"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.permission.RESTART_PACKAGES"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_LOGS"/>
+    <uses-permission android:name="android.permission.GET_TASKS"/>
+    <uses-permission android:name="android.permission.CALL_PHONE"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="com.android.vending.BILLING"/>
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <application android:allowBackup="true" android:appComponentFactory="androidx.core.app.CoreComponentFactory" android:debuggable="true" android:hardwareAccelerated="false" android:icon="@mipmap/juhe_icon" android:label="@string/juhename" android:largeHeap="true" android:name="org.cocos2dx.lua.GameApplication" android:resizeableActivity="false" android:supportsRtl="true" android:usesCleartextTraffic="true">
+        <meta-data android:name="android.app.lib_name" android:value="cocos2dlua"/>
+        <meta-data android:name="android.max_aspect" android:value="2.5"/>
+        <meta-data android:name="BUGLY_APPID" android:value="39e288ca5e"/>
+        <meta-data android:name="BUGLY_APP_VERSION" android:value="1.1.59"/>
+        <meta-data android:name="BUGLY_APP_CHANNEL" android:value="test"/>
+        <meta-data android:name="BUGLY_ENABLE_DEBUG" android:value="true"/>
+        <activity android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize" android:label="@string/app_name" android:launchMode="singleTop" android:name="org.cocos2dx.lua.LaunchActivity" android:screenOrientation="sensorLandscape" android:theme="@style/Theme.notAnimation"/>
+        <activity android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize" android:launchMode="singleTask" android:name="com.juhe.juhesdk.activity.JuheDemoLoginActivity" android:screenOrientation="behind" android:theme="@style/AppTheme_JuheDemo_Login"/>
+        <activity android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize" android:exported="true" android:launchMode="singleTask" android:name="org.cocos2dx.lua.AppActivity" android:screenOrientation="sensorLandscape" android:theme="@style/Theme.notAnimation"/>
+        <uses-library android:name="org.apache.http.legacy" android:required="false"/>
+        <meta-data android:name="com.huawei.hms.client.service.name:ads-identifier" android:value="ads-identifier:3.4.62.300"/>
+        <activity android:configChanges="keyboardHidden|navigation|orientation|screenSize" android:name="com.yofi.sdk.activity.ContainerActivity" android:theme="@style/AppTheme_YF"/>
+        <activity android:configChanges="keyboardHidden|navigation|orientation|screenSize" android:name="com.yofi.sdk.activity.VerticalContainerActivity" android:screenOrientation="portrait" android:theme="@style/AppTheme_YF"/>
+        <activity android:configChanges="keyboardHidden|navigation|orientation|screenSize" android:launchMode="singleTask" android:name="com.yofi.sdk.activity.WebPayView" android:theme="@style/AppTheme_YF"/>
+        <activity android:configChanges="keyboardHidden|navigation|orientation|screenSize" android:name="com.yofi.sdk.activity.DownloadView" android:theme="@style/AppTheme_YF"/>
+        <activity android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize" android:launchMode="singleTask" android:name="com.yofi.sdk.activity.YouFeiWebViewActivity" android:screenOrientation="behind" android:theme="@style/AppTheme_YF_Login" android:windowSoftInputMode="adjustResize"/>
+        <activity android:exported="true" android:launchMode="singleTask" android:name="com.tencent.tauth.AuthActivity" android:noHistory="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="tencent101838764"/>
+            </intent-filter>
+        </activity>
+        <activity android:configChanges="keyboardHidden|orientation" android:name="com.tencent.connect.common.AssistActivity" android:screenOrientation="behind" android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+        <provider android:authorities="com.yofijoy.tzlyby.fileprovider" android:exported="false" android:grantUriPermissions="true" android:name="androidx.core.content.FileProvider">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths"/>
+        </provider>
+        <activity android:configChanges="keyboardHidden|orientation|screenSize" android:exported="false" android:launchMode="singleTop" android:name="com.cmic.gen.sdk.view.GenLoginAuthActivity" android:screenOrientation="behind" android:theme="@style/AppTheme2"/>
+        <provider android:authorities="com.yofijoy.tzlyby.GDTInitProvider" android:exported="false" android:name="com.qq.gdt.action.GDTInitProvider"/>
+        <activity android:exported="false" android:name="com.bytedance.applog.migrate.MigrateDetectorActivity"/>
+        <receiver android:enabled="true" android:exported="false" android:name="com.bytedance.applog.collector.Collector"/>
+        <meta-data android:name="hume_convert.AppConvert.sdk.version" android:value="1.3.1.6"/>
+        <activity android:exported="true" android:name="com.bytedance.ads.convert.BDBridgeActivity" android:theme="@style/TranslucentTheme"/>
+        <activity android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize" android:exported="true" android:launchMode="singleTask" android:name="com.taptap.sdk.login.ui.TapTapLoginActivity" android:screenOrientation="behind" android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen"/>
+        <provider android:authorities="com.yofijoy.tzlyby.com.taptap.sdk.update.internal.fileProvider" android:exported="false" android:grantUriPermissions="true" android:name="com.taptap.sdk.update.internal.TapUpdateFileProvider">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/tapupdate_file_provider"/>
+        </provider>
+        <provider android:authorities="com.yofijoy.tzlyby.com.taptap.services.update.okdownload" android:exported="false" android:name="com.taptap.sdk.update.download.OkDownloadProvider"/>
+        <meta-data android:name="com.taptap.services.update.loader" android:value="true"/>
+        <meta-data android:name="com.tapsdk.moment.loader" android:value="true"/>
+        <provider android:authorities="com.yofijoy.tzlyby.TapTapKitInitProvider" android:exported="false" android:name="com.taptap.sdk.kit.internal.TapTapKitInitProvider"/>
+        <provider android:authorities="com.yofijoy.tzlyby.themisLite" android:exported="false" android:name="com.taptap.sdk.themis.lite.ThemisProvider"/>
+        <activity android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize" android:exported="true" android:launchMode="singleTop" android:name="com.juhe.juhesdk.activity.JuheSplashActivity" android:screenOrientation="landscape" android:theme="@style/Theme.notAnimation">
+            <meta-data android:name="Juhe.MainActivity.Path" android:value="org.cocos2dx.lua.AppActivity"/>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+    </application>
+    <permission android:name="com.yofijoy.tzlyby.gdt.qq.SEND_PERMISSION" android:protectionLevel="signature"/>
+    <permission android:name="com.yofijoy.tzlyby.gdt.qq.RECEIVE_PERMISSION" android:protectionLevel="signature"/>
+    <uses-permission android:name="com.asus.msa.SupplementaryDID.ACCESS"/>
+    <uses-permission android:name="freemme.permission.msa"/>
+    <uses-permission android:name="freemme.permission.msa.SECURITY_ACCESS"/>
+    <uses-permission android:name="com.yofijoy.tzlyby.gdt.qq.SEND_PERMISSION"/>
+    <uses-permission android:name="com.yofijoy.tzlyby.gdt.qq.RECEIVE_PERMISSION"/>
+</manifest>

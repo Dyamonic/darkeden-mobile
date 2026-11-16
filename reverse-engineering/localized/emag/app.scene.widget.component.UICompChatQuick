@@ -1,0 +1,152 @@
+-- 聊天快捷消息界面 (emoji 物品 位置）
+
+---@class UICompChatQuick
+local UICompChatQuick          = class("UICompChatQuick", lt.UIGButtonBase)
+local NtfManager               = lt.NtfManager
+local MapModule                = lt.MapModule
+
+local btnFncList               = {
+    { name = "btn_emoji" },
+    { name = "btn_bag" },
+    { name = "btn_location" },
+    { name = "btn_zhuangban" },
+    { name = "btn_hujiao" },
+    { name = "btn_text" },
+    { name = "btn_close" }
+}
+
+UICompChatQuick.ChangeSkinConf = {
+    ["Chat"] = {
+        ["bg"]            = "bg_liaotian_di3",
+        ["bg_wzdi"]       = "bg_liaotian_wzdi",
+        ["btn_bag"]       = { n1 = "bg_liaotian_bqd01", n0 = "bg_liaotian_bqd02" },
+        ["btn_location"]  = { n1 = "bg_liaotian_bqd01", n0 = "bg_liaotian_bqd02" },
+        ["btn_emoji"]     = { n1 = "bg_liaotian_bqd01", n0 = "bg_liaotian_bqd02" },
+        ["btn_zhuangban"] = { n1 = "bg_liaotian_bqd01", n0 = "bg_liaotian_bqd02" },
+        ["btn_hujiao"]    = { n1 = "bg_liaotian_bqd01", n0 = "bg_liaotian_bqd02" },
+        ["btn_text"]      = { n1 = "bg_liaotian_bqd01", n0 = "bg_liaotian_bqd02" },
+        ["btn_close"]     = { bg = "icon_liaotian_jt01" },
+    },
+}
+
+function UICompChatQuick:ctor()
+    UICompChatQuick.super.ctor(self)
+    self._name = "btn_emoji"
+end
+
+function UICompChatQuick:onEnter()
+    UICompChatQuick.super.onEnter(self)
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_FLOAT_CHAT_EDIT, handler(self, self.onShowEdit),
+        "UICompChatQuick:onShowEdit")
+end
+
+function UICompChatQuick:onExit()
+    NtfManager:removeNtfListenerByTag("UICompChatQuick:onShowEdit")
+    UICompChatQuick.super.onExit(self)
+end
+
+function UICompChatQuick:onClear()
+    self._listIcon    = nil
+    self._listChatLbl = nil
+    self._controlType = nil
+    UICompChatQuick.super.onClear(self)
+end
+
+function UICompChatQuick:onConstruct()
+    -- 功能
+    for k, v in ipairs(btnFncList) do
+        local btn = self:getChild(v.name)
+        btn.name = v.name
+        btn:addClickListener(handler(self, self.onFncBtnClick))
+    end
+    self._listIcon = self:getChild("list_item")
+    self._listIcon:setItemRenderer(handler(self, self.renderChatItem))
+    self._listIcon:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem));
+    self._listIcon:setNumItems(16)
+    self._listIcon:setVisible(true)
+
+    self._listChatLbl = self:getChild("list_chatlbl")
+    self._listChatLbl:setItemRenderer(handler(self, self.renderChatItemLbl))
+    -- self._listChatLbl:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItemLbl));
+    self._listChatLbl:setNumItems(6)
+    self._listChatLbl:setVisible(false)
+    self._controlType = self:getController("c1")
+end
+
+function UICompChatQuick:onFncBtnClick(target)
+    local name = target:getSender().name
+    -- if name == self._name then
+    --     return
+    -- end
+    self._name = name
+    if name == "btn_close" then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_CHAT_SHOWQUICK)
+    elseif name == "btn_bag" then      -- 装备
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndRoleEquip", location = "right" })
+    elseif name == "btn_location" then -- 位置
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_CHAT_ADDKINK_POST, { posData = MapModule:getMyPosData(), index = 1 })
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_CHAT_SHOWQUICK)
+    elseif name == "btn_text" then -- 快捷文字
+        self._listChatLbl:setVisible(true)
+        self._listIcon:setVisible(false)
+        self._listChatLbl:scrollToView(0)
+    elseif name == "btn_emoji" then -- 表情
+        self._listIcon:setVisible(true)
+        self._listChatLbl:setVisible(false)
+        self._listIcon:scrollToView(0)
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = "function has not been developed yet" })
+    end
+end
+
+function UICompChatQuick:renderChatItem(index, obj)
+    obj.index = index
+    obj.obj = obj
+    local urlPath = string.format(_GURL.GetCompChatEmoji, index + 1)
+    obj:getChild("n0"):setURL(urlPath)
+end
+
+function UICompChatQuick:renderChatItemLbl(index, obj)
+    obj.index = index
+    obj.obj = obj
+    obj:setInfo(index)
+    self._index = index
+end
+
+function UICompChatQuick:onClickItem(context)
+    -- if self._name ~= "btn_emoji" then
+    --     return
+    -- end
+    local data = context:getData()
+    local index = data.index + 1
+
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_CHAT_ADDKINK_POST, { emoji = index, index = 1 })
+    -- NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_CHAT_SHOWQUICK)
+end
+
+function UICompChatQuick:onClickItemLbl(context)
+    -- if self._name ~= "btn_text" then
+    --     return
+    -- end
+    local data = context:getData()
+    local index = data.index + 1
+    local str = data.str
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_CHAT_ADDKINK_POST, { messageStr = str, index = 1 })
+    -- NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_CHAT_SHOWQUICK)
+end
+
+function UICompChatQuick:refresh()
+    self._listIcon:setVisible(true)
+    self._listChatLbl:setVisible(false)
+    self._name = "btn_emoji"
+    self._controlType:setSelectedIndex(0)
+end
+
+function UICompChatQuick:onShowEdit()
+    self._listChatLbl:setVisible(true)
+    self._listIcon:setVisible(false)
+    self._listChatLbl:setNumItems(6)
+    self._controlType:setSelectedIndex(1)
+end
+
+return UICompChatQuick

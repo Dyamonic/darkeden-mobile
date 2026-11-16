@@ -1,0 +1,35 @@
+
+local BaseState = class("BaseState")
+
+function BaseState:ctor()
+end
+
+function BaseState:onClear()
+    assert(false, "Please override BaseState:onClear")
+end
+
+function BaseState:onEnter()
+    assert(false, "Please override BaseState:onEnter")
+end
+
+function BaseState:onExit()
+    assert(false, "Please override BaseState:onExit")
+end
+
+function BaseState:onUpdate()
+    assert(false, "Please override BaseState:onUpdate")
+end
+
+function BaseState:onMessage(msg)
+    assert(false, "Please override BaseState:onMessage")
+end
+
+function BaseState:getStateId()
+	assert(false, "Please override BaseState:getStateId")
+end
+
+function BaseState:getStateName()
+    assert(false, "Please override BaseState:getStateName")
+end
+
+return BaseState

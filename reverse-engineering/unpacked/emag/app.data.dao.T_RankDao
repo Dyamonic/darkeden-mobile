@@ -1,0 +1,12 @@
+
+local RankDao = {}
+
+function RankDao:queryByRaceAndClassLevel(race,classLevel)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM Rank WHERE Race=%d and ClassLevel=%d;", race,classLevel)) do
+        local rank = lt.RankMeta.new(row)
+        return rank
+    end
+end
+
+return RankDao

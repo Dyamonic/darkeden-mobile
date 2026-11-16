@@ -1,0 +1,126 @@
+
+-- 模型颜色调整shader
+---@class ShaderMulModelEffect
+local ShaderMulModelEffect = class("ShaderMulModelEffect", lt.ShaderBaseEffect)
+
+local ccEngine = cc
+
+function ShaderMulModelEffect:ctor(node, program)
+    ShaderMulModelEffect.super.ctor(self, node, program)
+    self._needRefresh = true
+    self._currentColorIndex = 1
+end
+
+--- ShaderMulModelEffect
+---@param node cc.Node 需要修改的纹理节点
+---@param targetColor1 cc.vec3 目标颜色值（头发、皮肤） 
+---@param targetColor2 cc.vec3 目标颜色值 （服饰）
+---@param targetColor3 cc.vec3 目标颜色值（手） 
+---@param originColor4 cc.vec3 目标颜色值 （脚）
+function ShaderMulModelEffect:render(param)
+    if not param then
+        return
+    end
+    self._colorB = param.colorB 
+    self._colorG32B = param.colorG32B 
+    self._colorG64B = param.colorG64B or cc.vec3(1.0, 1.0, 1.0)
+    self._colorG96B = param.colorG96B or cc.vec3(1.0, 1.0, 1.0)
+
+    self._powerB = param.powerB or 1.45
+    self._powerG32B = param.powerG32B or 1
+    self._powerG64B = param.powerG64B or 1
+    self._powerG96B = param.powerG96B or 1
+
+    self._darkFactor = param.darkFactor or 1.0
+    self._isBlink = param.isBlink
+    self._colorList = param.colorList
+
+    self._colorOffset = param.colorOffset or 0.03
+    self._visibleCount = param.visibleCount or 1.0
+    self._wipeAmount = param.wipeAmount or 0.0
+    self._originColor = param.originColor or cc.vec4(1.0, 1.0, 1.0, 1.0) -- 白色作为原始颜色
+    self._skillColor = param.skillColor 
+    self._grayOffset = param.grayOffset or 8.01
+
+    self._pixelSize = param.pixelSize
+    self._selectColor = param.selectColor
+
+
+    -- 刷新shader
+    self:setNodeShader()
+end
+
+
+function ShaderMulModelEffect:setUniform(glState, time, node)
+    if self._colorB then
+        glState:setUniform("dest_color_b", ccEngine.bytearray.from_vec3(self._colorB))
+    end
+    if self._colorG32B then
+        glState:setUniform("dest_color_g32b", ccEngine.bytearray.from_vec3(self._colorG32B))
+    end
+    if self._colorG64B then
+        glState:setUniform("dest_color_g64b", ccEngine.bytearray.from_vec3(self._colorG64B))
+    end
+    if self._colorG96B then
+        glState:setUniform("dest_color_g96b", ccEngine.bytearray.from_vec3(self._colorG96B))
+    end
+    if self._colorOffset then
+        glState:setUniform("offset_color", ccEngine.bytearray.from_float(self._colorOffset))
+    end
+    glState:setUniform("u_darkFactor", ccEngine.bytearray.from_float(self._darkFactor))
+    -- 设置原始颜色
+    glState:setUniform("origin_color", ccEngine.bytearray.from_vec4(self._originColor))
+    if self._visibleCount < 0.4 then
+        self._visibleCount = 0.4
+    end
+    glState:setUniform("visible_count", ccEngine.bytearray.from_float(self._visibleCount))
+    glState:setUniform("u_wipeAmount", ccEngine.bytearray.from_float(self._wipeAmount))
+    if self._skillColor then
+        glState:setUniform("skill_color", ccEngine.bytearray.from_vec4(self._skillColor))
+    end
+    glState:setUniform("gray_offset", ccEngine.bytearray.from_float(self._grayOffset))
+    
+    if self._powerB then
+        glState:setUniform("power_b", ccEngine.bytearray.from_float(self._powerB))
+    end
+    if self._powerG32B then
+        glState:setUniform("power_g32b", ccEngine.bytearray.from_float(self._powerG32B))
+    end
+    if self._powerG64B then
+        glState:setUniform("power_g64b", ccEngine.bytearray.from_float(self._powerG64B))
+    end
+    if self._powerG96B then
+        glState:setUniform("power_g96b", ccEngine.bytearray.from_float(self._powerG96B))
+    end
+    if self._selectColor then
+        glState:setUniform("select_color", ccEngine.bytearray.from_vec4(self._selectColor))
+        if self._pixelSize then
+            glState:setUniform("pixelSize", ccEngine.bytearray.from_vec2(self._pixelSize))
+        end
+    end
+end
+
+function ShaderMulModelEffect:setFastMoveBlack(black)
+    self.skillActionColor = black
+end
+
+function ShaderMulModelEffect:resetUniform(glState, time)
+end
+
+function ShaderMulModelEffect:needRefresh()
+    return false
+end
+
+function ShaderMulModelEffect:resetTime(time)
+    return time + 0.5
+end
+
+function ShaderMulModelEffect:getTime()
+    if self._currentColorIndex > 1 then
+        return 0.5
+    end
+    return 0.01
+end
+
+return ShaderMulModelEffect
+

@@ -1,0 +1,220 @@
+---@宠物皮肤使用
+---@class UIWndPetUseSkin:UIWindowBase
+local UIWndPetUseSkin = class("UIWndPetUseSkin",lt.UIWindowBase)
+
+local CommonFunc = lt.CommonFunc
+local NtfManager = lt.NtfManager
+local ItemModule = lt.ItemModule
+local PetModule  = lt.PetModule
+local Constant   = lt.Constant
+local PetUIActor = lt.PetUIActor
+local CacheManager = lt.CacheManager
+
+UIWndPetUseSkin.ChangeSkinConf = {
+    ["CommonTL"] = {
+        ["btn_use_skin"]    = {bg = "sort"},
+        ["btn_cancel_skin"] = {bg = "sort"},
+        ["closeButton"]     = {bg = "bg_beibao_anniu01", bgup = "bg_beibao_anniu02"},
+    },
+    ["Pet"] = {
+        ["frame"] = {n1 = "bg_tankuang"},
+    }
+}
+
+function UIWndPetUseSkin:ctor(param)
+    UIWndPetUseSkin.super.ctor(self,param)
+    self._modelNode   = nil
+    self._petActor    = nil
+    self._petSkinArray        = nil
+    self._itemList    = nil
+    self._petInfo     = nil
+    self._selectIndex = nil
+end
+
+function UIWndPetUseSkin:onShown()
+    self:enableUpdateEvent(true)
+
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_PET_MY, handler(self, self.refreshViewUseSkin), "UIWndPetUseSkin:NTF_REFRESH_PET_MY")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_PET_SKIN, handler(self, self.refreshViewUseSkin), "UIWndPetUseSkin:NTF_REFRESH_PET_SKIN")
+
+    local closeButton = self:getChild("closeButton")
+    closeButton:addClickListener(handler(self, self.onCloseBtnClick))
+
+    local useSkinBtn = self:getChild("btn_use_skin")
+    useSkinBtn:addClickListener(handler(self, self.onUseSkinBtnClick))
+
+    local cancelSkinBtn = self:getChild("btn_cancel_skin")
+    cancelSkinBtn:addClickListener(handler(self, self.onCancelSkinBtnClick))
+    self:getChild("touchLayer"):addClickListener(handler(self, self.onCloseBtnClick))
+
+    self._itemList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+
+    self:refreshViewUseSkin()
+end
+
+function UIWndPetUseSkin:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndPetUseSkin:NTF_REFRESH_PET_MY")
+    NtfManager:removeNtfListenerByTag("UIWndPetUseSkin:NTF_REFRESH_PET_SKIN")
+
+    local closeButton = self:getChild("closeButton")
+    closeButton:removeClickListener()
+
+    local useSkinBtn = self:getChild("btn_use_skin")
+    useSkinBtn:removeClickListener()
+
+    local cancelSkinBtn = self:getChild("btn_cancel_skin")
+    cancelSkinBtn:removeClickListener()
+    self:getChild("touchLayer"):removeClickListener()
+
+    self._itemList:removeEventListener(fgui.UIEventType.ClickItem)
+
+    UIWndPetUseSkin.super.onHide(self)
+end
+
+function UIWndPetUseSkin:onInit()
+    self:registerComponent("UICompPetSkinItem")
+    UIWndPetUseSkin.super.onInit(self, _GURL.WndPetUseSkinPanel)
+    self:initUI()
+end
+
+function UIWndPetUseSkin:onClear()
+    if self._petActor then
+        self._petActor:onClear()
+        self._petActor   = nil
+    end
+    self:unregisterAllComponent()
+    self._modelNode   = nil
+    self._petSkinArray        = nil
+    self._petInfo     = nil
+    self._selectIndex = nil
+    if self._itemList then
+        self._itemList:removeChildrenToPool()
+        self._itemList:removeItemRenderer()
+        self._itemList = nil
+    end
+    UIWndPetUseSkin.super.onClear(self)
+end
+
+function UIWndPetUseSkin:onUpdate(dt)
+    if self._petActor then
+        self._petActor:onUpdate(dt)
+    end
+end
+
+function UIWndPetUseSkin:initUI()
+    self._modelNode = self:getChild("node_model")
+    self._petActor  = PetUIActor.new(2)
+    self._modelNode:displayObject():addChild(self._petActor)
+    self._itemList  = self:getChild("list_item")
+    self._itemList:setItemRenderer(handler(self, self.renderUseSkinItem))
+end
+
+function UIWndPetUseSkin:refreshViewUseSkin()
+    local param    = self:getParam().param or {}
+    local uid      = param.uid
+    if not uid then
+        return
+    end
+
+    local petData  = PetModule:getPetByUid(uid)
+    if not petData then
+        return  
+    end
+
+    --列表
+    self._petSkinArray = CacheManager:getPetSkinTypeMap() or {}
+    self._itemList:setNumItems(#self._petSkinArray)
+    
+    if not self._selectIndex then
+        self._selectIndex = 1
+        for index,v in ipairs(self._petSkinArray) do
+           local skinData = PetModule:getSkinDataById(v:getId())
+            if skinData and skinData:getPetUid() == uid then
+                self._selectIndex = index
+                break
+            end
+        end
+        self:setListSelectState(self._itemList, self._selectIndex, true)
+    end
+
+    local petSkinInfo = self._petSkinArray[self._selectIndex]
+    local selectSkinId = nil
+    if petSkinInfo then
+        --宠物皮肤模型
+        self._petActor:setDirection(petSkinInfo:getModleDir())
+        self._petActor:playAction(petSkinInfo:getModel())
+        selectSkinId = petSkinInfo:getId()
+    end
+
+    local skinId = petData:getSkinId()
+    local cancelSkinBtn = self:getChild("btn_cancel_skin")
+    local useSkinBtn    = self:getChild("btn_use_skin")
+    local skinData = PetModule:getSkinDataById(petSkinInfo:getId())
+    if not skinData then
+        cancelSkinBtn:setVisible(false)
+        useSkinBtn:setVisible(false)
+    else
+        cancelSkinBtn:setVisible(skinId == selectSkinId)
+        useSkinBtn:setVisible(skinId ~= selectSkinId)
+    end
+end
+
+function UIWndPetUseSkin:renderUseSkinItem(index, obj)
+    local petSkinInfo = self._petSkinArray[index + 1]
+    local param    = self:getParam().param or {}
+    local uid      = param.uid
+    obj:setInfo(petSkinInfo,uid)
+    obj:insertObjectToFactory(self)
+    obj.index = index + 1
+end
+
+function UIWndPetUseSkin:onClickItem(context)
+    local data = context:getData()
+    self:setListSelectState(self._itemList, self._selectIndex, false)
+    self._selectIndex = data.index
+    self:setListSelectState(self._itemList, self._selectIndex, true)
+
+    self:refreshViewUseSkin()
+end
+
+function UIWndPetUseSkin:onCloseBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndPetUseSkin", close = true})
+end
+
+function UIWndPetUseSkin:onUseSkinBtnClick()
+    local param    = self:getParam().param or {}
+    local uid      = param.uid
+    if not uid then
+        return
+    end
+    yflog:Info("UIWndPetUseSkin:onUseSkinBtnClick1  ---->>>> %s", uid)
+
+    local petSkinInfo = self._petSkinArray[self._selectIndex]
+    if not petSkinInfo then
+        return
+    end
+    
+    PetModule:sendPetUseSkin(petSkinInfo:getId(), uid)
+end
+
+function UIWndPetUseSkin:onCancelSkinBtnClick()
+    local param    = self:getParam().param or {}
+    local uid      = param.uid
+    if not uid then
+        return
+    end
+    -- yflog:Info("UIWndPetUseSkin:onCancelSkinBtnClick1  ---->>>> %s", uid)
+
+    -- local petSkinInfo = self._petSkinArray[self._selectIndex]
+    -- if not petSkinInfo then
+    --     return
+    -- end
+    PetModule:sendPetCancelSkin(uid)
+end
+
+function UIWndPetUseSkin:setListSelectState(list, index, flag)
+    local childIndex = list:itemIndexToChildIndex(index - 1)
+    list:getChildAt(childIndex):setSelect(flag)
+end
+
+return UIWndPetUseSkin

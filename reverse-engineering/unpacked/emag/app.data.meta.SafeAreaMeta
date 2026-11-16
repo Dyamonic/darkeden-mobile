@@ -1,0 +1,34 @@
+local SafeAreaMeta = class("SafeAreaMeta")
+
+function SafeAreaMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function SafeAreaMeta:initWithRow(row)
+    self._saveMapId     = row.SaveMapId
+    self._mapCode       = row.MapCode
+    self._race          = row.Race
+    self._type          = row.Type
+    self._safeArea      = row.SafeArea
+
+    if self._safeArea == "" then
+        self._safeAreaConvert = {}
+    else
+        self._safeAreaConvert = json.decode(self._safeArea)
+    end
+end
+
+function SafeAreaMeta:getSafeArea()
+    return self._safeAreaConvert
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function SafeAreaMeta:getSaveMapId() return self._saveMapId end
+function SafeAreaMeta:getMapCode() return self._mapCode end
+function SafeAreaMeta:getRace() return self._race end
+function SafeAreaMeta:getType() return self._type end
+
+-- AUTO GENERATED GETTERS END
+return SafeAreaMeta

@@ -1,0 +1,21 @@
+local SignGiftDao = {}
+
+function SignGiftDao:query(day)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM SignInGift WHERE NeedDay=%d;", tonumber(day))) do
+    	local meta = lt.SignGiftMeta.new(row)
+        return meta
+    end
+end
+
+function SignGiftDao:queryAll()
+    local mapTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM SignInGift") do
+        local meta = lt.SignGiftMeta.new(row)
+        mapTable[#mapTable+1] = meta
+    end
+    return mapTable
+end
+
+return SignGiftDao

@@ -1,0 +1,115 @@
+
+local LauncherScene = class("LauncherScene", function()
+    return display.newScene("LauncherScene")
+end)
+local LaunchModuleTL = require("launcher.tianlian.LaunchModuleTL")
+
+
+function LauncherScene:ctor()
+	self:enableNodeEvents()
+	LaunchModuleTL:init()
+end
+
+function LauncherScene:onEnter()
+	self._groot = fgui.GRoot:create(self, 1)
+    self._groot:retain()
+
+    fgui.UIPackage:addPackage("launcherfgui/Login")
+	self:registerFont()
+
+	self._launcherLayer = require("launcher.tianlian.LauncherLayerTL").new()
+	self._launcherLayer:makeFullScreen()
+	self._launcherLayer:center()
+	self._launcherLayer:setPivot(0.5, 0.5 , true)
+	self._launcherLayer:setPosition(display.cx, display.cy)
+    self._groot:addChild(self._launcherLayer)
+
+	if device.platform == "windows" then
+		self:addHelperKeyboardListener()
+	end
+end
+
+function LauncherScene:registerFont()
+    fgui.UIConfig:registerFont("fangzheng", "font/fangzheng.ttf");
+    fgui.UIConfig.defaultFont = "fangzheng"
+	fgui.UIConfig.buttonSound = "ui://Login/SLAYER_BUTTON"
+end
+
+function LauncherScene:addDelegateLayer(layer)
+	self:addChild(layer, 1)
+
+	self._launcherLayer:addDelegateLayer(layer)
+end
+function LauncherScene:onExit()
+	
+end
+function LauncherScene:onCleanup()
+	print('LauncherScene:onCleanup()')
+	LaunchModuleTL:clear()
+	if self._launcherLayer then
+		self._launcherLayer:onClear()
+		self._launcherLayer = nil
+	end
+	
+	self._updater = nil
+	fgui.UIPackage:removeAllPackages()
+	if self._groot then
+		self._groot:release()
+		self._groot = nil
+	end
+	collectgarbage("collect")
+end
+
+function LauncherScene:onConnFail(code, errCode)
+	self._launcherLayer:onConnFail(code, errCode)
+end
+
+function LauncherScene:addHelperKeyboardListener()
+	local EventDispatcher = cc.Director:getInstance():getEventDispatcher()
+	local keyboardListener = cc.EventListenerKeyboard:create()
+
+	local function onKeyReleased(key, event)
+		if key == cc.KeyCode.KEY_2 then
+			require("src.fairyGUI.init")
+			local BaseScene = require("fairyGUI.views.MenuScene").new()
+			display.runScene(BaseScene)
+		elseif key == cc.KeyCode.KEY_3 then
+			-- 测试spine
+			-- 创建缓存，【全局变量】以便于不被释放
+			local cachedData = sp.SkeletonData:create("fairyGUIDemo/spine/guaji.json", "fairyGUIDemo/spine/guaji.atlas")
+			local spineSP = sp.SkeletonAnimation:createWithData(cachedData)
+			spineSP:setPosition(display.width / 2, display.height / 2)
+			spineSP:addTo(self)
+			spineSP:setAnimation(0, "1", true)
+			-- 测试从一个 sp.SkeletonData 多次创建
+			performWithDelay(self,function()
+				local spineSP = sp.SkeletonAnimation:createWithData(cachedData)
+				spineSP:setPosition(display.width / 2, 100)
+				spineSP:addTo(self)
+				spineSP:setAnimation(0, "2", true)
+			end, 1)
+		end
+	end
+
+	keyboardListener:registerScriptHandler(onKeyReleased, cc.Handler.EVENT_KEYBOARD_RELEASED)
+
+	EventDispatcher:addEventListenerWithSceneGraphPriority(keyboardListener, self)
+end
+
+function LauncherScene:showView(view)
+	self._groot:addChild(view)
+end
+
+function LauncherScene:getUpdater()
+	if not self._updater then
+		self._updater = require("launcher.tianlian.UpdaterTL").new()
+	end
+
+	return self._updater
+end
+
+function LauncherScene:getLauncherLayer()
+	return self._launcherLayer
+end
+
+return LauncherScene

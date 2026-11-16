@@ -1,0 +1,74 @@
+---@class UICompPetFeedItem 宠物喂养cell
+---
+local UICompPetFeedItem = class("UICompPetFeedItem",lt.UIGButtonBase, lt.UICompChangeSkin)
+local CacheManager = lt.CacheManager
+local Constant = lt.Constant
+local NtfManager = lt.NtfManager
+local PetModule = lt.PetModule
+local ItemModule = lt.ItemModule
+
+UICompPetFeedItem.ChangeSkinConf = {
+    ["Task"] = {
+        ["img_bg"] = "bg_cwrw_djk",
+    }
+}
+
+function UICompPetFeedItem:ctor()
+    --UI
+    self._tipsLabel = nil
+    self._numLabel = nil
+    self._itemLoader = nil
+    self._selectImg = nil
+    --数据
+    self._id = nil
+end
+
+function UICompPetFeedItem:onClear()
+    --UI
+    self._tipsLabel = nil
+    self._numLabel = nil
+    self._itemLoader = nil
+    self._selectImg = nil
+    --数据
+    self._id = nil
+end
+
+function UICompPetFeedItem:onConstruct()
+    self._tipsLabel = self:getChild("label_tips")
+    self._numLabel = self:getChild("label_num")
+    self._itemLoader = self:getChild("loader_item")
+    self._selectImg = self:getChild("img_select")
+    self:startSkin()
+end
+
+function UICompPetFeedItem:setInfo(itemInfo, feedType)
+    self._id = itemInfo[2]
+    local itemMeta = CacheManager:getItemMeta(self._id)
+    if feedType == Constant.WndFeedType.Other then
+        self._tipsLabel:setText(itemMeta:getNickName())
+    else
+        if self._id == Constant.SEVEN_DAY_IN then
+            self._tipsLabel:setText(GReadText.KEY_PET_TIPS18)
+        elseif self._id == Constant.SEVEN_DAY_OUT then
+            self._tipsLabel:setText(GReadText.KEY_PET_TIPS19)
+        else
+            local tips = itemMeta:getPetFeedTime()
+            self._tipsLabel:setText(tips)
+        end
+    end
+    
+    local itemNum = ItemModule:getItemNum(self._id)
+    self._numLabel:setText(itemNum.."/1")
+    self._numLabel:setColor(itemNum > 0 and Constant.COLOR_GREEN or Constant.COLOR_TEXT_RED)
+    self._itemLoader:setURL(string.format(_GURL.GetImageItem, itemMeta:getIconId()))
+end
+
+function UICompPetFeedItem:setSelect(select)
+    self._selectImg:setVisible(select)
+end
+
+function UICompPetFeedItem:getId()
+    return self._id
+end
+
+return UICompPetFeedItem

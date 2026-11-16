@@ -1,0 +1,134 @@
+---@class CompBuffItem
+local CompBuffItem = class("CompBuffItem", lt.UIGButtonBase)
+
+local CacheManager = lt.CacheManager
+local GameModule = lt.GameModule
+
+function CompBuffItem:ctor()
+    CompBuffItem.super.ctor(self)
+    self._buffId = nil
+    self._isTouch = nil
+    self._isBlinking = false
+end
+
+function CompBuffItem:onClear()
+    --UI
+    self:_cleanBlinkEffect()
+    self._buffId = nil
+    self._isTouch = nil
+    self._isBlinking = false
+    CompBuffItem.super.onClear(self)
+end
+
+function CompBuffItem:onEnter()
+    CompBuffItem.super.onEnter(self)
+    self:addClickListener(handler(self, self.itemTouchFunc))
+end
+
+function CompBuffItem:onExit()
+    self:removeClickListener()
+    CompBuffItem.super.onExit(self)
+end
+
+function CompBuffItem:onConstruct()
+    self.bg = self:getChild("bg")
+    self._selectImg = self:getChild("select")
+    self.icon = self:getChild("n1")  -- 缓存图标引用
+    self:startSkin()
+end
+
+function CompBuffItem:cdTimer(dt)
+    if not self._buffId then return end
+
+    local bufferTable = GameModule:getBufferTable() or {}
+    local remainTime = math.floor(bufferTable[self._buffId] or 0)
+    
+    -- 获取配置并校验
+    local buffCfg = CacheManager:getBuffById(self._buffId)
+    if not buffCfg or not buffCfg:hasTime() then 
+        self:_cleanBlinkEffect()
+        return 
+    end
+
+    -- 处理闪烁逻辑
+    if remainTime >= 0 and remainTime <= 5 then
+        if not self._isBlinking then
+            self:_startBlinkEffect()
+        end
+    else
+        self:_cleanBlinkEffect()
+    end
+end
+
+function CompBuffItem:_startBlinkEffect()
+    self._isBlinking = true
+    self:displayObject():stopAllActions()  -- 停止旧动作
+    self:displayObject():setVisible(true)
+    local blink = cc.Blink:create(6, 10)
+    self:displayObject():runAction(blink)
+end
+
+function CompBuffItem:_cleanBlinkEffect()
+    if self._isBlinking then
+        self._isBlinking = false
+        self:displayObject():stopAllActions()
+        self:displayObject():setVisible(true)
+    end
+end
+
+function CompBuffItem:setBuffId(buffId)
+    if self._buffId == buffId then return end  -- 相同ID不重复处理
+
+    -- 清理旧状态
+    self:_cleanBlinkEffect()
+
+    -- 设置新状态
+    self._buffId = buffId
+    if buffId then
+        
+        -- 延迟加载点击事件
+        if not self._isTouch then
+            self._isTouch = true
+            -- self:addClickListener(handler(self, self.itemTouchFunc))
+        end
+
+        -- 加载图标
+        local buffCfg = CacheManager:getBuffById(buffId)
+        if buffCfg then
+            self.icon:setURL(string.format(_GURL.GetImageSkill, buffCfg:getSpriteId()))
+        else
+            self.icon:setURL("ui://default_buff_icon")  -- 设置默认图标
+        end
+    else
+        self.icon:setURL("")  -- 清空图标
+    end
+end
+
+function CompBuffItem:setSelect(select)
+    self._selectImg:setVisible(select)
+end
+
+function CompBuffItem:itemTouchFunc(context)
+    if not self._isTouch then
+        return
+    end
+    local target = context:getSender()
+    local itemSize = target:getSize()
+    local point = target:localToGlobal({x=itemSize.width/2,y=-10})
+
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_SHOW_TEXT_TIPS, 
+    {
+        buffId = self._buffId,
+        pt = point
+    })
+
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_BUFF_SELECT, {obj = self})
+end
+
+-- 析构函数防止内存泄漏
+function CompBuffItem:onDestroy()
+    self:disableUpdate()
+    self:_cleanBlinkEffect()
+end
+
+return CompBuffItem

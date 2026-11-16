@@ -1,0 +1,36 @@
+local GuidanceMeta = class("GuidanceMeta")
+
+function GuidanceMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function GuidanceMeta:initWithRow(row)
+    self._guideId   = row.GuideId
+    self._guideType = row.GuideType
+    self._frontId   = row.FrontId
+    self._showTime  = row.ShowTime
+    self._guideWord = row.GuideWord
+    self._switch    = row.Switch
+    self._isDone    = row.IsDone
+end
+
+function GuidanceMeta:getFrontId()
+    local frontParam = {}
+    if self._frontId ~= "" then
+        frontParam = string.split(self._frontId, ";")
+    end
+    return frontParam
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function GuidanceMeta:getGuideId() return self._guideId end
+function GuidanceMeta:getGuideType() return self._guideType end
+function GuidanceMeta:getShowTime() return self._showTime end
+function GuidanceMeta:getGuideWord() return self._guideWord end
+function GuidanceMeta:getSwitch() return self._switch end
+function GuidanceMeta:getIsDone() return self._isDone end
+
+-- AUTO GENERATED GETTERS END
+return GuidanceMeta

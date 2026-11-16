@@ -1,0 +1,1211 @@
+--- 装备强化弹窗
+---@class UIWndStrengthen:UIWindowBase
+local UIWndStrengthen = class("UIWndStrengthen", lt.UIWindowBase)
+local FunctionToggleModule = lt.FunctionToggleModule
+
+local FITER_TYPES = {
+    LEVELUP = 1,    --升级
+    ENCHANT = 2,    --附魔
+    FUSION = 3,     --融合
+    SUCCINCT = 4,   --洗炼
+}
+local FITER_EQUIP_TYPES = {
+    BAG = 1,        --背包
+    EQUIP = 2,      --装备栏
+}
+
+local ItemModule = lt.ItemModule
+local NtfManager = lt.NtfManager
+local Constant = lt.Constant
+local StrengthenModule = lt.StrengthenModule
+local GuideModule = lt.GuideModule
+local GameModule = lt.GameModule
+
+UIWndStrengthen.ChangeSkinConf = {
+    ["Strengthen"] = {
+        ["frame"] = {n1 = "bg_zhuangbei_beijinban"},
+        ["loader_equip"] = "bg_zbyq_kuang",
+    },
+    ["CommonTL"] = {
+        ["btnFiter1"] = {n0 = "tab_normal", n1 = "tab_select", n2 = "tab_select", n3 = "tab_select"},
+        ["btnFiter2"] ={n0 = "tab_normal", n1 = "tab_select", n2 = "tab_select", n3 = "tab_select"},
+        ["btnFiter3"] = {n0 = "tab_normal", n1 = "tab_select", n2 = "tab_select", n3 = "tab_select"},
+        ["btnFiter4"] = {n0 = "tab_normal", n1 = "tab_select", n2 = "tab_select", n3 = "tab_select"},
+        ["closeButton"] = {bg  = "bg_beibao_anniu01", bgup  = "bg_beibao_anniu02"},
+        ["btn_yeqian1"] = {n0 = "bth_zhuangbei_yeqian"},
+        ["btn_yeqian2"] = {n0 = "bth_zhuangbei_yeqian"},
+    }
+}
+
+--[[--
+	装备强化界面参数
+
+	### 用法示例
+    local objId = 553635320
+	NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrengthen", param = {index = 1, subIdx = 1, objId = objId}})
+
+	@param index 主页签
+	@param subIdx 副页签
+	@param objId 装备唯一id(没有默认不选中)
+    @make 1 702001 701003 703011
+    @make 2 1106001
+    @makefullaffixequip 1101002
+]]
+function UIWndStrengthen:ctor(param)
+    UIWndStrengthen.super.ctor(self, param)
+    self._tipsShow = false
+    self._fiterBtns = {}
+    self._fiterEquipBtns = {}
+    self._selectItem = nil
+    self._itemInfo = nil
+    self._levelupPanel = nil
+    self._enchantPanel = nil
+    self._fusionPanel = nil
+    self._succinctPanel = nil
+    self._gridList = nil
+    self._gridPanel = nil
+    self._controlTab = nil
+    self._emptyNode = nil
+    self._mask = nil
+    self._oustersFrame = nil
+    self._tiledPanel = nil
+    self._itemsPanel = nil
+    self._equipControlTab = nil
+    --融合专属
+    self._selectItem2 = nil
+    self._itemInfo2 = nil
+    self._sp = false
+    -- 背包物品存储
+    self._bagItems = {}
+end
+
+function UIWndStrengthen:onClear()
+    self:clear()
+    if self._gridManger then
+        self._gridManger:clearTiledItem()
+        self._gridManger = nil
+    end
+    self:unregisterAllComponent()
+    self:removeChildren()
+    self._tipsShow = nil
+    self._fiterBtns = nil
+    self._fiterEquipBtns = nil
+    self._selectItem = nil
+    self._itemInfo = nil
+    self._levelupPanel = nil
+    self._enchantPanel = nil
+    self._fusionPanel = nil
+    self._succinctPanel = nil
+    self._gridList = nil
+    self._gridPanel = nil
+    self._controlTab = nil
+    self._emptyNode = nil
+    self._mask = nil
+    self._oustersFrame = nil
+    self._tiledPanel = nil
+    self._itemsPanel = nil
+    self._equipControlTab = nil
+
+    --融合专属
+    self._selectItem2 = nil
+    self._itemInfo2 = nil
+    UIWndStrengthen.super.onClear(self)
+end
+
+function UIWndStrengthen:onInit()
+    self:registerComponent("UICompItem", "UICompInventoryTiled", "UICompStLevelup", "UICompStEnchant", "UICompStFusion", "UICompStSuccinct", "UICompAttrItem")
+    UIWndStrengthen.super.onInit(self, _GURL.WndStrengthen)
+    self:initUI()
+    self:initGridData()
+end
+
+function UIWndStrengthen:onShown()
+    self:enableUpdateEvent(true)
+
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CANCEL_EQUIP_CHOOSE, handler(self, self.cancelEquipChoose), "UIWndStrengthen:cancelEquipChoose")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_SELECT_SUBVIEW, handler(self, self.selectSubView), "UIWndStrengthen:selectSubView")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_OPEN_STRENGTHEN_MASK, handler(self, self.showMaskView), "UIWndStrengthen:showMaskView")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CONFIRM_BLESSING, handler(self, self.blessingConfirm), "UIWndStrengthen:blessingConfirm")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CONFIRM_FUSION, handler(self, self.fusionConfirm), "UIWndStrengthen:fusionConfirm")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CONFIRM_SUCCINCT, handler(self, self.succinctConfirm), "UIWndStrengthen:succinctConfirm")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_RECASTING_RESULT, handler(self, self.recastingResult), "UIWndStrengthen:recastingResult")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_EQUIP_VIEW, handler(self, self.refreshEquipView), "UIWndStrengthen:refreshEquipView")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_EQUIP_STENCHANT, handler(self, self.equipEnchantFinish), "UIWndStrengthen:equipEnchantFinish")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_EQUIP_FUSION_SURE, handler(self, self.equipFusionSure), "UIWndStrengthen:equipFusionSure")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CHECK_GUIDE_EVENT, handler(self, self.checkGuide), "UIWndStrengthen:checkGuide")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT, handler(self, self.refreshItemNum), "UIWndStrengthen:refreshItemNum")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_MONEY_EVENT, handler(self, self.refreshMoney), "UIWndStrengthen:refreshMoney")
+    --服务器回调相关
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_EQUIP_LEVELUP, handler(self, self.equipLevelUp), "UIWndStrengthen:equipLevelUp")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_EQUIP_STRENGTHEN, handler(self, self.equipStrengthen), "UIWndStrengthen:equipStrengthen")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_EQUIP_BLESSING, handler(self, self.equipBlessing), "UIWndStrengthen:equipBlessing")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_EQUIP_MOTIVATE, handler(self, self.equipMotivate), "UIWndStrengthen:equipMotivate")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_EQUIP_COMPOSE, handler(self, self.equipCompose), "UIWndStrengthen:equipCompose")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_EQUIP_INHERIT, handler(self, self.equipInherit), "UIWndStrengthen:equipInherit")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_EQUIP_RECASTING, handler(self, self.equipRecasting), "UIWndStrengthen:equipRecasting")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_EQUIP_PURIFY, handler(self, self.equipPurify), "UIWndStrengthen:equipPurify")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_EQUIP_TRANSFORM, handler(self, self.equipTransform), "UIWndStrengthen:equipTransform")
+
+    local closeButton = self:getChild("closeButton")
+    closeButton:addClickListener(handler(self, self.onCloseBtnClick))
+
+    for k, v in ipairs(self._fiterBtns) do
+        v:addClickListener(handler(self, self.openFiterBtnClick))
+    end
+
+    for k, v in ipairs(self._fiterEquipBtns) do
+        v:addClickListener(handler(self, self.openFiterEquipBtnClick))
+    end
+
+    local param = self:getParam().param or {}
+    local mainIdx = param.index or 1
+    local subIdx = param.subIdx or 1
+    local defaultView = self._fiterBtns[mainIdx]
+    defaultView:setSortingOrder(3)
+    
+    local objId = param.objId
+    self._filterEquipType = param.filterType or Constant.FilterEquipType.RoleEquip
+    StrengthenModule:setFilterEquipType(self._filterEquipType)
+    self._equipControlTab:setSelectedIndex(self._filterEquipType - 1)
+
+    self:openFiterView(defaultView, subIdx, objId)
+
+    self._fiterBtns[2]:setVisible(FunctionToggleModule:checkEnterVisible(FunctionToggleModule.FunctionHelpId.EquipmentEnchant))
+    self._fiterBtns[3]:setVisible(FunctionToggleModule:checkEnterVisible(FunctionToggleModule.FunctionHelpId.EquipmentFusion))
+    self._fiterBtns[4]:setVisible(FunctionToggleModule:checkEnterVisible(FunctionToggleModule.FunctionHelpId.EquipmentWash))
+
+    -- 监听滚动事件
+    self._gridList:addEventListener(fgui.UIEventType.Scroll,handler(self, self.onGildScrollChange))
+end
+
+function UIWndStrengthen:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:cancelEquipChoose")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:selectSubView")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:showMaskView")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:blessingConfirm")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:fusionConfirm")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:succinctConfirm")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:recastingResult")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:refreshEquipView")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:equipFusionSure")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:checkGuide")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:refreshItemNum")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:refreshMoney")
+    --服务器回调相关
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:equipLevelUp")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:equipStrengthen")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:equipBlessing")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:equipMotivate")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:equipCompose")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:equipInherit")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:equipRecasting")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:equipPurify")
+    NtfManager:removeNtfListenerByTag("UIWndStrengthen:equipTransform")
+    
+    self._gridList:removeEventListener(fgui.UIEventType.Scroll)
+    local closeButton = self:getChild("closeButton")
+    closeButton:removeClickListener()
+
+    for k, v in ipairs(self._fiterBtns) do
+        v:removeClickListener()
+    end
+
+    for k, v in ipairs(self._fiterEquipBtns) do
+        v:removeClickListener()
+    end
+
+    --中断GTween延迟
+    if self._levelupPanel then
+        self._levelupPanel:resetTargetAction()
+    end
+    if self._enchantPanel then
+        self._enchantPanel:resetTargetAction()
+    end
+    self._equipControlTab:setSelectedIndex(0)
+    
+    UIWndStrengthen.super.onHide(self)
+end
+
+function UIWndStrengthen:initUI()
+    self._gridList = self:getChild("gridList")
+    self._gridList:setScrollItemToViewEnabled(false)
+    self._gridPanel = self._gridList:addItemFromPool()
+    self._controlTab = self:getController("tabs")
+    self._emptyNode = self:getChild("emptyNode")
+    self._emptyNode:setSortingOrder(99)
+    self._mask = self:getChild("mask")
+    self._mask:setSortingOrder(999)
+    self._scrollPane = self._gridList:getScrollPane()
+    self._listSize = self._gridList:getSize()
+    self._oustersFrame = self:getChild("ousters_frame")
+    local race = GameModule:getHeroRace()
+    self._oustersFrame:setVisible(race == Constant.RaceType.Ousters)
+
+    local closeButton = self:getChild("closeButton")
+    -- closeButton:setSortingOrder(100)
+
+    self._tiledPanel = fgui.GComponent:create()
+    self._itemsPanel = fgui.GComponent:create()
+    self._gridPanel:addChild(self._tiledPanel)
+    self._gridPanel:addChild(self._itemsPanel)
+
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        local obj = self:getChild("btnFiter"..fiterType)
+        obj.fiterType = fiterType
+        self._fiterBtns[fiterType] = obj
+    end
+
+    --页签
+    for fiterType = 1, table.nums(FITER_EQUIP_TYPES) do
+        local obj = self:getChild("btn_yeqian"..fiterType)
+        obj.fiterType = fiterType
+        self._fiterEquipBtns[fiterType] = obj
+    end
+    self._equipControlTab = self:getController("equipTabs")
+end
+
+function UIWndStrengthen:clear(special)
+    if self._mask then
+        self._mask:setVisible(false)
+    end
+    self._gridManger:clear()
+    self:clearAllSelectTiled()
+    self:resetTiledAndItem()
+    --融合特殊处理
+    if not special then
+        self._selectItem = nil
+        self._itemInfo = nil
+        self._selectItem2 = nil
+        self._itemInfo2 = nil
+    end
+end
+
+function UIWndStrengthen:openFiterView(sender, subIdx, objId)
+    -- if self._openViewType == sender.fiterType and self._subViewType == subIdx then 
+    --     return 
+    -- end
+    self._openViewType = sender.fiterType
+    self._subViewType = subIdx
+    self._controlTab:setSelectedIndex(self._openViewType - 1)
+
+    --刷新页签
+    for fiterType = 1, table.nums(FITER_EQUIP_TYPES) do
+        local obj = self._fiterEquipBtns[fiterType]
+        obj:setVisible(self._openViewType ~= FITER_TYPES.FUSION)
+        if self._openViewType == FITER_TYPES.SUCCINCT and self._subViewType == 3 then
+            obj:setVisible(false)
+        end
+    end
+
+    self._gridList:scrollToView(0)
+    self:refreshItemInfo(objId)
+    self:showCurPanel()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_EQUIP_FUSION_SURE)
+end
+
+function UIWndStrengthen:refreshItemInfo(objId, special)
+    self._objId = objId
+    self._special = special
+    --计算数据
+    local index = Constant.TYPEFILTER.LEVELUP
+    if self._openViewType == FITER_TYPES.LEVELUP then
+        index = Constant.TYPEFILTER.LEVELUP
+    elseif self._openViewType == FITER_TYPES.ENCHANT then
+        if self._subViewType == 1 then
+            index = Constant.TYPEFILTER.STRENGTHNEN
+        elseif self._subViewType == 2 then
+            index = Constant.TYPEFILTER.BLESSING
+        elseif self._subViewType == 3 then
+            index = Constant.TYPEFILTER.MOTIVATE
+        end
+    elseif self._openViewType == FITER_TYPES.FUSION then
+        if self._subViewType == 1 then
+            if self._itemInfo == nil then
+                index = Constant.TYPEFILTER.COMPOSELEFT
+            else
+                index = Constant.TYPEFILTER.COMPOSERIGHT
+            end
+        elseif self._subViewType == 2 then
+            if self._itemInfo == nil then
+                index = Constant.TYPEFILTER.INHERITLEFT
+            else
+                index = Constant.TYPEFILTER.INHERITRIGHT
+            end
+        elseif self._subViewType == 3 then
+            if self._itemInfo == nil then
+                index = Constant.TYPEFILTER.REFINELEFT
+            else
+                index = Constant.TYPEFILTER.REFINERIGHT
+            end
+        end
+    elseif self._openViewType == FITER_TYPES.SUCCINCT then
+        if self._subViewType == 1 then
+            index = Constant.TYPEFILTER.RECASTING
+        elseif self._subViewType == 2 then
+            index = Constant.TYPEFILTER.PURIFY
+        elseif self._subViewType == 3 then
+            index = Constant.TYPEFILTER.TRANSFORM
+        end
+    end
+    self._index = index
+    local info = (special and self._itemInfo2) and self._itemInfo2 or self._itemInfo
+    self._info = info
+    local maxHeight = ItemModule:fiterStrengthenItems(index, info, self._filterEquipType)
+    local itemArray = ItemModule:getFiterStrengthenArr()
+
+    --清理
+    self:clear(special)
+
+    --重新设置高度
+    self._gridManger:setGridHeight(maxHeight)
+    self._gridManger:clear()
+    self._gridPanel:setSize(self._gridManger:getGridSize())
+
+    if not itemArray then return end
+
+    self._sp = false
+    self:resetTiledAndItem()
+    self:createItemDataTable(itemArray)
+    self:onGildScrollChange()
+end
+
+function UIWndStrengthen:refreshItemInfoSp(objId1, objId2)
+    self._objId = objId1
+    self._objId2 = objId2
+    local index = Constant.TYPEFILTER.LEVELUP
+    if self._openViewType == FITER_TYPES.LEVELUP then
+        index = Constant.TYPEFILTER.LEVELUP
+    elseif self._openViewType == FITER_TYPES.ENCHANT then
+        if self._subViewType == 1 then
+            index = Constant.TYPEFILTER.STRENGTHNEN
+        elseif self._subViewType == 2 then
+            index = Constant.TYPEFILTER.BLESSING
+        elseif self._subViewType == 3 then
+            index = Constant.TYPEFILTER.MOTIVATE
+        end
+    elseif self._openViewType == FITER_TYPES.FUSION then
+        if self._subViewType == 1 then
+            if self._itemInfo == nil then
+                index = Constant.TYPEFILTER.COMPOSELEFT
+            else
+                index = Constant.TYPEFILTER.COMPOSERIGHT
+            end
+        elseif self._subViewType == 2 then
+            if self._itemInfo == nil then
+                index = Constant.TYPEFILTER.INHERITLEFT
+            else
+                index = Constant.TYPEFILTER.INHERITRIGHT
+            end
+        elseif self._subViewType == 3 then
+            if self._itemInfo == nil then
+                index = Constant.TYPEFILTER.REFINELEFT
+            else
+                index = Constant.TYPEFILTER.REFINERIGHT
+            end
+        end
+    elseif self._openViewType == FITER_TYPES.SUCCINCT then
+        if self._subViewType == 1 then
+            index = Constant.TYPEFILTER.RECASTING
+        elseif self._subViewType == 2 then
+            index = Constant.TYPEFILTER.PURIFY
+        elseif self._subViewType == 3 then
+            index = Constant.TYPEFILTER.TRANSFORM
+        end
+    end
+    self._index = index
+    local maxHeight = ItemModule:fiterStrengthenItemsSp(index, self._itemInfo, self._itemInfo2)
+    local itemArray = ItemModule:getFiterStrengthenArr()
+
+    --清理
+    self:clear(true)
+
+    --重新设置高度
+    self._gridManger:setGridHeight(maxHeight)
+    self._gridManger:clear()
+    self._gridPanel:setSize(self._gridManger:getGridSize())
+
+    if not itemArray then return end
+
+    self._sp = true
+    
+    self:resetTiledAndItem()
+    self:createItemDataTable(itemArray)
+    self:onGildScrollChange()
+end
+
+function UIWndStrengthen:showCurPanel()
+    if self._selectItem then
+        self:selectEquip(self._selectItem)
+    end
+    if self._openViewType == FITER_TYPES.LEVELUP then
+        -- 升级界面
+        if not self._levelupPanel then
+            self._levelupPanel = fgui.UIPackage:createObject("Strengthen", "LevelupPanel")
+            self._levelupPanel:setRegClass(self)
+            self._levelupPanel:insertObjectToFactory(self)
+            self._levelupPanel:setPosition(470, 41)
+            self._emptyNode:addChild(self._levelupPanel)
+        end
+        self._levelupPanel:refreshView(self._itemInfo)
+    elseif self._openViewType == FITER_TYPES.ENCHANT then
+        --附魔界面
+        if not self._enchantPanel then
+            self._enchantPanel = fgui.UIPackage:createObject("Strengthen", "EnchantPanel")
+            self._enchantPanel:insertObjectToFactory(self)
+            self._enchantPanel:setPosition(470, 41)
+            self._emptyNode:addChild(self._enchantPanel)
+        end
+        self._enchantPanel:refreshView(self._itemInfo, self._subViewType)
+    elseif self._openViewType == FITER_TYPES.FUSION then
+        --融合界面
+        if not self._fusionPanel then
+            self._fusionPanel = fgui.UIPackage:createObject("Strengthen", "FusionPanel")
+            self._fusionPanel:insertObjectToFactory(self)
+            self._fusionPanel:setPosition(470, 41)
+            self._emptyNode:addChild(self._fusionPanel)
+        end
+        self._fusionPanel:refreshView1(self._itemInfo, self._subViewType)
+        self._fusionPanel:refreshView2(self._itemInfo2, self._subViewType)
+    elseif self._openViewType == FITER_TYPES.SUCCINCT then
+        --洗炼界面
+        if not self._succinctPanel then
+            self._succinctPanel = fgui.UIPackage:createObject("Strengthen", "SuccinctPanel")
+            self._succinctPanel:insertObjectToFactory(self)
+            self._succinctPanel:setPosition(470, 41)
+            self._emptyNode:addChild(self._succinctPanel)
+        end
+        self._succinctPanel:refreshView(self._itemInfo, self._subViewType)
+    end
+    --显示
+    if self._levelupPanel then
+        self._levelupPanel:setVisible(self._openViewType == FITER_TYPES.LEVELUP)
+    end
+    if self._enchantPanel then
+        self._enchantPanel:setVisible(self._openViewType == FITER_TYPES.ENCHANT)
+    end
+    if self._fusionPanel then
+        self._fusionPanel:setVisible(self._openViewType == FITER_TYPES.FUSION)
+    end
+    if self._succinctPanel then
+        self._succinctPanel:setVisible(self._openViewType == FITER_TYPES.SUCCINCT)
+    end
+end
+
+
+function UIWndStrengthen:refreshSubView()
+    --刷新右侧界面
+    if self._openViewType == FITER_TYPES.LEVELUP then
+        if self._levelupPanel then
+            self._levelupPanel:refreshView(self._itemInfo)
+        end
+    elseif self._openViewType == FITER_TYPES.ENCHANT then
+        if self._enchantPanel then
+            self._enchantPanel:refreshView(self._itemInfo, self._subViewType)
+        end
+    elseif self._openViewType == FITER_TYPES.FUSION then
+        if self._fusionPanel then
+            self._fusionPanel:refreshView1(self._itemInfo, self._subViewType)
+            self._fusionPanel:refreshView2(self._itemInfo2, self._subViewType)
+        end
+    elseif self._openViewType == FITER_TYPES.SUCCINCT then
+        if self._succinctPanel then
+            self._succinctPanel:refreshView(self._itemInfo, self._subViewType)
+        end
+    end
+end
+
+--刷新左侧装备界面
+function UIWndStrengthen:refreshEquipView(event)
+    local param = event.param or {}
+    local objId = param.objId
+    local noRefresh = param.noRefresh
+    self:refreshItemInfo(objId)
+    if not noRefresh then
+        self:showCurPanel()
+    end
+end
+
+--确认融合结果
+function UIWndStrengthen:equipFusionSure(event)
+    if self._fusionPanel then
+        self._fusionPanel:onSureBtnClick()
+    end
+end
+
+------------------------- grid -------------------------------
+function UIWndStrengthen:initGridData()
+    self._gridManger = lt.InventoryGridManger.new(Constant.STRENGTHEN_SIZE.WIDTH, Constant.STRENGTHEN_SIZE.HEIGHT, true)
+end
+
+function UIWndStrengthen:clearAllSelectTiled()
+    self._tiledMapSelectTab = {}
+end
+
+------------------------- tips ---------------------------------
+function UIWndStrengthen:showTips(itemInfo)
+    local itemType = itemInfo:getItemType()
+    if itemType ==  Constant.ItemType.ITEM_TYPE_PROP then
+        self:showPropTips(itemInfo)
+    elseif itemType ==  Constant.ItemType.ITEM_TYPE_EQUIP then
+        self:showEquipTips(itemInfo)
+    end
+end
+
+function UIWndStrengthen:showPropTips(itemInfo)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,{itemInfo = itemInfo, tipsType = Constant.PROPTIPS_FORM.Display})
+end
+
+function UIWndStrengthen:showEquipTips(itemInfo)
+    if self._itemInfo and self._itemInfo:getObjId() ~= itemInfo:getObjId() and self._itemInfo:getMetaKind() == itemInfo:getMetaKind() and self._itemInfo:getMetaType() == itemInfo:getMetaType() then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,{itemInfo = itemInfo, compareItemInfo = self._itemInfo, tipsType = Constant.EquipShowTipsType.Display})
+    elseif self._itemInfo2 and self._itemInfo2:getObjId() ~= itemInfo:getObjId() and self._itemInfo2:getMetaKind() == itemInfo:getMetaKind() and self._itemInfo2:getMetaType() == itemInfo:getMetaType() then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,{itemInfo = itemInfo, compareItemInfo = self._itemInfo2, tipsType = Constant.EquipShowTipsType.Display})
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,{itemInfo = itemInfo, tipsType = Constant.EquipShowTipsType.Display})
+    end
+end
+
+------------------------------- event listener--------------------------
+
+function UIWndStrengthen:onCloseBtnClick()
+    if self._fusionPanel then
+        self._fusionPanel:setResult(0)
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrengthen", close = true})
+end
+
+function UIWndStrengthen:openFiterBtnClick(context)
+    local sender = context:getSender()
+    self:onFiterBtnClick(sender)
+end
+
+function UIWndStrengthen:onFiterBtnClick(sender)
+    if self._openViewType == sender.fiterType then 
+        return 
+    end
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        if fiterType == sender.fiterType then
+            self._fiterBtns[fiterType]:setSortingOrder(3)
+        else
+            self._fiterBtns[fiterType]:setSortingOrder(1)
+        end
+    end
+    self._itemInfo = nil
+    self._itemInfo2 = nil
+    self:openFiterView(sender, 1)
+end
+
+function UIWndStrengthen:openFiterEquipBtnClick(context)
+    local sender = context:getSender()
+    if sender.fiterType == self._filterEquipType then
+        return
+    end
+    for fiterType = 1, table.nums(FITER_EQUIP_TYPES) do
+        if fiterType == sender.fiterType then
+            self._fiterEquipBtns[fiterType]:setSortingOrder(3)
+        else
+            self._fiterEquipBtns[fiterType]:setSortingOrder(1)
+        end
+    end
+    self._filterEquipType = sender.fiterType
+    StrengthenModule:setFilterEquipType(self._filterEquipType)
+    self._gridList:scrollToView(0)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_CANCEL_EQUIP_CHOOSE, {needRefresh = true})
+    self:refreshItemInfo()
+end
+
+function UIWndStrengthen:selectEquip(item, active)
+    --融合特殊处理
+    if self._openViewType == FITER_TYPES.FUSION then
+        if self._itemInfo and item:getItemInfo():getObjId() == self._itemInfo:getObjId() then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_CANCEL_EQUIP_CHOOSE, {types = 1, needRefresh = true})
+        elseif self._itemInfo2 and item:getItemInfo():getObjId() == self._itemInfo2:getObjId() then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_CANCEL_EQUIP_CHOOSE, {types = 2, needRefresh = true})
+        else
+            if self._itemInfo == nil then
+                --刷新选中状态
+                if self._selectItem then
+                    self._selectItem:setItemSelect(false)
+                end
+                self._selectItem = item
+                self._selectItem:setItemSelect(true)
+                self._itemInfo = item:getItemInfo()
+                --融合且第一次选择需要刷新左侧装备
+                local objId = item:getItemInfo():getObjId()
+                if self._itemInfo2 == nil then
+                    self:refreshItemInfo(objId, true)
+                else
+                    local objId2 = self._itemInfo2:getObjId()
+                    self:refreshItemInfoSp(objId, objId2)
+                end
+            else
+                --刷新选中状态
+                if self._selectItem2 then
+                    self._selectItem2:setItemSelect(false)
+                end
+                self._selectItem2 = item
+                self._selectItem2:setItemSelect(true)
+                self._itemInfo2 = item:getItemInfo()
+                
+                local objId1 = self._itemInfo:getObjId()
+                local objId2 = self._itemInfo2:getObjId()
+                self:refreshItemInfoSp(objId1, objId2)
+            end
+        end
+    else
+        if active and self._itemInfo and item:getItemInfo():getObjId() == self._itemInfo:getObjId() then
+            --如果选中已选中的则卸下
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_CANCEL_EQUIP_CHOOSE, {needRefresh = false})
+        else
+            --刷新选中状态
+            if self._selectItem then
+                self._selectItem:setItemSelect(false)
+            end
+            self._selectItem = item
+            self._selectItem:setItemSelect(true)
+            self._itemInfo = item:getItemInfo()
+        end
+    end
+end
+
+function UIWndStrengthen:cancelEquipChoose(event)
+    --融合特殊处理
+    local param = event.param or {}
+    if self._openViewType == FITER_TYPES.FUSION then
+        local types = param.types or 1
+        if types == 1 then
+            if self._selectItem and self._selectItem.setItemSelect then
+                self._selectItem:setItemSelect(false)
+            end
+            self._selectItem = nil
+            self._itemInfo = nil
+            self._objId = nil
+            local objId = self._itemInfo2 and self._itemInfo2:getObjId() or nil
+            self:refreshItemInfo(objId, true)
+            self:refreshSubView()
+        else
+            if self._selectItem2 and self._selectItem2.setItemSelect then
+                self._selectItem2:setItemSelect(false)
+            end
+            self._selectItem2 = nil
+            self._itemInfo2 = nil
+            self._objId2 = nil
+            local objId = self._itemInfo and self._itemInfo:getObjId() or nil
+            self:refreshItemInfo(objId, true)
+            self:refreshSubView()
+        end
+    else
+        local needRefresh = param.needRefresh
+        if self._selectItem then
+            self._selectItem:setItemSelect(false)
+        end
+        self._selectItem = nil
+        self._itemInfo = nil
+        if needRefresh then
+            self:refreshItemInfo()
+        end
+        self:refreshSubView()
+    end
+end
+
+function UIWndStrengthen:selectSubView(event)
+    self._itemInfo = nil
+    self._itemInfo2 = nil
+    self:openFiterView(self._fiterBtns[self._openViewType], event.param)
+end
+
+function UIWndStrengthen:showMaskView(event)
+    self._mask:setVisible(event.param)
+end
+
+function UIWndStrengthen:blessingConfirm(event)
+    if self._enchantPanel and self._openViewType == FITER_TYPES.ENCHANT and self._subViewType == 2 then
+        self._enchantPanel:onCancelBtnClick()
+    end
+end
+
+function UIWndStrengthen:fusionConfirm(event)
+    if self._fusionPanel and self._openViewType == FITER_TYPES.FUSION then
+        self._fusionPanel:toFusion()
+    end
+end
+
+function UIWndStrengthen:succinctConfirm(event)
+    if self._succinctPanel and self._openViewType == FITER_TYPES.SUCCINCT then
+        self._succinctPanel:toSuccinct()
+    end
+end
+
+function UIWndStrengthen:recastingResult(event)
+    if self._succinctPanel and self._openViewType == FITER_TYPES.SUCCINCT and self._subViewType == 1 then
+        self._succinctPanel:recastingResult()
+    elseif self._enchantPanel and self._openViewType == FITER_TYPES.ENCHANT and self._subViewType == 3 then
+        self._enchantPanel:motivateResult()
+    end
+end
+
+--------------------服务器回调--------------------
+function UIWndStrengthen:equipLevelUp(event)
+    if self._openViewType == FITER_TYPES.LEVELUP and self._levelupPanel then
+        self._levelupPanel:onLevelupFinish(event.param)
+    end
+    if self._openViewType == FITER_TYPES.FUSION and self._fusionPanel then
+        self._fusionPanel:onRefineFinish(event.param)
+    end
+end
+
+function UIWndStrengthen:equipStrengthen(event)
+    if self._enchantPanel then
+        self._enchantPanel:onStrengthenFinish(event.param)
+    end
+end
+
+function UIWndStrengthen:equipBlessing(event)
+    if self._enchantPanel then
+        self._enchantPanel:onBlessingFinish(event.param)
+    end
+end
+
+function UIWndStrengthen:equipMotivate(event)
+    if self._enchantPanel then
+        self._enchantPanel:onMotivateFinish(event.param)
+    end
+end
+
+function UIWndStrengthen:equipCompose(event)
+    if self._fusionPanel then
+        self._fusionPanel:showFusionResult(event.param)
+    end
+end
+
+function UIWndStrengthen:equipInherit(event)
+    if self._fusionPanel then
+        self._fusionPanel:showFusionResult(event.param)
+    end
+end
+
+function UIWndStrengthen:equipRecasting(event)
+    if self._succinctPanel then
+        self._succinctPanel:showSuccinctResult(event.param)
+    end
+end
+
+function UIWndStrengthen:equipPurify(event)
+    if self._succinctPanel then
+        self._succinctPanel:showSuccinctResult(event.param)
+    end
+end
+
+function UIWndStrengthen:equipEnchantFinish(event)
+    if self._enchantPanel then
+        self._enchantPanel:equipEnchantFinish(event.param)
+    end
+end
+
+function UIWndStrengthen:equipTransform(event)
+    if self._succinctPanel then
+        self._succinctPanel:equipTransform(event)
+    end
+end
+
+function UIWndStrengthen:checkGuide()
+    --装备升级引导
+    if GuideModule:checkCanGuide(Constant.GUIDE_ID.LEVELUP4) then
+        local pos = self:displayObject():convertToWorldSpace(self._gridList:getPosition())
+        pos = cc.p(pos.x, pos.y)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.LEVELUP4, self._gridList, pos)
+        return
+    end
+
+    if self._levelupPanel then
+        self._levelupPanel:checkGuide()
+    end
+
+    --装备附魔引导
+    if GuideModule:checkCanGuide(Constant.GUIDE_ID.ENCHANT4) then
+        local btn = self:getChild("btnFiter2")
+        local pos = self:displayObject():convertToWorldSpace(btn:getPosition())
+        pos = cc.p(pos.x, pos.y)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.ENCHANT4, btn, pos, function()
+            self:onFiterBtnClick(btn)
+        end)
+        return
+    end
+
+    if GuideModule:checkCanGuide(Constant.GUIDE_ID.ENCHANT6) then
+        local pos = self:displayObject():convertToWorldSpace(self._gridList:getPosition())
+        pos = cc.p(pos.x, pos.y)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.ENCHANT6, self._gridList, pos)
+        return
+    end
+
+    if self._enchantPanel then
+        self._enchantPanel:checkGuide()
+    end
+
+    --装备传承引导
+    if GuideModule:checkCanGuide(Constant.GUIDE_ID.INHERIT4) then
+        local btn = self:getChild("btnFiter3")
+        local pos = self:displayObject():convertToWorldSpace(btn:getPosition())
+        pos = cc.p(pos.x, pos.y)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.INHERIT4, btn, pos, function()
+            self:onFiterBtnClick(btn)
+        end)
+        return
+    end
+
+    if GuideModule:checkCanGuide(Constant.GUIDE_ID.INHERIT6) then
+        local pos = self:displayObject():convertToWorldSpace(self._gridList:getPosition())
+        pos = cc.p(pos.x, pos.y)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.INHERIT6, self._gridList, pos)
+        return
+    end
+
+    if self._fusionPanel then
+        self._fusionPanel:checkGuide()
+    end
+
+    --装备洗炼引导
+    if GuideModule:checkCanGuide(Constant.GUIDE_ID.PURIFY4) then
+        local btn = self:getChild("btnFiter4")
+        local pos = self:displayObject():convertToWorldSpace(btn:getPosition())
+        pos = cc.p(pos.x, pos.y)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.PURIFY4, btn, pos, function()
+            self:onFiterBtnClick(btn)
+        end)
+        return
+    end
+
+    if GuideModule:checkCanGuide(Constant.GUIDE_ID.PURIFY6) then
+        local pos = self:displayObject():convertToWorldSpace(self._gridList:getPosition())
+        pos = cc.p(pos.x, pos.y)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.PURIFY6, self._gridList, pos)
+        return
+    end
+
+    --装备转换引导
+    if GuideModule:checkCanGuide(Constant.GUIDE_ID.TRANSFORM4) then
+        local btn = self:getChild("btnFiter4")
+        local pos = self:displayObject():convertToWorldSpace(btn:getPosition())
+        pos = cc.p(pos.x, pos.y)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.TRANSFORM4, btn, pos, function()
+            self:onFiterBtnClick(btn)
+        end)
+        return
+    end
+
+    if GuideModule:checkCanGuide(Constant.GUIDE_ID.TRANSFORM6) then
+        local pos = self:displayObject():convertToWorldSpace(self._gridList:getPosition())
+        pos = cc.p(pos.x, pos.y)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.TRANSFORM6, self._gridList, pos)
+        return
+    end
+
+    if self._succinctPanel then
+        self._succinctPanel:checkGuide()
+    end
+end
+
+--刷新道具数量
+function UIWndStrengthen:refreshItemNum()
+    -- if self._openViewType == FITER_TYPES.LEVELUP then
+    --     if self._levelupPanel then
+    --         self._levelupPanel:refreshItemNum()
+    --     end
+    -- elseif self._openViewType == FITER_TYPES.ENCHANT then
+    --     if self._enchantPanel then
+    --         self._enchantPanel:refreshItemNum()
+    --     end
+    -- elseif self._openViewType == FITER_TYPES.FUSION then
+    --     if self._fusionPanel then
+    --         self._fusionPanel:refreshItemNum()
+    --     end
+    -- elseif self._openViewType == FITER_TYPES.SUCCINCT then
+    --     if self._succinctPanel then
+    --         self._succinctPanel:refreshItemNum()
+    --     end
+    -- end
+end
+
+--刷新金币数量
+function UIWndStrengthen:refreshMoney()
+    if self._openViewType == FITER_TYPES.LEVELUP then
+        if self._levelupPanel then
+            self._levelupPanel:refreshMoney()
+        end
+    elseif self._openViewType == FITER_TYPES.ENCHANT then
+        if self._enchantPanel then
+            self._enchantPanel:refreshMoney()
+        end
+    elseif self._openViewType == FITER_TYPES.FUSION then
+        if self._fusionPanel then
+            self._fusionPanel:refreshMoney()
+        end
+    elseif self._openViewType == FITER_TYPES.SUCCINCT then
+        if self._succinctPanel then
+            self._succinctPanel:refreshMoney()
+        end
+    end
+end
+
+--强化背包的裁切创建
+--创建当前页数据，初始背包使用量
+function UIWndStrengthen:createItemDataTable(itemArray)
+    self._itemDataTable = {}
+    for _, itemInfo in ipairs(itemArray) do
+        self:addItemDataForTable(itemInfo)
+    end
+end
+
+function UIWndStrengthen:addItemDataForTable(iteminfo)
+    self._itemDataTable[iteminfo:getObjId()] = iteminfo
+end
+
+function UIWndStrengthen:onGildScrollChange(event)
+    local posY = self._scrollPane:getPosY()
+    local top = math.floor(posY/68)
+    if self.scroolTopPosY ~= top then
+        self.scroolTopPosY = math.floor(posY/68)
+        self.downPosY = self.scroolTopPosY + 8
+        -- print("当前的计划顶点是:",self.scroolTopPosY,"底点是：",self.downPosY," 窗口高度：",posY)
+        self:updateTiledItem(self.scroolTopPosY,self.downPosY)
+    end
+end
+
+function UIWndStrengthen:updateTiledItem(top,down)
+    --归还视图外的格子
+    for row, _ in pairs(self._tiledsTab) do
+        if row < top or row > down then
+            if self._tiledsTab[row] then
+                for _, tiled in pairs(self._tiledsTab[row]) do
+                    if not self._gridList:isChildInView(tiled) then
+                        self._gridManger:pushTiledGird(tiled)
+                    end
+                    self._tiledsTab[row] = nil
+                end
+            end
+        end
+    end
+    --从缓存中取格子
+    for row = top, down do
+        if self._tiledsTab[row] == nil then
+            for col = 1, 6 do
+                local tiled = self._gridManger:popTiledGird()
+                self:showTiledInPanel(row,col,tiled)
+            end
+        end
+    end
+    --归还视图外的道具
+    for key, item in pairs(self._itemsTab) do
+        if not self._gridList:isChildInView(item) or self._itemDataTable[key] == nil then
+            -- print("update清除道具：",item:getItemInfo():getItemMeta():getName(),key)
+            item:removeFromParent()
+            self._gridManger:pushBagItem(item)
+            self._itemsTab[key] = nil
+        end
+    end
+    if self._itemDataTable then
+        for _, itemdata in pairs(self._itemDataTable) do
+            if not self._itemsTab[itemdata:getObjId()] and self._gridManger:isItemInWindow(itemdata,top,down) then
+                -- if self._sp then
+                --     self:showItemInPanle(itemdata,self._objId, self._objId2)
+                -- else
+                --     self:showItemInPanle(itemdata,self._objId)
+                -- end
+                self:showItemInPanle(itemdata)
+            end
+        end
+    end
+end
+
+-- 创建单个格子
+function UIWndStrengthen:showTiledInPanel(row, col,tiled)
+    -- 复用已存在的格子或创建新格子
+    if not tiled:getParent() then 
+        tiled:insertObjectToFactory(self)
+        tiled:setPivot(0.5, 0.5, true)
+        self._tiledPanel:addChild(tiled)
+    end
+    self._tiledsTab[row] = self._tiledsTab[row] or {}
+    self._tiledsTab[row][col] = tiled
+    local centerPos = self._gridManger:getTiledCenterXY(col, row)
+    tiled:setPosition(centerPos.x, centerPos.y)
+    --占用态
+    if self._tiledMapSelectTab[row] and self._tiledMapSelectTab[row][col] then
+        tiled:setSelectedShow(true)
+    else
+        tiled:setSelectedShow(false)
+    end
+end
+
+function UIWndStrengthen:showItemInPanle(itemInfo)
+    local select_ObjId = nil
+    if self._special then
+        if self._itemInfo then
+            select_ObjId = self._objId
+            if not select_ObjId then
+                select_ObjId = self._itemInfo:getObjId()
+            end
+        end
+    else
+        select_ObjId = self._objId
+    end
+    local select_objId2 = nil
+    if self._itemInfo2 then
+        select_objId2 = self._objId2
+        if not select_objId2 then
+            select_objId2 = self._itemInfo2:getObjId()
+        end
+    end
+    
+    local gridSizeIndex = itemInfo:getItemMeta():getItemSize()
+    local objId = itemInfo:getObjId()
+    if not self._itemsTab[objId]  then
+        local item = self._gridManger:popBagItem(gridSizeIndex)
+        self._itemsTab[objId] = item
+        if not item:getParent() then
+            item:insertObjectToFactory(self)
+            item:setPivot(0.5,0.5, true)
+            item:setFromWnd(self)
+            item:setSortingOrder(10)
+            self._itemsPanel:addChild(item)
+        end
+    end
+    self._itemsTab[objId]:setItemInfo(itemInfo,2)
+    self._itemsTab[objId]:setItemSelect(false)
+    --设置默认选中
+    if select_objId2 then
+        if itemInfo:getObjId() == select_ObjId then
+            self._selectItem = self._itemsTab[objId]
+            self._itemInfo = itemInfo
+            self._selectItem:setItemSelect(true)
+        elseif itemInfo:getObjId() == select_objId2 then
+            self._selectItem2 = self._itemsTab[objId]
+            self._itemInfo2 = itemInfo
+            self._selectItem2:setItemSelect(true)
+        end
+    else
+        if select_ObjId and itemInfo:getObjId() == select_ObjId then
+            if self._special then
+                if self._itemInfo ~= nil then
+                    self._selectItem = self._itemsTab[objId]
+                    self._itemInfo = itemInfo
+                    self._selectItem:setItemSelect(true)
+                else
+                    self._selectItem2 = self._itemsTab[objId]
+                    self._itemInfo2 = itemInfo
+                    self._selectItem2:setItemSelect(true)
+                end
+            elseif self._itemInfo == nil then
+                self._selectItem = self._itemsTab[objId]
+                self._itemInfo = itemInfo
+                self._selectItem:setItemSelect(true)
+            end
+        end
+    end
+    if select_objId2 and itemInfo:getObjId() == select_objId2 then
+        self._itemsTab[objId]:setItemSelect(true)
+    end
+    if select_ObjId and itemInfo:getObjId() == select_ObjId then
+        self._itemsTab[objId]:setItemSelect(true)
+    end
+    local isFilter = itemInfo:getFilter()
+    self._itemsTab[objId]:setGrayed(isFilter == 0)
+    self:pushItemInBag(self._itemsTab[objId],isFilter == 0)
+    if self._sp then
+        self._itemsTab[objId]:setClickCallback(function()
+            if itemInfo:getFilter() == 0 then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_STRENGTHEN_TIPS51})
+                return
+            end
+            self:selectEquip(self._itemsTab[objId])
+            self:refreshSubView()
+        end)
+    else
+        self._itemsTab[objId]:setClickCallback(function()
+            if itemInfo:getFilter() == 0 then
+                local str = StrengthenModule:getErrorStr(self._index, itemInfo, self._info)
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = str})
+                return
+            end
+            self:selectEquip(self._itemsTab[objId], true)
+            self:refreshSubView()
+        end)
+    end
+    self._itemsTab[objId]:setLongCallback(function()
+        self:showTips(itemInfo)
+    end)
+end
+
+---添加一个物品到格子上
+function UIWndStrengthen:pushItemInBag(pItem,noSelect)
+    local gridX, gridY = pItem:getGridX(), pItem:getGridY()
+    local gridWidth = pItem:getGridWidth()
+    local gridHeight = pItem:getGridHeight()
+    local isFilter = pItem:getItemInfo():getFilter()
+    pItem:setGrayed(isFilter == 0)
+    if not gridY then
+        return
+    end
+    for i = gridY, gridY + gridHeight - 1 do
+        for j = gridX, gridX + gridWidth - 1 do
+            if not noSelect then
+                self:showTiledSelect(j, i)
+            end
+            local cellPos = self._gridManger:getCenterXY(pItem)
+            pItem:setPosition(cellPos.x, cellPos.y)
+        end
+    end
+end
+
+function UIWndStrengthen:showTiledSelect(gridX, gridY)
+    self._tiledMapSelectTab[gridY] = self._tiledMapSelectTab[gridY] or {}
+    self._tiledMapSelectTab[gridY][gridX] = true
+    if self._tiledsTab[gridY] and self._tiledsTab[gridY][gridX] then
+        self._tiledsTab[gridY][gridX]:setSelectedShow(true)
+    end
+end
+
+function UIWndStrengthen:hideTiledSelect(gridX, gridY)
+    self._tiledMapSelectTab[gridY] = self._tiledMapSelectTab[gridY] or {}
+    self._tiledMapSelectTab[gridY][gridX] = nil
+    if self._tiledsTab[gridY] and self._tiledsTab[gridY][gridX] then
+        self._tiledsTab[gridY][gridX]:setSelectedShow(false)
+    end
+end
+
+function UIWndStrengthen:resetTiledAndItem()
+    if self._tiledsTab then
+        for row, _ in pairs(self._tiledsTab) do
+            if self._tiledsTab[row] then
+                for _, tiled in pairs(self._tiledsTab[row]) do
+                    tiled:removeFromParent()
+                    self._gridManger:pushTiledGird(tiled)
+                    self._tiledsTab[row] = nil
+                end
+            end
+        end
+    end
+    self._tiledsTab = {} --视图中的格子
+    if self._itemsTab then
+        for key, item in pairs(self._itemsTab) do
+            -- print("清除道具：",item:getItemInfo():getItemMeta():getName(),key)
+            item:removeFromParent()
+            self._gridManger:pushBagItem(item)
+            self._itemsTab[key] = nil
+        end
+    end
+    self._itemsTab = {}        -- 视图中的道具
+    self.scroolTopPosY = nil   -- 顶部格子坐标系高度
+    self._tiledMapSelectTab = {}--存放格子选中态数据
+end
+
+function UIWndStrengthen:onUpdate(dt)
+    if self._itemsTab then
+        for key, item in pairs(self._itemsTab) do
+            item:onUpdate(dt)
+        end
+    end
+end
+
+return UIWndStrengthen

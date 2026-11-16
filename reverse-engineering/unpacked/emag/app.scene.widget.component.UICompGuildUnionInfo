@@ -1,0 +1,77 @@
+-- 公会同盟信息
+---@class UICompGuildUnionInfo
+local UICompGuildUnionInfo = class("UICompGuildUnionInfo", lt.UIGButtonBase)
+
+local NtfManager = lt.NtfManager
+
+UICompGuildUnionInfo.ChangeSkinConf = {
+    ["Guild"] = {
+        ["bg"] = "bg_gonghuixt_14",
+    },
+    ["CommonTL"] = {
+        ["btn_union"] = { icon = "bg_youjian_changanniu02" },
+    }
+}
+
+function UICompGuildUnionInfo:ctor()
+    UICompGuildUnionInfo.super.ctor(self)
+end
+
+function UICompGuildUnionInfo:onEnter()
+    UICompGuildUnionInfo.super.onEnter(self)
+end
+
+function UICompGuildUnionInfo:onExit()
+    UICompGuildUnionInfo.super.onExit(self)
+end
+
+function UICompGuildUnionInfo:onClear()
+    self._lblLeftGuildName   = nil
+    self._bgLeftGuildIcon    = nil
+    self._lblLeftMasterName  = nil
+    self._lblLeftCount       = nil
+    self._lblLeftNotice      = nil
+    self._lblRightGuildName  = nil
+    self._bgRightGuildIcon   = nil
+    self._lblRightMasterName = nil
+    self._lblRightCount      = nil
+    self._lblRightNotice     = nil
+    UICompGuildUnionInfo.super.onClear(self)
+end
+
+function UICompGuildUnionInfo:onConstruct()
+    self._btnUnion = self:getChild("btn_union")
+    self._btnUnion:addClickListener(handler(self, self.onBtnFncUnionClick))
+    --left
+    self._lblLeftGuildName   = self:getChild("lbl_LeftGuildName")
+    self._bgLeftGuildIcon    = self:getChild("bg_LeftGuildIcon")
+    self._lblLeftMasterName  = self:getChild("lbl_LeftMasterName")
+    self._lblLeftCount       = self:getChild("lbl_leftCount")
+    self._lblLeftNotice      = self:getChild("lbl_leftNotice")
+    --right
+    self._lblRightGuildName  = self:getChild("lbl_rightGuildName")
+    self._bgRightGuildIcon   = self:getChild("bg_rightGuildIcon")
+    self._lblRightMasterName = self:getChild("lbl_rightMasterName")
+    self._lblRightCount      = self:getChild("lbl_rightCount")
+    self._lblRightNotice     = self:getChild("lbl_rightNotice")
+end
+
+function UICompGuildUnionInfo:initUI()
+
+end
+
+-- 申请列表
+function UICompGuildUnionInfo:onBtnFncApplyListClick(obj)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndGuildUnionApplyList" })
+end
+
+--解除联盟
+function UICompGuildUnionInfo:onBtnFncUnionClick(obj)
+
+end
+
+function UICompGuildUnionInfo:refreshView()
+
+end
+
+return UICompGuildUnionInfo

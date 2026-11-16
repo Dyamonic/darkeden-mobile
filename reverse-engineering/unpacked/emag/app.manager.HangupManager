@@ -1,0 +1,624 @@
+
+-- local HangupManager = {}
+
+-- HangupManager.MODE = {
+-- 	MELEE	= 0,
+-- 	RANGE 	= 1,
+-- }
+-- HangupManager._isHangup = nil
+-- HangupManager._isPause = nil
+
+-- HangupManager.RANGE_WARNDIS = 1
+-- HangupManager.RANGE_SAFEDIS = 2
+
+-- function HangupManager:init()
+-- 	self:reset()
+-- end
+
+-- function HangupManager:clear()
+-- end
+
+-- function HangupManager:reset()
+-- 	print("HangupManager:reset")
+-- 	self._isHangup = false
+-- 	self._isPause = false
+
+-- 	self._hangupMapCode = nil
+-- 	self._hangupRouteM = nil
+-- 	self._hangupRouteN = nil
+-- end
+
+-- -- 加载挂机设置
+-- function HangupManager:getSetting(k1, k2, k3)
+-- 	return lt.CommonModule:loadSetting(k1, k2, k3)
+-- end
+
+-- function HangupManager:reloadConfig(heroAgent)
+-- 	self._onlyFull = false
+-- 	self._useAttack = false
+-- 	self._pickOn = false
+-- 	self._packPotion = false
+
+-- 	local v = self:getSetting(4, 40208)
+-- 	if v then
+-- 		print("只打满血怪")
+-- 		self._onlyFull = true
+-- 	end
+
+-- 	if heroAgent:getJob() == lt.Constant.JOB_ZS then
+-- 		self._useAttack = true
+
+-- 	elseif heroAgent:getJob() == lt.Constant.JOB_DS then
+-- 		local v = self:getSetting(4, 40207)
+-- 		if v then
+-- 			self._useAttack = true
+
+-- 		end
+-- 	end
+
+-- 	if self._useAttack then
+-- 		print("挂机接平砍")
+-- 	end
+
+-- 	-- 挂机拾取
+-- 	local v = self:getSetting(1, 10202)
+-- 	if v then
+-- 		self._pickOn = true
+-- 	else
+-- 		self._pickOn = false
+-- 	end
+
+-- 	-- todo 挂机时自动捆大药
+-- 	local v = self:getSetting(1, 10203)
+-- 	if v then
+-- 		self._packPotion = true
+-- 	end
+
+-- 	self._actMode = self.MODE.RANGE
+-- 	if heroAgent:getJob() == lt.Constant.JOB_ZS or self._useAttack then
+-- 		self._actMode = self.MODE.MELEE
+-- 	end
+
+-- 	self:reloadJobConfig(heroAgent)
+-- end
+
+-- function HangupManager:reloadJobConfig(heroAgent)
+-- 	self._singleSkill = false
+-- 	self._singleSkillId = 0
+-- 	self._rangeSkill = false
+-- 	self._rangeSkillId = 0
+-- 	self._rangeSkillCount = 0
+-- 	self._checkMode = 0
+
+-- 	if heroAgent:getJob() == lt.Constant.JOB_ZS then
+-- 		local v1, v2 = self:getSetting(4, 40201)
+-- 		if v1 then
+-- 			print("挂机技能 ", v2)
+-- 			self._singleSkill = true
+-- 			self._singleSkillId = v2
+-- 		end
+
+-- 	elseif heroAgent:getJob() == lt.Constant.JOB_FS then
+-- 		local v11, v2, v3 = self:getSetting(4, 40203)
+-- 		if v11 then
+-- 			print("范围内大于 ",v2,"使用",v3)
+-- 			self._rangeSkill = true
+-- 			self._rangeSkillCount = v2 or 0
+-- 			self._rangeSkillId = v3
+-- 		end
+
+-- 		local v21, v2 = self:getSetting(4, 40202)
+-- 		if v21 then
+-- 			print("挂机技能 ", v2)
+-- 			self._singleSkill = true
+-- 			self._singleSkillId = v2
+-- 		end
+
+-- 		if not v11 and not v21 then
+-- 			-- 调整为近战模式
+-- 			print("法师修正为近战")
+-- 			self._useAttack = true
+-- 			self._actMode = self.MODE.MELEE
+-- 		end
+
+-- 	elseif heroAgent:getJob() == lt.Constant.JOB_DS then
+-- 		local v11, v12 = self:getSetting(4, 40204)
+-- 		if v11 then
+-- 			print("挂机技能 ", v12)
+-- 			self._singleSkill = true
+-- 			self._singleSkillId = v12
+-- 		end
+
+-- 		if not v11 then
+-- 			-- 调整为近战模式
+-- 			print("道士修正为近战")
+-- 			self._useAttack = true
+-- 			self._actMode = self.MODE.MELEE
+-- 		end
+-- 	end
+
+-- 	if self._singleSkillId == 20100 or self._singleSkillId == 20800 or self._singleSkillId == 30500 or self._singleSkillId == 32100 then
+-- 		self._checkMode = 1
+
+-- 	end
+-- end
+
+-- function HangupManager:getHeroAgent()
+-- 	local heroAgent = nil
+-- 	local worldAgent = lt.AgentManager:getWorldAgent()
+-- 	if worldAgent then
+-- 		heroAgent = worldAgent:getHeroAgent()
+-- 	end
+
+-- 	return heroAgent
+-- end
+
+-- function HangupManager:isRouteTromboning(mHero, nHero, tarM, tarN, route)
+-- 	if self._checkMode == 1 and not route then
+-- 		return self:_isRouteTromboning1(mHero, nHero, tarM, tarN)
+-- 	else
+-- 		return self:_isRouteTromboning0(mHero, nHero, tarM, tarN)
+-- 	end
+-- end
+
+-- function HangupManager:_isRouteTromboning0(mHero, nHero, tarM, tarN)
+-- 	local route = lt.MapUtil:route(mHero, nHero, tarM, tarN, true)
+-- 	if not route then
+-- 		return true
+-- 	end
+
+-- 	if route:getMNCount() > 3 then
+-- 		local m0,n0 = route:queryMN(0)
+-- 		local m1,n1 = route:queryMN(route:getMNCount()-1)
+
+-- 		if m0 > m1 then
+-- 			m0, m1 = m1, m0
+-- 		end
+-- 		if n0 > n1 then
+-- 			n0, n1 = n1, n0
+-- 		end
+
+-- 		for i=1,route:getMNCount()-2 do
+-- 			local m,n = route:queryMN(i)
+-- 			if m < m0 or m > m1 or n < n0 or n > n1 then
+-- 				return true
+-- 			end
+-- 		end
+-- 	end
+
+-- 	return false
+-- end
+
+-- function HangupManager:_isRouteTromboning1(mHero, nHero, tarM, tarN)
+-- 	local worldAgent = lt.AgentManager:getWorldAgent()
+-- 	if not worldAgent then
+-- 		return true
+-- 	end
+
+-- 	local mapAgent = worldAgent:getMapAgent()
+-- 	if not mapAgent then
+-- 		return true
+-- 	end
+
+-- 	return mapAgent:canThrough(cc.p(mHero, nHero), cc.p(tarM, tarN), true) <= 0
+-- end
+
+-- function HangupManager:onUpdate(heroAgent)
+-- 	if not self._isHangup or not heroAgent:getIsSelf() or self._isPause then
+-- 		return
+-- 	end
+
+-- 	if not lt.SocketManager:isAlive() then
+-- 		-- 网络有问题 暂停处理
+-- 		return
+-- 	end
+
+-- 	if not heroAgent:canMove() then
+-- 		-- 被定身 暂停处理
+-- 		return
+-- 	end
+
+-- 	local mHero, nHero = heroAgent:getMNExactly()
+
+-- 	-- 判断当前状态
+-- 	local curStateId = heroAgent:getCurStateId()
+-- 	if curStateId == lt.Constant.HERO_STATE_IDLE then
+-- 		-- 待机中 获得当前安全度（安全度定义 多少范围内有怪）
+-- 		local worldAgent = lt.AgentManager:getWorldAgent()
+-- 		if self._pickOn then
+-- 			-- 重要物品拾取检查
+-- 			local agentMin, distanceMin = worldAgent:selectItemAgent(heroAgent, true, lt.ItemModule:getLavePackageGrid() <= 0, true)
+-- 			if agentMin then
+-- 				local m, n = agentMin:getMNExactly()
+-- 				local route = lt.MapUtil:route(mHero, nHero, m, n)
+-- 				if route and route:getMNCount() > 0 then
+-- 					-- 捡东西
+-- 					self._pickMode2 = true
+
+-- 					heroAgent:changeState(lt.HeroStateRoute.new(heroAgent, route))
+-- 					return
+-- 				end
+-- 			end
+-- 			self._pickMode2 = false
+
+-- 			if (self._actMode == self.MODE.MELEE or self._pickMode) then
+-- 				local agentMin, distanceMin = worldAgent:selectItemAgent(heroAgent, true, lt.ItemModule:getLavePackageGrid() <= 0)
+-- 				if agentMin then
+-- 					local m, n = agentMin:getMNExactly()
+-- 					local route = lt.MapUtil:route(mHero, nHero, m, n)
+-- 					if route and route:getMNCount() > 0 then
+-- 						-- 捡东西
+-- 						self._pickMode = true
+
+-- 						heroAgent:changeState(lt.HeroStateRoute.new(heroAgent, route))
+-- 						return
+-- 					end
+-- 				end
+
+-- 				-- 取消继续拾取
+-- 				self._pickMode = false
+-- 			end
+-- 		end
+
+-- 		local targetAgent, distanceMin = nil, 0
+-- 		local targetAgentId = heroAgent:getTargetAgentId()
+-- 		targetAgent = lt.AgentManager:getAgent(targetAgentId)
+-- 		if not targetAgent or targetAgent:getIsOutOfGame() or (self._onlyFull and not targetAgent:getRoleData():isFullHp()) then
+-- 			targetAgent = nil			
+-- 		end
+-- 		if not targetAgent then
+-- 			targetAgent, distanceMin = worldAgent:selectTargetAgent(heroAgent, self._onlyFull, true)
+-- 		end
+
+--     	if targetAgent then
+--     		local tarM, tarN = targetAgent:getMNExactly()
+
+--     		if self._actMode == self.MODE.RANGE then
+--     			-- 远程逻辑
+-- 				local targetAgent2, distanceMin2 = worldAgent:selectTargetAgent(heroAgent)
+--     			if distanceMin2 <= self.RANGE_WARNDIS then
+--     				-- 太近了 准备逃跑
+--     				if heroAgent:canMove() and worldAgent:isAroundThrough(heroAgent) then
+--     					heroAgent:changeState(lt.HeroStateMoveHangup.new(heroAgent))
+--     					return
+--     				end
+
+--     			elseif distanceMin > 5 then
+--     				if self._pickOn then
+-- 		    			local agentMin, distanceMin = worldAgent:selectItemAgent(heroAgent, true, lt.ItemModule:getLavePackageGrid() <= 0)
+-- 						if agentMin then
+-- 							local itemM, itemN = agentMin:getMNExactly()
+-- 							local route = lt.MapUtil:route(mHero, nHero, itemM, itemN)
+-- 							if route and route:getMNCount() > 0 then
+-- 								-- 捡东西
+-- 								self._pickMode = true
+
+-- 								heroAgent:changeState(lt.HeroStateRoute.new(heroAgent, route))
+-- 								return
+-- 							end
+-- 						end
+-- 					end
+--     			end
+--     		end
+
+--     		if distanceMin < 20 then
+--     			if not self:isRouteTromboning(mHero, nHero, tarM, tarN, true) then
+-- 		    		heroAgent:setTargetAgentId(targetAgent:getAgentId())
+-- 		    		heroAgent:changeState(lt.HeroStateChase.new(heroAgent, targetAgent:getAgentId()))
+-- 	    			return
+--     			end
+--     		end
+--     	else
+--     		-- 没怪捡东西
+--     		if self._pickOn then
+--     			local agentMin, distanceMin = worldAgent:selectItemAgent(heroAgent, true, lt.ItemModule:getLavePackageGrid() <= 0)
+-- 				if agentMin then
+-- 					local itemM, itemN = agentMin:getMNExactly()
+-- 					local route = lt.MapUtil:route(mHero, nHero, itemM, itemN)
+-- 					if route and route:getMNCount() > 0 then
+-- 						-- 捡东西
+-- 						self._pickMode = true
+
+-- 						heroAgent:changeState(lt.HeroStateRoute.new(heroAgent, route))
+-- 						return
+-- 					end
+-- 				end
+-- 			end
+--     	end
+
+-- 		-- 没有怪随机寻路
+-- 		local m, n = nil, nil
+-- 		local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+-- 		if mapAgent then
+-- 			if self._hangupMapCode and self._hangupRouteM and self._hangupRouteN and mapAgent:getMapCode() ==self._hangupMapCode then
+-- 				-- 继续上次的点
+-- 				-- print("使用之前的寻路点")
+-- 				m, n = self._hangupRouteM, self._hangupRouteN
+-- 			else
+-- 				-- print("随机新的寻路点")
+-- 				m, n = mapAgent:getRandThrough(mHero, nHero, 250)
+-- 				self._hangupMapCode = mapAgent:getMapCode()
+-- 				self._hangupRouteM, self._hangupRouteN = m, n
+-- 			end 
+-- 		end
+
+-- 		if m and n then
+-- 			local route = lt.MapUtil:route(mHero, nHero, m, n)
+-- 			if route and route:getMNCount() > 0 then
+-- 		        heroAgent:changeState(lt.HeroStateRoute.new(heroAgent, route))
+-- 		        return
+-- 		    else
+-- 		    	-- 寻路点异常 放弃之前的信息
+-- 		    	self:clearRouteCache()
+-- 		    end
+-- 		end
+
+--     elseif curStateId == lt.Constant.HERO_STATE_ROUTE then
+--     	-- 寻路中
+--     	if not self._pickMode and not self._pickMode2 then
+--     		self:onUpdateAutoSkill(heroAgent)
+--     	end
+    	
+--     elseif curStateId == lt.Constant.HERO_STATE_ATTACK then
+--     	-- 攻击中
+--     	if heroAgent:getCurState():isAttacking() then
+--     		return
+--     	end
+
+--     	if self._actMode == self.MODE.RANGE and heroAgent:getCurState():getAttackTimes() > 0 then
+-- 			local worldAgent = lt.AgentManager:getWorldAgent()
+--     		local targetAgent2, distanceMin2 = worldAgent:selectTargetAgent(heroAgent)
+-- 			if distanceMin2 <= self.RANGE_WARNDIS then
+-- 				-- 太近了 准备逃跑
+-- 				if heroAgent:canMove() and worldAgent:isAroundThrough(heroAgent) then
+-- 					heroAgent:changeState(lt.HeroStateMoveHangup.new(heroAgent))
+-- 					return
+-- 				end
+-- 			end
+--     	end
+
+--     	self:onUpdateAutoSkill(heroAgent)
+
+--     elseif curStateId == lt.Constant.HERO_STATE_CHASE then
+--     	-- 追击中
+--     	self:onUpdateAutoSkill(heroAgent)
+
+--     elseif curStateId == lt.Constant.HERO_STATE_MOVE_HANGUP then
+--     	-- 逃跑中
+--     elseif curStateId == lt.Constant.HERO_STATE_SKILL then
+--     	-- 技能中
+--     elseif curStateId == lt.Constant.HERO_STATE_MOVE then
+--     else
+--     	print("当前状态",curStateId)
+-- 	end
+-- end
+
+-- function HangupManager:clearRouteCache()
+-- 	self._hangupMapCode = nil
+-- 	self._hangupRouteM = nil
+-- 	self._hangupRouteN = nil
+-- end
+
+-- function HangupManager:routeEnd(m, n)
+-- 	if self._hangupRouteM and self._hangupRouteM and m and n and self._hangupRouteM == m and self._hangupRouteN == n then
+-- 		self:clearRouteCache()
+-- 	end
+-- end
+
+-- function HangupManager:onUpdateAutoSkill(heroAgent)
+-- 	-- self._autoElapse = (self._autoElapse or 0) + lt.GameBoard:getDeltaTime()
+-- 	-- if self._autoElapse < 0.1 then
+-- 	-- 	return
+-- 	-- end
+-- 	-- self._autoElapse = self._autoElapse - 0.1
+
+-- 	if heroAgent:getJob() == lt.Constant.JOB_ZS then
+-- 		self:onUpdateAutoSkillZS(heroAgent)
+
+-- 	elseif heroAgent:getJob() == lt.Constant.JOB_FS then
+-- 		self:onUpdateAutoSkillFS(heroAgent)
+
+-- 	elseif heroAgent:getJob() == lt.Constant.JOB_DS then
+-- 		self:onUpdateAutoSkillDS(heroAgent)
+
+-- 	end
+	
+-- end
+
+-- function HangupManager:onUpdateAutoSkillZS(heroAgent)
+-- 	while true do
+-- 		if self._singleSkill and self._singleSkillId and self._singleSkillId > 0 then
+-- 			if lt.SkillCdManager:isReady(self._singleSkillId) and heroAgent:canPlaySkill(self._singleSkillId) then
+-- 				heroAgent:addSelfSkillId(self._singleSkillId)
+-- 			end
+-- 		end
+
+-- 		break
+-- 	end
+-- end
+
+-- function HangupManager:onUpdateAutoSkillFS(heroAgent)
+-- 	while true do
+-- 		if self._rangeSkill and self._rangeSkillId and self._rangeSkillId > 0 then
+-- 			local targetAgentId = heroAgent:getTargetAgentId()
+-- 			local targetAgent = lt.AgentManager:getAgent(targetAgentId)
+--         	if targetAgent and not targetAgent:getIsOutOfGame() then
+--         		local worldAgent = lt.AgentManager:getWorldAgent()
+--         		if worldAgent then
+-- 					local m, n = targetAgent:getMNExactly()
+--         			local count = worldAgent:_queryAroundTargetAgentCount(m, n, 1, heroAgent)
+--         			if count >= self._rangeSkillCount then
+--         				if lt.SkillCdManager:isReady(self._rangeSkillId) and heroAgent:canPlaySkill(self._rangeSkillId) and heroAgent:isInSkillDistance(self._rangeSkillId, m, n) then
+--         					heroAgent:addSelfSkillId(self._rangeSkillId)
+--         				end
+--         			end
+--         		end
+-- 	        end
+-- 		end
+
+-- 		if self._singleSkill and self._singleSkillId and self._singleSkillId > 0 then
+-- 			if lt.SkillCdManager:isReady(self._singleSkillId) and heroAgent:canPlaySkill(self._singleSkillId) then
+-- 				heroAgent:addSelfSkillId(self._singleSkillId)
+-- 			end
+
+-- 		end
+
+-- 		if self._actMode == self.MODE.MELEE then
+-- 			heroAgent:addSelfSkillId(0)
+-- 		else
+-- 			-- 远程取消主动普攻
+-- 			if heroAgent:_getSkillId() == 0 then
+-- 				heroAgent:setSkillId(nil)
+-- 			end
+-- 		end
+
+-- 		break
+-- 	end
+-- end
+
+-- function HangupManager:onUpdateAutoSkillDS(heroAgent)
+-- 	while true do
+-- 		if self._singleSkill and self._singleSkillId and self._singleSkillId > 0 then
+-- 			if self._actMode == self.MODE.RANGE then
+-- 				if lt.SkillCdManager:isReady(self._singleSkillId) and heroAgent:canPlaySkill(self._singleSkillId) then
+-- 					heroAgent:addSelfSkillId(self._singleSkillId)
+-- 				end
+-- 			else
+-- 				if lt.SkillCdManager:isReady(self._singleSkillId) and heroAgent:canPlaySkill(self._singleSkillId) then
+-- 					heroAgent:addSelfSkillId(self._singleSkillId)
+-- 				else
+-- 					heroAgent:addSelfSkillId(0)
+-- 				end
+
+-- 			end
+
+-- 		end
+
+-- 		if self._actMode == self.MODE.MELEE then
+-- 			heroAgent:addSelfSkillId(0)
+-- 		else
+-- 			-- 远程取消主动普攻
+-- 			if heroAgent:_getSkillId() == 0 then
+-- 				heroAgent:setSkillId(nil)
+-- 			end
+-- 		end
+
+-- 		break
+-- 	end
+-- end
+
+-- function HangupManager:hangupCheck(heroAgent)
+-- 	if not self._isHangup or not heroAgent:getIsSelf() then
+-- 		return false
+-- 	end
+
+-- 	-- 判断当前状态
+-- 	local curStateId = heroAgent:getCurStateId()
+-- 	if curStateId == lt.Constant.HERO_STATE_ROUTE then
+-- 		local worldAgent = lt.AgentManager:getWorldAgent()
+-- 		local targetAgent, distanceMin = worldAgent:selectTargetAgent(heroAgent, self._onlyFull, true)
+-- 		if targetAgent and distanceMin < 20 then
+-- 			local mHero, nHero = heroAgent:getMNExactly()
+-- 			local tarM, tarN = targetAgent:getMNExactly()
+
+--     		if not self:isRouteTromboning(mHero, nHero, tarM, tarN, true) then
+-- 				heroAgent:changeState(lt.HeroStateIdle.new(heroAgent))
+-- 				return true
+-- 			end
+-- 		end 
+-- 	else
+-- 		print("当前状态"..curStateId)
+-- 	end
+
+-- 	return false
+-- end
+
+-- function HangupManager:switchHangup()
+-- 	if not self._isHangup then
+-- 		-- 启动挂机判断
+-- 		local heroAgent = self:getHeroAgent()
+-- 		if not heroAgent or heroAgent:getIsOutOfGame() then
+-- 			return
+-- 		end
+-- 	end
+
+-- 	self._isHangup = not self._isHangup
+
+-- 	if self._isHangup then
+-- 		self:hangupStart()
+-- 	else
+-- 		-- 主人公停止移动
+-- 		local heroAgent = self:getHeroAgent()
+-- 		if heroAgent then
+-- 			heroAgent:onMessage({msgId=lt.Constant.MSG_MOVE_TOUCH, moveType=lt.Constant.MOVE_NONE})
+-- 		end
+-- 	end
+-- end
+
+function HangupManager:isHangup()
+	return self._isHangup
+end
+
+-- function HangupManager:hangupStart()
+-- 	-- 设置挂机技能
+-- 	if self._singleSkill and self._singleSkillId and self._singleSkillId > 0 then
+-- 		local heroAgent = self:getHeroAgent()
+-- 		if heroAgent and not heroAgent:isJobZS() then
+-- 			-- heroAgent:_setSkillId(self._singleSkillId)
+-- 			heroAgent:addSelfSkillId(self._singleSkillId)
+-- 		end		
+-- 	end
+-- end
+
+-- function HangupManager:startHangup()
+-- 	local isHangup = self._isHangup
+
+-- 	self._isHangup = true
+
+-- 	if not isHangup then
+-- 		self:hangupStart()
+-- 	end
+-- end
+
+-- function HangupManager:stopHangup()
+-- 	local isHangup = self._isHangup
+
+-- 	self._isHangup = false
+
+-- 	if isHangup then
+-- 		-- print("停止挂机", debug.traceback("", 2))
+-- 		local heroAgent = self:getHeroAgent()
+-- 		if heroAgent then
+-- 			heroAgent:onMessage({msgId=lt.Constant.MSG_MOVE_TOUCH, moveType=lt.Constant.MOVE_NONE})
+-- 		end
+-- 	end
+-- end
+
+-- function HangupManager:useAttack()
+-- 	return self._useAttack
+-- end
+
+-- function HangupManager:getSingleSkillId()
+-- 	return self._singleSkillId
+-- end
+
+-- function HangupManager:getHangupSkillId()
+-- 	local skillId = nil
+-- 	while true do
+-- 		if self._singleSkillId and self._singleSkillId > 0 then
+-- 			skillId = self._singleSkillId
+-- 			break
+-- 		end
+
+-- 		if self._rangeSkillId and self._rangeSkillId > 0 then
+-- 			skillId = self._rangeSkillId
+-- 			break
+-- 		end
+
+-- 		break
+-- 	end
+
+-- 	return skillId
+-- end
+
+-- return HangupManager

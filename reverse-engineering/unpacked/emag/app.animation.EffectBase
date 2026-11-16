@@ -1,0 +1,337 @@
+local EffectBase = class("EffectBase")
+local EffectEnum = lt.EffectEnum
+local AssetManager = lt.AssetManager
+local NtfManager = lt.NtfManager
+
+EffectBase._effectData = nil
+
+function EffectBase:ctor(modelName, effectId, direction, step, loop, bltType)
+    self._modelName = modelName
+    self._effectId = effectId
+    self._direction = direction
+
+    self._step = step
+    self._loop = loop
+    self._bltType = bltType
+
+    -- 初始化表
+    self._spriteFrameArray = {}
+    self._waitSpriteFrameTable = {}
+    self._spriteInfoArray = {}
+    self._spriteFrameTable = {}
+    self._dataFrameArray = {}
+    self._use = 1
+    self._loadAtlasCount = 0
+
+
+    local screenStr = EffectEnum.BltTypeName[bltType]
+    self._tag = string.format("%s_%d_%d", screenStr, effectId, direction)
+
+    self:loadEffectData(bltType)
+
+    -- self._step = self:getActionStep()
+
+    -- 加载图集
+    self:loadAtlas(self.TAG, effectId, bltType)
+end
+
+function EffectBase:clear()
+    self._effectData = nil
+    self._spriteFrameArray = nil
+    self._waitSpriteFrameTable = nil
+    self._spriteInfoArray = nil
+    self._dataFrameArray = nil
+
+    if self._spriteFrameTable then
+        for key, spriteFrame in pairs(self._spriteFrameTable) do
+            spriteFrame:release() 
+        end
+
+        self._spriteFrameTable = nil
+    end
+end
+
+function EffectBase:getActionStep()
+    if not self._frameCount or self._frameCount == 0 then
+        return 0.1
+    end
+    
+    local interval = 0.0167 * (1 + math.floor(120/self._frameCount))
+    return interval
+end
+
+-- modelName, modelId, direction
+function EffectBase:loadEffectData(bltType)
+    local effectId = self._effectId
+
+    -- yflog:Info("effectId=%d  isscreen=%s", effectId, bltType)
+    self._effectData = lt.EffectManager:getEffectData(effectId, bltType)
+
+    local dataFrameArr = self._effectData:getDirectionFrame(self._direction)
+    if not dataFrameArr then
+        yflog:Error("dataFrameArr is nil, effectId:%d, bltType:%s, self._direction:%d", effectId, bltType, self._direction)
+        return
+    end
+
+    self._dataFrameArray = dataFrameArr
+    self._frameCount = #dataFrameArr
+end
+
+-- 加载图集
+function EffectBase:loadAtlas(modelName, modelId, bltType)
+    if AssetManager:getRemoteVersion() ~= "" then
+        self:loadAtlasFromRemote(modelName, modelId, bltType)
+        return
+    end
+
+    -- effect_0_1.plist  atlasCount 为后续配置 先暂时取1
+    local atlasCount = 1
+    -- 此处需要判断图集数量
+    self._atlasSum = atlasCount
+    self._atlasCur = 0
+
+    local ntfMessage = string.format( "%s_%s",NtfManager.NTF.SPRITE_FRAME_LOADED_EFFECT, modelName)
+
+    for i=1, atlasCount do
+        local bltTypeName = EffectEnum.BltTypeName[bltType]
+
+        local path = string.format("effect/%s/%s_%d_%d", bltTypeName, bltTypeName, modelId, i)
+
+        local dataFilename = string.format("%s.plist", path)
+        local imageFilename = string.format("%s.pvr.ccz", path)
+
+        -- yflog:Info("EffectBase dataFilename = %s", dataFilename)
+        if lt.ActionManager:loadAtlas(dataFilename, imageFilename, ntfMessage) then
+            -- 取缓存的图集
+            self:loadAtlasStep()
+        else
+            self._waitSpriteFrameTable[dataFilename] = true
+        end
+
+        self._spriteInfoArray[#self._spriteInfoArray + 1] = {dataFilename = dataFilename, imageFilename = imageFilename}
+    end
+
+    -- 等待加载完成后的监听
+    if next(self._waitSpriteFrameTable) ~= nil then
+        NtfManager:addNtfListener(ntfMessage, handler(self, self.spriteFrameLoadedNtf), self._tag)
+    end
+end
+
+-- 检查是否下载成功，未成功则再次加入下载队列
+function EffectBase:checkDownloadRemoteSuccess()
+    if self._isRemoteLoad then
+        -- 未下载完成 标识：回调函数未被执行
+        if self._loadAtlasCount < self._atlasSum then
+            return false
+        end
+    end
+    return true
+end
+
+function EffectBase:ReloadAtlas()
+    -- 重新加载图集
+    self:loadAtlas(self.TAG, self._effectId, self._bltType)
+end
+
+-- 远程加载图集
+function EffectBase:loadAtlasFromRemote(modelName, modelId, bltType)
+    self._isRemoteLoad = true
+
+    -- effect_0_1.plist  atlasCount 为后续配置 先暂时取1
+    local atlasCount = 1
+
+    -- 此处需要判断图集数量
+    self._atlasSum = atlasCount
+    self._atlasCur = 0
+
+    for i=1, atlasCount do
+        local bltTypeName = EffectEnum.BltTypeName[bltType]
+        local path = string.format("effect/%s/%s_%d_%d", bltTypeName, bltTypeName, modelId, i)
+        --[[ 
+            是否开启边玩边下载 先屏蔽了
+        ]]
+        AssetManager:loadRemoteAtlas(path, AssetManager.REMOTE_LOADER_TYPE_EFFECT, handler(self, self.onLoadCallback))
+    end
+end
+
+-- 边玩边下 callback
+function EffectBase:onLoadCallback(path)
+    self._loadAtlasCount = self._loadAtlasCount + 1
+
+    local pathinfo = io.pathinfo(path)
+    if pathinfo.extname == ".zip" then
+        path = pathinfo.dirname .. pathinfo.basename
+        path = path:sub(5)
+    end
+
+    local dataFilename = string.format("%s.plist", path)
+    local imageFilename = string.format("%s.pvr.ccz", path)
+
+    -- yflog:Info("EffectBase dataFilename = %s", dataFilename)
+    if lt.ActionManager:loadAtlas(dataFilename, imageFilename) then
+        -- 取缓存的图集
+        self:loadAtlasStep()
+    else
+        self._waitSpriteFrameTable[dataFilename] = true
+    end
+
+    self._spriteInfoArray[#self._spriteInfoArray + 1] = {dataFilename = dataFilename, imageFilename = imageFilename}
+
+    if next(self._waitSpriteFrameTable) ~= nil then
+        lt.NtfManager:addNtfListener(lt.NtfManager.NTF.SPRITE_FRAME_LOADED, handler(self, self.spriteFrameLoadedNtf), self._tag)
+    end
+end
+
+-- 图集加载完成通知
+function EffectBase:spriteFrameLoadedNtf(event)
+    event = event or {}
+    event.param = event.param or {}
+    local dataFilename = event.param.dataFilename or ""
+
+    if self._waitSpriteFrameTable[dataFilename] then
+        self._waitSpriteFrameTable[dataFilename] = nil
+
+        self:loadAtlasStep()
+
+        if next(self._waitSpriteFrameTable) == nil and self._tag then
+            lt.NtfManager:removeNtfListenerByTag(self._tag)
+            self._tag = nil
+        end
+    end
+end
+
+-- 图集全部加载完成
+function EffectBase:loadAtlasStep()
+    self._atlasCur = self._atlasCur + 1
+    if self._atlasCur == self._atlasSum then
+        self:loadSpriteFrame()
+    end
+end
+
+function EffectBase:loadSpriteFrame()
+    for i = 1, self._frameCount do
+        local frame = self:calcFrameEffect(i)
+
+        if frame ~= nil  then
+            local path =  frame.path
+            if not self._spriteFrameTable[path] then
+                -- yflog:debug("load frame: ".. i .."  repeat path: "..path)
+                local spriteFrame = cc.SpriteFrameCache:getInstance():getSpriteFrame(path)
+                if spriteFrame then
+                    spriteFrame:retain()
+                else
+                    print("============================== loadTlSpriteFrame no SpriteFrame ", path, i," ==============================")
+                end
+                self._spriteFrameTable[path] = spriteFrame
+            end
+            local size = self._spriteFrameTable[path]:getOriginalSize()
+            frame.sprite = self._spriteFrameTable[path]
+            frame.size = size
+            frame.width = size.width
+            frame.height = size.height
+
+            self._spriteFrameArray[#self._spriteFrameArray + 1] = frame
+        end
+    end
+
+    -- yflog:Info("self._frameCount: "..self._frameCount.." load Sprite Count: " .. #self._spriteFrameTable)
+end
+
+--[[
+    frame结构：
+        {
+            "Light": 0,
+            "Background": true,
+            "SpriteId": 6374,
+            "X": -101,
+            "Y": -45
+        },
+]]
+function EffectBase:calcFrameEffect(idx)
+    local frame = self:getEffectFrame(idx)
+    if not frame then
+        yflog:Info("frame is nil, id is:%d",idx)
+        return
+    end
+
+    local spriteId = frame.spriteId
+
+    if string.find(spriteId,65535) then
+        return nil
+    end
+
+    --[[__fmt
+        图片命名规则
+        EffectEnum.BltTypeName[bltType]_effectId_spriteId.png
+    ]]
+    local bltTypeName = EffectEnum.BltTypeName[self._bltType]
+    local path = string.format("%s_%s_%s.png", bltTypeName, self._effectId, spriteId)
+    -- yflog:Info("path:%s",path)
+
+    return {path = path, x = frame.x, y = frame.y, width = 0, height = 0, size={}}
+end
+
+function EffectBase:getEffectFrame(idx)
+    return self._dataFrameArray[idx]
+end
+
+function EffectBase:getFrameArray()
+    return self._dataFrameArray
+end
+
+function EffectBase:getFrameCount()
+    return self._frameCount
+end
+
+-- Setter && Getter
+function EffectBase:getSpriteFrame(idx)
+    return self._spriteFrameArray[idx]
+end
+
+function EffectBase:getSpriteFrameCount()
+    return #self._spriteFrameArray
+end
+
+function EffectBase:getBltType()
+    return self._bltType
+end
+
+-- 根据动作定义脚步声音间隔
+function EffectBase:setStep(step)
+    self._step = step
+end
+
+function EffectBase:getStep()
+    return self._step
+end
+
+function EffectBase:addLoop()
+    self._loop = self._loop + 1
+end
+
+function EffectBase:setLoop(loop)
+    self._loop = loop
+end
+
+function EffectBase:getLoop()
+    return self._loop
+end
+
+function EffectBase:addUse()
+    self._use = self._use + 1
+end
+
+function EffectBase:setUse(use)
+    self._use = use
+end
+
+function EffectBase:getUse()
+    return self._use
+end
+
+function EffectBase:getEffectId()
+    return self._effectId
+end
+
+
+return EffectBase

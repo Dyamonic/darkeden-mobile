@@ -1,0 +1,236 @@
+-- 好友
+local FriendModule            = {}
+
+local SocketApi               = lt.SocketApi
+local netcmd_pb               = lt.netcmd_pb
+local CommonModule            = lt.CommonModule
+local ServerCmdDef            = lt.ServerCmdDef
+local ClientCmdDef            = lt.ClientCmdDef
+local NtfManager              = lt.NtfManager
+local Constant                = lt.Constant
+
+FriendModule.NOTE_SETTING     = "NOTE_SETTING"
+FriendModule._friendList      = {}
+FriendModule._friendApplyList = {}
+
+function FriendModule:init()
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_FRIEND_LLIST_RESP),
+        handler(self, self.onFriendList), "FriendModule:onFriendList")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_FRIEND_APPLY_LIST_RESP),
+        handler(self, self.onFriendApplyList), "FriendModule:onFriendApplyList")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_FRIEND_APPLY_RESP),
+        handler(self, self.onFriendApply), "FriendModule:onFriendApply")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_FRIEND_ACCEPT_RESP),
+        handler(self, self.onFriendAccept), "FriendModule:onFriendAccept")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_NTF_NEW_FRIEND),
+        handler(self, self.onNtfNewFriend), "FriendModule:onNtfNewFriend")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_FRIEND_DELETE_RESP),
+        handler(self, self.onFriendDelete), "FriendModule:onFriendDelete")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_FRIEND_ALLOW_ADD_SIGN_RESP),
+        handler(self, self.onFriendAllowSign), "FriendModule:onFriendAllowSign")
+end
+
+function FriendModule:clear()
+    SocketApi:removeProtoListenerByTag("FriendModule:onFriendList")
+    SocketApi:removeProtoListenerByTag("FriendModule:onFriendApplyList")
+    SocketApi:removeProtoListenerByTag("FriendModule:onFriendApply")
+    SocketApi:removeProtoListenerByTag("FriendModule:onFriendAccept")
+    SocketApi:removeProtoListenerByTag("FriendModule:onNtfNewFriend")
+    SocketApi:removeProtoListenerByTag("FriendModule:onFriendDelete")
+    SocketApi:removeProtoListenerByTag("FriendModule:onFriendAllowSign")
+    self._friendList = {}
+    self._friendApplyList = {}
+end
+
+function FriendModule:onFriendList(event)
+    local proto = event.param
+    local ret = proto.ret
+    if ret == 0 then
+        self._friendList = proto.friendInfoArray or {}
+        local allowAddSign = proto.allowAddSign -- 0 允许 1不允许
+        FriendModule:setAllowSign(allowAddSign)
+        self:sortFriendList()
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FRIEND_LIST)
+    end
+end
+
+function FriendModule:onFriendApplyList(event)
+    local proto = event.param
+    local ret = proto.ret
+    if ret == 0 then
+        self._friendApplyList = proto.friendInfoArray or {}
+        self:checkRedPoint()
+    end
+end
+
+--好友申请回调
+function FriendModule:onFriendApply(event)
+    local proto = event.param
+    local ret = proto.ret
+    if ret == 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_FRIEND_INVITE_TIPS })
+    end
+end
+
+function FriendModule:onFriendAccept(event)
+    local proto = event.param
+    local ret = proto.ret
+    if ret == 0 then
+        self:sendFriendApplyListReq()
+        -- NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = "添加成功"})
+    end
+end
+
+function FriendModule:onNtfNewFriend(event)
+    local proto = event.param
+    local type = proto.type --0 新好友。 1 新申请者 2 拒绝添加好友
+    local newFriendInfo = proto.newFriendInfo
+
+    if type == 1 then
+        self._friendApplyList = self._friendApplyList or {}
+        table.insert(self._friendApplyList, newFriendInfo)
+        self:checkRedPoint()
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,
+            { content = string.format(GReadText.KEY_FRIEND_TIPS6, newFriendInfo.playerName) })
+    elseif type == 0 then
+        if not self._friendList then
+            self._friendList = {}
+        end
+        table.insert(self._friendList, newFriendInfo)
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FRIEND_LIST)
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,
+            { content = string.format(GReadText.KEY_FRIEND_TIPS4, newFriendInfo.playerName) })
+    elseif type == 2 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,
+            { content = string.format(GReadText.KEY_FRIEND_TIPS5, newFriendInfo.playerName) })
+    end
+end
+
+function FriendModule:onFriendDelete(event)
+    local proto = event.param
+    local ret = proto.ret
+    if ret == 0 then
+        -- 维护好友列表
+        self:deleteFriendList()
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FRIEND_LIST)
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndFriendTips", close = true })
+    end
+end
+
+function FriendModule:onFriendAllowSign(event)
+    local proto = event.param
+    local ret = proto.ret
+    if ret == 0 then
+        FriendModule:setAllowSign(self._allowAddSign)
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FRIEND_ALLOW_SIGN)
+    end
+end
+
+function FriendModule:setAllowSign(allowsign)
+    self._canAllowSign = allowsign
+end
+
+function FriendModule:getAllowSign()
+    return self._canAllowSign or 0
+end
+
+-- 好友列表请求
+function FriendModule:sendFriendListReq()
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_FRIEND_LLIST_REQ))
+end
+
+-- 好友申请列表请求
+function FriendModule:sendFriendApplyListReq()
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_FRIEND_APPLY_LIST_REQ))
+end
+
+--好友申请请求
+function FriendModule:sendFriendApplyReq(playerId, playerName)
+    local msg = netcmd_pb.CS_FriendApplyReq()
+    msg.playerId = playerId
+    msg.playerName = playerName
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_FRIEND_APPLY_REQ), msg)
+end
+
+--是否接受好友申请请求
+function FriendModule:sendFriendAcceptReq(playerId, type)
+    local msg = netcmd_pb.CS_FriendAcceptReq()
+    msg.playerId = playerId
+    msg.type = type --// 0 同意。 1 拒绝
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_FRIEND_ACCEPT_REQ), msg)
+end
+
+--删除好友 req
+function FriendModule:sendFriendDeleteReq(playerId)
+    local msg = netcmd_pb.CS_FriendDeleteReq()
+    msg.playerId = playerId
+    self._delPlayerId = playerId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_FRIEND_DELETE_REQ), msg)
+end
+
+--删除申请列表一条
+function FriendModule:deleteFriendList()
+    for i = 1, #self._friendList do
+        if self._friendList[i].playerId == self._delPlayerId then
+            table.remove(self._friendList, i)
+            break
+        end
+    end
+end
+
+--设置是否允许添加 好友 req
+function FriendModule:sendFriendSetAllowSignReq(allowAddSign)
+    local msg = netcmd_pb.CS_FriendSetAllowSignReq()
+    msg.allowAddSign = allowAddSign --// 0 允许 1不允许
+    self._allowAddSign = allowAddSign
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_FRIEND_ALLOW_ADD_SIGN_REQ), msg)
+end
+
+--好友列表排序
+function FriendModule:sortFriendList()
+    table.sort(self._friendList, function(a, b)
+        if a.online ~= b.online then
+            return a.online > b.online
+        end
+        if a.level ~= b.level then
+            return a.level > b.level
+        end
+        if a.gradeLevel ~= b.gradeLevel then
+            return a.gradeLevel > b.gradeLevel
+        end
+        return a.createTime < b.createTime
+    end)
+end
+
+--获取申请列表
+function FriendModule:getFriendApplyList()
+    return self._friendApplyList or {}
+end
+
+--获取好友列表
+function FriendModule:getFriendList()
+    return self._friendList or {}
+end
+
+function FriendModule:checkRedPoint()
+    local friendApplyList = self:getFriendApplyList()
+    NtfManager:dispatchNtf(NtfManager.NTF.NFT_SYSTEM_TIPS_CHANGE,
+        { key = Constant.SYSTEMTIPS.Friend, visible = #friendApplyList > 0 })
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_RED_DOT_EVENT, { name = "FriendRedTips" })
+end
+
+-- 判断是否是好友
+function FriendModule:checkIsFriend(playerName)
+    if not playerName or playerName == "" then
+        return false
+    end
+    local friendList = self:getFriendList()
+    for i = 1, #friendList do
+        if friendList[i].playerName == playerName then
+            return true
+        end
+    end
+    return false
+end
+
+return FriendModule

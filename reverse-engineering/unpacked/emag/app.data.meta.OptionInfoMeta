@@ -1,0 +1,35 @@
+local GamblingShopMeta = class("GamblingShopMeta")
+
+function GamblingShopMeta:ctor(row)
+    self:initWithRow(row)
+end
+
+function GamblingShopMeta:initWithRow(row)
+    self._type        = row.Type
+    self._name        = row.Name
+    self._enName      = row.EnName
+    self._percentage  = row.Percentage
+    self._assignGoals = row.AssignGoals
+    self._name2       = row.Name2
+    self._permyriad   = row.Permyriad
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function GamblingShopMeta:getType() return self._type end
+
+function GamblingShopMeta:getName() return self._name end
+
+function GamblingShopMeta:getEnName() return self._enName end
+
+function GamblingShopMeta:getPercentage() return self._percentage end
+
+function GamblingShopMeta:getAssignGoals() return self._assignGoals end
+
+function GamblingShopMeta:getName2() return self._name2 end
+
+function GamblingShopMeta:getPermyriad() return self._permyriad end
+
+-- AUTO GENERATED GETTERS END
+return GamblingShopMeta

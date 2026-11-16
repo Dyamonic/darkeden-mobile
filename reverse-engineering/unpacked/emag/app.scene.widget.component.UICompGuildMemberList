@@ -1,0 +1,219 @@
+--- 公会成员列表
+---@class UICompGuildMemberList
+local UICompGuildMemberList          = class("UICompGuildMemberList", lt.UIGButtonBase)
+local NtfManager                     = lt.NtfManager
+local GuildModule                    = lt.GuildModule
+local GameModule                     = lt.GameModule
+local Constant                       = lt.Constant
+
+UICompGuildMemberList.ChangeSkinConf = {
+    ["Guild"] = {
+        ["bg"] = "bg_gonghuixt_10",
+    },
+    ["CommonTL"] = {
+        ["btn_list"] = { icon = "bg_youjian_changanniu02" },
+        ["btn_applyList"] = { icon = "bg_youjian_changanniu02" },
+        ["btn_delete"] = { icon = "bg_youjian_changanniu02" },
+        ["btn_leave"] = { icon = "bg_youjian_changanniu02" },
+        ["btn_Edit"] = { icon = "bg_youjian_changanniu02" },
+    }
+}
+
+function UICompGuildMemberList:ctor()
+    self:registerComponent("UICompGuildMemberListCell")
+    UICompGuildMemberList.super.ctor(self)
+    self._selectItem = nil
+    self._richNotice = nil
+end
+
+function UICompGuildMemberList:onClear()
+    self._selectItem   = nil
+    self._richNotice   = nil
+    self._lblCount     = nil
+    self._lblName      = nil
+    self._lblDuty      = nil
+    self._lblNotice    = nil
+    self._listMember   = nil
+    self._btnApplyList = nil
+    self._btnEdit      = nil
+    self._btnList      = nil
+    self._btnDelete    = nil
+    self._btnLeave     = nil
+    self:unregisterAllComponent()
+    UICompGuildMemberList.super.onClear(self)
+end
+
+function UICompGuildMemberList:onConstruct()
+    self._lblCount     = self:getChild("lbl_count")
+    self._lblName      = self:getChild("lbl_name")
+    self._lblDuty      = self:getChild("lbl_post")
+    self._lblNotice    = self:getChild("lbl_notice")
+    self._listMember   = self:getChild("list")
+    self._btnList      = self:getChild("btn_list")
+    self._btnApplyList = self:getChild("btn_applyList")
+    self._btnDelete    = self:getChild("btn_delete")
+    self._btnLeave     = self:getChild("btn_leave")
+    self._btnEdit      = self:getChild("btn_Edit")
+    self._ctlDuty      = self:getController("c1")
+
+    self._listMember:setItemRenderer(handler(self, self.renderListItem))
+end
+
+function UICompGuildMemberList:onEnter()
+    UICompGuildMemberList.super.onEnter(self)
+    self._btnList:addClickListener(handler(self, self.onBtnFncListClick))
+    self._btnApplyList:addClickListener(handler(self, self.onBtnFncApplyListClick))
+    self._btnDelete:addClickListener(handler(self, self.onBtnFncDeleteClick))
+    self._btnLeave:addClickListener(handler(self, self.onBtnFncLeaveClick))
+    self._btnEdit:addClickListener(handler(self, self.onBtnFncEditClick))
+    self:initUI()
+end
+
+function UICompGuildMemberList:onExit()
+    self._btnList:removeClickListener()
+    self._btnApplyList:removeClickListener()
+    self._btnDelete:removeClickListener()
+    self._btnLeave:removeClickListener()
+    self._btnEdit:removeClickListener()
+    UICompGuildMemberList.super.onExit(self)
+end
+
+function UICompGuildMemberList:initUI()
+    self:refreshView()
+end
+
+function UICompGuildMemberList:refreshView()
+    local guildData = GuildModule:getGuildData()
+    local memberList = guildData and guildData.memberList or {}
+
+    self._listMember:setNumItems(#memberList)
+    self:clearSelect()
+    if #memberList > 0 then
+        self._selectItem = self._listMember:getChildAt(0)
+    end
+    self:refreshInfo()
+end
+
+function UICompGuildMemberList:refreshInfo()
+    local info = nil
+    if self._selectItem then
+        self._selectItem:setSelected(true)
+        info = self._selectItem._playerInfo
+    end
+    if not info then
+        return
+    end
+    self._lblName:setText(info and info.name or "")
+    self._lblDuty:setText(info and Constant.GuildDutyStr[info.duty] or "")
+    -- self._lblNotice:setText(info and info.noticeText or "")
+    self._lblNotice:setText("")
+    local onlineCount, maxCount = GuildModule:getOnlineMemberCount()
+    self._lblCount:setText(onlineCount .. "/" .. maxCount)
+    local heroData = GameModule:getHeroData()
+    local myDuty = heroData:getGuildDuty()
+    local index = tonumber(myDuty) - 1
+    self._ctlDuty:setSelectedIndex(index > 0 and index or 0)
+    local myplayerId = GameModule:getHeroData():getPlayerId()
+    self._btnEdit:setVisible(myplayerId == info.playerId)
+    local config = {}
+    table.insert(config, { oType = "font", content = info and info.noticeText or "", unLine = true })
+    if not self._richNotice then
+        self._richNotice = lt.RichText.new(config, 246,
+            { defaultSize = 20, lineSpacing = 3, label = true, fontName = Constant.FONT_4 }) --,
+        self._richNotice:setAnchorPoint(0, 1)
+        self._richNotice:setPosition(605, 318)
+        self:displayObject():addChild(self._richNotice)
+    else
+        self._richNotice:setString(config)
+    end
+
+    self:uptRedDotEvt()
+end
+
+function UICompGuildMemberList:uptRedDotEvt()
+    local reddot = self._btnApplyList:getChild("reddot")
+    local isShowRedDot = GuildModule:getRedPoint()
+    reddot:setVisible(isShowRedDot)
+end
+
+function UICompGuildMemberList:renderListItem(index, obj)
+    local guildData = GuildModule:getGuildData()
+    local memberList = guildData and guildData.memberList or {}
+    local info = memberList[index + 1]
+    obj:setInfo(info, index + 1)
+end
+
+function UICompGuildMemberList:onClickItem(data)
+    if self._selectItem then
+        self._selectItem:setSelected(false)
+    end
+    self._selectItem = data
+    self._selectItem:setSelected(true)
+    self:refreshInfo()
+
+    local playerId = GameModule:getHeroData():getPlayerId()
+    if self._selectItem._playerInfo.playerId == playerId then
+        return
+    end
+
+    local pos = self._selectItem:localToGlobal(self._selectItem:getPosition())
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_GUILDMEMBERINFO_TIPS,
+        { roleData = self._selectItem._playerInfo, pos = pos })
+end
+
+function UICompGuildMemberList:clearSelect()
+    if self._selectItem then
+        self._selectItem:setSelected(false)
+    end
+    self._selectItem = nil
+end
+
+-- 公会列表
+function UICompGuildMemberList:onBtnFncListClick(obj)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndGuildList" })
+end
+
+-- 公会申请列表
+function UICompGuildMemberList:onBtnFncApplyListClick(obj)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndGuildApplyList" })
+end
+
+-- 解散公会
+function UICompGuildMemberList:onBtnFncDeleteClick(obj)
+    local guildData = GuildModule:getGuildData()
+    local memberList = guildData and guildData.memberList or {}
+    if #memberList > 1 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_GUILD_TIPS19 })
+        return
+    end
+
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+        content = GReadText.KEY_GUILD_TIPS20,
+        confirmCallback = function()
+            GuildModule:sendGuildDeleteReq()
+        end,
+    })
+end
+
+-- 退出公会
+function UICompGuildMemberList:onBtnFncLeaveClick(obj)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+        content = GReadText.KEY_GUILD_TIPS21,
+        confirmCallback = function()
+            GuildModule:sendGuildLeaveReq()
+        end,
+    })
+end
+
+-- 编辑简介
+function UICompGuildMemberList:onBtnFncEditClick(obj)
+    local info = nil
+    if self._selectItem then
+        info = self._selectItem._playerInfo
+    end
+    local noticeText = info and info.noticeText or ""
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW,
+        { class = "UIWndGuildNotice", type = GuildModule.NOTICE_TYPE.MEMBER_NOTICE, noticeText = noticeText })
+end
+
+return UICompGuildMemberList

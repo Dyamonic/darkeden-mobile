@@ -1,0 +1,23 @@
+
+local CmdProperty = class("CmdProperty", lt.CmdBase)
+
+CmdProperty._property  = nil
+CmdProperty._value     = nil
+
+function CmdProperty:ctor(property,value)
+    CmdProperty.super.ctor(self, lt.Constant.CmdId.CMD_PROPERTY)
+    self._property   = property
+    self._value      = value
+end
+
+-- Setter && Getter
+function CmdProperty:getProperty()
+    return self._property
+end
+
+function CmdProperty:getValue()
+    return self._value
+end
+
+
+return CmdProperty

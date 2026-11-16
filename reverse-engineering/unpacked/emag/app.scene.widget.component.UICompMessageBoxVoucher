@@ -1,0 +1,96 @@
+---@提示框代金券资源消耗
+---@class UICompMessageBoxVoucher
+local UICompMessageBoxVoucher = class("UICompMessageBoxVoucher", lt.UICompBase)
+
+UICompMessageBoxVoucher.ChangeSkinConf = {
+    ["MessageBox"] = {
+        ["bg"] = "bg_tytanchuang_01",
+    },
+    ["CommonTL"] = {
+        closeButton = {bg  = "sort"},
+        confirmButton = {bg  = "sort"},
+    } 
+}
+
+function UICompMessageBoxVoucher:ctor()
+    UICompMessageBoxVoucher.super.ctor(self)
+    self._data = nil
+    self._confirmButton = nil
+    self._closeButton = nil
+end
+
+function UICompMessageBoxVoucher:onClear()
+    self._data = nil
+    self._confirmButton = nil
+    self._closeButton = nil
+    UICompMessageBoxVoucher.super.onClear(self)
+end
+
+function UICompMessageBoxVoucher:onConstruct()
+    self:startSkin()
+    self._confirmButton = self:getChild("confirmButton")
+    self._closeButton = self:getChild("closeButton")
+
+    self._iconNum    = self:getChild("icon_num")
+    self._consumeNum = self:getChild("consume_num")
+    self._desc       = self:getChild("desc")
+
+    local visibleSize = cc.Director:getInstance():getVisibleSize()
+    self:getChild("touchLayer"):setSize(visibleSize.width, visibleSize.height)
+end
+
+function UICompMessageBoxVoucher:onEnter()
+    UICompMessageBoxVoucher.super.onEnter(self)
+    self._confirmButton:addClickListener(handler(self, self.onBtnClick))
+    self._closeButton:addClickListener(handler(self, self.onCloseBtnClick))
+
+end
+function UICompMessageBoxVoucher:onExit()
+    self._confirmButton:removeClickListener()
+    self._closeButton:removeClickListener()
+    UICompMessageBoxVoucher.super.onExit(self)
+end
+
+function UICompMessageBoxVoucher:initUI()
+end
+
+function UICompMessageBoxVoucher:onCloseBtnClick()
+    local cancelCallback = self._data.cancelCallback
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_MESSAGEBOX_VOUCHER)
+    if cancelCallback then
+        cancelCallback()
+    end
+end
+
+function UICompMessageBoxVoucher:onBtnClick()
+    local confirmCallback = self._data.confirmCallback
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_MESSAGEBOX_VOUCHER)
+    if confirmCallback then
+        confirmCallback()
+    end
+end
+
+function UICompMessageBoxVoucher:refreshDesc(data)
+    self._data = data or {}
+    local content = self._data.content or ""
+    self._desc:setText(content)
+
+    local rechargeId = self._data.rechargeId
+    if rechargeId then
+        local rechargeInfo = lt.CacheManager:getRechargeInfoById(rechargeId)
+        if rechargeInfo then
+            local price = rechargeInfo:getPrice()
+            local heroData = lt.GameModule:getHeroData()
+            local voucher = 0
+            if heroData then
+                voucher = heroData:getVoucher()
+            end
+            self._iconNum:setText(_GURL.GetImageVoucher .. price)
+            local consumeText = string.format("%s/%s", voucher, price)
+            consumeText = _GURL.GetImageVoucher .. consumeText
+            self._consumeNum:setText(consumeText)
+        end
+    end
+end
+
+return UICompMessageBoxVoucher

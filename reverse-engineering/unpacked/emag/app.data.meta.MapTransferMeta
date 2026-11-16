@@ -1,0 +1,45 @@
+local MapTransferMeta = class("MapTransferMeta")
+
+local CommonFunc = lt.CommonFunc
+
+
+function MapTransferMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function MapTransferMeta:initWithRow(row)
+    self._mapCode       = row.MapCode
+    self._targetType    = row.TargetType
+    self._targetMapCode = row.TargetMapCode
+    self._targetPoint   = CommonFunc:analysisJsonToTable(row.TargetPoint,true)
+    self._landMark      = CommonFunc:analysisJsonToTable(row.LandMark,true)
+    self._landMarkName  = row.LandMarkName
+    if row.MarkShift == "" then
+        self._markShift = nil
+    else
+        self._markShift = CommonFunc:analysisJsonToTable(row.MarkShift,true)
+    end
+end
+
+function MapTransferMeta:getTargetPoint()
+    return self._targetPoint
+end
+
+function MapTransferMeta:getLandMark()
+    return self._landMark
+end
+
+function MapTransferMeta:getMarkShift()
+    return self._markShift
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function MapTransferMeta:getMapCode() return self._mapCode end
+function MapTransferMeta:getTargetType() return self._targetType end
+function MapTransferMeta:getTargetMapCode() return self._targetMapCode end
+function MapTransferMeta:getLandMarkName() return self._landMarkName end
+
+-- AUTO GENERATED GETTERS END
+return MapTransferMeta

@@ -1,0 +1,143 @@
+local StartGameTL = class("StartGameTL")
+local ConfigLoader = require("launcher.ConfigLoader")
+
+function StartGameTL:startGame(delegateLayer)
+    self:initGameSearchPath()
+	-- 重新加载代码zip
+	self:reloadGameCode()
+	self:runGame()
+end
+
+
+function StartGameTL:runGame()
+	if _G_Game and self._delegateLayer then
+		return
+	end
+
+	-- 连接到游戏game
+	require("app.Game"):create():run()
+end
+
+-- 加载游戏代码 
+function StartGameTL:reloadGameCode()
+	self:reloadProtobuf()
+
+	for k, _ in pairs(package.preload) do
+		if string.sub(k, 1, 4) == "app." or string.sub(k, 1, 4) == "lib." or string.sub(k, 1, 9) == "packages." then
+			package.preload[k] = nil
+		end
+	end
+	for k, _ in pairs(package.loaded) do
+		if string.sub(k, 1, 4) == "app." or string.sub(k, 1, 4) == "lib." or string.sub(k, 1, 9) == "packages." then
+			package.loaded[k] = nil
+		end
+	end
+
+	local gamePk = {"protobuf.pk"}
+	for _, v in ipairs(gamePk) do
+		local path = cc.FileUtils:getInstance():fullPathForFilename(v)
+		cc.LuaLoadChunksFromZIP(path)
+	end
+
+	if not ConfigLoader:isDeveloper() then
+		local gamePk = {"bil2.pk","emag.pk"}
+		for _, v in ipairs(gamePk) do
+			local path = cc.FileUtils:getInstance():fullPathForFilename(v)
+			cc.LuaLoadChunksFromZIP(path)
+		end
+	else
+		print("不加载代码包")
+	end
+
+    if _G_Game then
+        print("清除游戏信息")
+        _G_Game:clear()
+        _G_Game = nil
+    end
+end
+function StartGameTL:reloadProtobuf()
+	local protobufArray = {"containers","decoder","descriptor","encoder","listener","protobuf","text_format","type_checkers","wire_format"}
+	for _,k in ipairs(protobufArray) do
+		package.preload[k] = nil
+		package.preload[k] = nil
+	end
+end
+
+function StartGameTL:initGameSearchPath()
+	if not _G_GAME_INFO or not _G_GAME_INFO.type then
+		return
+	end
+
+	local gameType = _G_GAME_INFO.type
+
+	if not _G_BASE_SEARCH_PATHS then
+        _G_BASE_SEARCH_PATHS = cc.FileUtils:getInstance():getSearchPaths()
+    end
+
+	local searchPaths = {}
+	local writablePath = device.writablePath
+
+	if device.platform == "windows" then
+		-- windows 确定绝对路径
+		local workPath = ""
+		if _G_BASE_SEARCH_PATHS then
+			workPath = _G_BASE_SEARCH_PATHS[1]
+		end
+
+		searchPaths[#searchPaths + 1] = writablePath .. "download/"..gameType.."/res/"
+		searchPaths[#searchPaths + 1] = writablePath .. "download/"..gameType.."/src/"
+		searchPaths[#searchPaths + 1] = writablePath .. "download/"..gameType.."/src/app/thirdparty/protobuf/"
+		searchPaths[#searchPaths + 1] = writablePath .. "download/"..gameType.."/"
+
+		searchPaths[#searchPaths + 1] = writablePath .. "download/res/"
+		searchPaths[#searchPaths + 1] = writablePath .. "download/src/"
+		searchPaths[#searchPaths + 1] = writablePath .. "download/src/app/thirdparty/protobuf/"
+		searchPaths[#searchPaths + 1] = writablePath .. "download/"
+
+		searchPaths[#searchPaths + 1] = workPath .. gameType .. "/res/"
+		searchPaths[#searchPaths + 1] = workPath .. gameType .. "/src/"
+		searchPaths[#searchPaths + 1] = workPath .. gameType .. "/src/app/thirdparty/protobuf/"
+		searchPaths[#searchPaths + 1] = workPath .. gameType .. "/"
+
+		searchPaths[#searchPaths + 1] = workPath .. "res/"
+		searchPaths[#searchPaths + 1] = workPath .. "src/"
+		searchPaths[#searchPaths + 1] = workPath .. "src/app/thirdparty/protobuf/"
+		searchPaths[#searchPaths + 1] = workPath
+		
+		searchPaths[#searchPaths + 1] = "res/"
+		searchPaths[#searchPaths + 1] = "src/"
+		searchPaths[#searchPaths + 1] = "src/app/thirdparty/protobuf/"
+		searchPaths[#searchPaths + 1] = ""
+	else
+		searchPaths[#searchPaths + 1] = writablePath .. gameType .. "/res/"
+		searchPaths[#searchPaths + 1] = writablePath .. gameType .. "/src/"
+		searchPaths[#searchPaths + 1] = writablePath .. gameType .. "/src/app/thirdparty/protobuf/"
+		searchPaths[#searchPaths + 1] = writablePath .. gameType .. "/"
+
+		searchPaths[#searchPaths + 1] = writablePath .. "res/"
+		searchPaths[#searchPaths + 1] = writablePath .. "src/"
+		searchPaths[#searchPaths + 1] = writablePath .. "src/app/thirdparty/protobuf/"
+		searchPaths[#searchPaths + 1] = writablePath
+
+		searchPaths[#searchPaths + 1] = gameType .. "/res/"
+		searchPaths[#searchPaths + 1] = gameType .. "/src/"
+		searchPaths[#searchPaths + 1] = gameType .. "/src/app/thirdparty/protobuf/"
+		searchPaths[#searchPaths + 1] = gameType .. "/"
+
+		searchPaths[#searchPaths + 1] = "res/"
+		searchPaths[#searchPaths + 1] = "src/"
+		searchPaths[#searchPaths + 1] = "src/app/thirdparty/protobuf/"
+		searchPaths[#searchPaths + 1] = ""
+	end
+
+	cc.FileUtils:getInstance():setSearchPaths(searchPaths)
+
+    print("============================== LauncherLayer search path begin ==============================")
+    for i, path in ipairs(searchPaths) do
+        print(i, path)
+    end
+    print("============================== LauncherLayer search path end ==============================")
+end
+
+
+return StartGameTL

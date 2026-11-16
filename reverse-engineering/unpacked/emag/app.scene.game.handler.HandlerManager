@@ -1,0 +1,46 @@
+
+local HandlerManager = {}
+
+HandlerManager._handler = nil
+
+function HandlerManager:init()
+    self._handler = lt.HandlerNormal.new()
+end
+
+function HandlerManager:clear()
+    self._handler = nil
+end
+
+function HandlerManager:replaceHandler(handler)
+    self._handler:onExit()
+    self._handler = handler
+    self._handler:onEnter()
+end
+
+function HandlerManager:onTouchBegan(id, point)
+    self._handler:onTouchBegan(id, point)
+end
+
+function HandlerManager:onTouchMoved(id, point)
+    self._handler:onTouchMoved(id, point)
+end
+
+function HandlerManager:onTouchEnded(id, point)
+    self._handler:onTouchEnded(id, point)
+end
+
+function HandlerManager:getControlParam()
+    return self._handler:getControlParam()
+end
+
+function HandlerManager:onUpdate()
+    if self._handler and self._handler.onUpdate then
+    	self._handler:onUpdate()
+    end
+end
+
+function HandlerManager:getHandler()
+    return self._handler
+end
+
+return HandlerManager

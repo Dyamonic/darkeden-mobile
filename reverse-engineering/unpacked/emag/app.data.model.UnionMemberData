@@ -1,0 +1,84 @@
+
+local UnionMemberData = class("UnionMemberData")
+
+local Constant = lt.Constant
+local StringManager = lt.StringManager
+
+UnionMemberData._name       = nil  -- 
+UnionMemberData._playerId   = nil  -- 
+UnionMemberData._hair       = nil  -- 
+UnionMemberData._haircolor  = nil  -- 
+UnionMemberData._level      = nil  -- 
+UnionMemberData._job        = nil  -- 
+UnionMemberData._unionJob   = nil  -- 
+UnionMemberData._lastTime   = nil  -- 
+
+function UnionMemberData:ctor(perUnionMemberData)
+    assert(perUnionMemberData ~= nil, "perUnionMemberData is nil !")
+
+    self:initUnionMemberData(perUnionMemberData)
+end
+
+function UnionMemberData:initUnionMemberData(perUnionMemberData)
+    self._name = perUnionMemberData.name
+    self._playerId = perUnionMemberData.playerId
+    self._hair = perUnionMemberData.hair
+    self._hairColor = perUnionMemberData.hairColor
+    self._level = perUnionMemberData.level
+    self._job = perUnionMemberData.job
+    self._unionJob = perUnionMemberData.duty
+    -- self:dump()
+end
+
+function UnionMemberData:getName()
+    return self._name
+end
+
+function UnionMemberData:getPlayerId()
+    return self._playerId
+end
+
+function UnionMemberData:getLevel()
+    return self._level
+end
+
+function UnionMemberData:getJob()
+    return self._job
+end
+
+function UnionMemberData:getUnionJob()
+    return self._unionJob
+end
+
+function UnionMemberData:setUnionJobName(name)
+    self._unionJobName = name
+end
+
+function UnionMemberData:getUnionJobName()
+    return self._unionJobName
+end
+
+function UnionMemberData:getLastTime()
+    return self._lastTime or 0
+end
+
+function UnionMemberData:getHair()
+    return self._hair or 1
+end
+
+function UnionMemberData:getHairColor()
+    return self._hairColor or 1
+end
+
+function UnionMemberData:dump()
+    lt.LogUtil:debug(">>>>>>>>>>>>>>>>>>>> UnionMemberData >>>>>>>>>>>>>>>>>>>>")
+    lt.LogUtil:debug("self._name = "..tostring(self._name))
+    lt.LogUtil:debug("self._playerId = "..tostring(self._playerId))
+    lt.LogUtil:debug("self._level = "..tostring(self._level))
+    lt.LogUtil:debug("self._job = "..tostring(self._job))
+    lt.LogUtil:debug("self._unionJob = "..tostring(self._unionJob))
+    lt.LogUtil:debug("self._lastTime = "..tostring(self._lastTime))
+    lt.LogUtil:debug("<<<<<<<<<<<<<<<<<<<< UnionMemberData <<<<<<<<<<<<<<<<<<<<")
+end
+
+return UnionMemberData

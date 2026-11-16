@@ -1,0 +1,209 @@
+---@class UICompSevenDayTaskCell
+--- 七日任务Cell
+local UICompSevenDayTaskCell = class("UICompSevenDayTaskCell", lt.UIGButtonBase)
+
+local Constant               = lt.Constant
+local CacheManager           = lt.CacheManager
+local NtfManager             = lt.NtfManager
+local ItemModule             = lt.ItemModule
+local SevenDayModule         = lt.SevenDayModule
+
+function UICompSevenDayTaskCell:ctor()
+    UICompSevenDayTaskCell.super.ctor(self)
+    self._data     = nil
+    self._itemInfo = nil
+    self._itemMeta = nil
+    self._item     = nil
+end
+
+function UICompSevenDayTaskCell:onEnter()
+    UICompSevenDayTaskCell.super.onEnter(self)
+    self._listItem:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+    self._btnGoto:addClickListener(handler(self, self.onBtnGotoClick))
+end
+
+function UICompSevenDayTaskCell:onExit()
+    self._listItem:removeEventListener(fgui.UIEventType.ClickItem)
+    self._btnGoto:removeClickListener()
+    UICompSevenDayTaskCell.super.onExit(self)
+end
+
+function UICompSevenDayTaskCell:onClear()
+    self._data     = nil
+    self._itemInfo = nil
+    self._itemMeta = nil
+    self._item     = nil
+    self._lblDesc  = nil
+    self._listItem = nil
+    self._lblCount = nil
+    self._red      = nil
+    UICompSevenDayTaskCell.super.onClear(self)
+end
+
+function UICompSevenDayTaskCell:onConstruct()
+    self._lblDesc = self:getChild("lbl_desc")
+    self._listItem = self:getChild("list_reward")
+    self._listItem:setItemRenderer(handler(self, self.onRenderItem))
+    self._btnGoto  = self:getChild("btn_go")
+    self._red      = self._btnGoto:getChild("red")
+    self._lblCount = self:getChild("lbl_num")
+end
+
+function UICompSevenDayTaskCell:setInfo(data, mainIndex)
+    self._data = data
+    self._mainIndex = mainIndex
+    local meta = CacheManager:getSevenDayMissionMeta(data.taskId)
+    if not meta then
+        yflog:Info("-------------UICompSevenDayTaskCell taskId = " .. data.taskId)
+        return
+    end
+    self._meta = meta
+    local desc = string.split(meta:getMissionObject(), ";")
+    local missionTarget = meta:getMissionTarget()
+    local targetStr = ""
+    local targetNum = ""
+    local isFinish = true
+    for i = 1, #desc do
+        local cur = (data and data.hadNumMap[i]) and data.hadNumMap[i].value or 0
+        if meta:getObjectType() == Constant.TASK_FINISH_TYPES.SEARCH then
+            local itemId = tonumber(missionTarget[i][3])
+            cur = ItemModule:getItemNum(itemId)
+        end
+        local max = tonumber(missionTarget[i][1])
+        if cur > max then cur = max end
+        local colorStr = cur < max and "[color=#ffffff]" or "[color=#00ff00]"
+        targetStr = targetStr .. colorStr .. desc[i] .. "(" .. cur .. "/" .. max .. ")" .. "[/color]"
+        if i < #desc then
+            targetStr = targetStr .. "<br>"
+        end
+    end
+
+    self._lblDesc:setText(targetStr)
+    self._lblDesc:setColor(isFinish and Constant.COLOR_GREEN_H or Constant.COLOR_TEXT_WHITE_PURE)
+    self._lblCount:setText(targetNum)
+    self._lblCount:setColor(isFinish and Constant.COLOR_GREEN_H or Constant.COLOR_TEXT_WHITE_PURE)
+    local state = data.taskState or 0
+    local showRed = false
+    self._iconGrayed = false
+    if state == Constant.TASK_STATE.START then
+        self._btnGoto:setText("Go")
+        self._btnGoto:setGrayed(false)
+    elseif state == Constant.TASK_STATE.FINISH then
+        self._btnGoto:setText(GReadText.KEY_ACTIVITY_TASK_TIPS4)
+        showRed = true
+        self._btnGoto:setGrayed(false)
+    elseif state == Constant.TASK_STATE.REWARD then
+        self._btnGoto:setText(GReadText.KEY_ACTIVITY_TASK_TIPS5)
+        self._btnGoto:setGrayed(true)
+        self._iconGrayed = true
+    end
+    self._listItem:setNumItems(#meta:getReward())
+    self._red:setVisible(showRed)
+end
+
+function UICompSevenDayTaskCell:onRenderItem(index, obj)
+    local index = index + 1
+    local itemInfo = self._meta:getReward()[index]
+
+    local resUrl = ""
+
+    if obj.sprite then
+        obj.sprite:removeFromParent()
+        obj.sprite = nil
+    end
+    local icon = obj:getChild("icon")
+    icon:setVisible(true)
+    if itemInfo[2] == 1 then
+        --圣物走特殊逻辑
+        resUrl = string.format(string.format(_GURL.GetTaskPath, "icon_cwrw_wenhao"))
+        icon:setURL(resUrl)
+    else
+        --非圣物
+        local itemMeta = ""
+        local iconPath = ""
+        if itemInfo[1] == Constant.ItemType.ITEM_TYPE_PROP then
+            iconPath = "prop"
+            itemMeta = CacheManager:getItemMeta(itemInfo[4])
+            resUrl = string.format("ui://Item/%s_%s", iconPath, itemMeta:getIconId())
+            icon:setURL(resUrl)
+        elseif itemInfo[1] == Constant.ItemType.ITEM_TYPE_EQUIP then
+            iconPath = "equip"
+            itemMeta = CacheManager:queryEquipMeta(itemInfo[4])
+
+            local iconId = itemMeta:getIconId()
+            if iconId then
+                local sprite = lt.CommonFunc.createEquipById(iconId, 0, 0)
+                obj:displayObject():addChild(sprite)
+                local pos = icon:getPosition()
+                sprite:setPosition(pos.x, pos.y)
+                local scale = 30 / sprite:getContentSize().width
+                sprite:setScale(scale, scale)
+                obj.sprite = sprite
+            end
+            icon:setVisible(false)
+        end
+        obj.itemMeta = itemMeta
+    end
+    obj:getChild("lbl_num"):setText(itemInfo[5])
+    obj.itemInfo = itemInfo
+    obj:setGrayed(self._iconGrayed)
+end
+
+function UICompSevenDayTaskCell:onClickItem(context)
+    local data     = context:getData()
+    self._item     = data
+    self._itemInfo = data.itemInfo
+    self._itemMeta = data.itemMeta
+    self:showTips()
+end
+
+function UICompSevenDayTaskCell:showTips()
+    if self._itemInfo[2] == 1 then
+        --圣物读其他字段
+        local meta = CacheManager:getRelicSystemMeta(self._itemInfo[4])
+        local itemSize = self._item:getSize()
+        local point = self._item:localToGlobal({ x = itemSize.width, y = itemSize.height })
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_TEXT_TIPS,
+            {
+                content = meta:getTaskDescribe(),
+                pt = point,
+                pivot = cc.p(0, 1),
+                width = 180
+            })
+    else
+        local itemType = self._itemMeta:getItemType()
+        if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+            self:showPropTips()
+        elseif itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+            self:showEquipTips()
+        end
+    end
+end
+
+function UICompSevenDayTaskCell:showPropTips()
+    local itemInfo = ItemModule:getItemDataByConfig(self._itemMeta, self._itemInfo[6], self._itemInfo[5])
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,
+        { itemInfo = itemInfo, pivot = cc.p(0, 0.5), tipsType = Constant.PROPTIPS_FORM.Display })
+end
+
+function UICompSevenDayTaskCell:showEquipTips()
+    local itemInfo = ItemModule:getItemDataByConfig(self._itemMeta, self._itemInfo[6], self._itemInfo[5])
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,
+        { itemInfo = itemInfo, tipsType = Constant.EquipShowTipsType.Display })
+end
+
+function UICompSevenDayTaskCell:onBtnGotoClick(target)
+    local transferPoint = self._meta:getTransferPoint()
+    local taskState     = self._data.taskState or 0
+    if taskState == Constant.TASK_STATE.START then --进行中
+        if transferPoint ~= nil then
+            SevenDayModule:onSevenDayTaskJump(self._data.taskId)
+        end
+    elseif taskState == Constant.TASK_STATE.FINISH then --已完成
+        SevenDayModule:onGetSevenDayRewardReq(self._mainIndex, SevenDayModule.CONTROL_INDEX.TASK, self._data.taskId)
+    elseif taskState == Constant.TASK_STATE.REWARD then --已领奖
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KET_MAIL_TIPS10 })
+    end
+end
+
+return UICompSevenDayTaskCell

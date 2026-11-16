@@ -1,0 +1,729 @@
+local EffectQueueActor = class("EffectQueueActor", function()
+    return display.newNode()
+end)
+--[[
+    队列序列帧特效
+]]
+
+local EffectManager = lt.EffectManager
+local SkillEnum = lt.SkillEnum
+local CacheManager = lt.CacheManager
+local EffectEnum = lt.EffectEnum
+local TimeTrigger = lt.TimeTrigger
+local Constant = lt.Constant
+
+EffectQueueActor._loopOrder = nil
+EffectQueueActor._effectIds = 0
+local TimeLineInterval = 1 / Constant.FPS_TL
+
+function EffectQueueActor:ctor(actor, skillId, direction)
+    EffectQueueActor._effectIds = EffectQueueActor._effectIds + 1
+    self._curEffectId =  EffectQueueActor._effectIds
+    self:setActor(actor)
+    self._skillId = skillId
+    self._direction = direction
+    self._timeTrigger = TimeTrigger.new(TimeLineInterval)
+
+    -- local sp = display.newSprite()
+    local sp = lt.EffectPoolManager:popSprite()
+    
+    sp:setAnchorPoint(0.5, 0.5)
+    self:addChild(sp)
+
+    self._spriteEffect = sp
+
+    -- 部分特效是拆分显示的 需要合并显示
+    self._multiEffectNode = display.newNode()
+    self:addChild(self._multiEffectNode)
+    self._multiEffectArray = {}
+    self._effectMultiInfoArray = {}
+
+    self._effectStepQueue = {}
+
+    self._effectLoopCount = 0
+    self._nextEffectFrameIndex = 1
+    if self._skillId ==  SkillEnum.HAND_OF_DARKNESS  or self._skillId == SkillEnum.SKILL_GRAY_DARKNESS then
+        self._nextEffectFrameIndex = math.random(1, 10)
+    end
+
+    -- 循环的队列顺序数
+    self._loopOrder = -1
+    -- self._timeTrigger = TimeTrigger.new()
+
+    -- 标记是整个动画序列最后一帧
+    self._markLastFrame = false
+
+    self._isExitBuff = false
+    -- self:registerScriptHandler(function(state)
+    --     if state == "cleanup" then
+    --         if self._spriteEffect then
+    --             --跳转的时候因为父类隐藏而触发
+    --             self._spriteEffect = lt.EffectPoolManager:retrieveSprite(self._spriteEffect,"EffectQueueActor:onClear触发回收")
+    --         end
+    --     end
+    -- end)
+end
+
+function EffectQueueActor:onClear()
+    if self._spriteEffect then
+        self._spriteEffect = lt.EffectPoolManager:retrieveSprite(self._spriteEffect)
+    end
+    if self._multiEffectArray then
+        for i = #self._multiEffectArray, 1, -1 do
+            if self._multiEffectArray[i].onClear then
+                self._multiEffectArray[i]:onClear()
+            end
+            table.remove(self._multiEffectArray, i)
+        end
+    end
+    self._endEffect = nil
+
+    self._effectInfoMap = nil
+
+    self:removeAllChildren()
+    self:removeFromParent()
+
+    self._spriteEffect = nil
+    self._timeTrigger = nil
+    self._loopOrder = nil
+    self._multiEffectArray = nil
+
+    self._isExitBuff = nil
+end
+
+function EffectQueueActor:setPositionEx(x, y)
+    self:setPosition(x, y)
+end
+
+function EffectQueueActor:onUpdate()
+    self:onUpdateQueueEffect()
+end
+
+function EffectQueueActor:onUpdateQueueEffect()
+    -- 最后一帧在被标记后，在下一帧删除
+    if self._markLastFrame then
+        -- self._spriteEffect:setVisible(false)
+        self:endEffect()
+        -- yflog:Info("log======>>>>effectStepQueue")
+        return
+    end
+    
+    if not self._isEndEffect then
+        return
+    end
+
+    -- 死亡对象停止当前所有特效
+    -- if self._actor.isDie and self._actor:isDie() then
+    local isCloseEffect = lt.SkillModule:isCloseEffect(self._skillId, self._actor, self._effectName)
+    if isCloseEffect then
+        self:closeEffect()
+        return
+    end
+    
+    local infoMap = self._effectInfoMap
+    if not infoMap then
+        return
+    end
+    local effectInfo = infoMap[self._effectStep]
+    if not effectInfo then
+        return
+    end
+
+    -- 默认循环1次
+    local loop = effectInfo:getLoop()
+    local frameCount = effectInfo:getSpriteFrameCount()
+
+    if  loop ~= -1 and frameCount > 0  and (self._effectLoopCount >= loop or self._nextEffectFrameIndex > frameCount ) then
+        self:closeLoopEffect()
+        return
+    end
+    if self._timeTrigger:tick() then
+        self:gotoNextEffectFrame(effectInfo)
+
+        -- 循环数已到,添加循环次数
+        if frameCount > 0 and self._nextEffectFrameIndex > frameCount then
+            self._nextEffectFrameIndex = 1
+            if self._skillId ==  SkillEnum.HAND_OF_DARKNESS or self._skillId == SkillEnum.SKILL_GRAY_DARKNESS then
+                self._nextEffectFrameIndex = math.random(1, 10)
+            end
+            self._effectLoopCount = self._effectLoopCount + 1
+
+            if self:loopEnd(self._effectLoopCount, loop) then
+                -- 关闭显示 
+                self:closeLoopEffect()
+            end
+        end
+    end
+end
+
+-- 循环次数是否结束
+function EffectQueueActor:loopEnd(loop, maxLoop)
+    if maxLoop == -1 then
+        return false
+    end
+    
+    if loop >= maxLoop then
+        return true
+    end
+
+    return false
+end
+
+
+
+-- 关闭当前已播放完成的特效，并到队列中找寻下一个特效，如果队列为空了，则停止播放并 endEffect
+function EffectQueueActor:closeLoopEffect()
+    -- 清除当前播放完的队列
+    self:PopQueue(self._effectStepQueue)
+
+    -- 部分技能需要根据技能阶段改变玩家本身颜色
+    -- self:checkEffectColor(self._effectStepQueue)
+    if self:IsQueueEmpty(self._effectStepQueue) then
+        -- self._spriteEffect:setVisible(false)
+        -- self:endEffect()
+        self._markLastFrame = true
+        return
+    end
+
+    -- 播放队列不为空时则播放下一条
+    self:refreshEffectStep()
+    self:startEffect()
+end
+
+function EffectQueueActor:closeEffect()
+    self:ClearQueue()
+    self._spriteEffect:setVisible(false)
+    self:endEffect()
+end
+
+-- override
+function EffectQueueActor:gotoNextEffectFrame(effectInfo)
+    if self._actionPause then
+        return
+    end
+
+    self:updateEffectFrame(self._spriteEffect, effectInfo, self._nextEffectFrameIndex)
+    self:updateMultiEffectFrame(self._nextEffectFrameIndex)
+
+
+    self._nextEffectFrameIndex = self._nextEffectFrameIndex + 1
+end
+
+-- 显示延迟特效
+function EffectQueueActor:updateEffectFrame(sprite, effectInfo, nextFrameIndex)
+    if not self._isEndEffect then
+        return
+    end
+
+    sprite:setVisible(true)
+
+    local frame = effectInfo:getSpriteFrame(nextFrameIndex)
+    local bltType = effectInfo:getBltType()
+
+    if frame then
+        local spriteFrame = frame.sprite
+        if spriteFrame == nil then
+            return
+        end
+
+        sprite:setSpriteFrame(spriteFrame)
+        if bltType == lt.Constant.BLT_TYPE.BLT_SCREEN then
+            if self:getSkillId() == SkillEnum.SKILL_ICE_FIELD 
+            or self:getSkillId() == SkillEnum.SKILL_WIDE_ICE_FIELD
+            then
+                sprite:setBlendFunc(({src = ccb.BlendFactor.SRC_ALPHA, dst = ccb.BlendFactor.ONE_MINUS_SRC_COLOR}))
+            else
+                sprite:setBlendFunc(({src = ccb.BlendFactor.ONE, dst = ccb.BlendFactor.ONE}))
+            end
+
+        end
+
+        local pos = self:conversionOffsetPoint(cc.p(0, 0), cc.p(frame.x, frame.y), frame.size)
+        sprite:setPosition(pos)
+    end
+end
+
+function EffectQueueActor:updateMultiEffectFrame(nextFrameIndex)
+    if not self._isEndEffect then
+        return
+    end
+
+    if #self._effectMultiInfoArray == 0 then
+        return
+    end
+
+    for i, effectInfoMap in ipairs(self._effectMultiInfoArray) do
+        local sprite = self._multiEffectArray[i]
+        if sprite then
+            local effectInfo = effectInfoMap[self._effectStep]
+            if effectInfo then 
+                self:updateEffectFrame(sprite, effectInfo, nextFrameIndex)
+            end
+        end
+    end
+end
+
+--[[
+    EffectEnum.EFFECTGENERATORID_ATTACH_CREATURE 效果生成器为7 队列播放
+    owner 作用对象：1：自己 2：怪物
+]]
+
+function EffectQueueActor:addEffectEName(skillId, eName, owner)
+    local effectMetas = CacheManager:getSkillEffectBySkillIdAndEName(skillId, eName, owner)
+    self:addEffect(skillId, effectMetas)
+end
+
+
+function EffectQueueActor:addEffectGenerator(skillId, generator, owner)
+    -- yflog:Error("skillId:%s, generator:%s, owner:%s",tostring(skillId), tostring(generator), tostring(owner))    
+    local effectMetas = CacheManager:getSkillEffectBySkillIdAndGenerator(skillId, generator, owner)
+    self:addEffect(skillId, effectMetas)
+end
+
+-- 根据新表读取配置
+function EffectQueueActor:addEffectBySkillLevel(skillId,skillLevel,effectName)
+    local skillMeta = CacheManager:getSkillEffectByIdLv(skillId,skillLevel,effectName)
+    self._effectName = effectName
+
+    if not skillMeta then
+        yflog:Info("EffectQueueActor ==>>  SKill Config not found skillId = %s skillLevel = %s ", skillId, skillLevel)
+        return
+    end
+
+    local key = table.concat({"get" , effectName or "" , "Metas"})
+    local metas = {}
+    if type(skillMeta[key]) == "function" then
+        metas = skillMeta[key](skillMeta)
+    end
+
+    ---------------------------------------------------------------------------------------------
+    -- 串行随机类型处理数据
+    if #metas > 0 then
+        local approach = metas[1]:getApproach()
+        local randomTime = metas[1]:getRandomTime()
+        local tempMetas = {}
+        if Constant.EFFECT_PLAY_TYPE.RANDOM == approach and type(randomTime) == "number" then
+            for i=1,randomTime do
+                local random = math.random(1,#metas)
+                table.insert(tempMetas, metas[random])
+            end
+        end
+
+        if #tempMetas > 0 then
+            metas = tempMetas
+        end
+    end
+    ---------------------------------------------------------------------------------------------
+    -- buff 串行处理
+    if self._isExitBuff then
+        local tempMeta = {}
+        local isLoop = false
+        for k,v in ipairs(metas) do
+            if v:getLoopCount() == -1 then
+                isLoop = true
+            end
+            if isLoop then
+                table.insert(tempMeta,v)
+            end
+        end
+        metas = tempMeta
+    end
+    ---------------------------------------------------------------------------------------------
+
+    self:addEffect(skillId, metas)
+end
+
+
+function EffectQueueActor:addEffect(skillId, effectMetas)
+    if not effectMetas or #effectMetas == 0 then
+        yflog:Info("EffectQueueActor:addEffect the skill:%s has no skill effect meta", skillId)
+        return
+    end
+
+    table.sort(effectMetas, function (a, b)
+        return a:getOrder() < b:getOrder()
+    end)
+
+    -- 顺序播放
+    local spriteIdInfos = {}
+    -- 多段特效 添加sprite
+    local spriteArray = {}
+    for i, meta in ipairs(effectMetas) do
+        if skillId == SkillEnum.MAGIC_BLOODY_NAIL   -- 血爪
+            or skillId == SkillEnum.SKILL_SINGLE_BLOW   -- 精准打击
+            or skillId == SkillEnum.SKILL_SPIRAL_SLAY   -- 罗旋一击
+            or skillId == SkillEnum.SKILL_WILD_SMASH    -- 野蛮爆击
+            or skillId == SkillEnum.SKILL_THUNDER_SPARK -- 雷光闪电
+            or skillId == SkillEnum.SKILL_TRIPLE_BREAK
+            or skillId == SkillEnum.SKILL_DOUBLE_IMPACT
+            or skillId == SkillEnum.SKILL_TRIPLE_SLASHER 
+            then
+            local randomSp = {21, 22, 23, 27, 28, 29, 30}     
+
+            local randomSpId = randomSp[math.random(1,#randomSp)]
+
+            table.insert(spriteIdInfos, {spriteId = randomSpId, bltType = meta:getBltType()})
+        elseif skillId == SkillEnum.SKILL_DARKBLUE_POISON then
+            -- 幽暗之毒 特殊处理 上半段与下半段 2处特效
+            table.insert(spriteIdInfos, {spriteId = meta:getSpriteId(), bltType = meta:getBltType()})
+
+            -- 幽暗之毒分上下2段
+            if not spriteArray[1] then
+                spriteArray[1] = {}
+            end
+
+            table.insert(spriteArray[1], {spriteId = meta:getSpriteId() + 1, bltType = meta:getBltType()})
+        elseif skillId == SkillEnum.SKILL_GREEN_POISON or skillId == SkillEnum.SKILL_YELLOW_POISON then
+            -- 荧绿之毒 and 艳黄之毒
+            local genId = meta:getEffectGeneratorId()
+            if genId == EffectEnum.EFFECTGENERATORID_ATTACH_ZONE then
+                table.insert(spriteIdInfos, {spriteId = meta:getSpriteId(), bltType = meta:getBltType()})
+            elseif genId == EffectEnum.EFFECTGENERATORID_STOP_ZONE then
+                -- 分2段
+                if not spriteArray[1] then
+                    spriteArray[1] = {}
+                end
+
+                table.insert(spriteArray[1], {spriteId = meta:getSpriteId(), bltType = meta:getBltType()})
+            end
+        elseif meta:getSpriteId() == 51 and self._actor:getAgent():getAgentType() == Constant.AGENT_TYPE_HERO then  
+            local weaponType = self._actor:getAgent():getWeaponType()--枪头动作 根据武器类型进行变动
+            local spriteId = meta:getSpriteId()
+            if weaponType == Constant.WeaponType.SGGun or weaponType == Constant.WeaponType.SRGun then
+                spriteId = 55
+            end
+            table.insert(spriteIdInfos, {spriteId = spriteId, bltType = meta:getBltType()})
+        elseif skillId == SkillEnum.SKILL_EXPLOSION_WATER then
+            self:setLoopOrder(2)
+            table.insert(spriteIdInfos, {spriteId = meta:getSpriteId(), bltType = meta:getBltType()})
+
+            if not spriteArray[1] then
+                spriteArray[1] = {}
+            end
+
+            table.insert(spriteArray[1], {spriteId = meta:getSpriteId() + 3, bltType = meta:getBltType()})
+
+            if not spriteArray[2] then
+                spriteArray[2] = {}
+            end
+
+            table.insert(spriteArray[2], {spriteId = meta:getSpriteId() + 6, bltType = meta:getBltType()})
+        elseif skillId == SkillEnum.SKILL_HETER_CHAKRAM then
+            self:setLoopOrder(1)
+            if i ==  1 then
+                self:setPosition(0,350)
+                transition.moveTo(self, {
+                    x = 0,
+                    y = 0,
+                    time = 0.8,
+                    onComplete = function()
+                        self:stopQueueEffect()
+                    end
+                })
+            end
+            table.insert(spriteIdInfos, {spriteId = meta:getSpriteId(), bltType = meta:getBltType()})
+        elseif skillId == SkillEnum.SKILL_FURY_OF_GNOME then
+            self:setLoopOrder(2)
+            table.insert(spriteIdInfos, {spriteId = meta:getSpriteId(), bltType = meta:getBltType()})
+        else
+            if type(meta["getLoopCount"]) == "function" and meta:getLoopCount() == -1 then
+                self:setLoopOrder(i)
+            end
+            table.insert(spriteIdInfos, {spriteId = meta:getSpriteId(), bltType = meta:getBltType()})
+        end
+    end
+    self:playQuqueNewEffect(skillId, spriteIdInfos, spriteArray)
+    -- if skillId == SkillEnum.SKILL_CASTING_FIRE then
+    --    self:playQuqueNewEffect(skillId, spriteIdInfos, spriteArray)
+    -- else
+    --    self:playQueueEffect(skillId, spriteIdInfos, spriteArray)
+    -- end
+end
+
+-- 添加持续特效 此处需要将初始effectSpriteIds做映射 在播放时的队列能找到对应的多段effectInfo
+function EffectQueueActor:addMultiEffect(effectSpriteIds, spriteArray)
+    -- spriteArray 多维数组 长度表示新增几段 #spriteArray
+
+    if spriteArray ~= nil and #spriteArray > 0 then
+        for i, effectInfos in ipairs(spriteArray) do
+            -- local sp = display.newSprite()
+            local sp = lt.EffectPoolManager:popSprite()
+            self._multiEffectNode:addChild(sp)
+            self._multiEffectArray[i] = sp
+
+            if not self._effectMultiInfoArray[i] then
+                self._effectMultiInfoArray[i] = {}
+            end
+
+            -- 此处的spriteIds 与 effectSpriteIds是对应关系，如不对应需要检查是否存在问题
+            local effectInfoMap = EffectManager:getEffectInfos(effectInfos, self._direction)
+
+
+            if self._loopOrder ~= -1 and effectInfos[self._loopOrder] then
+                -- 设置该特效队列循环，知道收到外部停止命令
+                local effectId = effectInfos[self._loopOrder].spriteId
+                if effectInfoMap[effectId] then
+                    effectInfoMap[effectId]:setLoop(-1)
+                end
+            end
+
+            -- 此处一般不可能不对应 所以假设不对应 则不处理  目的是为了做映射
+            for j, effectInfo in ipairs(effectInfos) do
+                local effectId = effectInfo.spriteId
+                if effectSpriteIds[j] then
+                    self._effectMultiInfoArray[i][effectSpriteIds[j]] = effectInfoMap[effectId]
+                end
+            end
+        end
+    end
+end
+
+--[[
+    分段技能需要加载多段，资源提前加载完，再播放
+]]
+function EffectQueueActor:playQueueEffect(skillId, effectSpriteInfos, spriteArray)
+    self._effectInfoMap = EffectManager:getEffectInfos(effectSpriteInfos, self._direction, skillId)
+    local effectSpriteIds = {}
+    for index, infos in pairs(effectSpriteInfos) do
+        if skillId == lt.SkillEnum.SKILL_HANDS_OF_WISDOM then
+            table.insert(effectSpriteIds, infos.spriteId .. "_" .. index)
+        else
+            table.insert(effectSpriteIds, infos.spriteId)
+        end
+        
+    end
+
+    if self._loopOrder ~= -1 and self._loopOrder <= #effectSpriteInfos then
+        -- 设置该特效队列循环，知道收到外部停止命令
+        local effectId = effectSpriteIds[self._loopOrder]
+        if self._effectInfoMap[effectId] then
+            self._effectInfoMap[effectId]:setLoop(-1)
+        end
+    end
+
+    if spriteArray ~= nil and #spriteArray > 0 then
+        self:addMultiEffect(effectSpriteIds, spriteArray)
+    end
+
+    self:startEffectStepQueue(effectSpriteIds)
+    self:startEffect()
+end
+
+--[[
+    使用EffectInfo 将每个特效独立
+]]
+function EffectQueueActor:playQuqueNewEffect(skillId, effectSpriteInfos, spriteArray)
+    self._effectInfoMap = {}
+    for index, effectInfo in pairs(effectSpriteInfos) do
+        local effectId = string.format("%s_%s_%s",effectInfo.spriteId, self._curEffectId, index)
+        local effectInfo = lt.EffectInfo.new(effectInfo.spriteId,  self._direction or 0, effectInfo.bltType)
+        self._effectInfoMap[effectId] = effectInfo
+      
+    end
+    
+    -- self._effectInfoMap = EffectManager:getEffectInfos(effectSpriteInfos, self._direction, skillId)
+    local effectSpriteIds = {}
+    for index, infos in pairs(effectSpriteInfos) do
+        local effectId = string.format("%s_%s_%s",infos.spriteId, self._curEffectId, index)
+        table.insert(effectSpriteIds, effectId)
+    end
+
+    if self._loopOrder ~= -1 and self._loopOrder <= #effectSpriteInfos then
+        -- 设置该特效队列循环，知道收到外部停止命令
+        local effectId = effectSpriteIds[self._loopOrder]
+        if self._effectInfoMap[effectId] then
+            self._effectInfoMap[effectId]:setLoop(-1)
+        end
+    end
+
+    if spriteArray ~= nil and #spriteArray > 0 then
+        self:addMultiEffect(effectSpriteIds, spriteArray)
+    end
+
+    self:startEffectStepQueue(effectSpriteIds)
+    self:startEffect()
+end
+
+
+function EffectQueueActor:stopQueueEffect()
+    if self._loopOrder ~= -1 then
+        if not self._effectInfoMap then
+            yflog:Error("error effectInfo is nil ：%s",tostring(self._skillId))
+            self:endEffect()
+            return
+        end
+
+        -- 停止所有循环的，再让他播放完
+        for k, effectInfo in pairs(self._effectInfoMap) do
+            if effectInfo:getLoop() < 0 then
+                effectInfo:setLoop(1)
+            end
+        end
+
+        self._loopOrder = -1
+    end
+end
+
+-- 起始队列 队列中存储的是effectId
+function EffectQueueActor:startEffectStepQueue(queue)
+    self._effectStepQueue = queue
+
+    self:refreshEffectStep()
+end
+
+-- 加入队列
+function EffectQueueActor:pushEffectStepQueue(queue)
+    if not self:IsQueueEmpty(queue) then
+        return
+    end
+
+    for i, v in ipairs(queue) do
+        table.insert(self._effectStepQueue, v)
+    end
+end
+
+-- 选择队列头部播放
+function EffectQueueActor:refreshEffectStep()
+    if self:IsQueueEmpty(self._effectStepQueue) then
+        self:resetEffectStep()
+        return
+    end
+
+    -- effectStep 取的是对应的EffectId
+    self._effectStep =  self._effectStepQueue[1]
+end
+
+-- 重置特效步骤
+function EffectQueueActor:resetEffectStep()
+    self._effectStep = -1
+end
+
+-- 开始
+function EffectQueueActor:startEffect()
+    -- 获取当前的actionInfo 
+    local effectInfo = self._effectInfoMap[self._effectStep]
+    if not effectInfo then
+        return
+    end
+    -- if self._skillId ~= SkillEnum.SKILL_ACID_HANDS and 
+    --     self._skillId ~= SkillEnum.MAGIC_BLOODY_NAIL and 
+    --     self._skillId ~=  SkillEnum.MAGIC_ACID_BOLT  and
+    --     self._skillId ~=  SkillEnum.RING_OF_FLARE  then
+    --     self._timeTrigger:reset(effectInfo:getStep())
+    -- end
+
+    self._effectLoopCount = 0
+    self._nextEffectFrameIndex = 1
+    if self._skillId ==  SkillEnum.HAND_OF_DARKNESS or self._skillId == SkillEnum.SKILL_GRAY_DARKNESS then
+        self._nextEffectFrameIndex = math.random(1, 10)
+    end
+    
+    self._isEndEffect = true
+end
+
+function EffectQueueActor:setStartFrameIndex(startIndex)
+    self._nextEffectFrameIndex = startIndex
+end
+
+-- 结束
+function EffectQueueActor:endEffect()
+    if self._spriteEffect then
+        self._spriteEffect = lt.EffectPoolManager:retrieveSprite(self._spriteEffect)
+    end
+    self._isEndEffect = false
+    self._effectInfoMap = nil
+
+    if self._actor then
+        self._actor:removeQueueEffect(self._skillId)
+    end
+end
+
+function EffectQueueActor:isEndEffect()
+    return not self._isEndEffect
+end
+
+function EffectQueueActor:getSkillId()
+    return self._skillId
+end
+
+function EffectQueueActor:setActor(actor)
+    self._actor = actor
+end
+
+-- 循环的队列顺序
+function EffectQueueActor:setLoopOrder(order)
+    self._loopOrder = order
+end
+
+function EffectQueueActor:PopQueue()
+    table.remove(self._effectStepQueue, 1)
+end
+
+-- 情况队列
+function EffectQueueActor:ClearQueue()
+    self._effectStepQueue = {}
+end
+
+function EffectQueueActor:IsQueueEmpty(queue)
+    if not queue then
+        return true
+    end
+
+    return next(queue) == nil
+end
+
+
+--[[
+    天炼换算偏移值坐标
+    天炼坐标系     手游坐标系
+   ├──────────     │ 
+   │      x        │y
+   │y              │     x
+   │               ├──────────
+
+    newX = x + offsetX + width/2
+    newY = x + offsetY + height/2
+]]
+function EffectQueueActor:conversionOffsetPoint(point, offset, size)
+    local conX, conY
+    conX = point.x + offset.x + size.width/2
+    conY = point.y - offset.y - size.height/2
+    return cc.p(conX, conY)
+end
+
+
+
+function EffectQueueActor:getEffectInfoZorder()
+    if not self._effectInfoMap then
+        return
+    end
+
+    local effectInfo = self._effectInfoMap[self._effectStep]
+    if not effectInfo then
+        return
+    end
+
+    -- 层级设置
+    local frameCount = effectInfo:getSpriteFrameCount()
+    local nextEffectFrameIndex = self._nextEffectFrameIndex or 0
+    local effectId = effectInfo:getEffectId()
+    local zorder = EffectManager:getEffectZorder(effectId,nextEffectFrameIndex,frameCount,self._direction) or 3
+
+    if self._skillId == SkillEnum.SKILL_GROUND_BLESS then -- 魔族大地祝福，特效id和技能id共同影响层级
+        if effectId == 459 then
+            return 1
+        end
+    elseif self._skillId == SkillEnum.SKILL_INNATE_DEADLY_CLAW then -- 至伤裂爪
+        if effectId == 1817 or effectId == 1818 then
+            return 1
+        end
+    end
+
+    return zorder
+end
+
+function EffectQueueActor:setIsExitBuff(value)
+    self._isExitBuff = value
+end
+
+return EffectQueueActor

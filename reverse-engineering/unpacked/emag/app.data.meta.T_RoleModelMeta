@@ -1,0 +1,43 @@
+--[[
+    角色外观表.xlsx
+]]
+local RoleModelMeta = class("EquipMeta")
+
+
+
+
+function RoleModelMeta:ctor(row)
+    self:initWithRow(row)
+end
+
+function RoleModelMeta:initWithRow(row)
+    self._part          = row.Part
+    self._race          = row.Race
+    self._apprLook      = row.ApprLook
+    self._advance       = row.NeedLv
+    self._level         = row.LV
+    self._action        = row.Action
+    self._modelId       = row.modleId
+    self._atlasCount    = row.AtlasCount
+    
+    local baseName = string.format("%d_%d_%d_%d", self._race, self._apprLook, self._advance, self._level)
+    self._modleKey = string.format("%s_%s", self._part, baseName)
+    self._modleSKey = string.format("%s_s_%s", self._part, baseName)
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function RoleModelMeta:getPart() return self._part end
+function RoleModelMeta:getRace() return self._race end
+function RoleModelMeta:getApprLook() return self._apprLook end
+function RoleModelMeta:getAdvance() return self._advance end
+function RoleModelMeta:getLevel() return self._level end
+function RoleModelMeta:getAction() return self._action end
+function RoleModelMeta:getModelId() return self._modelId end
+function RoleModelMeta:getAtlasCount() return self._atlasCount end
+function RoleModelMeta:getModleKey() return self._modleKey end
+function RoleModelMeta:getModleSKey() return self._modleSKey end
+
+-- AUTO GENERATED GETTERS END
+return RoleModelMeta

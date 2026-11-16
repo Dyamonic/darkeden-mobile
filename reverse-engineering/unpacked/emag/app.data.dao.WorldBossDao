@@ -1,0 +1,26 @@
+--世界boss
+local WorldBossDao = {}
+
+function WorldBossDao:query(id)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM WorldBoss WHERE Id=%d;", tonumber(id))) do
+    	local worldBossMeta = lt.WorldBossMeta.new(row)
+        return worldBossMeta
+    end
+end
+
+function WorldBossDao:queryAll()
+    local mapTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM WorldBoss") do
+        local meta = lt.WorldBossMeta.new(row)
+        local monType = meta:getMonsterType()
+        if mapTable[monType] == nil then
+            mapTable[monType] = {}
+        end
+        table.insert(mapTable[monType], meta)
+    end
+    return mapTable
+end
+
+return WorldBossDao

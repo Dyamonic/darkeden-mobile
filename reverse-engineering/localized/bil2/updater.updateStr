@@ -1,0 +1,10 @@
+
+local updateStr = {
+	SYSTEM_TIPS	= "system prompt",
+	COMMIT 		= "OK",
+	CANCEL 		= "Cancel",
+	UPDATE_MSG	= "Current update%s, update?",
+	UPDATE_FIAL	= "Update failed, do you want to download it again?",
+}
+
+return updateStr

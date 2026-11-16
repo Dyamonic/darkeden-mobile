@@ -1,0 +1,74 @@
+local ShoppingMallMeta = class("ShoppingMallMeta")
+
+local CommonFunc = lt.CommonFunc
+
+
+function ShoppingMallMeta:ctor(row)
+    self:initWithRow(row)
+end
+
+function ShoppingMallMeta:initWithRow(row)
+    self._id              = row.Id
+    self._shopItem        = row.ShopItem
+    self._name            = row.Name
+    self._sort            = row.Sort
+    self._type1           = row.Type1
+    self._type1Name       = row.Type1Name
+    self._type2           = row.Type2
+    self._type2Name       = row.Type2Name
+    self._contem          = row.Contem
+    self._costType        = row.CostType
+    self._cost            = row.Cost
+    self._quotaType       = row.QuotaType
+    self._quotaNum        = row.QuotaNum
+    self._new             = row.New
+    self._hot             = row.Hot
+    self._vIPEffect       = row.VIPEffect
+    self._vIPEffectArr    = CommonFunc:analysisJsonToTable(self._vIPEffect, true)
+    self._shopItemConvert = CommonFunc:analysisJsonToTable(self._shopItem, true)
+    self._costConvert     = CommonFunc:analysisJsonToTable(self._cost, true)
+end
+
+function ShoppingMallMeta:getShopItem()
+    return self._shopItemConvert
+end
+
+function ShoppingMallMeta:getCost()
+    return self._costConvert
+end
+
+function ShoppingMallMeta:getVIPEffectArr()
+    return self._vIPEffectArr
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function ShoppingMallMeta:getId() return self._id end
+
+function ShoppingMallMeta:getName() return self._name end
+
+function ShoppingMallMeta:getSort() return self._sort end
+
+function ShoppingMallMeta:getType1() return self._type1 end
+
+function ShoppingMallMeta:getType1Name() return self._type1Name end
+
+function ShoppingMallMeta:getType2() return self._type2 end
+
+function ShoppingMallMeta:getType2Name() return self._type2Name end
+
+function ShoppingMallMeta:getContem() return self._contem end
+
+function ShoppingMallMeta:getCostType() return self._costType end
+
+function ShoppingMallMeta:getQuotaType() return self._quotaType end
+
+function ShoppingMallMeta:getQuotaNum() return self._quotaNum end
+
+function ShoppingMallMeta:getNew() return self._new end
+
+function ShoppingMallMeta:getHot() return self._hot end
+
+-- AUTO GENERATED GETTERS END
+return ShoppingMallMeta

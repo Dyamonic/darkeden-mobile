@@ -1,0 +1,77 @@
+---@通用提示框小
+---@class UICompMessageBoxSmall
+local UICompMessageBoxSmall = class("UICompMessageBoxSmall", lt.UICompBase)
+
+UICompMessageBoxSmall.ChangeSkinConf = {
+    ["MessageBox"] = {
+        ["bg"] = "bg_tytanchuang_01",
+    },
+    ["CommonTL"] = {
+        closeButton = {bg  = "sort"},
+        confirmButton = {bg  = "sort"},
+    } 
+}
+
+function UICompMessageBoxSmall:ctor()
+    UICompMessageBoxSmall.super.ctor(self)
+    self._data = nil
+    self._confirmButton = nil
+    self._closeButton = nil
+end
+
+function UICompMessageBoxSmall:onClear()
+    self._data = nil
+    self._confirmButton = nil
+    self._closeButton = nil
+    UICompMessageBoxSmall.super.onClear(self)
+end
+
+function UICompMessageBoxSmall:onConstruct()
+    self:startSkin()
+    self._confirmButton = self:getChild("confirmButton")
+    self._closeButton = self:getChild("closeButton")
+end
+
+function UICompMessageBoxSmall:onEnter()
+    UICompMessageBoxSmall.super.onEnter(self)
+    self._confirmButton:addClickListener(handler(self, self.onBtnClick))
+    self._closeButton:addClickListener(handler(self, self.onCloseBtnClick))
+
+end
+function UICompMessageBoxSmall:onExit()
+    self._confirmButton:removeClickListener()
+    self._closeButton:removeClickListener()
+    UICompMessageBoxSmall.super.onExit(self)
+end
+
+function UICompMessageBoxSmall:initUI()
+end
+
+function UICompMessageBoxSmall:onCloseBtnClick()
+    local cancelCallback = self._data.cancelCallback
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_MESSAGEBOX_SMALL)
+    if cancelCallback then
+        cancelCallback()
+    end
+end
+
+function UICompMessageBoxSmall:onBtnClick()
+    local confirmCallback = self._data.confirmCallback
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_MESSAGEBOX_SMALL)
+    if confirmCallback then
+        confirmCallback()
+    end
+end
+
+function UICompMessageBoxSmall:refreshDesc(data)
+    self._data = data or {}
+    local boxType = self._data.type or 1
+    self._confirmButton:setX(boxType == 2 and 679 or 571)
+    self._closeButton:setVisible(boxType == 2)
+    if self:getChild("desc") then
+        local content = self._data.content or ""
+        self:getChild("desc"):setText(content)
+    end
+end
+
+return UICompMessageBoxSmall

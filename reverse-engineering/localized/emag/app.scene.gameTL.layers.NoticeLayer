@@ -1,0 +1,579 @@
+---@class NoticeLayer 通知层
+local NoticeLayer       = class("NoticeLayer", lt.UICompBase)
+local NtfManager        = lt.NtfManager
+local ChatModule        = lt.ChatModule
+local Constant          = lt.Constant
+local CommonUtil        = lt.CommonUtil
+local GameModule        = lt.GameModule
+local ServerClientEnum  = lt.ServerClientEnum
+local RaceSkinRes       = Constant.RaceSkinRes
+local CacheManager      = lt.CacheManager
+
+NtfManager.LENTERN_TIME = 4
+
+local File2Anim         = {
+    ["AdvancedLevelUp_skeleton_1_S"] = "rdz",
+    ["AdvancedLevelUp_skeleton_2_S"] = "rqz",
+    ["AdvancedLevelUp_skeleton_3_S"] = "rjz",
+    ["AdvancedLevelUp_skeleton_4_S"] = "ryz",
+    ["AdvancedLevelUp_skeleton_5_S"] = "rzz",
+    ["AdvancedLevelUp_skeleton_V"]   = "gz",
+    ["AdvancedLevelUp_skeleton_O"]   = "mz",
+    ["LevelUp_skeleton_1_S"]         = "rd",
+    ["LevelUp_skeleton_2_S"]         = "rq",
+    ["LevelUp_skeleton_3_S"]         = "rj",
+    ["LevelUp_skeleton_4_S"]         = "ry",
+    ["LevelUp_skeleton_5_S"]         = "rz",
+    ["LevelUp_skeleton_O"]           = "m",
+    ["LevelUp_skeleton_V"]           = "g",
+}
+
+
+-- Constant.DomainType = {
+--     Blade = 1,     -- 刀
+--     Sword = 2,     -- 剑
+--     Gun   = 3,     -- 枪
+--     Heal  = 4,     -- 治疗
+--     Bless = 5,     -- 祝福
+-- }
+
+-- 人刀（转职前）LevelUp_skeleton_1_S
+-- 人枪（转职前）LevelUp_skeleton_2_S
+-- 人剑（转职前）LevelUp_skeleton_3_S
+-- 人医（转职前）LevelUp_skeleton_4_S
+-- 人祝（转职前）LevelUp_skeleton_5_S
+local Domain2AnimDomain    = {
+    [ServerClientEnum.CreatureValueDef.Attr_BladeLevel] = 1, -- 刀
+    [ServerClientEnum.CreatureValueDef.Attr_SwordLevel] = 3, -- 剑
+    [ServerClientEnum.CreatureValueDef.Attr_GunLevel]   = 2, -- 枪
+    [ServerClientEnum.CreatureValueDef.Attr_HealLevel]  = 4, -- 治疗
+    [ServerClientEnum.CreatureValueDef.Attr_BlessLevel] = 5, -- 祝福
+}
+
+local Domain2AnimDomainAdv = {
+    [Constant.DomainType.Blade] = 1, -- 刀
+    [Constant.DomainType.Sword] = 3, -- 剑
+    [Constant.DomainType.Gun]   = 2, -- 枪
+    [Constant.DomainType.Heal]  = 4, -- 治疗
+    [Constant.DomainType.Bless] = 5, -- 祝福
+}
+
+local RaceColor            = {
+    [Constant.RaceType.Slayer] = { color = "#ddf4ff", advcolor = "e2ddff" },
+    [Constant.RaceType.Vampire] = { color = "#ffcab6", advcolor = "fbb6ff" },
+    [Constant.RaceType.Ousters] = { color = "#eff9c2", advcolor = "ffd89b" }
+}
+
+local SlayerStr            = {
+    [ServerClientEnum.CreatureValueDef.Attr_BladeLevel] = { name = "Blade" },
+    [ServerClientEnum.CreatureValueDef.Attr_SwordLevel] = { name = "Sword" },
+    [ServerClientEnum.CreatureValueDef.Attr_GunLevel]   = { name = "Gun" },
+    [ServerClientEnum.CreatureValueDef.Attr_HealLevel]  = { name = "Medical" },
+    [ServerClientEnum.CreatureValueDef.Attr_BlessLevel] = { name = "wishes" }
+}
+function NoticeLayer:ctor()
+    NoticeLayer.super.ctor(self)
+    self:registerComponent("CompNoticeSys")
+
+    self:initUI()
+end
+
+function NoticeLayer:initUI()
+    self._view = fgui.UIPackage:createObject("Main", "NoticeLayer")
+    self._view:makeFullScreen()
+    self._view:center()
+    self:addChild(self._view)
+    self._tips = self._view:getChild("tips")
+    self._tips:setVisible(false)
+    self._bgtips = self._view:getChild("bg_tips")
+    self._bgtips:setVisible(false)
+    self._compSys = self._view:getChild("compsys")
+    --喇叭跑马灯
+    self._lanternNoticeArray = nil
+    self._sysLaba = self._view:getChild("syslaba")
+    self._txtLaba = self._sysLaba:getChild("txtLaba") -- 喇叭
+    self._bgLaba = self._sysLaba:getChild("bgLaba")
+    self._sysLaba:setVisible(false)
+    local sizeBgLaba = self._bgLaba:getSize()
+    self._labaFirstPos = sizeBgLaba.width
+    -- 荣誉跑马灯
+    self._honorLanternNoticeArray = nil
+    self._sysHonor = self._view:getChild("sysHonor")
+    self._txtHonor = self._sysHonor:getChild("txtLaba")
+    self._bgHonor = self._sysHonor:getChild("bgLaba")
+    self._sysHonor:setVisible(false)
+    local sizeBgHonor = self._bgHonor:getSize()
+    self._honorFirstPos = sizeBgHonor.width
+
+    -- Boss击杀
+    self._sysBossEvent = self._view:getChild("Sysevent")
+    self._lblBoss = self._sysBossEvent:getChild("txt_boss")
+    self._bgBoss = self._sysBossEvent:getChild("bg_boss")
+    self._iconBoss = self._sysBossEvent:getChild("icon_boss")
+    self._bossEventMsgList = nil
+    self._sysBossEvent:setVisible(false)
+
+    -- 升级特效
+    self._compLvUp    = self._view:getChild("compLvUp")
+    self._bgLvUp      = self._compLvUp:getChild("bg")
+    self._nodeSpine   = self._compLvUp:getChild("node_spine")
+    self._lblTextUp   = self._compLvUp:getChild("lbl_text")
+    self._lblLvLvUp   = self._compLvUp:getChild("lbl_lv")
+    self._lblOpenLvUp = self._compLvUp:getChild("lbl_open")
+    self:refreshLeftUIOffset(Constant.SETTINGS_TYPES.LEFT_OFFSET)
+
+    self._levelUpSpine = nil
+    self._effectName = nil
+end
+
+function NoticeLayer:onClear()
+    if self._levelUpSpine then
+        self._levelUpSpine:removeFromParent()
+        self._levelUpSpine = nil
+    end
+
+    -- fgui.unregisterComponent(_GURL.GetCompNoticeSys)
+    if self._tips then
+        self._tips:displayObject():stopAllActions()
+    end
+    if self._bgtips then
+        self._bgtips:displayObject():stopAllActions()
+    end
+
+    self:unregisterAllComponent()
+    self:removeFromParent()
+    self._view = nil
+
+    self._tips = nil
+    self._bgtips = nil
+    if self._compSys then
+        self._compSys:onClear()
+        self._compSys = nil
+    end
+    --喇叭跑马灯
+    self._lanternNoticeArray = nil
+    self._sysLaba = nil
+    self._txtLaba = nil
+    self._bgLaba = nil
+    self._labaFirstPos = nil
+    -- 荣誉跑马灯
+    self._honorLanternNoticeArray = nil
+    self._sysHonor = nil
+    self._txtHonor = nil
+    self._honorFirstPos = nil
+
+    -- Boss击杀
+    self._sysBossEvent = nil
+    self._lblBoss = nil
+    self._bgBoss = nil
+    self._iconBoss = nil
+    self._bossEventMsgList = nil
+
+    self._bgLvUp = nil
+    self._lblTextUp = nil
+    self._lblLvLvUp = nil
+    self._lblOpenLvUp = nil
+    self._levelUpSpine = nil
+    self._effectName = nil
+
+    NoticeLayer.super.onClear(self)
+end
+
+function NoticeLayer:onEnter()
+    NoticeLayer.super.onEnter(self)
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_FLOAT_TIP, handler(self, self.showTips), "NoticeLayer:showTips")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_LANTERN_NOTICE, handler(self, self.labaLanternNoticeNtf),
+        "NoticeLayer:labaLanternNoticeNtf")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_NEW_SYSTEM_NOTICE, handler(self, self.onAddNotice),
+        "NoticeLayer:onAddNotice")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_BOOSEVENT_NOTICE, handler(self, self.onAddBossEventNtf),
+        "NoticeLayer:onAddBossEventNtf")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_LEVEL_UP_EFFECT, handler(self, self.showLvUpEffect),
+        "NoticeLayer:showLvUpEffect")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CHANGE_SETTINGS, handler(self, self.changeSettings),
+        "NoticeLayer:changeSettings")
+end
+
+function NoticeLayer:onExit()
+    NoticeLayer.super.onExit(self)
+    NtfManager:removeNtfListenerByTag("NoticeLayer:showTips")
+    NtfManager:removeNtfListenerByTag("NoticeLayer:labaLanternNoticeNtf")
+    NtfManager:removeNtfListenerByTag("NoticeLayer:onAddNotice")
+    NtfManager:removeNtfListenerByTag("NoticeLayer:showLvUpEffect")
+    NtfManager:removeNtfListenerByTag("NoticeLayer:changeSettings")
+    if self._compSys then
+        self._compSys:clearTick()
+    end
+end
+
+function NoticeLayer:onUpdate(dt)
+    if self._compSys then
+        self._compSys:onUpdate(dt)
+    end
+end
+
+--设置修改
+function NoticeLayer:changeSettings(params)
+    local param = params.param or {}
+    local index = param.index
+
+    if index == Constant.SETTINGS_TYPES.LEFT_OFFSET then -- 左侧屏幕边缘偏移
+        self:refreshLeftUIOffset(index)
+    end
+end
+
+-- 左侧屏幕边缘偏移
+function NoticeLayer:refreshLeftUIOffset(index)
+    local leftUITable = {
+        "compsys", -- 任务
+    }
+
+    lt.AutoFightManager:refreshLeftUIOffset(leftUITable, self._view, index)
+end
+
+function NoticeLayer:onAddNotice(event)
+    if self._compSys then
+        self._compSys:onAddNotice(event)
+    end
+end
+
+function NoticeLayer:showTips(event)
+    local param = event.param
+
+    if (not param.content) or (param.content == "") then
+        return
+    end
+
+    fgui.GTween:kill(self._tips)
+    fgui.GTween:kill(self._bgtips)
+
+    self._tips:setVisible(true)
+    self._bgtips:setVisible(true)
+    self._tips:setText(tostring(param.content))
+
+    self._tips:setAlpha(0)
+    self._bgtips:setAlpha(0)
+    -- 0.2 渐入 1.5显示 0.2渐出
+    self:fadeOut(self._tips:displayObject())
+    self:fadeOut(self._bgtips:displayObject())
+end
+
+function NoticeLayer:fadeOut(node, time)
+    node:setOpacity(0.2 * 255)
+
+    local fadeInTime = 0.5  -- 渐入时间(秒)
+    local displayTime = 1.0 -- 停留显示时间(秒)
+    local fadeOutTime = 0.5 -- 渐出时间(秒)
+
+    -- 创建动作序列
+    local fadeToFull = cc.FadeTo:create(fadeInTime, 255) -- 渐入到255 (1.0)
+    local delay = cc.DelayTime:create(displayTime)       -- 停留显示
+    local fadeToLow = cc.FadeTo:create(fadeOutTime, 0)   -- 渐出到51 (0.2)
+
+    -- 执行序列动作
+    node:runAction(cc.Sequence:create(
+        fadeToFull,
+        delay,
+        fadeToLow
+    ))
+end
+
+function NoticeLayer:labaLanternNoticeNtf(event)
+    local param = event.param
+    if param then
+        local msgStr = param.content
+        local chatType = param.chatType
+        if chatType == Constant.MESSAGE_TALK_TYPE.LANTERN_NOTICE then
+            local jsonInfo = json.decode(msgStr)
+            local msg = jsonInfo.msg
+            local color = jsonInfo.color
+            local name = jsonInfo.name
+            local race = jsonInfo.race
+
+            local color = "#" .. color
+            local strFilter = Constant.RaceStr[tonumber(race)] .. ":" .. name .. ">" .. msg
+            local tableStr = {}
+            table.insert(tableStr, "[img]" .. _GURL.GetImageLaba .. "[/img]")
+            table.insert(tableStr, string.format("[color=%s]", color))
+            table.insert(tableStr, strFilter)
+            table.insert(tableStr, "[/color]")
+
+            local strConcat = table.concat(tableStr)
+            self:addLabaLanternNotice(strConcat)
+        elseif chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_WEB_NOTICE then
+            self:addLabaLanternNotice(msgStr)
+        end
+    end
+end
+
+function NoticeLayer:showLabaMarqeeMsg()
+    if not self._lanternNoticeArray[1] then
+        self._sysLaba:setVisible(false)
+        return
+    end
+
+    fgui.GTween:kill(self._txtLaba)
+    self._sysLaba:setVisible(true)
+    local msg = self._lanternNoticeArray[1]
+    self._txtLaba:setText(msg)
+    local sizeLblLaba = self._txtLaba:getSize()
+    local contentWidth = sizeLblLaba.width
+    local _endPos = -contentWidth
+    -- local endtime = NtfManager.LENTERN_TIME
+    -- if contentWidth > self._labaFirstPos then
+    local endtime = math.ceil(((contentWidth + self._labaFirstPos) / self._labaFirstPos) * NtfManager.LENTERN_TIME)
+    -- end
+
+    fgui.GTween:to(self._labaFirstPos, _endPos, endtime)
+        :setTarget(self._txtLaba, fgui.TweenPropType.X)
+        :setEase(Constant.EaseType.Linear) --线性缓动，没有加速或减速。
+        :onComplete(
+            function()
+                table.remove(self._lanternNoticeArray, 1)
+                self._txtLaba:setX(self._labaFirstPos)
+                self._txtLaba:setText("")
+                self:showLabaMarqeeMsg()
+            end)
+end
+
+function NoticeLayer:addLabaLanternNotice(param)
+    if not self._lanternNoticeArray then
+        self._lanternNoticeArray = {}
+    end
+    table.insert(self._lanternNoticeArray, param)
+    if #self._lanternNoticeArray > 1 then
+        return
+    end
+    self:showLabaMarqeeMsg()
+end
+
+-- 荣誉跑马灯播放
+function NoticeLayer:showHonorMarqeeMsg()
+    if not self._honorLanternNoticeArray[1] then
+        self._sysHonor:setVisible(false)
+        return
+    end
+    fgui.GTween:kill(self._sysHonor)
+    self._sysHonor:setVisible(true)
+    local msg = self._honorLanternNoticeArray[1]
+    self._txtHonor:setText(msg)
+    local sizeLblHonor = self._txtHonor:getSize()
+    local contentWidth = sizeLblHonor.width
+    local _endPos = -contentWidth
+    local endtime = math.ceil(((contentWidth + self._honorFirstPos) / self._honorFirstPos) * NtfManager.LENTERN_TIME)
+
+    fgui.GTween:to(self._honorFirstPos, _endPos, endtime)
+        :setTarget(self._txtHonor, fgui.TweenPropType.X)
+        :setEase(Constant.EaseType.Linear) --线性缓动，没有加速或减速。
+        :onComplete(
+            function()
+                table.remove(self._honorLanternNoticeArray, 1)
+                self._sysHonor:setX(self._honorFirstPos)
+                self._txtHonor:setText("")
+                self:showHonorMarqeeMsg()
+            end)
+end
+
+-- 荣誉跑马灯
+function NoticeLayer:showHornrNotice(event)
+    local param = event.param
+    if param then
+        if not self._honorLanternNoticeArray then
+            self._honorLanternNoticeArray = {}
+        end
+
+        table.insert(self._honorLanternNoticeArray, param.msg)
+        if #self._honorLanternNoticeArray > 1 then
+            return
+        end
+        self:showHonorMarqeeMsg()
+    end
+end
+
+------------------- Boss击杀---------------------------
+function NoticeLayer:onAddBossEventNtf(event)
+    local param = event.param
+    local types, msg, monsterId = ChatModule:onMsgByNoticeid(param)
+    -- local monsterMeta = lt.CacheManager:getMonsterInfoMeta(tonumber(param[1]))
+    self:addBossEventMsg(msg, monsterId, types)
+end
+
+function NoticeLayer:addBossEventMsg(msg, monsterId, types)
+    if not self._bossEventMsgList then
+        self._bossEventMsgList = {}
+    end
+    local data = {}
+    data.msg = msg
+    data.monsterId = monsterId
+    data.types = types
+    table.insert(self._bossEventMsgList, data)
+    if #self._bossEventMsgList > 1 then
+        return
+    end
+    self:showBossEventMsg()
+end
+
+function NoticeLayer:showBossEventMsg()
+    if not self._bossEventMsgList[1] then
+        self._sysBossEvent:setVisible(false)
+        return
+    end
+
+    fgui.GTween:kill(self._sysBossEvent)
+    self._sysBossEvent:setVisible(true)
+    self._sysBossEvent:setAlpha(1)
+    local data = self._bossEventMsgList[1]
+
+    -- 字体数据
+    local metaFmt = CacheManager:getMessagFormatBytype(data.types)
+    local fontSize = metaFmt and metaFmt:getFontSize() or 20
+    local fontColor = metaFmt and metaFmt:getFontColor() or "#FFFFFF"
+    self._lblBoss:setFontSize(fontSize)
+    local msg = "[color=" .. fontColor .. "]" .. data.msg .. "[/color]"
+    self._lblBoss:setText(msg)
+    --取id后三位(临时)
+    local monsterId = data.monsterId % 1000
+    self._iconBoss:setURL(string.format(_GURL.GetImageMain, "bg_BossBanner_" .. monsterId))
+    local bgUrl = "bg_BossBanner_Appear"
+    if data.types == Constant.MessageType.BossDieEvent then
+        bgUrl = "bg_BossBanner_Disappear"
+    end
+    self._bgBoss:setURL(string.format(_GURL.GetImageMain, bgUrl))
+
+    fgui.GTween:to(0, 1, 0.8)
+        :setTarget(self._sysBossEvent, fgui.TweenPropType.Alpha)
+        :setEase(Constant.EaseType.QuadOut)
+        :onComplete(function()
+            fgui.GTween:to(1, 0, 3)
+                :setTarget(self._sysBossEvent, fgui.TweenPropType.None)
+                :onComplete(function()
+                    fgui.GTween:to(1, 0, 1.2)
+                        :setTarget(self._sysBossEvent, fgui.TweenPropType.Alpha)
+                        :setEase(Constant.EaseType.QuadOut)
+                        :onComplete(function()
+                            table.remove(self._bossEventMsgList, 1)
+                            -- self._sysBossEvent:setVisible(false)
+                            self:showBossEventMsg()
+                        end)
+                end)
+        end)
+end
+
+function NoticeLayer:showLvUpEffect(event)
+    local param = event.param
+    if not param then
+        return
+    end
+    local heroData = GameModule:getHeroData()
+    if not heroData then
+        return
+    end
+
+    fgui.GTween:kill(self._compLvUp)
+
+    local list = param.list
+    local prop = param.prop
+    local str = ""
+    if #list > 0 then
+        str = GReadText.KEY_NOTICE_TIPS1 .. "\n"
+        for i, v in ipairs(list) do
+            local fncstr = v .. "\n"
+            str = str .. fncstr
+        end
+    end
+
+    local race = GameModule:getHeroRace()
+    local advState = heroData:getAdvanceState()
+    local curAdvLvl = heroData:getAdvanceLevel()
+    local lvl = heroData:getLevel()
+
+    local lblText = GReadText.KEY_NOTICE_TIPS2 -- "等级提升"
+    local SlayerStr = SlayerStr[prop]
+    if SlayerStr then
+        lblText = GReadText.KEY_NOTICE_TIPS3 .. SlayerStr.name -- "领域提升·"
+        lvl = GameModule:getHeroData():getValue(prop)
+    end
+    local lvStr = ""
+    local advancedName = ""
+    if advState == Constant.AdvState.Adv then
+        lvStr = "Av." .. curAdvLvl
+        advancedName = "Advanced"
+    else
+        lvStr = "Lv." .. lvl
+    end
+
+    ----------------------------------------------------------------------------
+    -- 动画后缀
+    local raceName = "_V"
+    local heroData = lt.GameModule:getHeroData()
+    local race = heroData:getRace()
+    if race == Constant.RaceType.Slayer then
+        raceName = "_S"
+
+        local domain = Domain2AnimDomain[prop or 0]
+        if advState == Constant.AdvState.Adv then
+            domain = Domain2AnimDomainAdv[heroData:getMaxLevel() or 0]
+        end
+        if domain and domain > 0 then
+            raceName = table.concat({ "_", domain, raceName })
+        end
+    elseif race == Constant.RaceType.Vampire then
+        raceName = "_V"
+    elseif race == Constant.RaceType.Ousters then
+        raceName = "_O"
+    end
+    ----------------------------------------------------------------------------
+
+    local effectName = table.concat({ advancedName, "LevelUp_skeleton", raceName })
+    if self._nodeSpine then
+        if self._levelUpSpine and self._effectName ~= effectName then
+            self._levelUpSpine:removeFromParent()
+            self._levelUpSpine = nil
+            self._effectName = nil
+        end
+
+        if not self._levelUpSpine then
+            self._levelUpSpine = lt.SkeletonManager:createSkeletonEffectWithFile("LevelUp", effectName)
+            self._nodeSpine:displayObject():addChild(self._levelUpSpine)
+            self._effectName = effectName
+        end
+
+        local animName = File2Anim[effectName]
+        if animName then
+            self._levelUpSpine:setAnimation(0, animName, false)
+        end
+    end
+
+    self._lblLvLvUp:setText(lvStr)
+    self._lblOpenLvUp:setText(str)
+    self._lblTextUp:setText(lblText)
+
+    local colorInfo = (advState == Constant.AdvState.Adv) and RaceColor[race].advcolor or RaceColor[race].color
+    self._lblTextUp:setColor(CommonUtil:convertColorWithX(colorInfo))
+    self._lblLvLvUp:setColor(CommonUtil:convertColorWithX(colorInfo))
+
+    self._compLvUp:setVisible(true)
+    self._compLvUp:setAlpha(0)
+
+    fgui.GTween:to(0, 1, 0.3)
+        :setTarget(self._compLvUp, fgui.TweenPropType.None)
+        :onComplete(function()
+            fgui.GTween:to(0, 1, 0.2)
+                :setTarget(self._compLvUp, fgui.TweenPropType.Alpha)
+                :setEase(Constant.EaseType.QuadIn)
+                :onComplete(function()
+                    fgui.GTween:to(1, 0, 1)
+                        :setTarget(self._compLvUp, fgui.TweenPropType.None)
+                        :onComplete(function()
+                            fgui.GTween:to(1, 0, 0.3)
+                                :setTarget(self._compLvUp, fgui.TweenPropType.Alpha)
+                                :setEase(Constant.EaseType.QuadOut)
+                                :onComplete(function()
+                                    self._compLvUp:setVisible(false)
+                                end)
+                        end)
+                end)
+        end)
+end
+
+return NoticeLayer

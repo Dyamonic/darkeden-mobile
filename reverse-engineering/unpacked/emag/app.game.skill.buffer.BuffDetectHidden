@@ -1,0 +1,19 @@
+local BuffDetectHidden = class("BuffDetectHidden", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+
+--[[
+    探测术
+]]
+function BuffDetectHidden:ctor(time, actor, skilllevel)    
+    BuffDetectHidden.super.ctor(self, BuffEnum.EFFECT_DETECT_HIDDEN, time, actor, skilllevel)
+    -- 脚底瞬时特效
+    -- actor:playSoleEffect(SkillEnum.SKILL_DETECT_HIDDEN, SkillEnum.EFFECT_OWNER.OTHER)
+end
+
+function BuffDetectHidden:onClear()
+    -- 脚底瞬时特效不需要手动移除
+    BuffDetectHidden.super.onClear(self)
+end
+
+return BuffDetectHidden

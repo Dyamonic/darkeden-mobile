@@ -1,0 +1,20 @@
+local ActivityGiftDao = {}
+function ActivityGiftDao:queryAll()
+    local mapTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM ActivityGift") do
+        local meta = lt.ActivityGiftMeta.new(row)
+        mapTable[#mapTable + 1] = meta
+    end
+    return mapTable
+end
+
+function ActivityGiftDao:query(giftId)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM ActivityGift WHERE GiftId=%d;", tonumber(giftId))) do
+        local meta = lt.ActivityGiftMeta.new(row)
+        return meta
+    end
+end
+
+return ActivityGiftDao

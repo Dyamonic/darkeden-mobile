@@ -1,0 +1,95 @@
+--- 坐骑光环
+---@class UICompMountNumbCell
+local UICompMountNumbCell = class("UICompMountNumbCell", lt.UIGButtonBase)
+function UICompMountNumbCell:ctor()
+    UICompMountNumbCell.super.ctor(self)
+    self._stars = {}
+    self._props = {}
+end
+
+function UICompMountNumbCell:onClear()
+    self.data        = nil
+    self._selectItem = nil
+    self.index       = nil
+    for i = 1, #self._stars do
+        self._stars[i] = nil
+    end
+    self._stars = nil
+    for i = 1, #self._props do
+        self._props[i] = nil
+    end
+    self._props = nil
+
+    UICompMountNumbCell.super.onClear(self)
+end
+
+function UICompMountNumbCell:onConstruct()
+    for i = 1, 5 do
+        self._stars[i] = self:getChild("star" .. i)
+    end
+    for i = 1, 3 do
+        self._props[i] = self:getChild("prop" .. i)
+    end
+    self._bg = self:getChild("bg")
+end
+
+function UICompMountNumbCell:setInfo(level, selectItem, isCurProp)
+    self._level      = level
+    self._selectItem = selectItem
+    local url        = isCurProp and "bg_cwzq_dqsx" or "bg_cwzq_xjsx"
+    local resUrl     = string.format(_GURL.GetMountIcon, url)
+    self._bg:setURL(resUrl)
+    self:initStars()
+    self:initProps()
+end
+
+function UICompMountNumbCell:initStars()
+    local level = self._level
+    if level == nil then
+        --未激活
+        self:refreshLevel(0)
+        return
+    else
+        if level > 10 then
+            level = 10
+        end
+        local nums = level % 5
+        if nums == 0 and level ~= 0 then
+            nums = 5
+        end
+        self:refreshLevel(nums, level > 5)
+    end
+end
+
+function UICompMountNumbCell:refreshLevel(maxnumb, hight)
+    for i = 1, #self._stars do
+        if hight then
+            if maxnumb >= i then
+                self._stars[i]:setURL("ui://Mount/icon_cwzq_xin03")
+            else
+                self._stars[i]:setURL("ui://Mount/icon_cwzq_xin01")
+            end
+        else
+            if maxnumb >= i then
+                self._stars[i]:setURL("ui://Mount/icon_cwzq_xin01")
+            else
+                self._stars[i]:setURL("ui://Mount/icon_cwzq_xin02")
+            end
+        end
+    end
+end
+
+function UICompMountNumbCell:initProps()
+    for i = 1, #self._props do
+        self._props[i]:setVisible(false)
+    end
+    local attr = self._selectItem:getAttr()
+    for i, v in ipairs(attr or {}) do
+        self._props[i]:setVisible(true)
+        local txt     = self._props[i]:getChild("txt")
+        local propStr = lt.MountModule:getPropInfo(v)
+        txt:setText(propStr)
+    end
+end
+
+return UICompMountNumbCell

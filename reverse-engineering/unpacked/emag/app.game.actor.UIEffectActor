@@ -1,0 +1,95 @@
+local UIEffectActor = class("UIEffectActor", lt.EffectActor)
+local TimeTrigger = lt.TimeTrigger
+--[[
+    单个序列帧特效 UI使用
+]]
+function UIEffectActor:ctor(actionInfoMeta, direction,isloop)
+    self._actionInfoMeta = actionInfoMeta
+    self._direction = direction
+    self._isloop = isloop
+
+    local sp = display.newSprite()
+    sp:setAnchorPoint(0.5, 0.5)
+
+    self._anchorPoint = cc.p(0.5, 0.5)
+
+    self:addChild(sp)
+
+    self._spriteEffect = sp
+
+    self._effectLoopCount = 0
+    self._nextEffectFrameIndex = 1
+
+    self._timeTrigger = TimeTrigger.new()
+    
+    self._delayTime = 0
+    self._timeDelayTrigger = TimeTrigger.new()
+
+    -- 特效旋转轨迹
+    self._isTransformEllipse = nil
+    self._ellipseTime = nil
+    self._ellipseDirSpeed = nil
+    self._zorder = nil
+    self._randomDraw = false
+    self._isEndEffect = nil
+    self:showEffect()
+    self:playEffect(actionInfoMeta, direction)
+end
+
+function UIEffectActor:onClear()
+    self:removeAllChildren()
+    self:removeFromParent()
+    -- UIEffectActor.super.onClear(self)
+    self._spriteEffect = nil
+    self._bltType = nil
+    self._nextEffectFrameIndex = nil
+    self._actionInfoMeta = nil
+    self._direction = nil
+    self._isloop = nil
+    self._stopEffect = nil
+    self._isEndEffect = nil
+    self._effectInfo = nil
+    self._timeTrigger = nil
+    self._timeDelayTrigger = nil
+
+    self._isTransformEllipse = nil
+    self._ellipseTime = nil
+    self._ellipseDirSpeed = nil
+end
+
+function UIEffectActor:getStopEffect()
+    return self._stopEffect
+end
+
+function UIEffectActor:endEffect()
+    self._isEndEffect = false
+    self._effectInfo = nil
+end
+
+function UIEffectActor:onUpdate(dt)
+    local effectInfo = self._effectInfo
+    if not effectInfo then
+        return
+    end
+    -- 默认循环1次
+    local frameCount = self._effectInfo:getSpriteFrameCount()
+    local loop = effectInfo:getLoop()
+    if self._timeTrigger:tick(dt) then
+        self:randomDraw(frameCount)
+
+        self:gotoNextEffectFrame()
+
+        -- 循环数已到,添加循环次数
+        if frameCount > 0 and self._nextEffectFrameIndex > frameCount then
+            self._nextEffectFrameIndex = 1
+            self._effectLoopCount = self._effectLoopCount + 1
+
+            if self:loopEnd(self._effectLoopCount, loop) then
+                -- 关闭显示 
+                self:closeLoopEffect()
+            end
+        end
+    end
+end
+
+return UIEffectActor

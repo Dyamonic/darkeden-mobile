@@ -1,0 +1,93 @@
+---@class UICompFriendCell
+--- 好友列表cell
+local UICompFriendCell          = class("UICompFriendCell", lt.UIGButtonBase)
+local NtfManager                = lt.NtfManager
+local CommonModule              = lt.CommonModule
+local Constant                  = lt.Constant
+local CacheManager              = lt.CacheManager
+
+UICompFriendCell.ChangeSkinConf = {
+    ["Friend"] = {
+        ["bg"] = "bth_haoyou_anniu1",
+        ["bg_fenge"] = "bg_haoyou_fenge1",
+    },
+}
+
+function UICompFriendCell:ctor()
+    UICompFriendCell.super.ctor(self)
+    self._playerInfo = nil
+end
+
+function UICompFriendCell:onClear()
+    self._playerInfo = nil
+    self._selectImg  = nil
+    self._lblName    = nil
+    self._lblLv      = nil
+    self._lblJieji   = nil
+    self._lblGuild   = nil
+    self._lblMap     = nil
+    self._lblOnline  = nil
+    UICompFriendCell.super.onClear(self)
+end
+
+function UICompFriendCell:onEnter()
+    UICompFriendCell.super.onEnter(self)
+    self:addClickListener(handler(self, self.onClickBtn))
+end
+
+function UICompFriendCell:onExit()
+    self:removeClickListener()
+    UICompFriendCell.super.onExit(self)
+end
+
+function UICompFriendCell:onConstruct()
+    self._selectImg = self:getChild("bg")
+    self._lblName   = self:getChild("lbl_name")
+    self._lblLv     = self:getChild("lbl_lv")
+    self._lblJieji  = self:getChild("lbl_jieji")
+    self._lblGuild  = self:getChild("lbl_guild")
+    self._lblMap    = self:getChild("lbl_map")
+    self._lblOnline = self:getChild("lbl_online")
+end
+
+function UICompFriendCell:setInfo(info, index)
+    self._lblName:setText(info.playerName)
+
+    local isAdvanve = info.advanceState
+    if isAdvanve == Constant.AdvState.NotAdv then
+        local level = info.level or 0
+        self._lblLv:setText("Lv." .. level)
+    else
+        local level = info.advanceLv or 1
+        self._lblLv:setText("Av." .. level)
+    end
+    local gradeLevel = info.gradeLevel <= 0 and 1 or info.gradeLevel
+    local rankData = CacheManager:getRoleRankByRaceAndLvl(info.race, gradeLevel)
+    self._lblJieji:setText(rankData and rankData:getName() or "")
+    self._lblGuild:setText(info.guildName) -- 公会
+    local targetMapMeta = CacheManager:getMapMeta(info.curMapCode)
+    if targetMapMeta then
+        self._lblMap:setText(targetMapMeta:getMapName())
+    end
+    self._lblOnline:setText(Constant.ON_OFF_IINE[info.online] or "")
+    self._playerInfo = info
+
+    --改变字的颜色和透明度
+    local isOnline = info.online == CommonModule:GetNetCmdEnum("ON_OFF_LINE_ONLINE_ENUM")
+    self._lblName:setAlpha(isOnline and 1 or 0.5)
+    self._lblLv:setAlpha(isOnline and 1 or 0.5)
+    self._lblGuild:setAlpha(isOnline and 1 or 0.5)
+    self._lblOnline:setAlpha(isOnline and 1 or 0.5)
+    self._lblJieji:setAlpha(isOnline and 1 or 0.5)
+    self._lblMap:setAlpha(isOnline and 1 or 0.5)
+end
+
+function UICompFriendCell:setSelected(select)
+    self._selectImg:setVisible(select)
+end
+
+function UICompFriendCell:onClickBtn(obj)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FRIEND_PLAYERTIPS, { data = self })
+end
+
+return UICompFriendCell

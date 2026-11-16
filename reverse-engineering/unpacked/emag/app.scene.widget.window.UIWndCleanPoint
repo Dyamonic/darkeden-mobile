@@ -1,0 +1,319 @@
+---@鬼族属性清洗
+---@class UIWndCleanPoint:UIWindowBase
+local UIWndCleanPoint = class("UIWndCleanPoint", lt.UIWindowBase)
+
+local NtfManager = lt.NtfManager
+local GameModule = lt.GameModule
+local Constant = lt.Constant
+local NpcModule = lt.NpcModule
+local ItemModule = lt.ItemModule
+local CommonFunc = lt.CommonFunc
+local ScheduleManager = lt.ScheduleManager
+local Constant = lt.Constant
+local BUTTON_LONG_PRESS_TIME = Constant.BUTTON_LONG_PRESS_TIME
+local BUTTON_CHECK_TIMES = Constant.BUTTON_CHECK_TIMES
+
+UIWndCleanPoint.ChangeSkinConf = {
+    ["CommonTL"] = {
+        ["frame"] = {
+            closeButton = {bg  = "bg_beibao_anniu01", bgup  = "bg_beibao_anniu02"},
+        },
+        btn_confirm = {bg  = "sort"},
+        btn_cancel = {bg  = "sort"},
+    } 
+}
+
+local FIXEDPOINTS = 20          --鬼族固定点数
+
+function UIWndCleanPoint:ctor(param)
+    UIWndCleanPoint.super.ctor(self, param)
+
+    self._attPointTable = nil
+    self._propertyLabel = nil
+    self._costLabel = nil
+    self._haveLabel = nil
+    self._timesLabel = nil
+    self._confirmBtn = nil
+
+    self._isOpenAddSche = false
+    self._isOpenSubSche = false
+    self._currentAddNum = 0
+    self._currentSubNum = 0
+    self._counter = 0
+end
+
+function UIWndCleanPoint:onInit()
+    UIWndCleanPoint.super.onInit(self, _GURL.WndCleanPoint)
+    self:initUI()
+end
+
+function UIWndCleanPoint:onShown()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CLEAN_POINT, handler(self, self.cleanPointResult), "UIWndTrade:cleanPointResult")
+
+    --初始化数据
+    self._attPointTable = {0, 0, 0}
+    self:refreshInfo()
+
+    self._confirmBtn:addClickListener(handler(self, self.onConfirmBtnClick))
+    local cancelBtn = self:getChild("btn_cancel")
+    cancelBtn:addClickListener(handler(self, self.onCancelBtnClick))
+
+    ScheduleManager:startTimeCounter(ScheduleManager.TC.VAMPIRE_POINT_CLEAN_UPDATE, {callback = function()
+        self._counter = self._counter + 1
+        if self._counter >= BUTTON_CHECK_TIMES then
+            if self._isOpenAddSche then
+                self._currentAddNum =  self._currentAddNum + 1 
+                if self._currentAddNum > BUTTON_LONG_PRESS_TIME then
+                    self:addFunc()
+                end 
+            end
+
+            if self._isOpenSubSche then
+                self._currentSubNum =  self._currentSubNum + 1 
+                if self._currentSubNum > BUTTON_LONG_PRESS_TIME then
+                    self:subFunc()
+                end    
+            end
+            self._counter = 0
+        end
+    end })
+
+    for i=1,3 do
+        local attr = self:getChild("attr" .. i)
+        local addBtn = attr:getChild("btn_add")
+        addBtn.index = i
+        addBtn:addEventListener(fgui.UIEventType.TouchBegin, handler(self, function()
+            self._isOpenAddSche = true
+        end))
+        addBtn:addEventListener(fgui.UIEventType.TouchEnd, handler(self, function()
+            self._curIndex = addBtn.index
+            self._isOpenAddSche = false
+            if self._currentAddNum > BUTTON_LONG_PRESS_TIME then
+                self._currentAddNum = 0
+                return 
+            end
+            self._currentAddNum = 0    
+            self:addFunc(addBtn)
+        end))
+
+        local subBtn = attr:getChild("btn_sub")
+        subBtn.index = i
+        subBtn:addEventListener(fgui.UIEventType.TouchBegin, handler(self, function()
+            self._curIndex = subBtn.index
+            self._isOpenSubSche = true
+        end))
+        subBtn:addEventListener(fgui.UIEventType.TouchEnd, handler(self, function()
+            self._isOpenSubSche = false
+            if self._currentSubNum > BUTTON_LONG_PRESS_TIME then
+                self._currentSubNum = 0
+                return 
+            end
+            self._currentSubNum = 0    
+            self:subFunc(subBtn)
+        end))
+    end
+end
+
+function UIWndCleanPoint:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndTrade:cleanPointResult")
+    --停止计时器
+    -- self:stopAllBtnScheduler()
+    ScheduleManager:stopTimeCounter(ScheduleManager.TC.VAMPIRE_POINT_CLEAN_UPDATE)
+
+    self._confirmBtn:removeClickListener()
+    local cancelBtn = self:getChild("btn_cancel")
+    cancelBtn:removeClickListener()
+    for i=1,3 do
+        local attr = self:getChild("attr" .. i)
+        local addBtn = attr:getChild("btn_add")
+        addBtn:removeEventListener(fgui.UIEventType.TouchBegin)
+        addBtn:removeEventListener(fgui.UIEventType.TouchEnd)
+        local subBtn = attr:getChild("btn_sub")
+        subBtn:removeEventListener(fgui.UIEventType.TouchBegin)
+        subBtn:removeEventListener(fgui.UIEventType.TouchEnd)
+    end
+    UIWndCleanPoint.super.onHide(self)
+end
+
+function UIWndCleanPoint:onClear()
+    self._attPointTable = nil
+    self._propertyLabel = nil
+    self._costLabel = nil
+    self._haveLabel = nil
+    self._timesLabel = nil
+    self._confirmBtn = nil
+    UIWndCleanPoint.super.onClear(self)
+end
+
+function UIWndCleanPoint:onUpdate(dt)
+    self:checkLongPress(dt)
+    self:onLongPressUpdate()
+end
+
+function UIWndCleanPoint:addFunc()
+    if not self._attPointTable[self._curIndex] then
+        self:stopAllBtnScheduler()
+        return
+    end
+    if self._attPointTable[self._curIndex] <= 0 then
+        self:stopAllBtnScheduler()
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_NPC_CLEANPOINT_TIPS7})
+        return
+    end
+    self._attPointTable[self._curIndex] = self._attPointTable[self._curIndex] - 1
+    self:refreshInfo()
+end
+
+function UIWndCleanPoint:subFunc()
+    local heroData = GameModule:getHeroData()
+    --剩余的次数
+    local lastTimes = heroData:getLevel() - heroData:getTotalCleanPoint()
+    local totalUsePoint = self:getAttPointTableNum()
+    local list = {heroData:getPureSTR(), heroData:getPureDEX(), heroData:getPureINT()}
+    local coinNum = heroData:getJinBi()
+    local nextCost = Constant.CLEANPOINTSCOST * (totalUsePoint + 1)
+    if totalUsePoint >= lastTimes then
+        self:stopAllBtnScheduler()
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_NPC_CLEANPOINT_TIPS4})
+        return
+    end
+    if list[self._curIndex] - self._attPointTable[self._curIndex] <= FIXEDPOINTS then
+        self:stopAllBtnScheduler()
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_NPC_CLEANPOINT_TIPS5})
+        return
+    end
+    if coinNum < Constant.CLEANPOINTSCOST * (totalUsePoint + 1) then
+        self:stopAllBtnScheduler()
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_NPC_CLEANPOINT_TIPS6})
+        return
+    end
+    self._attPointTable[self._curIndex] = self._attPointTable[self._curIndex] + 1
+    self:refreshInfo()
+end
+
+function UIWndCleanPoint:initUI()
+    --组件初始化
+    self._propertyLabel = self:getChild("label_property")
+    self._costLabel = self:getChild("label_cost")
+    self._haveLabel = self:getChild("label_have")
+    self._timesLabel = self:getChild("label_times")
+
+    --添加回调
+    self._confirmBtn = self:getChild("btn_confirm")
+end
+
+function UIWndCleanPoint:stopAllBtnScheduler()
+    self._isOpenAddSche = false
+    self._isOpenSubSche = false
+end
+
+function UIWndCleanPoint:getAttPointTableNum()
+    local num = 0
+    for i = 1, #self._attPointTable do
+        num = num + self._attPointTable[i]
+    end
+    return num
+end
+
+function UIWndCleanPoint:refreshInfo()
+    local heroData = GameModule:getHeroData()
+    --已用的清洗次数
+    local usePoint = heroData:getTotalCleanPoint()
+    --总共可清洗的次数
+    local maxPoint = heroData:getLevel()
+    --当前暂时用的属性点
+    local totalUsePoint = self:getAttPointTableNum()
+    --剩余的可分配属性点
+    local curSkillPoint = heroData:getCurSkillPoint()
+
+    local property = totalUsePoint == 0 and curSkillPoint or curSkillPoint .. "[color=#dda411](+" .. totalUsePoint .. ")[/color]"
+    self._propertyLabel:setText(property)
+
+    local cost = totalUsePoint == 0 and 0 or "-" .. CommonFunc:changeNumberShow(Constant.CLEANPOINTSCOST * totalUsePoint)
+    self._costLabel:setText(cost)
+
+    local lastTimes = maxPoint - usePoint
+    if totalUsePoint > 0 then
+        self._timesLabel:setText((lastTimes - totalUsePoint) .. "(-" .. totalUsePoint .. ")" .. "/" .. maxPoint)
+    else
+        self._timesLabel:setText(lastTimes .. "/" .. maxPoint)
+    end
+    self._timesLabel:setColor(lastTimes - totalUsePoint <= 0 and Constant.COLORS.red or Constant.COLORS.green)
+
+    local coinNum = heroData:getJinBi()
+    self._haveLabel:setText(GReadText.KEY_NPC_CLEANPOINT_TIPS1 .. CommonFunc:changeNumberShow(coinNum))
+    local nextCost = Constant.CLEANPOINTSCOST * (totalUsePoint + 1)
+    self._haveLabel:setColor(nextCost > coinNum and Constant.COLORS.red or Constant.COLORS.orange)
+    self._haveLabel:setVisible(true)
+
+    self._confirmBtn:setGrayed(totalUsePoint <= 0)
+
+    --现在的三维属性
+    --力量
+    local pureStr = heroData:getPureSTR()
+    local addPointStr = self._attPointTable[1]
+    self:getChild("attr1"):getChild("label_name"):setText(GReadText.KEY_STRENGTHEN_TIPS63)
+    self:getChild("attr1"):getChild("label_value"):setText(addPointStr == 0 and pureStr or pureStr .. "[color=#ff0000](-" .. addPointStr .. ")[/color]")
+    --敏捷
+    local pureDex = heroData:getPureDEX()
+    local addPointDex = self._attPointTable[2]
+    self:getChild("attr2"):getChild("label_name"):setText(GReadText.KEY_STRENGTHEN_TIPS64)
+    self:getChild("attr2"):getChild("label_value"):setText(addPointDex == 0 and pureDex or pureDex .. "[color=#ff0000](-" .. addPointDex .. ")[/color]")
+    --智力
+    local pureInt = heroData:getPureINT()
+    local addPointInt = self._attPointTable[3]
+    self:getChild("attr3"):getChild("label_name"):setText(GReadText.KEY_STRENGTHEN_TIPS65)
+    self:getChild("attr3"):getChild("label_value"):setText(addPointInt == 0 and pureInt or pureInt .. "[color=#ff0000](-" .. addPointInt .. ")[/color]")
+
+    --刷新+-按钮
+    for i = 1, 3 do
+        local attr = self:getChild("attr" .. i)
+        local addBtn = attr:getChild("btn_add")
+        local subBtn = attr:getChild("btn_sub")
+        addBtn:setAlpha(self._attPointTable[i] <= 0 and 0.5 or 1)
+        local isShow = true
+        --玩家必须拥有足够的回收可用次数，当可用次数为0时，隐藏减号按钮
+        if lastTimes - totalUsePoint <= 0 then
+            isShow = false
+        end
+        --鬼族玩家出生时自带20点力量、20点敏捷、20点智力；默认的初始值无法被回收
+        local list = {pureStr, pureDex, pureInt}
+        if list[i] - self._attPointTable[i] <= FIXEDPOINTS then
+            isShow = false
+        end
+        --当玩家所持货币数量不足下一点数的回收费用时，隐藏减号按钮
+        if nextCost > coinNum then
+            isShow = false
+        end
+        subBtn:setAlpha(not isShow and 0.5 or 1)
+    end
+end
+
+function UIWndCleanPoint:onConfirmBtnClick()
+    local totalUsePoint = self:getAttPointTableNum()
+    if totalUsePoint <= 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_NPC_CLEANPOINT_TIPS8})
+        return
+    end
+    local cost = Constant.CLEANPOINTSCOST * totalUsePoint
+    local enoughMoney = ItemModule:enoughItem(Constant.ItemType.ITEM_TYPE_PROP, Constant.TYPE_VAULE_ITEM.COIN, cost, {tips = true})
+    if enoughMoney then
+        local str = string.format(GReadText.KEY_COST_TIPS2, "[color=#00ff00]"..totalUsePoint.."[/color]", _GURL.GetImageCoin, "[color=#dda411]"..CommonFunc:changeNumberShow(cost).."[/color]")
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {type = 2, content = str, confirmCallback = function()
+            --服务器交互
+            NpcModule:recoverAttributePoint(self._attPointTable[1], self._attPointTable[2], self._attPointTable[3])
+        end})
+    end
+end
+
+function UIWndCleanPoint:onCancelBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndCleanPoint", close=true})
+end
+
+function UIWndCleanPoint:cleanPointResult()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_NPC_CLEANPOINT_TIPS3})
+    self._attPointTable = {0, 0, 0}
+    self:refreshInfo()
+end
+
+return UIWndCleanPoint

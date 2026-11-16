@@ -1,0 +1,24 @@
+local TeamHallDao = {}
+
+function TeamHallDao:query(idxId)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM TeamHall WHERE IdxId=%d;", tonumber(idxId))) do
+    	local meta = lt.TeamHallMeta.new(row)
+        return meta
+    end
+end
+
+function TeamHallDao:queryAll()
+    local teamHallMap = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM TeamHall") do
+        local meta = lt.TeamHallMeta.new(row)
+        if not teamHallMap[meta:getPurposeType()] then
+            teamHallMap[meta:getPurposeType()] = {}
+        end
+        table.insert(teamHallMap[meta:getPurposeType()], meta)
+    end
+    return teamHallMap
+end
+
+return TeamHallDao

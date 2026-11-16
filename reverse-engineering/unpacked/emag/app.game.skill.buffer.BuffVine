@@ -1,0 +1,28 @@
+local BuffVine = class("BuffVine", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+
+--[[
+    藤蔓
+]]
+function BuffVine:ctor(time, actor, skilllevel)    
+    BuffVine.super.ctor(self, BuffEnum.EFFECT_CLASS_VINE, time, actor)
+    -- 播放特效 1为目标对象
+    actor:playQueueEffect(SkillEnum.SKILL_VINE, 2)
+    -- self._actor:setActionPause(true)
+    lt.ScheduleUtil:performWithDelayGlobal(function()
+        actor:playParallelEffect(SkillEnum.SKILL_VINE, 2)
+    end, 1.2)
+
+end
+
+function BuffVine:onClear()
+    -- stop 播放
+    -- self._actor:setActionPause(false)
+
+    self._actor:stopQueueEffect(SkillEnum.SKILL_VINE)
+
+    BuffVine.super.onClear(self)
+end
+
+return BuffVine

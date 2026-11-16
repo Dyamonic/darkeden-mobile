@@ -1,0 +1,309 @@
+local BulletLinearEffect = class("BulletLinearEffect", lt.BulletBase)
+
+--[[
+    通用子弹线性追踪特效  
+    EffectGeneratorID: 24
+    【注1】因为有偏移值，如想通用 则将偏移值加入表中
+    【注2】groupId：子弹群 id 第一枚为空，后面取第一枚的GroupId
+
+    -- 专属技能: 毒性攻击 -> 分两阶段 先向周围方向飞，在飞往目标
+    -- 专属技能: 毒物 -> 一个阶段 直接飞往目标
+]]
+
+local AgentManager = lt.AgentManager
+local Constant = lt.Constant
+local GameBoard = lt.GameBoard
+local CacheManager = lt.CacheManager
+local EffectEnum = lt.EffectEnum
+local EffectActor = lt.EffectActor
+local SkillEnum = lt.SkillEnum
+
+BulletLinearEffect._targetAgentId  = nil
+BulletLinearEffect._effectActor = nil
+
+function BulletLinearEffect:ctor(skillId, targetAgentId, startX, startY, direction, groupId, hasTwoPhase)
+    BulletLinearEffect.super.ctor(self, skillId, groupId)
+
+    self._targetAgentId = targetAgentId
+    self._direction = direction
+
+    self._isNeedEndQueueEffect = true
+
+    self._startPos = cc.p(startX, startY)
+    self:setPosition(self._startPos)
+
+    -- 第一阶段的终点位置
+    if hasTwoPhase then  
+        self._firstEndPos = self:getMoveFirstPosByDirection(self._startPos, direction)
+        self._finishFirstPhase = false
+    else
+        self._finishFirstPhase = true
+    end
+    
+    -- 计算方向
+    local targetAgent = AgentManager:getAgent(targetAgentId)
+    if not targetAgent then
+        self._waitingForClear = true
+        return
+    end
+
+    self._targetAgent = targetAgent
+    
+    local offsetX = -25
+    local offsetY = -Constant.MODEL_HERO_Y/2
+    self._effectNode = display.newNode()
+    self._effectNode:setPosition(offsetX, offsetY)
+    self:addChild(self._effectNode)
+
+    self._isEndEffect = false
+
+    self:addEffectActor(skillId)
+end
+
+function BulletLinearEffect:onClear()
+    if self._effectActor then
+        self._effectActor:onClear()
+        self._effectActor = nil
+    end
+    
+    self:removeAllChildren()
+
+    self._isEndEffect = nil
+    self._effectNode = nil
+    BulletLinearEffect.super.onClear(self)
+end
+
+function BulletLinearEffect:addEffectActor(skillId)
+    local actionInfoMetas
+    if skillId == SkillEnum.SKILL_BLOODY_STRIKE then
+        actionInfoMetas =  CacheManager:getSkillEffectBySkillIdAndEName(skillId, "skill_bloody_strike", 2)
+    else
+        actionInfoMetas = CacheManager:getSkillEffectBySkillIdAndGenerator(skillId, EffectEnum.EFFECTGENERATORID_ATTACK_CREATURE)
+        if not actionInfoMetas or #actionInfoMetas < 1 then
+            yflog:InfoLine(" BulletLinearEffect the skill:%d has no skill effect meta", skillId)
+            return
+        end
+    end
+    
+
+    local meta = actionInfoMetas[1]
+    -- 存在旋转 所以需要加上锚点
+    local anchorPoint = self:getAnchorPointByDirection(self._direction)
+    self._effectActor = EffectActor.new(meta, self._direction, anchorPoint, true)
+    self._effectNode:addChild(self._effectActor)
+
+    self._actionInfoMeta = meta
+
+    self._isEndEffect = true
+end
+
+function BulletLinearEffect:onUpdate()
+    self:onUpdateMove()
+    self:onUpdateEffect()
+end
+
+-- 第一阶段移动 向外扩散
+function BulletLinearEffect:updateFirstMove()
+    if self._finishFirstPhase then
+        return false
+    end
+
+    local meta = self._actionInfoMeta
+    local offsetSpeed = meta:getBulletOffsetMoveSpeed(1)
+    local speed = Constant.MODEL_BULLET_SPEED + offsetSpeed
+
+    local step = speed * GameBoard:getDeltaTime()
+    local curX, curY = self:getPosition()
+    local endPos = self._firstEndPos
+    local directionV = cc.pSub(endPos, cc.p(curX, curY))
+
+    if cc.pGetLength(directionV) < step then
+        self._finishFirstPhase = true
+        return false
+    end
+
+    directionV = cc.pMul(cc.pNormalize(directionV), step)
+    self:setPosition(curX + directionV.x, curY + directionV.y)
+
+    return true
+end
+
+function BulletLinearEffect:onUpdateMove()
+    if self:updateFirstMove() then
+        return
+    end
+
+    -- 只做距离移动
+    local targetAgent = AgentManager:getAgent(self._targetAgentId)
+    if not targetAgent then
+        self._waitingForClear = true
+        return
+    end
+
+    local endX, endY = targetAgent:getPosition()
+
+    local offsetXY = self:getOffectXYByDirection(self._direction)
+
+    local endPos = cc.p(endX+offsetXY.x, endY+offsetXY.y)
+    local curX, curY = self:getPosition()
+
+    -- 飞出去速度加速 * 2
+    local meta = self._actionInfoMeta
+    local offsetSpeed = meta:getBulletOffsetMoveSpeed(2)
+    local speed = Constant.MODEL_BULLET_SPEED + offsetSpeed
+
+    local step = speed * GameBoard:getDeltaTime()
+    local directionV = cc.pSub(endPos, cc.p(curX, curY))
+    
+    if cc.pGetLength(directionV) < step then
+        -- 到达
+        self:setPosition(endPos)
+
+        self._waitingForClear = true
+    else
+        -- 旋转对应的方向: 弧度转角度(x除以y的商的反正切值)
+        self._effectActor:setActorRotation(self:getRotationByDirection(directionV, self._direction))
+
+        directionV = cc.pMul(cc.pNormalize(directionV), step)
+        self:setPosition(curX + directionV.x, curY + directionV.y)
+    end
+end
+
+function BulletLinearEffect:onEnd(isLastGroupMember)
+    if isLastGroupMember then
+        if self._isNeedEndQueueEffect and self._targetAgent then
+
+            -- self._targetAgent:playQueueEffect(self._skillId, SkillEnum.EFFECT_OWNER.OTHER) 
+        end
+    end
+
+    self:onClear()
+end
+
+function BulletLinearEffect:onUpdateEffect()
+    if not self._isEndEffect then
+		return
+	end
+
+    if not self._effectActor then 
+        return
+    end
+
+    self._effectActor:onUpdateEffect()
+end
+
+function BulletLinearEffect:setIsNeedEndQueueEffect(b)
+    self._isNeedEndQueueEffect = b
+end
+
+function BulletLinearEffect:getAnchorPointByDirection(direction)
+    local anchorPoint = cc.p(0.5,0.5)
+    if direction == Constant.DIRECTION_LEFT then
+        anchorPoint = cc.p(0, 0.5)
+    elseif direction == Constant.DIRECTION_RIGHT then
+        anchorPoint = cc.p(1, 0.5)
+    elseif direction == Constant.DIRECTION_DOWN then
+        anchorPoint = cc.p(0.5, 0)
+    elseif direction == Constant.DIRECTION_UP then
+        anchorPoint = cc.p(0.5, 1)
+    elseif direction == Constant.DIRECTION_LEFT_DOWN then
+        anchorPoint = cc.p(0, 0)
+    elseif direction == Constant.DIRECTION_LEFT_UP then
+        anchorPoint = cc.p(0, 1)
+    elseif direction == Constant.DIRECTION_RIGHT_DOWN then
+        anchorPoint = cc.p(1, 0)
+    elseif direction == Constant.DIRECTION_RIGHT_UP then
+        anchorPoint = cc.p(1, 1)
+    end
+
+    return anchorPoint
+end
+
+function BulletLinearEffect:getOffectXYByDirection(direction)
+    local offsetXY = cc.p(0,0)
+    if direction == Constant.DIRECTION_LEFT then
+        offsetXY = cc.p(65, Constant.MODEL_HERO_Y/2)
+    elseif direction == Constant.DIRECTION_RIGHT then
+        offsetXY = cc.p(-65, Constant.MODEL_HERO_Y/2)
+    elseif direction == Constant.DIRECTION_DOWN then
+        offsetXY = cc.p(0, Constant.MODEL_HERO_Y/2 + 42)
+    elseif direction == Constant.DIRECTION_UP then
+        offsetXY = cc.p(0, Constant.MODEL_HERO_Y/2 - 51)
+    elseif direction == Constant.DIRECTION_LEFT_DOWN then
+        offsetXY = cc.p(55, Constant.MODEL_HERO_Y/2 + 28)
+    elseif direction == Constant.DIRECTION_LEFT_UP then
+        offsetXY = cc.p(55, Constant.MODEL_HERO_Y/2 - 34)
+    elseif direction == Constant.DIRECTION_RIGHT_DOWN then
+        offsetXY = cc.p(-55, Constant.MODEL_HERO_Y/2 + 28)
+    elseif direction == Constant.DIRECTION_RIGHT_UP then
+        offsetXY = cc.p(-55, Constant.MODEL_HERO_Y/2 - 34)
+    end
+
+    return offsetXY
+end
+
+-- 根据方向获取旋转角
+function BulletLinearEffect:getRotationByDirection(directionV, direction)
+    local degree = math.deg(math.atan2(directionV.x, directionV.y))
+    if direction == Constant.DIRECTION_LEFT then
+        degree = 90 + degree
+    elseif direction == Constant.DIRECTION_RIGHT then
+        degree = -90 + degree
+    elseif direction == Constant.DIRECTION_DOWN then
+        degree = - 180 + degree 
+    elseif direction == Constant.DIRECTION_UP then
+        degree = 0 + degree
+    elseif direction == Constant.DIRECTION_LEFT_DOWN then
+        degree = 120 + degree
+    elseif direction == Constant.DIRECTION_LEFT_UP then
+        degree = 60 + degree
+    elseif direction == Constant.DIRECTION_RIGHT_DOWN then
+        degree = -120 + degree
+    elseif direction == Constant.DIRECTION_RIGHT_UP then
+        degree = -60 + degree
+    end    
+    return degree
+end
+
+-- 根据方向获取第一阶段的目标移动位置(8方向向外扩散的圆)
+function BulletLinearEffect:getMoveFirstPosByDirection(startPos, direction)
+    local skillDirectionRect = EffectEnum.SkillDirectionRect[self._skillId]
+    local width = skillDirectionRect.width
+    local height = skillDirectionRect.height
+    local skew = skillDirectionRect.skew
+    local moveX = startPos.x
+    local moveY = startPos.y
+    if direction == Constant.DIRECTION_LEFT then
+         -- 左 x-
+        moveX =  moveX - width * Constant.MAP_BLOCK_WIDTH/2
+    elseif direction == Constant.DIRECTION_RIGHT then 
+        -- 右 x+
+        moveX =  moveX + width * Constant.MAP_BLOCK_WIDTH/2
+    elseif direction == Constant.DIRECTION_DOWN then 
+        -- 下 y-
+        moveY = moveY - height * Constant.MAP_BLOCK_HEIGHT/2
+    elseif direction == Constant.DIRECTION_UP then  
+        -- 上 y+
+        moveY = moveY + height * Constant.MAP_BLOCK_HEIGHT/2
+    elseif direction == Constant.DIRECTION_LEFT_DOWN then 
+        -- 左下 x- y-
+        moveX = moveX - skew * Constant.MAP_BLOCK_WIDTH/2
+        moveY = moveY - skew * Constant.MAP_BLOCK_HEIGHT/2
+    elseif direction == Constant.DIRECTION_LEFT_UP then 
+        -- 左上 x- y+
+        moveX = moveX - skew * Constant.MAP_BLOCK_WIDTH/2
+        moveY = moveY + skew * Constant.MAP_BLOCK_HEIGHT/2
+    elseif direction == Constant.DIRECTION_RIGHT_DOWN then 
+        -- 右下 x+ y-
+        moveX = moveX + skew * Constant.MAP_BLOCK_WIDTH/2
+        moveY = moveY - skew * Constant.MAP_BLOCK_HEIGHT/2
+    elseif direction == Constant.DIRECTION_RIGHT_UP then 
+        -- 右上 x+ y+
+        moveX = moveX + skew * Constant.MAP_BLOCK_WIDTH/2
+        moveY = moveY + skew * Constant.MAP_BLOCK_HEIGHT/2
+    end
+
+    return cc.p(moveX, moveY)
+end
+
+return BulletLinearEffect

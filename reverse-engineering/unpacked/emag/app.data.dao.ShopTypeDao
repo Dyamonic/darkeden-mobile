@@ -1,0 +1,22 @@
+
+local ShopTypeDao = {}
+
+function ShopTypeDao:query(npcIdx)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM ShopType WHERE NpcIndex=%d;", tonumber(npcIdx))) do
+    	local shopTypeMeta = lt.ShopTypeMeta.new(row)
+        return shopTypeMeta
+    end
+end
+
+function ShopTypeDao:queryAll()
+    local shopTypeTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM ShopType") do
+        local shopTypeMeta = lt.ShopTypeMeta.new(row)
+        shopTypeTable[#shopTypeTable+1] = shopTypeMeta
+    end
+    return shopTypeTable
+end
+
+return ShopTypeDao

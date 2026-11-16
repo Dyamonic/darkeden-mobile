@@ -1,0 +1,53 @@
+
+--[[
+    眩晕
+]]
+local MonsterStateDizzy = class("MonsterStateDizzy", lt.MonsterStateBase)
+
+local Constant = lt.Constant
+
+MonsterStateDizzy._timeTriggerHit    = nil
+MonsterStateDizzy._timeTrigger = nil
+
+function MonsterStateDizzy:ctor(monsterAgent, time)
+    MonsterStateDizzy.super.ctor(self, monsterAgent)
+
+    self._timeTrigger = lt.TimeTrigger.new(time)
+
+    self._monsterAgent:playAction(Constant.ROLE_ACTION_IDLE)
+end
+
+function MonsterStateDizzy:onClear()
+end
+
+function MonsterStateDizzy:onEnter()
+end
+
+function MonsterStateDizzy:onExit()
+end
+
+function MonsterStateDizzy:onUpdate()
+    local cmd = self._monsterAgent:getDieCmd()
+    if cmd then
+        self._monsterAgent:handleCmd(cmd)
+        return
+    end
+    
+    if self._timeTrigger:tick(lt.GameBoard:getDeltaTime()) then
+        self._monsterAgent:changeState(lt.MonsterStateIdle.new(self._monsterAgent))
+        return
+    end
+end
+
+function MonsterStateDizzy:onMessage(msg)
+end
+
+function MonsterStateDizzy:getStateId()
+    return Constant.MONSTER_STATE_DIZZY
+end
+
+function MonsterStateDizzy:getStateName()
+    return "MonsterStateDizzy"
+end
+
+return MonsterStateDizzy

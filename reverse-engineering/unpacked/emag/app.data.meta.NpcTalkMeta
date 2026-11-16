@@ -1,0 +1,26 @@
+
+local NpcTalkMeta = class("NpcTalkMeta")
+
+function NpcTalkMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function NpcTalkMeta:initWithRow(row)
+    self._talkId = row.TalkId
+    self._npcType = row.NPCType
+    self._npcTalkText = row.NPCTalkText
+    self._npcTalkGoto = row.NPCTalkGoto
+    self._npcId = row.NPCId
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function NpcTalkMeta:getTalkId() return self._talkId end
+function NpcTalkMeta:getNpcType() return self._npcType end
+function NpcTalkMeta:getNpcTalkText() return self._npcTalkText end
+function NpcTalkMeta:getNpcTalkGoto() return self._npcTalkGoto end
+function NpcTalkMeta:getNpcId() return self._npcId end
+
+-- AUTO GENERATED GETTERS END
+return NpcTalkMeta

@@ -1,0 +1,361 @@
+
+local TimeCounter = class("TimeCounter")
+
+local socket = require "socket"
+
+TimeCounter._name = name
+TimeCounter._startTime = nil
+
+TimeCounter._serverTime = nil
+TimeCounter._serverResTime = nil
+TimeCounter.MIN = 60
+TimeCounter.HOUR = 60 * TimeCounter.MIN
+TimeCounter.DAY = 24 * TimeCounter.HOUR
+TimeCounter.WEEK = 7 * TimeCounter.DAY
+
+-- 时间类型
+TimeCounter.TIME_TYPE = {
+    INTERVAL    = 1,    --时间间隔, 例如n天, n小时
+    DATE        = 2,    --时间日期, 例如2000-01-01
+}
+
+function TimeCounter:ctor(name)
+    self._name = name
+    self:reset()
+    -- self._startTime = socket.gettime()
+end
+
+function TimeCounter:finish()
+    -- local time = socket.gettime() - self._startTime
+    -- lt.LogUtil:debug("%s: %fms", self._name, time * 1000)
+end
+
+function TimeCounter:getSocketTime()
+    -- return socket.gettime()
+    return 0
+end
+
+-- -------------------------------------
+-- string 转 time 2019-01-01 11:11:11
+function TimeCounter:s2t(ts)
+    if type(ts) ~= 'string' then error('s2t: ts is not a string') return 0 end
+
+    local fun = string.gmatch(ts, "%d+")
+
+    local y = fun() or 0    if y == 0 then error('ts is a invalid time string') return 0 end
+    local m = fun() or 0    if m == 0 then error('ts is a invalid time string') return 0 end
+    local d = fun() or 0    if d == 0 then error('ts is a invalid time string') return 0 end
+    local H = fun() or 0    if H == 0 then error('ts is a invalid time string') return 0 end
+    local M = fun() or 0    if M == 0 then error('ts is a invalid time string') return 0 end
+    local S = fun() or 0    if S == 0 then error('ts is a invalid time string') return 0 end 
+
+    return os.time({year=y, month=m, day=d, hour=H, min=M, sec=S})
+end
+
+function TimeCounter:serverOpenTimeUpdate(serverOpenTime)
+    serverOpenTime = serverOpenTime .. " 00:00:00"
+    self._serverOpenTime = self:s2t(serverOpenTime)
+end
+
+function TimeCounter:serverTimeUpdate(serverTime)
+
+    self._serverTime = self:s2t(serverTime)
+
+    self._serverResTime = self:time()
+end
+
+-- function TimeCounter:serverTimeUpdate(serverTime)
+--     local rst
+
+--     serverTime = string.gsub(serverTime, " ", "-")
+--     serverTime = string.gsub(serverTime, ":", "-")
+
+--     rst = string.split(serverTime, "-")
+--     if #rst > 5 then
+--         self._serverTime = os.time({year=tonumber(rst[1]),
+--                                     month=tonumber(rst[2]),
+--                                     day=tonumber(rst[3]), 
+--                                     hour=tonumber(rst[4]), 
+--                                     min=tonumber(rst[5]), 
+--                                     sec=tonumber(rst[6])})
+
+--         self._serverResTime = self:time()
+--     end
+-- end
+
+function TimeCounter:time()
+    return math.floor(socket.gettime())
+end
+
+function TimeCounter:serverTime()
+    if not self._serverTime or self._serverTime == 0 then
+        return self:time()
+    end
+
+    return self._serverTime + self:time() - self._serverResTime
+end
+
+function TimeCounter:getServerMonth()
+    return os.date("%m", self:serverTime())
+end
+
+function TimeCounter:getServerDay()
+    return os.date("%d", self:serverTime())
+end
+
+function TimeCounter:getServerWeek()
+    return os.date("%w", self:serverTime())
+end
+
+function TimeCounter:getServerHour()
+    return os.date("%H", self:serverTime())
+end
+
+function TimeCounter:getServerMin()
+    return os.date("%M", self:serverTime())
+end
+
+function TimeCounter:getServerOpenDay()
+    local lessM = lt.TimeCounter:serverTime() - self:zeroTimeStamp(self._serverOpenTime)
+    return math.ceil(lessM/(60*60*24))
+end
+
+function TimeCounter:getServerOpenTime()
+    return self._serverOpenTime
+end
+
+--[[
+时间戳转文本格式 (默认返回以年月日时间格式)
+fmt         自定义时间格式回调
+countDown   返回倒计时时间格式
+]]
+function TimeCounter:fmt2TimeText(tsp, params)
+    if not tsp then
+        return ""
+    end
+
+    params = params or {}
+    local fmt = params.fmt 
+
+    local szText = ""
+    if params.countDown then
+        local cur = TimeCounter:serverTime()
+        if tsp < cur then
+            return ""
+        end
+
+        local lessTime = tsp - cur
+        local nYear, nMonth, nDay, nHour, nMin, nSec = 0, 0, 0, 0, 0, 0
+        if lessTime >= TimeCounter.DAY then
+            nDay  = math.floor(lessTime / TimeCounter.DAY)
+            nHour = math.floor((lessTime - nDay * TimeCounter.DAY) / TimeCounter.HOUR)
+            szText = string.format(lt.StringManager:getString(lt.StringManager.TIME_FMT_COUNTDOWN_1), nDay, nHour)
+        else
+            if lessTime >= TimeCounter.HOUR then
+                nHour = math.floor(lessTime / TimeCounter.HOUR)
+                szText = string.format(lt.StringManager:getString(lt.StringManager.TIME_FMT_COUNTDOWN_2), nHour)
+            else
+                szText = lt.StringManager:getString(lt.StringManager.TIME_FMT_COUNTDOWN_3)
+            end
+        end
+
+        if fmt and type(fmt) == "function" then
+            szText = fmt( { year=nYear, month=nMonth, day=nDay, hour=nHour, min=nMin, sec=nSec } )
+        end
+    else
+        local szFmt = lt.StringManager:getString(lt.StringManager.TIME_FMT_DATE)
+        if fmt and type(fmt) == "function" then
+            szText = fmt(tsp)
+        else
+            if type(tsp) == "table" then
+                szText = os.date(szFmt, tsp.sTime) .. "~" .. os.date(szFmt, tsp.eTime)
+            else
+                tsp = tonumber(tsp)
+                szText = os.date(szFmt, tsp)
+            end
+        end
+    end
+
+    return szText
+end
+
+--[[
+转化得到时间戳 
+参数tsp: 1格式支持单个日期2019-09-30  时间段2019-09-30;2020-09-29
+        2天数, 推算某个日期n天后的时间戳, 默认为开服当天12点算起
+]]
+function TimeCounter:fmt2TimeStamp(tsp, params)
+    if not tsp then
+        return 
+    end
+
+    params = params or {}
+    -- 默认为时间日期格式
+    local timeType = params.timeType or TimeCounter.TIME_TYPE.DATE
+
+    if timeType == TimeCounter.TIME_TYPE.DATE then
+        if type(tsp) ~= "string" or string.len(tsp) == 0 then
+            return
+        end
+
+        local timeTb = string.split(tsp, ";")
+        if #timeTb == 0 then
+            return
+        elseif #timeTb == 1 then
+            return self:s2t(timeTb[1] .. " 0:0:0")
+        elseif #timeTb == 2 then
+            local sTime = self:s2t(timeTb[1] .. " 0:0:0")
+            local eTime = self:s2t(timeTb[2] .. " 23:59:59")
+
+            return { sTime = sTime, eTime = eTime }
+        end
+
+    elseif timeType == TimeCounter.TIME_TYPE.INTERVAL then
+        -- 以某个时间点起始, 推算一段时间间隔得到新的时间戳 单位(天)
+        if not tonumber(tsp) then
+            return
+        end
+
+        local nDay = tonumber(tsp)
+        local sTime = params.sTime 
+
+        -- 默认会以开服时间当天时间12点
+        if not sTime then
+            sTime = self:zeroTimeStamp(self:getServerOpenTime())
+        end
+
+        return sTime + nDay * TimeCounter.DAY - 1
+    end
+end
+
+--[[
+通过某个时间戳, 推算该时间戳当日0点时间戳
+]]
+function TimeCounter:zeroTimeStamp(time)
+    time = time or self:serverTime()
+
+    return os.time({ 
+        year    = os.date("%Y", time),
+        month   = os.date("%m", time),
+        day     = os.date("%d", time),
+        hour    = "0",
+        min     = "0",
+        sec     = "0",
+    })
+end
+
+--[[
+判断时间是否在范围内
+eTime 结束时间
+sTime 开始时间
+params:
+    tm  判断的时间戳,若无则以当前时间
+]]
+function TimeCounter:timeInRange(sTime, eTime, params)
+    params = params or {}
+
+    --在param里可添加其他时间点，用于判断该时间点是否在时间段内，否则用当前时间
+    local stamp = TimeCounter:serverTime()
+    if params.tm then
+        stamp = params.tm
+    end
+
+    if not sTime or not eTime then
+        return false
+    end
+
+    return stamp >= sTime and stamp <= eTime
+end
+
+--[[
+转化某一天 某个时刻时间戳
+moment      格式 12:00:00
+date        格式 2014-07-11, 默认为当前日期
+]] 
+function TimeCounter:moment2TimeStamp(moment, date)
+    if not date then
+        date = os.date("%Y-%m-%d", TimeCounter:serverTime())
+    end
+
+    return self:s2t(date .. " " .. moment) 
+end
+
+-- 时间单位的转换 
+-- base  传入参数的单位默认为秒 (以分钟为单位 即为TimeCounter.MIN)
+function TimeCounter:transformUnit(tm, base)
+    tm = tm * (base or 1)
+
+    local sec  = math.fmod(tm, 60)
+    local min  = math.fmod(math.floor(tm/ TimeCounter.MIN), 60)
+    local hour = math.fmod(math.floor(tm/TimeCounter.HOUR), 24)
+    local day  = math.floor(tm/TimeCounter.DAY)
+
+    local tmp = {
+        [1] = day > 0 and tostring(day) .. GReadText.KEY_TIME_DAY or "",
+        [2] = hour > 0 and tostring(hour) .. GReadText.KEY_TIME_HOUR or "",
+        [3] = min > 0 and tostring(min) .. GReadText.KEY_TIME_MIN or "",
+        [4] = sec > 0 and tostring(sec) .. GReadText.KEY_TIME_SEC or "",
+    }
+
+    return table.concat(tmp)
+end
+
+-- 拆分时间段
+-- 统一格式 12:00:00~1:00:00   多个时间段使用 ; 分隔
+function TimeCounter:splitTimeQuantum(szText)
+    if type(szText) ~= "string" or string.len(szText) == 0 then
+        return 
+    end
+
+    local tmp = {}
+    for _,v in ipairs(string.split(szText, ";")) do
+        if v and v ~= "" then
+            local array = string.split(v, "~")
+            local st = lt.TimeCounter:moment2TimeStamp(array[1])
+            local et = lt.TimeCounter:moment2TimeStamp(array[2])
+            tmp[#tmp + 1] = { st = st, et = et }
+        end
+    end
+
+    return tmp
+end
+
+function TimeCounter:reset()
+    self._tickTime = 0
+    self._markTime = 0
+end
+
+function TimeCounter:tick()
+    self._tickTime = self._tickTime + 1
+end
+
+function TimeCounter:mark()
+    self._markTime = TimeCounter:serverTime()
+end
+
+function TimeCounter:getTickTime()
+    return self._tickTime
+end
+
+function TimeCounter:getMarkTime()
+    return self._markTime
+end
+
+function TimeCounter:getMarkInterval()
+    return lt.TimeCounter:serverTime() - self._markTime
+end
+
+--服务器时间戳标识出第几天发生
+function TimeCounter:getEventServerOpenDay(dataTime)
+    local lessM = dataTime - self:zeroTimeStamp(self._serverOpenTime)
+    return math.ceil(lessM/(60*60*24))
+end
+
+--用服务器时间识别今日0点剩余时间
+function TimeCounter:getNowDayLastTime()
+    local time = time or self:serverTime()
+    local nextdata = lt.TimeCounter:zeroTimeStamp(time)
+    return nextdata + 24*60*60 - time
+end
+
+return TimeCounter

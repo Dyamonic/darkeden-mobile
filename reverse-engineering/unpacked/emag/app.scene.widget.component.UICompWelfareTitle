@@ -1,0 +1,55 @@
+---@class UICompWelfareTitle
+--福利活动标题
+local UICompWelfareTitle = class("UICompWelfareTitle", lt.UICompBase)
+
+function UICompWelfareTitle:ctor(param)
+    UICompWelfareTitle.super.ctor(self, param)
+end
+
+function UICompWelfareTitle:onClear()
+    self._title      = nil
+    self._red        = nil
+    self._btnControl = nil
+    UICompWelfareTitle.super.onClear(self)
+end
+
+function UICompWelfareTitle:setInfo(data,index)
+    self._data = data
+    self._index = index
+    if self._title then
+        self._title:setText(data.titlename)
+    end
+end
+
+function UICompWelfareTitle:onConstruct()
+    self._title      = self:getChild("title")
+    self._red        = self:getChild("red")
+    self._btnControl = self:getController("button")
+end
+
+function UICompWelfareTitle:getIndex()
+    return self._index
+end
+
+function UICompWelfareTitle:getData()
+    return self._data
+end
+
+--图标置灰
+function UICompWelfareTitle:setSelect(select)
+    if self._btnControl then
+        if select then
+            self._btnControl:setSelectedIndex(0)
+        else
+            self._btnControl:setSelectedIndex(1)
+        end
+    end
+end
+
+function UICompWelfareTitle:setRed(red)
+    if self._red then
+        self._red:setVisible(red)
+    end
+end
+
+return UICompWelfareTitle

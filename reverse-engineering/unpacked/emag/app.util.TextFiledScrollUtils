@@ -1,0 +1,44 @@
+
+local TextFiledScrollUtils = class("TextFiledScrollUtils")
+
+function TextFiledScrollUtils:ctor()
+end
+
+function TextFiledScrollUtils:addUpdate(startNum, endNum, callback, time, endCallback)
+    self:stopUpdate()
+    if startNum ~= endNum then
+        self._callback = callback
+        self._endCallback = endCallback
+        self._startNum = tonumber(startNum)
+        self._endNum = tonumber(endNum)
+        self._perValue = (endNum - startNum) / (time * 60)
+        self._handler = lt.ScheduleUtil:scheduleGlobal(handler(self,self.onframe), 0)
+    else
+        if callback then
+            callback(startNum)
+        end
+    end
+end
+
+function TextFiledScrollUtils:onframe()
+    self._startNum = self._startNum + self._perValue
+    if (self._perValue > 0 and self._startNum > self._endNum) or (self._perValue < 0 and self._startNum < self._endNum) then
+        self._startNum = self._endNum
+    end
+    self._callback(self._startNum)
+    if self._startNum == self._endNum then
+        self:stopUpdate()
+        if self._endCallback then
+            self._endCallback()
+        end
+    end
+end
+
+function TextFiledScrollUtils:stopUpdate()
+    if self._handler ~= nil then
+        lt.ScheduleUtil:unscheduleGlobal(self._handler)
+        self._handler = nil
+    end
+end
+
+return TextFiledScrollUtils

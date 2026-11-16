@@ -1,0 +1,799 @@
+
+-- 显示角色的血条、姓名、公会、称号等
+local NameNode = class("NameNode", lt.UIWidget)
+
+local ResManager = lt.ResManager
+local LabelEx = lt.LabelEx
+local UIManager = lt.UIManager
+local Constant = lt.Constant
+local CommonUtil = lt.CommonUtil
+local CacheManager = lt.CacheManager
+
+NameNode._nameNodeType  = nil
+-- NameNode._progressHp    = nil
+-- NameNode._textHp        = nil
+-- NameNode._nameNode      = nil
+
+NameNode._isHangup = false
+
+NameNode._offsetHeight = nil
+NameNode._showHp = nil
+
+NameNode._chatBgWidth = 228
+function NameNode:ctor(data, nameNodeType, heroData)
+    NameNode.super.ctor(self)
+
+    self._nameNodeType = nameNodeType
+    self._showArrow = false
+
+    self:initUI(data, heroData)
+end
+
+function NameNode:onClear()
+    if self._chatLabel then
+        self._chatLabel:stopAllActions()
+    end
+
+    self:removeAllChildren()
+    self._lvLab = nil
+    self._hpBgLightSprite = nil
+    self._guildIcon = nil
+    self._gradeIcon = nil
+    self._nameLab = nil
+    self._hpProgress = nil
+    self._hpBgSprite = nil
+    self._nameNodeType = nil
+    self._signLab = nil
+    self._chatBg = nil
+    self._targetIcon = nil
+    self._chatLabel = nil
+    self._hpNode     = nil
+    self._showArrow = false
+end
+
+-- 
+function NameNode:onUpdatEx()
+    -- self:onUpdateName()    -- 个人设置
+    -- self:onUpdateHangup()  -- 自动挂机 突出自己
+    -- self:onUpdateHp()      -- 个人设置 血条显示
+end
+
+function NameNode:onUpdateName()
+    --[[  个人设置
+    local visible = false
+    -- 个人设置
+    if self._nameNodeType == Constant.NameNodeType.HERO_SELF then
+        -- 显示自己的名字
+        visible = lt.AutoManager:queryKey("SHOW_NAME_HERO")     
+    elseif self._nameNodeType == Constant.NameNodeType.HERO_OTHER then
+        -- 显示其他角色的名字
+        visible = lt.AutoManager:queryKey("SHOW_NAME_HERO")     
+    elseif self._nameNodeType == Constant.NameNodeType.MONSTER then
+        -- 显示怪物名称
+        visible = lt.AutoManager:queryKey("SHOW_NAME_MONSTER")  
+    elseif self._nameNodeType == Constant.NameNodeType.PET then
+        visible = lt.AutoManager:queryKey("SHOW_NAME_PET")
+        -- 显示宠物名称
+    end
+
+    self._nameNode:setVisible(visible)
+    ]]
+end
+
+function NameNode:onUpdateHangup()
+    --[[ 自动挂机 突出自己 
+    if self._nameNodeType == Constant.NameNodeType.HERO_SELF then
+        local isHangup = lt.HangupManager:isHangup()
+        if isHangup ~= self._isHangup then
+            self._isHangup = isHangup
+
+            -- self:updateTopNode() -- 自动挂机突出自己 暂时屏蔽 delay
+        end
+    end
+    ]]
+end
+
+function NameNode:initUI(data, heroData)
+    -- 血条  progressY: 血条高度
+    local progressY = Constant.MODEL_HERO_Y
+    if self._nameNodeType == Constant.NameNodeType.MONSTER or self._nameNodeType == Constant.NameNodeType.PET then
+        local modelMeta = CacheManager:getModelMeta(data:getModelId())
+        if modelMeta then
+            progressY = Constant.MODEL_HERO_Y + modelMeta:getNameOffsetY()
+        end
+    end
+    
+    self._hpNode = display.newNode()
+    self._hpNode:setPosition(0, progressY)
+    self:addChild(self._hpNode)
+
+    self._lvSpriteFrame1 = ResManager:getSpriteFrameByPath(ResManager._NameNodeBg01)
+
+    if self._nameNodeType == Constant.NameNodeType.MONSTER then
+        self._lvSpriteFrame2 = ResManager:getSpriteFrameByPath(ResManager._NameNodeBg02)
+    end
+    
+    local size = 0
+    local x, y = 0, 0
+    -- 等级背景框 
+    self._lvBg = display.newSprite()
+    self._lvBg:setSpriteFrame(self._lvSpriteFrame1)
+    self._hpNode:addChild(self._lvBg)
+
+    size = self._lvBg:getContentSize()
+    x = size.width/2 
+    y = size.height/2 + 2
+
+    -- 等级
+    self._lvLab = LabelEx.new(tostring(data:getLevel()), {font=Constant.FONT_2, size=14, color=Constant.COLOR_TEXT_WHITE_PURE, outline=true, outlineColor=cc.c3b(0, 0, 0)})
+    self._lvLab:setPosition(cc.p(x, y))
+    self._lvLab:setAnchorPoint(cc.p(.5, .5))
+    -- self._lvLab:setVisible(false)
+    -- self._lvLab:setMaxLineWidth(150)
+    self._lvBg:addChild(self._lvLab)
+
+    -- 血条背景外框 bg_xttsxt_xuanzhongdi03
+    self._hpBgLightSprite = display.newSprite("game/common/bg_xttsxt_xuanzhongdi03.png")
+    self._hpBgLightSprite:setVisible(false)
+    self._hpNode:addChild(self._hpBgLightSprite)
+    
+    local hpBgsize = self._hpBgLightSprite:getContentSize()
+    self._lvBg:setPositionX(-hpBgsize.width/2-size.width/2+5)
+
+    -- 公会ICON
+    self._guildIcon = display.newSprite()
+    self._guildIcon:setAnchorPoint(cc.p(1, 0.5))
+    self._guildIcon:setScale(0.65)
+    self._guildIcon:setPositionX(-hpBgsize.width/2+5)
+    self._guildIcon:setVisible(false)
+    self._hpNode:addChild(self._guildIcon)
+
+    -- 阶级ICON
+    self._gradeIcon = display.newSprite()
+    self._gradeIcon:setAnchorPoint(cc.p(0, 0.5))
+    self._gradeIcon:setScale(0.65)
+    self._gradeIcon:setPositionX(hpBgsize.width/2-5)
+    self._gradeIcon:setVisible(false)
+    self._hpNode:addChild(self._gradeIcon)
+
+    -- 任务目标箭头ICON
+    local meta = lt.EffectMeta.new({
+        SkillId          = 0,
+        OrderId          = 1,
+        EffectSpriteType = 2503,
+        BltType          = 4,
+        Step             = 0.07,
+        DelayFrame       = 0,
+        Owner            = 0,
+        LoopCount        = 1
+    })
+    self._targetIcon = lt.CompEffectActor.new(meta, 1, true)
+    self._targetIcon:setAnchorPoint(cc.p(0.5, 0))
+    self._targetIcon:setPosition(cc.p(0, progressY - 15))
+    self._targetIcon:setScale(0.6)   
+    self:addChild(self._targetIcon)
+    self._targetIcon:setVisible(false)
+
+    -- 血条背景框 img_xttsxt_xuetiaodi01
+    self._hpBgSprite = display.newSprite("game/common/img_xttsxt_xuetiaodi01.png")
+    self._hpNode:addChild(self._hpBgSprite)
+
+    -- 血条 img_xttsxt_xuetiaodi02
+    self._hpProgress = cc.ProgressTimer:create(display.newSprite("game/common/img_xttsxt_xuetiaodi02.png"))
+    self._hpProgress:setType(cc.PROGRESS_TIMER_TYPE_BAR)
+    self._hpProgress:setBarChangeRate(cc.p(1, 0))
+    self._hpProgress:setMidpoint(cc.p(0, 0.5))
+    self._hpNode:addChild(self._hpProgress)
+    
+    self._actorName = data:getName()
+    if self:IsRole() then
+        self._nameLab = UIManager:createTextNameNode(self._actorName, 18)
+        self._nameLab:setColor(CommonUtil:calcColor(data:getNameColor()))
+        self._hpNode:addChild(self._nameLab)
+    else
+        self._nameLab = UIManager:createTextNameNode(self._actorName, 18)
+        self._nameLab:setColor(Constant.COLOR_TEXT_WHITE_PURE)
+        self._hpNode:addChild(self._nameLab)
+        if self._nameNodeType == Constant.NameNodeType.PET then
+            --宠物添加签名
+            self._signLab = UIManager:createTextNameNode(data:getPetSign(), 16)
+            self._signLab:setColor(cc.c3b(49, 170, 231))
+            self._signLab:setAnchorPoint(cc.p(0.5, 0.5))
+            self._signLab:setPositionY(self._nameLab:getPositionY()+25)
+            self._hpNode:addChild(self._signLab)
+        end
+    end
+    --进行缩放
+    local labelWidth = self._nameLab:getContentSize().width
+    if labelWidth > self._hpBgSprite:getContentSize().width then
+        self._hpBgSprite:setScaleX((labelWidth+20)/self._hpBgSprite:getContentSize().width)
+        self._hpProgress:setScaleX((labelWidth+20)/self._hpProgress:getContentSize().width)
+        self._hpBgLightSprite:setScaleX((labelWidth+32)/hpBgsize.width)
+        self._lvBg:setPositionX(self._lvBg:getPositionX()-((labelWidth+32)/hpBgsize.width-1)*hpBgsize.width/2)
+    end
+    
+    self._showHp = true
+    local heroLevel
+    if heroData then
+        heroLevel = heroData:getLevel()
+    end
+    self:updateUI(data, true, heroLevel)
+
+    -- self._initHpNode = false
+    --[[  称号
+    self._titleSp = display.newSprite()
+    self._titleSp:setAnchorPoint(.5, 0.5)
+    self._titleSp:setPosition(0, progressY + 21)
+    self:addChild(self._titleSp)
+
+    self._labTitle = lt.UIManager:addNormalLab("", 18, Constant.COLOR_TEXT_WHITE, true)
+    self._labTitle:setAnchorPoint(.5, 0)
+    self._labTitle:setPosition( 0, progressY + 5)
+    self:addChild(self._labTitle)
+    ]]
+
+    -- 聊天气泡
+    self._chatBg = display.newSprite("game/common/bg_gsp_kuang.png", 0, 0,{ scale9 = true, size = cc.size(self._chatBgWidth, 0), capInsets = cc.rect(10, 10, 220, 60) })
+    local textStr = {}
+    self._chatLabel = lt.RichText.new(textStr,(self._chatBgWidth - 8),
+        {
+            defaultSize  = 18,
+            lineSpacing  = 0,
+            label        = true,
+            fontName     = Constant.FONT_4,
+            outline      = true,
+            outlineColor = cc.c4b(255,
+                255, 255, 1.6)
+
+        })
+
+    self._chatLabel:setAnchorPoint(0, 0)
+    self._chatLabel:setPosition(4, 25)
+    local size = self._chatLabel:getContentSize()
+    local height = size.height
+    self._chatBg:setContentSize(self._chatBgWidth, height + 30)
+    self._chatBg:addChild(self._chatLabel)
+    self._chatBg:setVisible(false)
+    self._chatBg:setPosition(50, progressY - 20)
+    self._chatBg:setAnchorPoint(0.5, 0)
+    self:addChild(self._chatBg)
+
+    --[[ 头顶node
+    self._topNode = display.newNode()
+    self._topNode:setPosition(0, progressY + 2)
+    self:addChild(self._topNode)
+    ]]
+
+    --[[自动挂机
+    self._hangupLabel = display.newSprite(ResManager:resPath("_hangup_label"))
+    self._hangupLabel:setVisible(false)
+    self._topNode:addChild(self._hangupLabel)
+    ]]
+
+    --[[ 突出自己箭头
+    self._topExtraNode = display.newNode()
+    self._topNode:addChild(self._topExtraNode)
+    ]]
+
+    -- 名字
+    --[[ 名字
+    self._nameNode = display.newNode()
+    self._nameNode:setVisible(false)
+    self:addChild(self._nameNode)
+    
+    local textY = 60
+    if self._nameNodeType == Constant.NameNodeType.MONSTER then
+        textY = 30
+    end
+    self._nameNode:setPosition(0, textY)
+    
+    ]]
+
+    -- self._nameOffsetNode = display.newNode()
+    -- self._nameNode:addChild(self._nameOffsetNode)
+    --[[ 发现怪物 
+    if self._nameNodeType == Constant.NameNodeType.HERO_SELF then
+        self._foundBossLabel = lt.LabelEx.new("", {font=Constant.FONT_2, size=14, color=Constant.COLOR_TEXT_WHITE_PURE, outline=true, outlineColor=cc.c3b(0, 0, 0)})
+        self._foundBossLabel:setPosition(cc.p(0, 10))
+        self._foundBossLabel:setAnchorPoint(cc.p(.5, 0))
+        self._foundBossLabel:setVisible(false)
+        self._foundBossLabel:setMaxLineWidth(150)
+        self._topNode:addChild(self._foundBossLabel)
+
+        -- 自动寻路中
+        self._autorouteLabel = display.newSprite(ResManager:resPath("_imgFindRoute"))
+        self._autorouteLabel:setVisible(false)
+        self._topNode:addChild(self._autorouteLabel)
+    end
+    ]]
+
+    -- 称号
+    -- self:updateTitleAppr(data)
+    -- self:updateUI(data, true)
+end
+
+--[[ 
+    更新玩家信息
+    怪物被攻击时，血量变化才显示以及名字信息
+    角色一直显示
+]]
+function NameNode:updateUI(data, init, heroLevel)
+    local isHide = self:hideNameNode(data)
+    if isHide then
+        return
+    end
+    -- 初始化
+    if init then
+        self:updateName(data)
+        self:updateHp(data)
+        self:updateLv(data, heroLevel)
+        self:updateGuideAndCls(data)
+
+        -- 不是英雄角色 则初始化无需显示
+        -- if not self:IsRole() then
+        --     self._showHp = false
+        --     self._hpNode:setVisible(false)
+        -- end
+        self._showHp = false
+        self._hpNode:setVisible(false)
+    else
+        -- self._showHp = true
+        -- self._hpNode:setVisible(true)
+    
+        self:updateName(data)
+        self:updateHp(data)
+        self:updateLv(data, heroLevel)
+        self:updateGuideAndCls(data)
+    end
+    self._targetIcon:setVisible(not self._hpNode:isVisible() and self._showArrow)
+end
+
+-- 英雄角色 玩家或自己
+function NameNode:IsRole()
+    return self._nameNodeType == Constant.NameNodeType.HERO_SELF or self._nameNodeType == Constant.NameNodeType.HERO_OTHER
+end
+
+function NameNode:IsSelf()
+    return self._nameNodeType == Constant.NameNodeType.HERO_SELF
+end
+
+function NameNode:isOtherRole()
+    return self._nameNodeType == Constant.NameNodeType.HERO_OTHER
+end
+
+function NameNode:isCapturePet(data)
+    if self._nameNodeType == Constant.NameNodeType.MONSTER then
+        local meta = data:getMonsterInfoMeta()
+        return meta:getCapture() ~= 0
+    end
+    return false
+end
+
+-- 更新名字信息
+function NameNode:updateName(data)
+    if not data then 
+        return
+    end
+
+    -- 根据善恶值更新字体的颜色
+    if self:IsRole() then
+        -- 同族先动手的在你眼里显示红色
+        local changeColor = lt.GameModule:checkNameColorChange(data)
+        if changeColor then
+            self._nameLab:setColor(CommonUtil:calcColor(Constant.COLOR_OX_TENDENCY_4))
+        else
+            self._nameLab:setColor(CommonUtil:calcColor(data:getNameColor()))
+        end
+        lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_REFRESH_TARGET)
+    end
+
+    local name = data:getName()
+    if name == self._actorName or name == "" then
+        return
+    end
+    self._nameLab:setString(name)
+
+    --缩放
+    local hpBgsize = self._hpBgLightSprite:getContentSize()
+    local labelWidth = self._nameLab:getContentSize().width
+    if labelWidth > self._hpBgSprite:getContentSize().width then
+        self._hpBgSprite:setScaleX((labelWidth+20)/self._hpBgSprite:getContentSize().width)
+        self._hpProgress:setScaleX((labelWidth+20)/self._hpProgress:getContentSize().width)
+        self._hpBgLightSprite:setScaleX((labelWidth+32)/hpBgsize.width)
+        self._lvBg:setPositionX(self._lvBg:getPositionX()-((labelWidth+32)/hpBgsize.width-1)*hpBgsize.width/2)
+    end
+
+    self._actorName = name
+end
+
+-- 更新宠物签名信息
+function NameNode:updateSign(data)
+    if not data then 
+        return
+    end
+
+    if self._signLab then
+        self._signLab:setVisible(self._nameNodeType == Constant.NameNodeType.PET)
+    end
+    self._signLab:setString(data:getPetSign())
+end
+
+-- 更新血量信息
+function NameNode:updateHp(data)
+    if not data then 
+        return
+    end
+
+    -- 隐藏血量不要更新
+    local isHide = self:hideNameNode(data)
+    if isHide then
+        return
+    end
+
+    -- self._showHp = true
+    -- self._hpNode:setVisible(true)
+
+    self._hpProgress:setPercentage(data:getCurHp() / data:getMaxHp() * 100)
+end
+
+function NameNode:hideNameNode(data)
+    local isHide = false
+    if self:IsSelf() then
+        -- self._hpNode:setVisible(false)
+        -- isHide = true
+    elseif self:isOtherRole() then
+        -- 他人角色如果是隐蔽状态
+        -- if lt.GameModule:checkAgentIsSkillHide(data) then
+        --     self._hpNode:setVisible(false)
+        --     self._hpProgress:setPercentage(data:getCurHp() / data:getMaxHp() * 100)
+        --     isHide = true
+        -- end
+
+        if data:isCrossCount() then
+            self._hpNode:setVisible(false)
+            isHide = true
+        end
+    end
+
+    return isHide
+end
+
+-- 更新等级信息
+function NameNode:updateLv(data, heroLevel)
+    if not data then 
+        return
+    end
+
+    -- 只有怪物显示等级
+    if self._nameNodeType ~= Constant.NameNodeType.MONSTER and self._nameNodeType ~= Constant.NameNodeType.PET then
+        self._lvBg:setVisible(false)
+        return
+    end
+
+    local lv = data:getLevel()
+    if lv == self._actorlv then
+        return
+    end
+    self._actorlv = lv
+    self._lvLab:setString(tostring(lv))
+    
+    -- hero level 怪物等级大于人物等级20级，则
+    -- 可以捕捉的怪物显示绿色字
+    if heroLevel and heroLevel < (lv - 20) then
+        self._lvBg:setSpriteFrame(self._lvSpriteFrame2)
+        self._lvLab:setColor(Constant.COLOR_TEXT_TANGERINE)
+        self._nameLab:setColor(self:isCapturePet(data) and Constant.COLOR_GREEN or Constant.COLOR_TEXT_TANGERINE)
+    else
+        self._lvBg:setSpriteFrame(self._lvSpriteFrame1)
+        self._lvLab:setColor(Constant.COLOR_TEXT_WHITE_PURE)
+        self._nameLab:setColor(self:isCapturePet(data) and Constant.COLOR_GREEN or Constant.COLOR_TEXT_WHITE_PURE)
+    end
+    --被捕捉的宠物名字显示红色
+    if self._nameNodeType == Constant.NameNodeType.PET then
+        self._lvLab:setString(data:getPetLevel())
+        self._nameLab:setColor(Constant.COLOR_TEXT_RED)
+    end
+end
+
+-- 更新公会和阶级图标
+function NameNode:updateGuideAndCls(data)
+    if not data then 
+        return
+    end
+
+    -- 只有角色显示公会和阶级
+    if not self:IsRole() then
+        self._guildIcon:setVisible(false)
+        self._gradeIcon:setVisible(false)
+        return
+    end
+
+    -- 公会
+    local guildIcon = data:getGuildIcon()
+    if guildIcon then
+        self._guildIcon:setVisible(true)
+        self._guildIcon:setTexture(string.format(_GURL.GetGuidePath, guildIcon))
+    end
+
+    -- 阶级
+    local clsIcon = data:getClsIcon()
+    if clsIcon and self._actorClsIcon ~= clsIcon then
+        self._gradeIcon:setVisible(true)
+        self._gradeIcon:setTexture(clsIcon)
+        self._actorClsIcon = clsIcon
+    end
+end
+
+function NameNode:updateTargetMark(b)
+    -- 更新选中框
+    self._hpBgLightSprite:setVisible(b)
+    if self._originZOrder then
+        self:setLocalZOrder(b and 999 or self._originZOrder)
+    end
+
+    -- 当目标被选中时，血条必定显示
+    if b then
+        self._hpNode:setVisible(b)
+    else
+        -- if self:IsSelf() then
+        --     self._hpNode:setVisible(false)
+        -- else
+        --     if not self._showHp then
+        --         self._hpNode:setVisible(self._showHp)
+        --     end
+        -- end
+        self._hpNode:setVisible(false)
+    end
+
+    self._targetIcon:setVisible(not self._hpNode:isVisible() and self._showArrow)
+end
+
+function NameNode:updateNameNode(data)
+    -- self._nameOffsetNode:removeAllChildren()
+    -- local height = 0
+--[[
+    -- 公会
+    if data.getUnionName and data:getUnionName() and data:getUnionName() ~= "" and data:getUnionName() ~= "nil" then
+        -- 行会信息
+        local jobName = data:getUnionJobName()
+        if jobName == "" then
+            jobName = lt.StringManager:getDefaultUnionJobName(data:getUnionJob()) or ""
+        end
+        local guildStr = ""
+        if bit._and(data:getBodyEffect(),0x02) > 0 then
+            guildStr = string.format("<%s><%s %s>", lt.StringManager:getString(lt.StringManager.KEY_UNION_SHOBAK), data:getUnionName(), jobName)
+        else
+            guildStr = string.format("<%s %s>",data:getUnionName(), jobName)
+        end
+
+        local textGuild = lt.UIManager:createTextNameNode(guildStr, 12)
+        textGuild:setAnchorPoint(0.5, 0)
+        textGuild:setPosition(0, height)
+        textGuild:setColor(lt.CommonUtil:calcColor(data:getNameColor()))
+        self._nameOffsetNode:addChild(textGuild)
+
+        height = height + textGuild:getContentSize().height
+    end
+]]
+--[[
+    local textName
+
+    if self._nameNodeType == Constant.NameNodeType.MONSTER then
+        textName = cc.Label:createWithBMFont("font/bmf_name.fnt", data:getName(), cc.TEXT_ALIGNMENT_CENTER)
+        -- textName:setScale(0.8)
+        textName:setAnchorPoint(0.5, 0.5)
+        textName:setPosition(0, height)
+        textName:setColor(Constant.COLOR_TEXT_WHITE_PURE)
+        self._nameOffsetNode:addChild(textName)
+    else
+        textName = lt.UIManager:createTextNameNode(data:getName(), 12)
+        textName:setAnchorPoint(0.5, 0.5)
+        textName:setPosition(0, height)
+        textName:setColor(lt.CommonUtil:calcColor(data:getNameColor()))
+        self._nameOffsetNode:addChild(textName)
+    end
+
+    -- height = height + textName:getContentSize().height * textName:getScale() - 20
+    -- self._nameOffsetNode:setPosition(0, -height)
+]]
+end
+
+function NameNode:updateTopNode(data)
+    local height = 0
+
+    --[[ 自动挂机 
+    if self._hangupLabel then
+        self._hangupLabel:setVisible(self._isHangup)
+
+        if self._isHangup then
+            self._hangupLabel:setPosition(8, height + 18 + self._offsetHeight)
+            height = height + 32
+        end
+    end
+    ]]
+    -- 突出自己 箭头
+    -- self._topExtraNode:setPosition(0, height)
+end
+
+-- function NameNode:updateUI(data, init)
+--     -- self:updateHp(data, init)
+--     -- self:updateNameNode(data)
+-- end
+
+function NameNode:onUpdateHp()
+    --[[ 个人设置 血条显示
+    if self._nameNodeType ~= Constant.NameNodeType.HERO_SELF and self._textHp then
+        self._textHp:setVisible(lt.AutoManager:queryKey("SHOW_HP_PERCENT"))
+    end
+    ]]
+end
+
+--[[ 
+    更新血量信息
+
+    怪物被攻击时，血量变化才显示
+    角色一直显示
+    ]] 
+-- function NameNode:updateHp(data, init)
+--     if init and self._nameNodeType ~= Constant.NameNodeType.HERO_SELF then
+--         return
+--     end
+    
+    --[[
+    if not self._initHpNode then
+        self._initHpNode = true
+
+        
+        local spriteHpBg = display.newSprite("game/common/img_hp_bg.png")
+        self._hpNode:addChild(spriteHpBg)
+
+        self._progressHp = cc.ProgressTimer:create(display.newSprite("game/common/img_hp_red.png"))
+        self._progressHp:setType(cc.PROGRESS_TIMER_TYPE_BAR)
+        self._progressHp:setBarChangeRate(cc.p(1, 0))
+        self._progressHp:setMidpoint(cc.p(0, 0.5))
+        self._hpNode:addChild(self._progressHp)
+
+        self._textHp = lt.UIManager:createTextNameNode(self:getHpString(data), 12)
+        self._textHp:setPosition(0, -12)
+        self._textHp:setColor(Constant.COLOR_TEXT_WHITE)
+        self._textHp:setVisible(self._nameNodeType == Constant.NameNodeType.HERO_SELF)
+        self._hpNode:addChild(self._textHp)
+        
+    end
+    self._progressHp:setPercentage(data:getCurHp() / data:getMaxHp() * 100)
+    self._textHp:setString(self:getHpString(data))
+    ]]
+-- end
+
+function NameNode:getHpString(data)
+    return data:getCurHp() .. " / " .. data:getMaxHp()
+    
+    -- if self._nameNodeType == Constant.NameNodeType.HERO_SELF then
+    --     return data:getCurHp() .. " / " .. data:getMaxHp()
+
+    -- else
+    --     return string.format("%.0f/100", math.ceil(data:getCurHp() / data:getMaxHp() * 100))
+    -- end
+end
+
+
+function NameNode:updateTitleAppr(data)
+    self._offsetHeight = 0
+
+    --[[ 头顶title特效
+    if self._titleBaseAni then
+        self._titleBaseAni:removeSelf()
+        self._titleBaseAni = nil
+    end
+    if self._titleAni then
+        self._titleAni:removeSelf()
+        self._titleAni = nil
+    end 
+    ]]
+
+    --[[
+        -- 称号
+    if self._nameNodeType == Constant.NameNodeType.HERO_SELF or self._nameNodeType == Constant.NameNodeType.HERO_OTHER then
+        local appr = data:getTitleAppr()
+        if appr ~= 0 then
+            local meta = lt.CacheManager:queryAchiveTitleMetaById(appr)
+            local res = meta:getIcon()
+
+            if res and res ~= "" then
+                self._titleSp:setVisible(true)
+                lt.ResManager:setDisplayFrameByPath(self._titleSp, res)
+                self._labTitle:setVisible(false)
+            else
+                self._labTitle:setVisible(true)
+                self._labTitle:setString(info:getTitle())
+                self._titleSp:setVisible(false)
+            end
+            self._offsetHeight = 30
+            self:addTitleEffect(appr,self._titleSp)
+        else
+            self._titleSp:setVisible(false)
+            self._labTitle:setVisible(false)
+        end
+    else
+        self._titleSp:setVisible(false)
+        self._labTitle:setVisible(false)
+    end
+    ]]
+
+    
+    -- 聊天气泡
+    -- self._chatBg:setPositionY(Constant.MODEL_HERO_Y + 45 + self._offsetHeight)
+
+
+    -- self:updateTopNode(data)         -- 自动挂机突出自己 暂时屏蔽 delay
+end
+
+-- 发现怪物:%s 方向:%s 坐标:(%d,%d)
+function NameNode:updateFoundBoss(szText)
+    --[[
+    if self._foundBossLabel then
+        self._foundBossLabel:setString(szText)
+    end
+    ]]
+end
+
+function NameNode:visibleFoundBoss(b)
+    --[[
+    if self._foundBossLabel then
+        self._foundBossLabel:setVisible(b)
+    end
+    ]]
+end
+
+-- 聊天信息
+function NameNode:updateChatLabel(chatInfo)
+    -- 聊天气泡 更新
+    if not self._chatLabel then
+        return
+    end
+    local textTable = lt.ChatModule:filterHanhua(chatInfo) or {}
+    if next(textTable) == nil then
+        return
+    end
+    self._chatBg:setVisible(true)
+    self._chatLabel:setString(textTable)
+    local size = self._chatLabel:getContentSize()
+    local height = size.height
+    self._chatBg:setContentSize(self._chatBgWidth,height + 30)
+    
+    self._chatLabel:stopAllActions()
+    self._chatLabel:runAction(cc.Sequence:create(cc.DelayTime:create(5), cc.CallFunc:create(function()
+        self._chatBg:setVisible(false)
+    end)))
+end
+
+function NameNode:updateAutoRouteTip(data)
+    --[[ 自动寻路中
+    local height = 0
+
+    if self._autorouteLabel then
+        if data and not lt.HangupManager:isHangup()then
+            self._autorouteLabel:setVisible(true)
+            self._autorouteLabel:setPosition(8, height + 18 + self._offsetHeight)
+            height = height + 32
+        else
+            self._autorouteLabel:setVisible(false)
+            height = 0
+            lt.TaskModule:autoFightTask()
+        end 
+    end
+    self._topExtraNode:setPosition(0, height)
+    ]]
+end
+
+function NameNode:setNameType(type)
+    self._nameNodeType = type
+end
+
+-- 更新任务箭头
+function NameNode:updateTargetArrow(show)
+    self._showArrow = show
+    self._targetIcon:setVisible(not self._hpNode:isVisible() and self._showArrow)
+end
+
+return NameNode

@@ -1,0 +1,15 @@
+
+local PetAttrDao = {}
+
+function PetAttrDao:queryPetAttrById(attr)
+    local petAttrMap = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM PetAttr WHERE PetAttr=%d;",attr)) do
+        local petAttrMeta = lt.PetAttrMeta.new(row)
+        petAttrMap[petAttrMeta:getLevel()] = petAttrMeta
+    end
+
+    return petAttrMap
+end
+
+return PetAttrDao

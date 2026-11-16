@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout android:layout_gravity="center_horizontal" android:layout_width="wrap_content" android:layout_height="wrap_content"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <LinearLayout android:orientation="vertical" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="20.0dp" android:layout_marginStart="20.0dp" android:layout_marginEnd="20.0dp">
+        <TextView android:textSize="16.0sp" android:textStyle="bold" android:textColor="@color/moment_security_jump_alert_title" android:id="@id/tv_alert_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="12.0dp" android:text="@string/moment_security_jump_alert_title" android:lineSpacingExtra="8.0dp" />
+        <TextView android:textSize="13.0sp" android:textColor="@color/moment_security_jump_alert_message" android:id="@id/tv_alert_content" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/moment_security_jump_alert_message" android:lineSpacingExtra="5.0dp" />
+    </LinearLayout>
+    <ImageView android:layout_gravity="end|top" android:id="@id/iv_alert_close" android:layout_width="24.0dp" android:layout_height="24.0dp" android:layout_marginTop="8.0dp" android:src="@drawable/ttos_moment_security_jump_alert_content_close" android:layout_marginEnd="8.0dp" />
+</FrameLayout>

@@ -1,0 +1,166 @@
+---@class CompNoticeSys -- --左下角系统消息
+local CompNoticeSys = class("CompNoticeSys", lt.UIGButtonBase, lt.UICompChangeSkin)
+local CacheManager = lt.CacheManager
+local ChatModule = lt.ChatModule
+local Constant = lt.Constant
+local TimeTrigger = lt.TimeTrigger
+
+function CompNoticeSys:ctor()
+    CompNoticeSys.super.ctor(self)
+    self._lblArray = {}
+    self._lblShow = {} -- 当前应该显示的
+    self._lblHide = {}
+    self._animFlag = false
+    self._totalIdx = 0
+    self._timeTrigger = TimeTrigger.new(0.11)
+end
+
+function CompNoticeSys:onConstruct()
+    self._lbl1 = self:getChild('n2')
+    self._lbl2 = self:getChild('n3')
+    self._lbl3 = self:getChild('n4')
+    self._lbl4 = self:getChild('n5')
+    self._lbl5 = self:getChild('n6')
+    self._lbl6 = self:getChild('n7')
+
+    self._lblArray = { self._lbl1, self._lbl2, self._lbl3, self._lbl4, self._lbl5, self._lbl6 }
+    for i = 1, #self._lblArray do
+        self._lblArray[i]:setText("")
+    end
+
+end
+
+function CompNoticeSys:onClear()
+    if self._lblArray and #self._lblArray > 0 then
+        for i = 1, #self._lblArray do
+            self._lblArray[i] = nil
+        end
+    end
+    self._lblArray = nil
+    self._lblShow = nil
+    self._lblHide = nil
+    self._animFlag = nil
+    self._totalIdx = nil
+    self._timeTrigger = nil
+    CompNoticeSys.super.onClear(self)
+    
+end
+
+function CompNoticeSys:onEnter()
+
+end
+
+function CompNoticeSys:onExit()
+end
+
+function CompNoticeSys:truncateSmart(msg, max_len, list)
+    list = list or {} -- 初始化 list
+
+    local total = 0
+    local start_pos = 1
+    local count = string.len(msg)
+
+    for i = 1, count do
+        local s = string.sub(msg, i, i)
+        local t = string.byte(s)
+        local reCount = 0
+        if t < 128 then
+            reCount = 1   --1字节文字，长度加1
+        elseif t >= 192 then
+            reCount = 2   --1字节以上文字，长度加2
+        end
+        if total + reCount > max_len then
+            -- 超过长度，截断并递归处理剩余部分
+            local substr = string.sub(msg, start_pos, i - 1)
+            table.insert(list, substr)
+            return self:truncateSmart(string.sub(msg, i), max_len, list)
+        else
+            total = total + reCount
+        end
+    end
+
+    -- 处理最后剩下的内容
+    if total > 0 then
+        table.insert(list, string.sub(msg, start_pos))
+    end
+
+    return list
+end
+
+function CompNoticeSys:onAddNotice(event)
+    local param = event.param
+    local type, msg = ChatModule:onMsgByNoticeid(param)
+    if type == Constant.MessageType.KillNotSameRace then
+        local otherRace = tonumber(param.params[4])
+        local race = lt.GameModule:getHeroRace()
+        if race == otherRace then
+            type = Constant.MessageType.KillSameRace
+        end
+    end
+    local metaFmt = CacheManager:getMessagFormatBytype(type)
+    local fontSize = metaFmt and metaFmt:getFontSize() or 18
+    local fontColor = metaFmt and metaFmt:getFontColor() or "#FFFFFF"
+    -- 长度超过54 会阶段 分成两部分 有bug 找阿杰
+    local list = CompNoticeSys:truncateSmart(msg, 54, {})
+    for i, v in ipairs(list) do
+        local parseTxt = string.format("[size=%s][color=%s]%s[/color][/size]", fontSize, fontColor, v)
+        local data = {}
+        data.content = parseTxt
+        data.time = 0
+        table.insert(self._lblHide, data)
+    end
+end
+
+function CompNoticeSys:scrollView()
+    if self._animFlag then return end
+    self._animFlag = true
+    for i = 1, #self._lblArray do
+        local fromPos = self._lblArray[i]:getPosition()
+        local toPos = cc.p(fromPos.x, fromPos.y - 22)
+        fgui.GTween:to(fromPos, toPos, 0.1):setTarget(self._lblArray[i], fgui.TweenPropType.Position)
+    end
+end
+
+function CompNoticeSys:onUpdate(dt)
+    if self._timeTrigger and self._timeTrigger:tick(dt) then
+        if #self._lblHide > 0 then
+            local data = table.remove(self._lblHide, 1)
+            table.insert(self._lblShow, data)
+        end
+        for i = 1, #self._lblShow do
+            if i > 6 then break end
+            self._lblArray[i]:setText(self._lblShow[i].content)
+            if i <= 5 then
+                self._lblShow[i].time = self._lblShow[i].time + 0.1
+            end
+        end
+        if #self._lblShow > 0 and #self._lblShow <= 5 then
+            if self._lblShow[1].time >= 5 then
+                self:scrollView()
+            end
+        elseif #self._lblShow > 5 then
+            if self._lblShow[1].time >= 0.1 then
+                self:scrollView()
+            end
+        end
+        if self._animFlag then
+            self._totalIdx = self._totalIdx + 0.1
+            if self._totalIdx >= 0.3 then
+                self._totalIdx = 0
+                table.remove(self._lblShow, 1)
+                local lbl = self._lblArray[1]
+                lbl:setText("")
+                lbl:setPosition(0, 108)
+                table.remove(self._lblArray, 1)
+                table.insert(self._lblArray, lbl)
+                self._animFlag = false
+            end
+        end
+    end
+end
+
+function CompNoticeSys:clearTick()
+
+end
+
+return CompNoticeSys

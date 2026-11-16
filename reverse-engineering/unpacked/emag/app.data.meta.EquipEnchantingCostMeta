@@ -1,0 +1,17 @@
+
+local EquipEnchantingCostMeta = class("EquipEnchantingCostMeta")
+
+function EquipEnchantingCostMeta:ctor(row)
+    self._amount  = row.Amount
+    self._cost   = json.decode(row.ConsumeItem)
+end
+
+function EquipEnchantingCostMeta:getId()
+    return self._amount
+end
+
+function EquipEnchantingCostMeta:getCost()
+    return self._cost
+end
+
+return EquipEnchantingCostMeta

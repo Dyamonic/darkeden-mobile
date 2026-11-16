@@ -1,0 +1,43 @@
+local BuffFireElement = class("BuffFireElement", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+local ScheduleUtil  = lt.ScheduleUtil
+
+--[[
+    火元素
+]]
+function BuffFireElement:ctor(time, actor, skilllevel)    
+    BuffFireElement.super.ctor(self, BuffEnum.EFFECTSTATUS_FIRE_ELEMENTAL, time, actor)
+    -- 播放手上动画
+    self:addOustersElemental()
+end
+
+function BuffFireElement:onClear()
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    if not worldAgent  then
+        return 
+    end
+    worldAgent:removeElementAgent(self._objId)
+
+    BuffFireElement.super.onClear(self)
+end
+
+
+--添加元素精灵
+function BuffFireElement:addOustersElemental(creatureType)
+
+    local skillId = SkillEnum.SKILL_SUMMON_OF_FIRE_ELEMENTAL
+    local mHero, nHero = self._actor:getAgent():getMNExactly()
+    local p = lt.ElementActor:caculatePetPosition(mHero, nHero, 2, 0, 6, mHero, nHero)
+	local direction = math.random(0, 7)
+
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    if not worldAgent  then
+        return 
+    end
+    local ownerId = self._actor:getAgent():getObjId()
+    self._objId = string.format("FIRE_ELEMENT_%s", ownerId)
+    worldAgent:createElementAgent(self._objId, p.x, p.y, direction, ownerId, skillId)
+end
+
+return BuffFireElement

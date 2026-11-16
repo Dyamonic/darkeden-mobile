@@ -1,0 +1,165 @@
+--- 外观相关shader特效计数逻辑
+local MCreature = class("MCreature")
+local Constant = lt.Constant
+local TimeTrigger = lt.TimeTrigger
+
+local STOP_ACTION_COUNT = {
+    [Constant.ACTION_OUSTERS_DRAIN] = 30,
+    [Constant.ACTION_VAMPIRE_DRAIN] = 60
+}
+
+function MCreature:ctor()
+    self.m_InvisibleCount = 0
+    self.m_InvisibleStep = 0
+    self.shouldCallMethod = 0
+
+    self._bStopBloodDrain = 0 
+    self._bSetStopped = false
+
+    self.m_bTurning = false;
+	self.m_TurningCount = 0;
+    self._triggerTurn = TimeTrigger.new(1 / Constant.FPS_TL)
+
+end
+
+------------------------------------------------------------------------ 
+-- Set Invisible 
+------------------------------------------------------------------------ 
+function MCreature:setInvisible()
+    self.m_InvisibleCount = 0
+    self.m_InvisibleStep = 1
+end
+
+------------------------------------------------------------------------ 
+-- Set Invisible Soon 
+------------------------------------------------------------------------ 
+function MCreature:setInvisibleSoon()
+    self.m_InvisibleCount = 64
+    self.m_InvisibleStep = 0.1
+end
+
+------------------------------------------------------------------------ 
+-- Set Visible 
+------------------------------------------------------------------------ 
+function MCreature:setVisible()
+    self.m_InvisibleCount = 64
+    self.m_InvisibleStep = -1
+end
+
+------------------------------------------------------------------------ 
+-- Set Visible Soon 
+------------------------------------------------------------------------ 
+function MCreature:setVisibleSoon()
+    self.m_InvisibleCount = 0
+    self.m_InvisibleStep = 0
+end
+
+function MCreature:updateInvisible()
+    self.shouldCallMethod = self.shouldCallMethod + 1
+    if self.shouldCallMethod > 4 then
+        self.shouldCallMethod = 1
+        if self.m_InvisibleStep ~= 0 then
+            self.m_InvisibleCount = self.m_InvisibleCount + self.m_InvisibleStep
+
+            if self.m_InvisibleCount > 64 or self.m_InvisibleCount < 0 then
+                self.m_InvisibleStep = 0
+            end
+        end
+    end
+end
+
+function MCreature:getInvisibleCount()
+    return self.m_InvisibleCount
+end
+
+function MCreature:getInvisibleStep()
+    return self.m_InvisibleStep ~= 0
+end
+
+
+---吸血
+function MCreature:setStopDrain(isStop)
+    self._bStopBloodDrain = isStop
+end
+function MCreature:stopBloodDrain(actionCount, actionId)
+    -- 吸血
+    if actionId==Constant.ACTION_VAMPIRE_DRAIN or actionId == Constant.ACTION_OUSTERS_DRAIN then
+        if (actionCount >=9 and actionCount <= STOP_ACTION_COUNT[actionId]) then
+            actionCount = STOP_ACTION_COUNT[actionId]
+			self:unSetStopBloodDrain();
+			yflog:Info("[Player] StopBloodDrain(%d)", self._bStopBloodDrain);
+        end
+    end
+    
+    return actionCount
+end
+
+function MCreature:setStopBloodDrain()
+    self._bStopBloodDrain = self._bStopBloodDrain + 1
+end
+function MCreature:unSetStopBloodDrain()	
+    self._bStopBloodDrain = self._bStopBloodDrain - 1
+end
+
+function MCreature:clearStopBloodDrain()	
+    self._bStopBloodDrain = 0
+end
+function MCreature:isStopDrain()
+    return self._bStopBloodDrain > 0
+end
+
+---是否设置过停止
+function MCreature:setStopped(isStopped)
+    self._bSetStopped = isStopped
+end
+function MCreature:getStopped(isStopped)
+   return self._bSetStopped
+end
+
+
+--- 人物转圈圈（台风）
+------------------------------------------------------------------------
+-- Update Turning
+------------------------------------------------------------------------
+function MCreature:updateTurning()
+	if (self.m_bTurning) then
+        if self._triggerTurn:tick() then
+
+            self.m_TurningCount = self.m_TurningCount - 1
+            if (self.m_TurningCount <= 0) then
+                self.m_bTurning = false;
+            else
+                -- 빙빙 돌린다.
+                --self.m_Direction = ((self.m_Direction+1) & 0x07);
+                local worldAgent = lt.AgentManager:getWorldAgent()
+                local ownerAgent =  worldAgent:getAgent(self._ownerObjId)
+
+                if ownerAgent then
+                    local direction = ownerAgent:getDirection()
+                    direction = (direction + 1) % 8
+                    ownerAgent:setDirection(direction)
+                end
+            end
+        end
+    end
+end
+
+function MCreature:isTurning() 
+    return self.m_bTurning
+end
+function MCreature:getTurningCount() 
+    return self.m_TurningCount
+end
+function MCreature:setTurning(count, ownerObjId) 
+    self.m_bTurning = true
+    self.m_TurningCount = count
+    self._ownerObjId = ownerObjId
+end
+function MCreature:stopTurning(count) 
+    self.m_bTurning = false
+    self.m_TurningCount = count
+end
+
+
+return MCreature
+

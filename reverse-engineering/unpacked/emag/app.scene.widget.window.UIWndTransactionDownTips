@@ -1,0 +1,203 @@
+---@class UIWndTransactionDownTips:UIWindowBase
+---交易行 下架/重新上架 tips
+local UIWndTransactionDownTips = class("UIWndTransactionDownTips", lt.UIWindowBase)
+
+local Constant                 = lt.Constant
+local CacheManager             = lt.CacheManager
+local NtfManager               = lt.NtfManager
+local TransactionModule        = lt.TransactionModule
+local ItemModule               = lt.ItemModule
+local CommonFunc               = lt.CommonFunc
+local TimeCounter              = lt.TimeCounter
+
+
+UIWndTransactionDownTips.ChangeSkinConf = {
+    ["Transaction"] = {
+        ["n1"] = "bg_pmh_cztc",
+    },
+    ["CommonTL"] = {
+        ["frame"] = {
+            closeButton = {bg  = "bg_beibao_anniu01", bgup  = "bg_beibao_anniu02"},
+        },
+        ["btn_sure"] = {bg = "bg_youjian_changanniu01", disabled = "bg_youjian_changanniu02"},
+        ["btn_down"] = {bg = "bg_youjian_changanniu01", disabled = "bg_youjian_changanniu02"},
+        ["btn_reup"] = {bg = "bg_youjian_changanniu01", disabled = "bg_youjian_changanniu02"},
+    }
+}
+
+function UIWndTransactionDownTips:ctor(param)
+    UIWndTransactionDownTips.super.ctor(self, param)
+end
+
+function UIWndTransactionDownTips:onClear()
+    self._iconItem = nil
+    self._lblItemName = nil
+    self._lblTime = nil
+    self._lblNum = nil
+    self._lblPrice1 = nil
+    self._lblPrice2 = nil
+    self._lblLast = nil
+    self._rareImg = nil
+    self._btnSure = nil
+    self._controlType = nil
+    self._btnDown = nil
+    self._btnReUp = nil
+    self._data = nil
+    self._meta = nil
+    self._sprite = nil
+    UIWndTransactionDownTips.super.onClear(self)
+end
+
+function UIWndTransactionDownTips:onHide()
+    self._btnSure:removeClickListener()
+    self._btnDown:removeClickListener()
+    self._btnReUp:removeClickListener()
+    self._iconItem:removeClickListener()
+    UIWndTransactionDownTips.super.onHide(self)
+end
+
+function UIWndTransactionDownTips:onShown()
+    self._btnSure:addClickListener(handler(self, self.openSureBtnClick))
+    self._btnDown:addClickListener(handler(self, self.openDownBtnClick))
+    self._btnReUp:addClickListener(handler(self, self.openReupBtnClick))
+    self._iconItem:addClickListener(handler(self, self.onShowTipClick))
+    local param = self:getParam().param or {}
+    self:refreshView()
+end
+
+function UIWndTransactionDownTips:onInit()
+    UIWndTransactionDownTips.super.onInit(self, _GURL.WndTransactionDownTips)
+    self._iconItem    = self:getChild("icon_item")
+    self._lblItemName = self:getChild("lbl_itemName")
+    self._lblTime     = self:getChild("lbl_time")
+    self._lblNum      = self:getChild("lbl_count")
+    self._lblPrice1   = self:getChild("lbl_price1")
+    self._lblPrice2   = self:getChild("lbl_price2")
+    self._lblLast     = self:getChild("lbl_last")
+    self._rareImg     = self:getChild("img_rare")
+    self._btnSure     = self:getChild("btn_sure")
+    self._controlType = self:getController("c1")
+    self._btnDown     = self:getChild("btn_down")
+    self._btnReUp     = self:getChild("btn_reup")
+end
+
+function UIWndTransactionDownTips:refreshView()
+    local param = self:getParam() or {}
+    self._data = param.itemInfo
+    local itemInfo = ItemModule:getItemDataByProperty(self._data.objProperty)
+    local sid = itemInfo:getItemId()
+    local itemType = itemInfo:getItemType()
+    local itemMeta = nil
+    local iconPath = ""
+
+    if self._sprite then
+        self._sprite:removeFromParent()
+        self._sprite = nil
+    end
+
+    if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+        itemMeta = CacheManager:getItemMeta(sid)
+        iconPath = "prop"
+        local resUrl = string.format("ui://Item/%s_%s", iconPath, itemMeta:getIconId())
+        self._iconItem:setURL(resUrl)
+        self._iconItem:setAlpha(1)
+    elseif itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+        itemMeta = CacheManager:queryEquipMeta(sid)
+        iconPath = "equip"
+        local resUrl = string.format("ui://Item/%s_%s", iconPath, itemMeta:getIconId())
+        self._iconItem:setURL(resUrl)
+        self._iconItem:setAlpha(0)
+
+        local iconId = itemMeta:getIconId()
+        if iconId then
+            local affixId = itemInfo:getFirstAffixId() or 0
+            local affixLevel = itemInfo:getFirstAffixLevel() or 0
+            local sprite = lt.CommonFunc.createEquipById(iconId,affixId,affixLevel)
+            self:displayObject():addChild(sprite)
+            local pos = self._iconItem:getPosition()
+            sprite:setPosition(pos.x,self:getSize().height-pos.y)
+            self._sprite = sprite
+        end
+    end
+    self._iconItem.itemMeta = itemInfo
+    self._lblItemName:setText(itemMeta and itemMeta:getName() or "")
+
+    --缩放尺寸
+    local itemSize = self._iconItem:getSize()
+    local heightS = 50 / itemSize.height
+    local widthS = 50 / itemSize.width
+    local scale = heightS
+    if widthS < heightS then
+        scale = widthS
+    end
+    self._iconItem:setScale(scale, scale)
+
+    if self._sprite then
+        self._sprite:setScale(scale)
+    end
+
+    local meta = TransactionModule:getTransactionDataByItemIdAndType(sid, itemType)
+    self._meta = meta
+    self._rareImg:setVisible(meta:getAnnounce() == 1)
+    self._lblNum:setText(itemInfo:getNum())
+    self._controlType:setSelectedIndex(self._data.IsBidding == 1 and 0 or 1)
+
+    if self._data.IsBidding == 1 then
+        --公示中
+        self._lblPrice1:setText(self._data.curBiddingPrice) -- 竞拍价
+        self._lblPrice2:setText(self._data.sellPrice)       --上架价
+        local serverTime = TimeCounter:serverTime()
+        local lastSeconds = self._data.downTimeStamp - serverTime
+        self._lblTime:setText(CommonFunc:secondsToTime4(lastSeconds))
+        self:getChild("n37"):setText(GReadText.KEY_SHOPPING_TIPS1)
+    else
+        --普通上架
+        local num = itemInfo:getNum() or 1
+        self._costPrice = meta:getCostPrice()[3] * num
+        self._lblPrice1:setText(self._data.sellPrice)
+        self._lblPrice2:setText(self._costPrice * num)
+        local serverTime = TimeCounter:serverTime()
+        local lastSeconds = self._data.downTimeStamp - serverTime
+        self._lblLast:setText(lastSeconds > 0 and CommonFunc:secondsToTime4(lastSeconds) or
+            GReadText.KEY_TRANSACTION_TIPS2)
+        self._lblLast:setColor(lastSeconds > 0 and Constant.COLOR_NOTICE_YEL or Constant.COLOR_TEXT_RED)
+        self._btnReUp:setGrayed(lastSeconds > 0)
+        self._btnReUp:setTouchable(lastSeconds <= 0)
+        self:getChild("n37"):setText(GReadText.KEY_TRANSACTION_TIPS1)
+    end
+end
+
+-- 确定(下架)
+function UIWndTransactionDownTips:openSureBtnClick()
+    TransactionModule:sendTakeDownTheSaleReq(self._data.itemUniqueId)
+    self:hideSelectView()
+end
+
+-- 下架
+function UIWndTransactionDownTips:openDownBtnClick()
+    TransactionModule:sendTakeDownTheSaleReq(self._data.itemUniqueId)
+    self:hideSelectView()
+end
+
+-- 重新上架
+function UIWndTransactionDownTips:openReupBtnClick()
+    local enoughMoney = ItemModule:enoughItem(self._meta:getCostPrice()[1], self._meta:getCostPrice()[2], self
+        ._costPrice, { tips = true })
+    if enoughMoney then
+        TransactionModule:sendOnceAgainPutOnSaleReq(self._data.itemUniqueId)
+        self:hideSelectView()
+    end
+end
+
+function UIWndTransactionDownTips:hideSelectView()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndTransactionDownTips", close = true })
+end
+
+function UIWndTransactionDownTips:onShowTipClick(target)
+    local itemMeta = target:getSender().itemMeta
+    if itemMeta then
+        ItemModule:showTipsByType(itemMeta)
+    end
+end
+
+return UIWndTransactionDownTips

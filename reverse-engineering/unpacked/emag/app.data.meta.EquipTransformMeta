@@ -1,0 +1,34 @@
+local EquipTransformMeta = class("EquipTransformMeta")
+
+local CommonFunc = lt.CommonFunc
+
+function EquipTransformMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function EquipTransformMeta:initWithRow(row)
+    self._id                = row.Id
+    self._type              = row.Type
+    self._costItems         = CommonFunc:analysisJsonToTwoTable(row.CostItems)
+    self._typeName          = row.TypeName
+    self._costItemIdx       = row.CostItemIdx
+    self._transformType     = row.TransformType
+    self._transformItemIdx  = row.TransformItemIdx
+end
+
+function EquipTransformMeta:getCostItems()
+    return self._costItems
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function EquipTransformMeta:getId() return self._id end
+function EquipTransformMeta:getType() return self._type end
+function EquipTransformMeta:getTypeName() return self._typeName end
+function EquipTransformMeta:getCostItemIdx() return self._costItemIdx end
+function EquipTransformMeta:getTransformType() return self._transformType end
+function EquipTransformMeta:getTransformItemIdx() return self._transformItemIdx end
+
+-- AUTO GENERATED GETTERS END
+return EquipTransformMeta

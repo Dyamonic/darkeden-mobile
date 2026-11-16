@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>frames</key>
+        <dict>
+            <key>effect_1449_13800.png</key>
+            <dict>
+                <key>aliases</key>
+                <array/>
+                <key>spriteOffset</key>
+                <string>{0,0}</string>
+                <key>spriteSize</key>
+                <string>{86,48}</string>
+                <key>spriteSourceSize</key>
+                <string>{86,48}</string>
+                <key>textureRect</key>
+                <string>{{1,1},{86,48}}</string>
+                <key>textureRotated</key>
+                <false/>
+            </dict>
+        </dict>
+        <key>metadata</key>
+        <dict>
+            <key>format</key>
+            <integer>3</integer>
+            <key>pixelFormat</key>
+            <string>RGBA4444</string>
+            <key>premultiplyAlpha</key>
+            <false/>
+            <key>realTextureFileName</key>
+            <string>effect_1449_1.pvr.ccz</string>
+            <key>size</key>
+            <string>{88,50}</string>
+            <key>smartupdate</key>
+            <string>$TexturePacker:SmartUpdate:56943a35fa7adb8c68efb618f65c70e4:ca64668ac733c6cfba29822fc84a0c9a:5a393a58ddc1cc9404e26a67a33c0071$</string>
+            <key>textureFileName</key>
+            <string>effect_1449_1.pvr.ccz</string>
+        </dict>
+    </dict>
+</plist>

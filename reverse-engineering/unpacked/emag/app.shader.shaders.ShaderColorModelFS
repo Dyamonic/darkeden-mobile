@@ -1,0 +1,160 @@
+return [[
+#ifdef GL_ES
+    precision highp float;
+#endif
+
+varying vec2 v_texCoord;
+uniform vec3 dest_color_b;   //皮肤、头发
+uniform vec3 dest_color_g32b; //衣服
+uniform vec3 dest_color_g64b;
+uniform vec3 dest_color_g96b;
+uniform float u_darkFactor;
+uniform float u_saturation; //饱和度
+uniform float u_exposure; //曝光度
+
+uniform vec4 skill_color;
+uniform vec4 origin_color;
+uniform vec4 select_color;
+uniform float offset_color; // 偏移
+uniform float visible_count; //隐身特效
+uniform float u_wipeAmount; // 控制擦除程度，范围从 0 到 64
+uniform int b_snipe; // 狙击模式
+uniform float gray_offset; // 麻痹灰度配置
+uniform float power_b; //强化倍率
+uniform float power_g32b; //强化倍率
+uniform float power_g64b; //强化倍率
+uniform float power_g96b; //强化倍率
+
+uniform vec2 pixelSize;
+
+// cocos4.0 参数名称变化 CC_Texture0 -> u_texture
+uniform sampler2D u_texture;
+
+void main(void) {
+    vec4 src_color = texture2D(u_texture, v_texCoord).rgba;
+    vec4 newColor = src_color.rgba;
+
+    if (length(select_color) > 0.0 && src_color.a < 0.1) {
+        gl_FragColor = src_color;
+    }else{
+        float originClothB = (1.0- src_color.b);
+        if(visible_count != 1.0){
+            newColor.a *= visible_count;
+        }
+
+        //（人族）武器、盾牌、皮肤、头发  （鬼族）皮肤
+        if (length(dest_color_b) > 0.0 && src_color.b >= offset_color && src_color.r == 0.0  && src_color.g == 0.0)
+        {
+            float originB = originClothB * power_b; // 色值倍率调整
+            newColor.r = dest_color_b.r * originB;
+            newColor.g = dest_color_b.g * originB;
+            newColor.b = dest_color_b.b * originB;
+            if(visible_count != 1.0){
+                newColor.a *= visible_count;
+            }
+        }
+
+        //（鬼族）大衣  （人族） 裤子、上衣
+        if (length(dest_color_g32b) > 0.0 && src_color.b >= 0.0 && src_color.r == 0.0 && src_color.g > 0.1 && src_color.g < 0.2)
+        {
+            float originB = originClothB * power_g32b; // 色值倍率调整
+            newColor.r = dest_color_g32b.r * originB;
+            newColor.g = dest_color_g32b.g * originB;
+            newColor.b = dest_color_g32b.b * originB;
+            if(visible_count != 1.0){
+                newColor.a *= visible_count;
+            }
+        }
+
+
+        //（魔族）武器==手
+        if (length(dest_color_g64b) > 0.0 && src_color.b > 0.0 && src_color.r == 0.0  && src_color.g > 0.2 && src_color.g < 0.3)
+        {
+            float originB = originClothB * power_g64b; // 色值倍率调整
+
+            newColor.r = dest_color_g64b.r * originB;
+            newColor.g = dest_color_g64b.g * originB;
+            newColor.b = dest_color_g64b.b * originB;
+        }
+
+
+        //（魔族）靴子=脚：
+        if (length(dest_color_g96b) > 0.0 && src_color.b > 0.0 && src_color.r == 0.0  && src_color.g > 0.3 && src_color.g < 0.4)
+        {
+            float originB = originClothB * power_g96b; // 色值倍率调整
+
+            newColor.r = dest_color_g96b.r * originB;
+            newColor.g = dest_color_g96b.g * originB;
+            newColor.b = dest_color_g96b.b * originB;
+        }
+
+
+        // 快速滑行特效
+        newColor.rgb *= u_darkFactor; // 调整颜色
+
+
+        // 狙击模式特效
+        vec4 color = texture2D(u_texture, v_texCoord);
+        float distanceFromCenter = abs(v_texCoord.x - 0.5) * 2.0; // 归一化到 [0, 1] 范围
+        float alpha = 1.0;
+        if (distanceFromCenter < (u_wipeAmount / 64.0)) {
+            if (b_snipe == 1) {
+                newColor.rgb *= vec3(0.1, 0.1, 0.1);
+            }
+        }
+
+        //麻痹<绿毒（毒液圆弧）= 黄毒
+        //点燃>绿毒（毒液圆弧）= 黄毒
+        // 技能相关变色
+        if (length(skill_color) > 0.0) {
+            if (skill_color.a == 2.0){
+                //冰之灵石 变蓝
+                float blueAdjustment = 1.0 - dot(newColor.rgb, vec3(0.299, 0.587, 0.114));
+                vec3 adjustedColor = vec3(
+                    newColor.r - blueAdjustment * newColor.r*2.0,
+                    newColor.g - blueAdjustment * newColor.g*2.0,
+                    newColor.b + blueAdjustment * (1.0 - newColor.b)
+                );
+                adjustedColor = clamp(adjustedColor, 0.0, 1.0);
+                newColor = vec4(adjustedColor,newColor.a);
+            } else {
+                vec4 u_skill_color = newColor * skill_color;  // 将颜色与 uniform 颜色相乘
+                if (skill_color.r == 0.5 && skill_color.g == 0.5 && skill_color.b == 0.5) 
+                {
+                    float gray = (newColor.r + newColor.g + newColor.b) / gray_offset;
+                    u_skill_color = vec4(gray, gray, gray, src_color.a);
+                }
+                newColor = u_skill_color;
+            }
+        }else{
+            if (length(origin_color) > 0.0) {
+                newColor.rgb *= origin_color.rgb;
+                if (origin_color.r == 0.5 && origin_color.g == 0.5 && origin_color.b == 0.5) 
+                {
+                    float gray = (newColor.r + newColor.g + newColor.b) / gray_offset;
+                    newColor = vec4(gray, gray, gray, src_color.a);
+                }
+            }
+        }
+        //描边效果
+        float alphaSum = 0.0;
+        if (length(select_color) > 0.0 && length(pixelSize) > 0.0) {
+            for (float x = -1.0; x <= 1.0; x += 1.0) {
+                for (float y = -1.0; y <= 1.0; y += 1.0) {
+                    if (x == 0.0 && y == 0.0) continue; 
+                    vec2 offset = vec2(x * pixelSize.x, y * pixelSize.y);
+                    vec4 neighborColor = texture2D(u_texture, v_texCoord + offset);
+                    alphaSum += neighborColor.a;
+                }
+            }
+            if (alphaSum > 6.0) {
+                gl_FragColor = newColor;
+            }else{
+                gl_FragColor = select_color;
+            }
+        }else{
+            gl_FragColor = newColor;
+        }
+    }
+}
+]]

@@ -1,0 +1,206 @@
+
+local PrefManager = {}
+
+local DbManager = lt.DbManager
+
+PrefManager._initialized = nil          -- 判断是否第一次启动
+
+PrefManager._loginName = nil
+PrefManager._password  = nil
+
+PrefManager._userDefault = nil
+PrefManager._userId = nil
+
+PrefManager.STRING_TRUE  = "true"
+PrefManager.STRING_FALSE = "false"
+
+PrefManager.DEVICE_ID        = "__DEVICE_ID__"
+PrefManager.GAME_INITIALIZED = "_GAME_INITIALIZED_"
+PrefManager.LOGIN_NAME       = "_LOGIN_NAME_"
+PrefManager.SERVER_STATE     = "_SERVER_STATE_"
+
+PrefManager.LOCAL_LUA_JIT_JIT      = "__LOCAL_LUA_JIT_JIT__"
+PrefManager.JUMP_TO_COMMENT      = "__JUMP_TO_COMMENT__"
+
+PrefManager._cacheTable = nil
+
+function PrefManager:init()
+	-- local filePath = cc.UserDefault:getXMLFilePath()
+	-- mac 下 ~/Library/Preferences/com.cocos.quick.apps.player.plist
+    -- self._userDefault = cc.UserDefault:getInstance()
+    self._cacheTable = {}
+end
+
+function PrefManager:clear()
+    self._cacheTable = nil
+end
+
+-- 初次启动
+function PrefManager:setInitialized()
+    self:setValueByKey(PrefManager.GAME_INITIALIZED, PrefManager.STRING_TRUE)
+end
+
+function PrefManager:getInitialized()
+     return self:getValueByKey(PrefManager.GAME_INITIALIZED)
+end
+
+function PrefManager:setServerState(state)
+    self:setValueByKey(PrefManager.SERVER_STATE, state)
+end
+function PrefManager:getServerState()
+    return self:getValueByKey(PrefManager.SERVER_STATE)
+end
+
+function PrefManager:setLocalLuajit(b)
+    local value = b and PrefManager.STRING_TRUE or PrefManager.STRING_FALSE
+    self:setValueByKey(PrefManager.LOCAL_LUA_JIT_JIT, value)
+end
+
+function PrefManager:getLocalLuajit()
+    local jit = self:getValueByKey(PrefManager.LOCAL_LUA_JIT_JIT)
+    if not jit or jit == "" or jit == PrefManager.STRING_FALSE then
+        return false
+    end
+
+    return true
+end
+
+function PrefManager:setJumpToCommentStatus(b)
+    local value = b and PrefManager.STRING_TRUE or PrefManager.STRING_FALSE
+    self:setValueByKey(PrefManager.JUMP_TO_COMMENT, value)
+end
+
+function PrefManager:getJumpToCommentStatus()
+    local jump = self:getValueByKey(PrefManager.JUMP_TO_COMMENT)
+    if not jump or jump == "" or jump == PrefManager.STRING_FALSE then
+        return false
+    end
+
+    return true
+end
+
+
+function PrefManager:getValueByKey(key)
+    return DbManager:getDefaultDbBykey(key)
+end
+
+function PrefManager:setValueByKey(key, value)
+    DbManager:insertDefaultDb(key, value)
+end
+
+function PrefManager:getId()
+    -- local id = self._userDefault:getStringForKey(PrefManager.DEVICE_ID)
+    -- if(id == nil or string.len(id) == 0) then
+    --     -- id 获取 deviceId
+    --     self._userDefault:setStringForKey(PrefManager.DEVICE_ID, id)
+    -- end
+    return id or ""
+end
+
+function PrefManager:setUserId(userId)
+    self._userId = userId
+    DbManager:setUserId(userId)
+    -- 切换用户 清除缓存
+    self._cacheTable = {}
+end
+
+function PrefManager:getSwitchSkillSet(skillId)
+    return self:getCacheUserValueByKey("SKILL_"..skillId)
+end
+
+function PrefManager:getCacheUserValueByKey(key)
+    if self._cacheTable[key] then
+        return self._cacheTable[key]
+    else
+        local value = self:getUserValueByKey(key)
+        if value then
+            self._cacheTable[key] = value
+        end
+
+        return value
+    end
+end
+
+function PrefManager:getUserValueByKey(key)
+    return DbManager:getUserDefaultDbBykey(self._userId, key)
+end
+
+function PrefManager:setUserValueByKey(key, value)
+    DbManager:insertUserDefaultDb(self._userId, key, value)
+
+    -- 缓存
+    if self._cacheTable then
+        self._cacheTable[key] = value
+    end
+end
+
+function PrefManager:getUserDefaultDb()
+    return DbManager:getUserDefaultDb(self._userId)
+end
+
+function PrefManager:insertTableLostKey(tables, tableName)
+    DbManager:insertTableLostKey(tables, tableName)
+end
+
+function PrefManager:deleteSelfTables(tableName)
+    DbManager:deleteTableInDb(tableName)
+end
+
+function PrefManager:insertTableDbByTables(tables, tableName, notCheck)
+    DbManager:insertTableByTable(tables, tableName, "self", notCheck)
+end
+
+function PrefManager:insertTableDbByKeys(keys, dataArray, tableName, notCheck)
+    DbManager:insertTableDb(keys, dataArray, tableName, "self", notCheck)
+end
+
+function PrefManager:insertTableDb(keys, dataArray, tableName)
+    local isExist = nil
+    DbManager:tableIsExist(tableName, function (exist)
+        isExist = exist
+    end)
+    if isExist == true then
+        DbManager:insertTableDb(keys, dataArray, tableName)
+    else
+        self:createTableDb(keys, {dataArray}, tableName)
+    end
+end
+
+function PrefManager:deleteTableDb(key, value, tableName)
+    local isExist = nil
+    DbManager:tableIsExist(tableName, function (exist)
+        isExist = exist
+    end)
+    if isExist == true then
+        DbManager:deleteTableDb(key, value, tableName)
+    end
+end
+
+function PrefManager:deleteTable(tableName)
+    local isExist = nil
+    DbManager:tableIsExist(tableName, function (exist)
+        isExist = exist
+    end)
+    if isExist == true then
+        DbManager:deleteTable(tableName)
+    end
+end
+
+function PrefManager:createTableDb(keys, dataTable, tableName)
+    DbManager:createTableDb(keys, dataTable, tableName)
+end
+
+function PrefManager:getDbTableIsExist(tableName)
+    local isExist = nil
+    DbManager:tableIsExist(tableName, function (exist)
+        isExist = exist
+    end)
+    -- 
+    if isExist == true then
+        return true
+    else
+        return false
+    end
+end
+
+return PrefManager

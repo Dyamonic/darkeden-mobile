@@ -1,0 +1,155 @@
+---@class UICompExpandBagItem 拓展背包Item
+local UICompExpandBagItem = class("UICompExpandBagItem", lt.UIGButtonBase, lt.UICompChangeSkin)
+local RaceSkinRes = lt.Constant.RaceSkinRes
+local Constant = lt.Constant
+local GameModule = lt.GameModule
+local AutoFightManager = lt.AutoFightManager
+local ItemModule = lt.ItemModule
+local NtfManager = lt.NtfManager
+
+function UICompExpandBagItem:ctor()
+    UICompExpandBagItem.super.ctor(self)
+    self._race = GameModule:getHeroRace()
+    self._replaceCallback = nil --替换回调
+    self._addH = nil --当前扩展背包拓展高度
+    self._isReplace = false -- 是否为替换背包点击
+    self._canReplace = false
+    self._fromWnd = nil
+    self._replaceH = nil
+    self._index = nil
+    self._expandItemInfo = nil
+end
+   
+function UICompExpandBagItem:onConstruct()
+    self._icon = self:getChild("bg")
+    self._bagType = self:getChild("bagType")
+    self._num = self:getChild("num")
+    self._num:setText("")
+    self._canReplaceMark = self:getChild("canReplace")
+    self._canReplaceMark:setVisible(false)
+    self:startSkin()
+    self:setAlpha()
+    self:setEmpty()
+end
+
+function UICompExpandBagItem:onClear()
+    self._icon = nil
+    self._bagType = nil
+    self._num = nil
+    self._canReplaceMark = nil
+
+    self._fromWnd = nil
+    self._expandItemInfo = nil
+    self._replaceCallback = nil
+end
+
+function UICompExpandBagItem:onEnter()
+    self:addClickListener(handler(self, self.onClick))
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REPLACE_EXPAND, handler(self, self.refreshReplace), "UICompExpandBagItem:refreshReplace")
+end
+
+function UICompExpandBagItem:onExit()
+    self:removeClickListener()
+    NtfManager:removeNtfListenerByTag("UICompExpandBagItem:refreshReplace")
+end
+
+-- 扩容背包替换
+function UICompExpandBagItem:refreshReplace(params)
+    if not self._index then return end
+
+    self._isReplace = true -- 进入替换
+    local param = params.param
+    local replaceH = param.replaceH
+    self._canReplace = self._fromWnd:checkCanReplace(self._addH, replaceH)
+    self:setReplaceUI(self._canReplace)
+    self._fromWnd:refreshReplaceUI()
+    self._replaceCallback = param.callback
+    self:setSortingOrder(100)
+
+end
+
+function UICompExpandBagItem:setFromWnd(wnd)
+    self._fromWnd = wnd
+end
+
+function UICompExpandBagItem:onClick()
+    if not self._index then return end
+    if self._isReplace then
+        if self._canReplace then
+            self._fromWnd:updateGridData()
+            self._replaceCallback(self._index)
+        else
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.TIPS_EXPAND_NOT_REPLACE})
+        end
+        self._fromWnd:replaceTouchClick()
+    else
+        ItemModule:showTips(self._expandItemInfo)
+    end
+end
+
+function UICompExpandBagItem:replaceCallback(callback)
+    self._replaceCallback = callback
+end
+
+function UICompExpandBagItem:setExpandInfo(expandInfo, isDefault)
+    self._addH = expandInfo.addH
+    self._index = expandInfo.index
+
+    self._expandItemInfo = expandInfo.expandItemInfo
+    self:setTouchable(true)
+    if isDefault then
+        self:setDefaultItem()
+    else
+        local bagIconPath = string.format("ui://Inventory/bg_beibao_tbd02%s", RaceSkinRes[self._race])
+        self._icon:setURL(bagIconPath)
+        local bagResPath = string.format("ui://Inventory/bag_expand_%s_8",self._addH)
+        self._bagType:setURL(bagResPath)
+    end
+end
+function UICompExpandBagItem:setEmpty()
+    self._bagType:setURL("ui://Inventory/bag_expand_empty")
+
+    self._icon:setURL(string.format("ui://Inventory/expand%s",RaceSkinRes[self._race]))
+    self._num:setVisible(false)
+    self:setTouchable(false)
+end
+
+function UICompExpandBagItem:setNumText(usedGrid, totalGrid)
+    self._num:setVisible(true)
+    self._num:setText(string.format("%s/%s",usedGrid, totalGrid))
+end
+
+function UICompExpandBagItem:setDefaultItem()
+    self._bagType:setURL(string.format("ui://Inventory/bag_expand_default%s",RaceSkinRes[self._race]))
+    self._icon:setURL(string.format("ui://Inventory/expand%s", RaceSkinRes[self._race]))
+end
+
+function UICompExpandBagItem:setReplaceUI(canReplace)
+    local index = canReplace == true and 1 or 2
+    local iconURL = "ui://Inventory/bg_beibao_" .. index
+    self._canReplaceMark:setVisible(true)
+    self._canReplaceMark:setURL(iconURL)
+    local color = canReplace and Constant.COLOR_TEXT_WHITE_PURE or Constant.COLOR_TEXT_RED  
+    self._bagType:setColor(color)
+end
+
+function UICompExpandBagItem:hideReplaceUI()
+    self._canReplaceMark:setVisible(false)
+    self._canReplaceMark:setURL("")
+    self._bagType:setColor(Constant.COLOR_TEXT_WHITE_PURE)
+    self._isReplace = false
+end
+
+function UICompExpandBagItem:setAlpha()
+    --设置透明度
+    local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.BAG_OPACITY)
+    self.isBGOpacity = editTable.switch == 1
+    if self.isBGOpacity then
+        editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.WINDOW_OPACITY)
+        self._icon:setAlpha(editTable.value/100)
+    else
+        self._icon:setAlpha(1)
+    end
+end
+
+return UICompExpandBagItem

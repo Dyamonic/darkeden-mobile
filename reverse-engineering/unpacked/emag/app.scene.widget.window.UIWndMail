@@ -1,0 +1,308 @@
+--- 邮件系统
+---@class UIWndMail:UIWindowBase
+local UIWndMail = class("UIWndMail", lt.UIWindowBase)
+
+local Constant      = lt.Constant
+local CacheManager  = lt.CacheManager
+local NtfManager    = lt.NtfManager
+local MailModule    = lt.MailModule
+local TimeCounter   = lt.TimeCounter
+
+UIWndMail.ChangeSkinConf = {
+    ["Mail"] = {
+        ["bg"] = "bg_youjian_tanchuangdi",
+        ["titleBg"] = "bg_youjian_biaotidi",
+        ["content"] = "bg_youjian_xinxidi",
+    },
+    ["CommonTL"] = {
+        ["closeButton"] = {bg  = "bg_beibao_anniu01", bgup  = "bg_beibao_anniu02"},
+        ["btn_delete"] = {
+            ["bg"] = "bg_youjian_changanniu01",
+            ["disabled"] = "bg_youjian_changanniu02",
+        },
+        ["btn_achieve"] = {
+            ["bg"] = "bg_youjian_changanniu01",
+            ["disabled"] = "bg_youjian_changanniu02",
+        },
+    }
+}
+
+function UIWndMail:ctor(param)
+    UIWndMail.super.ctor(self, param)
+    self._seletIndex = nil
+    self._listItemNums = nil
+    self._tabList = nil
+    self._achieveBtn = nil
+    self._deleteBtn = nil
+    self._emptyNode = nil
+    self._mailDetail = nil
+    self._selectItem = nil
+end
+
+function UIWndMail:onInit()
+    self:registerComponent("UICompMailItem", "UICompMailDetail")
+    UIWndMail.super.onInit(self, "ui://Mail/MailPanel")
+    self:initUI()
+end
+
+function UIWndMail:onShown()
+    UIWndMail.super.onShown(self)
+
+    NtfManager:addNtfListener(NtfManager.NTF.NET_MAIL_LIST, handler(self, self.onMailListUpdate), "UIWndMail:onMailListUpdate")
+    NtfManager:addNtfListener(NtfManager.NTF.NET_MAIL_INFO, handler(self, self.onReadMail), "UIWndMail:onReadMail")
+    NtfManager:addNtfListener(NtfManager.NTF.NET_MAIL_DRAW, handler(self, self.onDrawMail), "UIWndMail:onDrawMail")
+
+    self._achieveBtn:addClickListener(handler(self, self.btnDrawAllClick))
+    self._deleteBtn:addClickListener(handler(self, self.btnDelAllClick))
+    local closeBtn = self:getChild("closeButton")
+    closeBtn:addClickListener(function()
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndMail", close = true})
+    end)
+
+    self._tabList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+
+    NtfManager:dispatchNtf(NtfManager.NTF.NFT_SYSTEM_TIPS_CHANGE, {key = Constant.SYSTEMTIPS.MAIL, visible = false})
+
+    local maxNum = CacheManager:getVariableById(Constant.Variable.MailListNum)
+    self:getChild("label_num"):setText(string.format(GReadText.KET_MAIL_TIPS12, 0, maxNum))
+
+    MailModule:reqMailList()
+end
+
+function UIWndMail:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndMail:onMailListUpdate")
+    NtfManager:removeNtfListenerByTag("UIWndMail:onReadMail")
+    NtfManager:removeNtfListenerByTag("UIWndMail:onDrawMail")
+
+    self._achieveBtn:removeClickListener()
+    self._deleteBtn:removeClickListener()
+    local closeBtn = self:getChild("closeButton")
+    closeBtn:removeClickListener()
+    self._tabList:removeEventListener(fgui.UIEventType.ClickItem)
+
+    UIWndMail.super.onHide(self)
+end
+
+function UIWndMail:onClear()
+    self:unregisterAllComponent()
+    self._achieveBtn = nil
+    self._deleteBtn = nil
+    self._emptyNode = nil
+    self._mailDetail = nil
+    self._selectItem = nil
+    if self._tabList then
+        self._tabList:removeChildrenToPool()
+        self._tabList:removeItemRenderer()
+        self._tabList = nil
+    end
+    UIWndMail.super.onClear(self)
+end
+
+----------------------UI---------------
+function UIWndMail:initUI()
+    self._tabList = self:getChild("list")
+    self._tabList:setItemRenderer(handler(self, self.renderListItem))
+    self._achieveBtn = self:getChild("btn_achieve")
+    self._deleteBtn = self:getChild("btn_delete")
+    self._emptyNode = self:getChild("empty")
+end
+
+------------------- data listener -------------------------
+function UIWndMail:onMailListUpdate()
+
+    local mailData = MailModule:getListData()
+
+    self._emptyNode:setVisible(#mailData < 5)
+
+    self._deleteBtn:setGrayed(#MailModule:getAutoReadMails() == 0)
+
+    self._achieveBtn:setGrayed(#MailModule:getAutoDrawMails() == 0)
+
+    local maxNum = CacheManager:getVariableById(Constant.Variable.MailListNum)
+    self:getChild("label_num"):setText(string.format(GReadText.KET_MAIL_TIPS12, #mailData, maxNum))
+
+    if #mailData < 1 then
+        self._tabList:setNumItems(#mailData)
+        return 
+    end
+
+    if self._listItemNums == nil then
+        self._listItemNums = #mailData 
+    end
+    
+    if self._tabList:getNumItems() < 0 then
+        self._tabList:setVirtual()
+    end
+    self._tabList:setNumItems(#mailData)
+
+    -- self._seletIndex = self._tabList:getSelectedIndex()
+    
+    --开启右侧信息
+    -- local openIndex = nil
+    -- if self._listItemNums < #mailData  then
+    --     openIndex = self._seletIndex + 1
+    -- elseif self._listItemNums > #mailData then
+    --     openIndex = 0
+    -- else 
+    --     openIndex = self._seletIndex
+    -- end
+    -- self._listItemNums = #mailData
+    -- self:openDefaultMessageByIndex(openIndex)
+end
+
+function UIWndMail:onReadMail(evt)
+    -- 邮件详细界面
+    if not self._mailDetail then
+        self._mailDetail = fgui.UIPackage:createObject("Mail", "MailDetail")
+        self._mailDetail:insertObjectToFactory(self)
+        self._mailDetail:setPosition(0,0)
+        self:addChild(self._mailDetail)
+    end
+    if self._seletIndex >= 0 then
+        local itemData = evt.param.data
+        self._mailDetail:setVisible(true)
+        self._mailDetail:refreshPanelByCls(self._seletIndex, itemData)
+    else
+        self._mailDetail:setVisible(false)
+    end
+    self:onMailListUpdate()
+end
+
+function UIWndMail:onDrawMail(evt)
+    if self._seletIndex == nil then
+        return
+    end
+    local itemData = MailModule:getListData()[self._seletIndex + 1]
+    if itemData and itemData:getEmailType() > 2 and itemData:getDrawFlag() == MailModule.DRAW_STATE.DRAW then
+        itemData:setHaveRead()
+        itemData:setHaveDraw()
+        itemData:autoOrder()
+        if self._mailDetail then
+            self._mailDetail:refreshPanelByCls(self._seletIndex, itemData)
+        end
+    end
+end
+
+----------------------ui listener---------------
+
+function UIWndMail:renderListItem(index, obj)
+    local itemData = MailModule:getListData()[index + 1]
+    obj:setTitle(itemData:getTitle())
+
+    obj:setName(itemData:getSender())
+
+    local time_str = os.date("%Y/%m/%d", itemData:getDate())
+    obj:setTimeText(time_str)
+
+    --有效期
+    local serverTime = TimeCounter:serverTime()
+    local leftime = itemData:getExpireDate() - serverTime
+    local day = lt.CommonFunc:secondsToTime(leftime)
+    if day == 0 then day = 1 end
+    obj:getChild("date"):setText(day..GReadText.KEY_EQUIP_TIPS40)
+    
+    local imageUrl = string.format("ui://Mail/%s",itemData:getReadFlag() == MailModule.READ_STATE.UNREAD 
+    and "icon_youjian_xinfeng" or "icon_youjian_kaiqixinfeng")
+    obj:setState(imageUrl)
+
+    local rewardUrl = itemData:getDrawFlag() == MailModule.DRAW_STATE.UNDRAW and "ui://Mail/icon_youjian_weidakai" or "ui://Mail/icon_youjian_dakai"
+    obj:setReward(rewardUrl)
+
+    obj:setRewardGray(itemData:getDrawFlag() == MailModule.DRAW_STATE.DRAW)
+
+    obj:setRewardVis(itemData:getEmailType() > 2)
+
+    obj.index = index
+
+    obj:insertObjectToFactory(self)
+end
+
+function UIWndMail:onClickItem(context)
+    local data = context:getData()
+    local seletIndex = data.index
+    -- if self._seletIndex and self._seletIndex == seletIndex then
+    --     return 
+    -- end
+  
+    self._seletIndex = seletIndex
+    
+    local childIndex = self._tabList:itemIndexToChildIndex(self._seletIndex)
+    self._selectItem = self._tabList:getChildAt(childIndex)
+
+    local itemData = MailModule:getListData()[self._seletIndex + 1]
+    MailModule:reqMailInfo(itemData:getRowID(), itemData:getEmailType())
+end
+
+function UIWndMail:btnDrawAllClick(context)
+    local mails = MailModule:getAutoDrawMails()
+    if #mails == 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KET_MAIL_TIPS1})
+        return
+    end
+    MailModule:reqDrawMail(mails)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KET_MAIL_TIPS2})
+end
+
+function UIWndMail:btnDelAllClick(context)
+    local mails = MailModule:getAutoReadMails()
+    if #mails == 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KET_MAIL_TIPS3})
+        return
+    end
+    if #MailModule:getAutoSpMails() > 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {type = 1, content = GReadText.KET_MAIL_TIPS13})
+        return
+    end
+    if #mails > 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {type = 2, content = GReadText.KET_MAIL_TIPS5, confirmCallback = function()
+            --发送删除附件
+            MailModule:reqDelMail(mails)
+        end})
+    end
+end
+
+-- function UIWndMail:btnReadAllClick(context)
+--     local mails = MailModule:getAutoReadMails()
+--     if #mails > 0 then
+--         MailModule:reqReadMail(mails)
+--     end
+-- end
+-- function UIWndMail:btnDelSingleClick(context)
+--     local itemData = MailModule:getListData()[self._seletIndex + 1]
+--     if itemData:getEmailType() > 2 and itemData:getDrawFlag() == MailModule.DRAW_STATE.UNDRAW then
+--         NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_ALERT_TIP, {
+--             content = StringManager:getString(StringManager.KEY_MAIL_DRAW_FIRST),
+--             btns = { Constant.COMMON_TIP_BTN.BTN_CONFIM }
+--         })
+--     else
+--         NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_ALERT_TIP, {
+--             content = StringManager:getString(StringManager.KEY_MAIL_DEL_TIPS),
+--             btns = { Constant.COMMON_TIP_BTN.BTN_CONFIM, Constant.COMMON_TIP_BTN.BTN_CANCEL },
+--             callback=function(state)
+--                 if state == Constant.COMMON_TIP_BTN.BTN_CONFIM then
+--                     MailModule:reqDelMail({itemData:getRowID()})
+
+--                     self:clearList()
+--                 end
+--             end
+--         })
+--     end
+-- end
+-- function UIWndMail:btnDrawSingleClick(context)
+--     local itemData = MailModule:getListData()[self._seletIndex + 1]
+--     MailModule:reqDrawMail({itemData:getRowID()})
+-- end
+
+--------------------- simple ui get data logic --------------------------
+
+function UIWndMail:getGlistItemByItemIndex(index)
+    local childIndex = self._tabList:itemIndexToChildIndex(index)
+    return self._tabList:getChildAt(childIndex);
+end
+
+function UIWndMail:clearList(isAll)
+    self._seletIndex = nil
+    self._listItemNums = nil
+end
+
+return UIWndMail

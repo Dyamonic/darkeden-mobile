@@ -1,0 +1,94 @@
+local ShaderBaseEffect = class("ShaderBaseEffect")
+
+local ccbEngine = ccb
+local ShaderBackendUtil = lt.ShaderBackendUtil
+local ScheduleUtil = lt.ScheduleUtil
+
+function ShaderBaseEffect:ctor(node, program)
+    self._touchStartTime= 0
+    self._node = node
+    self._program = program
+end
+
+function ShaderBaseEffect:render(param)
+    self:setNodeShader()
+end
+
+function ShaderBaseEffect:setNodeShader()
+    if not self._node then
+        return 
+    end
+
+    if tolua.isnull(self._node) then
+        return
+    end
+    local time = 0
+    local programState = ccbEngine.ProgramState:new(self._program)
+
+    self._programState = programState
+
+    self:setUniform(programState, time, self._node)
+
+    self._node:setProgramState(programState)
+
+    if self:needRefresh() then
+        if not self._scheduleHandler then
+            self._scheduleHandler = ScheduleUtil:scheduleUpdateGlobal(function(dt)
+                if self._node and not self._node:isVisible() then
+                    return
+                end
+
+                self._touchStartTime = self._touchStartTime + dt * 5
+                local time = self:resetTime(time)
+                if self._touchStartTime >= self:getTime() then
+                    self._touchStartTime = 0
+                    self:resetUniform(self._programState, time, self._node)
+                end
+            end)
+        end
+        -- 无需优先
+        -- self._node:onUpdate(function(dt)
+        --     self._touchStartTime = self._touchStartTime + dt * 5
+        --     local time = self:resetTime(time)
+        --     if self._touchStartTime >= self:getTime() then
+        --         self._touchStartTime = 0
+        --         self:resetUniform(self._programState, time, self._node)
+        --     end
+        -- end)
+    end
+end
+
+function ShaderBaseEffect:setUniform(programState, time, node)
+end
+
+function ShaderBaseEffect:clearShaderCache(shaderName)
+    -- 缓存池中赞不做清除，退出游戏自动清除，全程使用，不需要做retain
+end
+
+function ShaderBaseEffect:onClear()
+    if self._scheduleHandler then
+        ScheduleUtil:unscheduleGlobal(self._scheduleHandler)
+        self._scheduleHandler = nil
+    end
+
+    self._node = nil
+    self._programState = nil
+end
+
+function ShaderBaseEffect:getTime()
+    return 0
+end
+
+function ShaderBaseEffect:resetTime(time)
+    return time + 0.08
+end
+
+function ShaderBaseEffect:resetUniform(programState, time)
+end
+
+function ShaderBaseEffect:needRefresh()
+    return false
+end
+
+
+return ShaderBaseEffect

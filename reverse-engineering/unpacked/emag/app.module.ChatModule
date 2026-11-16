@@ -1,0 +1,1082 @@
+local ChatModule                 = {}
+
+local SocketApi                  = lt.SocketApi
+local netcmd_pb                  = lt.netcmd_pb
+local Constant                   = lt.Constant
+local CommonModule               = lt.CommonModule
+local ServerCmdDef               = lt.ServerCmdDef
+local ClientCmdDef               = lt.ClientCmdDef
+local PrefManager                = lt.PrefManager
+local NtfManager                 = lt.NtfManager
+local CacheManager               = lt.CacheManager
+local GameModule                 = lt.GameModule
+
+ChatModule._infoTypeArray        = {}
+ChatModule._infoTable            = {}
+ChatModule._maxnum               = 200 -- 最多保留200条
+ChatModule._infoTypeTable        = {}
+ChatModule._infoWorldTable       = {} -- 世界频道 世界 + 喇叭
+ChatModule._infoSystemTable      = {} -- 系统消息 系统 + 后台广播
+ChatModule.CHAT_SETTING          = "CHAT_SETTING"
+ChatModule.CHAT_SETTING_COLOR    = "CHAT_SETTING_COLOR"
+ChatModule.CHAT_SETTING_CHATEDIT = "CHAT_SETTING_CHATEDIT"
+ChatModule._isChating            = false
+ChatModule._isInit               = true -- 是否第一次打开
+ChatModule._chatNumList          = {}   -- 聊天次数
+ChatModule._chatPrivateList      = {}   -- 私聊人名List
+ChatModule._chatPrivateSet       = {}
+ChatModule._privateUnReadList    = {}
+ChatModule.offsetX               = 50 - lt.Constant:GetLiuHaiX() / 2
+ChatModule._curType              = 1
+
+
+ChatModule.CHATTYPE = {
+    [1] = Constant.MESSAGE_TALK_TYPE.TALKTYPE_NEW_SYSTEM, --系统
+    [2] = Constant.MESSAGE_TALK_TYPE.TALKTYPE_TOTAL,      --综合
+    [3] = Constant.MESSAGE_TALK_TYPE.TALKTYPE_WORD,       -- 世界
+    [4] = Constant.MESSAGE_TALK_TYPE.TALKTYPE_SAME_RACE,  -- 种族
+    [5] = Constant.MESSAGE_TALK_TYPE.TALKTYPE_HANHUA,     -- 附近
+    [6] = Constant.MESSAGE_TALK_TYPE.TALKTYPE_MAP,        --区域聊天（同地图）
+    [7] = Constant.MESSAGE_TALK_TYPE.TALKTYPE_PRIVATE,    --私聊
+    [8] = Constant.MESSAGE_TALK_TYPE.TALKTYPE_TEAM,       -- 组队
+    [9] = Constant.MESSAGE_TALK_TYPE.TALKTYPE_GUILD,      --行会频道
+    [10] = Constant.MESSAGE_TALK_TYPE.TALKTYPE_UNION,     -- 联盟
+}
+
+ChatModule.CHATTYPEURL = {
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_NEW_SYSTEM] = "bg_liaotian_xitong1",   -- 系统
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_WORD]       = "bg_liaotian_shijie1",   -- 世界
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_SAME_RACE]  = "bg_liaotian_tongzu1",   -- 种族
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_HANHUA]     = "bg_liaotian_fujin1",    -- 附近
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_MAP]        = "bg_liaotian_quyu1",     -- 区域聊天（同地图）
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_PRIVATE]    = "bg_liaotian_siliao",    -- 私聊
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_TEAM]       = "bg_liaotian_zudui1",    -- 组队
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_GUILD]      = "bg_liaotian_hanghui1",  -- 行会频道
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_UNION]      = "bg_liaotian_lianmeng1", -- 联盟
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_WEB_NOTICE] = "bg_liaotian_xitong1",   -- 后台广播
+}
+-- 聊天频道颜色
+ChatModule.CHATTYPECOLOR = {
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_NEW_SYSTEM] = "#ab2722", -- 系统
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_WORD]       = "#11a025", -- 世界
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_SAME_RACE]  = "#777777", -- 种族
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_HANHUA]     = "#7d6f2c", -- 附近
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_MAP]        = "#955623", -- 区域聊天（同地图）
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_PRIVATE]    = "#ab2722", -- 私聊
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_TEAM]       = "#7322ab", -- 组队
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_GUILD]      = "#e96311", -- 行会频道
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_UNION]      = "#ce420b", -- 联盟
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_WEB_NOTICE] = "#ab2722", -- 后台广播
+}
+
+-- 聊天频道颜色
+ChatModule.CHATTYPESTR = {
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_NEW_SYSTEM] = "系统", -- 系统
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_WORD]       = "世界", -- 世界
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_SAME_RACE]  = "同族", -- 种族
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_HANHUA]     = "附近", -- 附近
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_MAP]        = "区域", -- 区域聊天（同地图）
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_PRIVATE]    = "私聊", -- 私聊
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_TEAM]       = "组队", -- 组队
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_GUILD]      = "公会", -- 行会频道
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_UNION]      = "联盟", -- 联盟
+    [Constant.MESSAGE_TALK_TYPE.TALKTYPE_WEB_NOTICE] = "系统", -- 后台广播
+}
+
+ChatModule.CHATCOLOR = {
+    [1] = "#FFFFFF",
+    [2] = "#840000",
+    [3] = "#008200",
+    [4] = "#848200",
+    [5] = "#ff66cb",
+    [6] = "#840084",
+    [7] = "#008284",
+    [8] = "#c66d05",
+    [9] = "#c6c3c6",
+    [10] = "#ff0000",
+    [11] = "#00fb00",
+    [12] = "#ffb000",
+    [13] = "#0000ff",
+    [14] = "#ff5400",
+    [15] = "#00fbff",
+    [16] = "#b8ff1e",
+}
+
+function ChatModule:init()
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_CHAT_RESP), handler(self, self.onChatResp),
+        "ChatModule:onChatResp")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_CHAT_INFO_NTF), handler(self, self.onChatMsg),
+        "ChatModule:onChatMsg")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_CHAT_NUM_RESP),
+        handler(self, self.onChatNumResp),
+        "ChatModule:onChatNumResp")
+end
+
+function ChatModule:clear()
+    SocketApi:removeProtoListenerByTag("ChatModule:onChatMsg")
+    SocketApi:removeProtoListenerByTag("ChatModule:onChatResp")
+    SocketApi:removeProtoListenerByTag("ChatModule:onChatNumResp")
+    self._infoTable         = {}
+    self._infoTypeTable     = {}
+    self._chatNumList       = {}
+    self._chatPrivateList   = {}
+    self._chatPrivateSet    = {}
+    self._infoWorldTable    = {}
+    self._infoTypeArray     = {}
+    self._privateUnReadList = {}
+    self._isInit            = true
+    self._infoSystemTable   = {}
+end
+
+function ChatModule:sendGMChat(msg, type, sendman, prname, strColor)
+    lt.LogUtil:debugTable("GM Command : " .. tostring(msg))
+
+    if string.byte(msg) == 64 then -- first char is @
+        if msg == "@reload" then
+            -- 本地GM命令
+            if self:getPlatformType() then
+                if _G_Game then
+                    _G_Game:reload(true)
+                end
+                return
+            end
+        elseif msg == "@zwjdebug" then
+            _G_ZWJ_DEBUG = true
+        elseif msg == "@fps" then
+            cc.Director:getInstance():setDisplayStats(true)
+        end
+    end
+
+    local function sendMsg()
+        local chatInfo      = netcmd_pb.ChatInfo()
+        chatInfo.chatType   = type
+        chatInfo.chatMsg    = msg
+        chatInfo.sendMan    = sendman
+        chatInfo.recieveMan = prname
+        chatInfo.sendColor  = strColor or ""
+        local csmsg         = netcmd_pb.CS_ChatReq()
+        csmsg.chatInfo      = chatInfo
+
+        SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_CHAT_REQ), csmsg)
+    end
+    local chatList = CacheManager:getChatAllMap()
+    if chatList and chatList[type] then
+        local chatData = chatList[type]
+        local numberMax = chatData:getNumber() or 0
+        if type == Constant.MESSAGE_TALK_TYPE.TALKTYPE_WORD then
+            numberMax = lt.VipModule:getVipChatNum() + numberMax
+        end
+        if numberMax > 0 then
+            local numberCur = self._chatNumList[type + 1] and tonumber(self._chatNumList[type + 1]) or 0
+            if numberCur > 0 and numberCur >= numberMax then
+                local cost = chatData:getChatCost()
+                if cost then
+                    local itemType = cost[1]
+                    local sid = cost[2]
+                    local itemMeta = nil
+                    if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+                        itemMeta = CacheManager:getItemMeta(sid)
+                    elseif itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+                        itemMeta = CacheManager:queryEquipMeta(sid)
+                    end
+
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+                        content = string.format("是否要花费%s%s聊天", cost[3], itemMeta:getName()),
+                        confirmCallback = function()
+                            local isEnough = lt.ItemModule:enoughItem(itemType,
+                                Constant.TYPE_VAULE_ITEM.COIN, cost[3], { tips = true })
+                            if not isEnough then
+                                return
+                            end
+                            sendMsg()
+                        end,
+                    })
+                    return
+                end
+            end
+        end
+    end
+    sendMsg()
+    return
+end
+
+-- 传音号角
+function ChatModule:sendHornMsg(objID, content, number)
+    local msg = netcmd_pb.CS_UseItemReq()
+    msg.itemObjId = tonumber(objID)
+    msg.count = number or 1
+    msg.param = content
+    SocketApi:sendToGs(lt.ClientCmdDef.C_USE_ITEM, msg)
+end
+
+-- 次数请求
+function ChatModule:sendNumReq()
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_CHAT_NUM_REQ))
+end
+
+function ChatModule:setInfoType(index, type)
+    self._infoTypeArray[index] = type
+end
+
+function ChatModule:getInfoType(index)
+    return self._infoTypeArray[index]
+end
+
+function ChatModule:sendClientInfo(str, type, callback)
+    if str and type then
+        local proto = {}
+        proto.sendMan = ""
+        proto.chatMsg = str
+        proto.chatType = type
+        proto.callback = callback
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_CHAT_MINI_POST, { Clientinfo = proto })
+    end
+end
+
+function ChatModule:onChatResp(event)
+    local proto = event.param
+    local ret = proto.ret
+    local chatNum = proto.chatNum
+    self._chatNumList = chatNum
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_CHAT_CHAT_RESULT, { ret = ret })
+end
+
+function ChatModule:onChatNumResp(event)
+    local proto = event.param
+    local ret = proto.ret
+    local chatNum = proto.chatNum
+    self._chatNumList = chatNum
+end
+
+-- 解析noticeid
+function ChatModule:onMsgByNoticeid(chatInfo)
+    -- 直接使用 chatInfo 中的数据
+    local noticeId = chatInfo.noticeId
+    local params = chatInfo.params or {}
+    -- 检查 noticeId 是否有效
+    if not noticeId or noticeId <= 0 then
+        return -1, ""
+    end
+    -- 获取消息元数据
+    local meta = CacheManager:getMessageContentByID(noticeId)
+    if not meta then
+        return -1, ""
+    end
+    -- 获取消息类型和内容
+    local getType = meta:getType()
+    local type = tonumber(getType) or 0
+    local monsterId = 0
+    local tempParams = clone(params)
+    if type == Constant.MessageType.MapEvent then --副本%s还有%s分钟开启
+        if #params >= 2 then
+            local mapMeta = CacheManager:getMapMeta(tonumber(params[1]))
+            tempParams[1] = mapMeta and mapMeta:getMapName() or ""
+            tempParams[2] = params[2] / 60
+        elseif #params >= 1 then --副本%s已关闭
+            local mapMeta = CacheManager:getMapMeta(tonumber(params[1]))
+            tempParams[1] = mapMeta and mapMeta:getMapName() or ""
+        end
+    elseif type == Constant.MessageType.BossAppearEvent then --世界Boss%s在%s现身了！
+        if #params >= 2 then
+            monsterId = tonumber(params[1])
+            local monsterMeta = CacheManager:getMonsterInfoMeta(tonumber(params[1]))
+            tempParams[1] = monsterMeta and monsterMeta:getName() or ""
+            local mapMeta = CacheManager:getMapMeta(tonumber(params[2]))
+            tempParams[2] = mapMeta and mapMeta:getMapName() or ""
+        end
+    elseif type == Constant.MessageType.BossDieEvent then --世界Boss%s被[%s]%s击败了！
+        if #params >= 3 then
+            monsterId = tonumber(params[1])
+            local monsterMeta = CacheManager:getMonsterInfoMeta(tonumber(params[1]))
+            tempParams[1] = monsterMeta and monsterMeta:getName() or ""
+            tempParams[2] = Constant.RaceStr[tonumber(params[2])]
+            tempParams[3] = params[3]
+        end
+    end
+    if noticeId == Constant.MessageNoticeId.KillSameRaceId then -- [%s]%s在%s击败了[%s]%s
+        if #params >= 5 then
+            tempParams[1] = Constant.RaceStr[tonumber(params[1])]
+            tempParams[2] = params[2]
+            local mapMeta = CacheManager:getMapMeta(tonumber(params[3]))
+            tempParams[3] = mapMeta and mapMeta:getMapName() or ""
+            tempParams[4] = Constant.RaceStr[tonumber(params[4])]
+            tempParams[5] = params[5]
+        end
+    end
+    local msg = meta:getValue() or ""
+    -- 替换消息中的占位符 %s
+    for _, param in ipairs(tempParams) do
+        msg = string.gsub(msg, "%%s", param, 1)
+    end
+    return type, msg, monsterId
+end
+
+function ChatModule:onChatMsg(event)
+    local proto = event.param.chatInfo
+
+    if proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_HANHUA or
+        proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_PRIVATE or
+        proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_TEAM or
+        proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_GUILD or
+        proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_NEW_SYSTEM or
+        proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_SAME_RACE or
+        proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_WORD or
+        proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_UNION or
+        proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_MAP or
+        proto.chatType == Constant.MESSAGE_TALK_TYPE.LANTERN_NOTICE or -- 跑马灯
+        proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_WEB_NOTICE
+    then
+        -- yflog:Info("----ChatModule:onChatMsg--" .. proto.chatMsg ..
+        --     "--" .. proto.chatType .. "-tr" .. tostring(proto.translater))
+        local keySetting = PrefManager:getUserValueByKey(ChatModule.CHAT_SETTING .. proto.chatType) or 0
+        if tonumber(keySetting) == 1 then -- 设置勾选不显示 只能显示自己消息
+            local sendman = GameModule:getHeroData():getName()
+            if sendman ~= proto.sendMan then
+                return
+            end
+        end
+
+        local gm = string.sub(proto.chatMsg, 1, 1)
+        if gm == "@" then
+            return
+        end
+
+        local type, msg = self:onMsgByNoticeid(proto)
+        if proto.chatMsg == "" and msg ~= "" then
+            proto.chatMsg = msg
+        end
+
+        if type == Constant.MessageType.Sys and msg ~= "" then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = msg })
+            return
+        end
+
+        if proto.chatMsg == "" then
+            return
+        end
+
+        local iteminfo            = {}
+        iteminfo.chatType         = proto.chatType
+        iteminfo.sendMan          = proto.sendMan
+        iteminfo.recieveMan       = proto.recieveMan
+        iteminfo.chatMsg          = proto.chatMsg
+        iteminfo.sendLevel        = proto.sendLevel
+        iteminfo.sendRace         = proto.sendRace
+        iteminfo.translater       = proto.translater
+        iteminfo.sendSex          = proto.sendSex
+        iteminfo.sendFaceShape    = proto.sendFaceShape
+        iteminfo.sendTendencies   = proto.sendTendencies
+        iteminfo.sendAdvanceState = proto.sendAdvanceState
+        iteminfo.sendAdvanceLv    = proto.sendAdvanceLv
+        iteminfo.sendGradeLv      = proto.sendGradeLv
+        iteminfo.sendGuildName    = proto.sendGuildName
+        iteminfo.fontColor        = proto.fontColor
+        iteminfo.sendColor        = proto.sendColor
+
+        self:setChatTypeInfo(iteminfo)
+        self:setChatInfo(iteminfo) -- 综合频道-- 好像不包含联盟
+
+        if proto.chatType == Constant.MESSAGE_TALK_TYPE.LANTERN_NOTICE or
+            proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_WORD
+        then
+            self:setChatWorldInfo(iteminfo)
+        elseif proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_NEW_SYSTEM or
+            proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_WEB_NOTICE then
+            self:setChatSystemInfo(iteminfo)
+        end
+
+        if proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_PRIVATE then
+            local sendman = GameModule:getHeroData():getName()
+            if not self._chatPrivateSet[proto.recieveMan] and sendman ~= proto.recieveMan then
+                table.insert(self._chatPrivateList, proto.recieveMan) -- 如果还需要保留顺序
+                self._chatPrivateSet[proto.recieveMan] = true
+            end
+            self:setPrivateUnReadInfo(iteminfo)
+        elseif proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_NEW_SYSTEM then -- 系统消息
+            local noticeId = proto.noticeId
+            local params = proto.params
+            if type == Constant.MessageType.BossAppearEvent or
+                type == Constant.MessageType.BossDieEvent then -- Boss出生/击杀  跑马灯
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_BOOSEVENT_NOTICE, { noticeId = noticeId, params = params })
+            else
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_NEW_SYSTEM_NOTICE, { noticeId = noticeId, params = params })
+            end
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_CHAT)
+    end
+
+    if proto.chatType == Constant.MESSAGE_TALK_TYPE.LANTERN_NOTICE then -- 12跑马灯
+        local content = proto.chatMsg
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_LANTERN_NOTICE, { content = content, chatType = proto.chatType })
+    elseif proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_WEB_NOTICE then --后台广播(跑马灯)
+        local content = proto.chatMsg
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_LANTERN_NOTICE, { content = content, chatType = proto.chatType })
+    elseif proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_HANHUA then -- 喊话
+        local str = proto.chatMsg
+        local gm  = string.sub(str, 1, 1)
+        if gm == "@" then
+            return
+        end
+        -- local msgs = proto.chatMsg
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_CHAT_LABEL_POST, { chatInfo = proto })
+    end
+end
+
+-- 对附近喊话  添加cocos富文本支持表情
+function ChatModule:filterHanhua(chatInfo)
+    if not chatInfo then
+        return {}
+    end
+    local translater = chatInfo.translater -- 是否有翻译器
+    local isTran = false
+    local myName = GameModule:getHeroData():getName()
+    local sendMan = chatInfo.sendMan
+    local isSelf = (myName == sendMan)
+    if not isSelf then
+        isTran = translater
+    else
+        isTran = true
+    end
+
+    local myRace = GameModule:getHeroRace()
+    local sendManRace = chatInfo.sendRace
+    local isNeedFilter = false
+    if myRace ~= sendManRace and not isTran then --不同种族乱码
+        isNeedFilter = true
+    end
+
+    local input = chatInfo.chatMsg
+    local textStr = {} -- 最终结果数组
+    local function insertText(str)
+        local strFilter = ""
+        if isNeedFilter then
+            strFilter = self:randomChar(str)
+        else
+            strFilter = str
+        end
+        if str and #str > 0 then
+            table.insert(textStr, { oType = "font", content = strFilter, outline = true })
+        end
+    end
+
+    -- 需要翻译
+    if isNeedFilter then
+        local setstr, setname, linkindex = ChatModule:getItemInfo(input, 1)
+        if setstr then
+            input = setstr
+        end
+        insertText(input)
+        return textStr
+    end
+
+
+    local lastPos = 1
+    local inputLen = #input
+    while lastPos <= inputLen do
+        local startPos, endPos = input:find("%b[]", lastPos)
+        if not startPos then
+            -- 没有更多括号了，处理剩余文本
+            insertText(input:sub(lastPos))
+            break
+        end
+        -- 插入括号前的普通文本
+        if startPos > lastPos then
+            insertText(input:sub(lastPos, startPos - 1))
+        end
+        -- 提取括号内容
+        local match = input:sub(startPos, endPos)
+
+        -- ✅ 表情 [emoji:num]
+        if match:sub(1, 2) == "[:" and tonumber(match:sub(3, -2)) then
+            local num = tonumber(match:sub(3, -2))
+            if num and num >= 1 and num <= 16 then
+                local emojiFileName = string.format("ui/Emoji/emoji_%02d.png", num)
+                table.insert(textStr, { oType = "img", fileName = emojiFileName })
+            end
+        elseif match:find("%#%?") then
+            local equipName = match:sub(4, -2) -- Remove brackets
+            local mapName, x, y = equipName:match("(.-)%s*(%d+),(%d+)")
+            if mapName and x and y then
+                local posStr = "[" .. mapName .. " " .. x .. "," .. y .. "]"
+                insertText(posStr)
+            else
+                insertText(match)
+            end
+        elseif match:find("%/%?") then
+            -- Equipment processing
+            local equipName = match:sub(2, -2) -- Remove brackets
+            local setstr, setname, linkindex = ChatModule:getItemInfo(equipName, 1)
+            insertText(setname)
+        else
+            insertText(match)
+        end
+
+        lastPos = endPos + 1
+    end
+
+    return textStr
+end
+
+function ChatModule:setChatInfo(info)
+    if not info then
+        return
+    end
+    if #self._infoTable == self._maxnum then
+        table.remove(self._infoTable, 1)
+        table.insert(self._infoTable, info)
+    else
+        table.insert(self._infoTable, info)
+    end
+end
+
+function ChatModule:getChatInfo()
+    if #self._infoTable > 0 then
+        return self._infoTable
+    end
+    return nil
+end
+
+-- 世界频道消息 （加上喇叭）
+function ChatModule:setChatWorldInfo(info)
+    if not info then
+        return
+    end
+    if #self._infoWorldTable == self._maxnum then
+        table.remove(self._infoWorldTable, 1)
+        table.insert(self._infoWorldTable, info)
+    else
+        table.insert(self._infoWorldTable, info)
+    end
+end
+
+function ChatModule:getChatWorldInfo()
+    if #self._infoWorldTable > 0 then
+        return self._infoWorldTable
+    end
+    return nil
+end
+
+-- 系统消息 （系统频道 + 后台广播）
+function ChatModule:setChatSystemInfo(info)
+    if not info then
+        return
+    end
+    if #self._infoSystemTable == self._maxnum then
+        table.remove(self._infoSystemTable, 1)
+        table.insert(self._infoSystemTable, info)
+    else
+        table.insert(self._infoSystemTable, info)
+    end
+end
+
+function ChatModule:getChatSystemInfo()
+    if #self._infoSystemTable > 0 then
+        return self._infoSystemTable
+    end
+    return nil
+end
+
+-- 私聊未读
+function ChatModule:setPrivateUnReadInfo(info)
+    if not info then
+        return
+    end
+    if #self._privateUnReadList == self._maxnum then
+        table.remove(self._privateUnReadList, 1)
+        table.insert(self._privateUnReadList, info)
+    else
+        table.insert(self._privateUnReadList, info)
+    end
+end
+
+function ChatModule:getPrivateUnReadInfo()
+    return self._privateUnReadList or {}
+end
+
+function ChatModule:reSetPrivateUnReadInfo()
+    self._privateUnReadList = {}
+end
+
+-- 每个类型聊天信息缓存
+function ChatModule:setChatTypeInfo(info)
+    if not info then
+        return
+    end
+    if not self._infoTypeTable[info.chatType] then
+        self._infoTypeTable[info.chatType] = {}
+    end
+    if #self._infoTypeTable[info.chatType] == self._maxnum then
+        table.remove(self._infoTypeTable[info.chatType], 1)
+        table.insert(self._infoTypeTable[info.chatType], info)
+    else
+        table.insert(self._infoTypeTable[info.chatType], info)
+    end
+end
+
+function ChatModule:getChatTypeInfo(chatType)
+    if self._infoTypeTable[chatType] and #self._infoTypeTable[chatType] > 0 then
+        return self._infoTypeTable[chatType]
+    end
+    return nil
+end
+
+function ChatModule:getItemInfo(strs, types)
+    local array = string.split(strs, "/?") -- Item
+    if #array ~= 4 then
+        array = string.split(strs, "#?")   --pos
+    end
+
+    if #array == 4 then
+        local info = {}
+        for k, v in pairs(json.decode(array[3])) do
+            --yflog:Info("tzdflglk::::",v[1],v[2],type(v[1]),type(v[2]))
+            info[v[1]] = v[2]
+        end
+        local items = lt.ItemData.new(tonumber(array[2]), nil, info)
+        if items then
+            local msg = array[1] .. "[" .. items:getName() .. "]" .. array[4]
+            if types == 1 then
+                return msg, "[" .. items:getName() .. "]", 1
+            elseif types == 2 then
+                return items, "item"
+            end
+        end
+    elseif #array == 3 then
+        if array[2] then
+            local mapinfo = json.decode(array[2])
+            local data = lt.MapDao:query(mapinfo[1])
+            local msg = array[1] .. "[" .. data:getMapName() .. " " .. mapinfo[2] .. "," .. mapinfo[3] .. "]" .. array
+                [3]
+            if types == 1 then
+                return msg, "[" .. data:getMapName() .. " " .. mapinfo[2] .. "," .. mapinfo[3] .. "]", 2
+            elseif types == 2 then
+                return array[2], "pos"
+            end
+        end
+    end
+    if types == 1 then
+        return nil, nil, nil
+    elseif types == 2 then
+        return nil
+    end
+end
+
+function ChatModule:getPlatformType()
+    if device.platform == "windows" then
+        return true
+    else
+        return false
+    end
+end
+
+function ChatModule:encodeBase64(source_str)
+    local b64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    local s64 = ''
+    local str = source_str
+
+    while #str > 0 do
+        local bytes_num = 0
+        local buf = 0
+
+        for byte_cnt = 1, 3 do
+            buf = (buf * 256)
+            if #str > 0 then
+                buf = buf + string.byte(str, 1, 1)
+                str = string.sub(str, 2)
+                bytes_num = bytes_num + 1
+            end
+        end
+
+        for group_cnt = 1, (bytes_num + 1) do
+            local b64char = math.fmod(math.floor(buf / 262144), 64) + 1
+            s64 = s64 .. string.sub(b64chars, b64char, b64char)
+            buf = buf * 64
+        end
+
+        for fill_cnt = 1, (3 - bytes_num) do
+            s64 = s64 .. '='
+        end
+    end
+
+    return s64
+end
+
+function ChatModule:decodeBase64(str64)
+    local b64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    local temp = {}
+    for i = 1, 64 do
+        temp[string.sub(b64chars, i, i)] = i
+    end
+    temp['='] = 0
+    local str = ""
+    for i = 1, #str64, 4 do
+        if i > #str64 then
+            break
+        end
+        local data = 0
+        local str_count = 0
+        for j = 0, 3 do
+            local str1 = string.sub(str64, i + j, i + j)
+            if not temp[str1] then
+                return
+            end
+            if temp[str1] < 1 then
+                data = data * 64
+            else
+                data = data * 64 + temp[str1] - 1
+                str_count = str_count + 1
+            end
+        end
+        for j = 16, 0, -8 do
+            if str_count > 0 then
+                str = str .. string.char(math.floor(data / math.pow(2, j)))
+                data = math.mod(data, math.pow(2, j))
+                str_count = str_count - 1
+            end
+        end
+    end
+
+    local last = tonumber(string.byte(str, string.len(str), string.len(str)))
+    if last == 0 then
+        str = string.sub(str, 1, string.len(str) - 1)
+    end
+    return str
+end
+
+-- 获取头像图片URL
+function ChatModule:getHeadUrl(race, sex, faceShape)
+    local urlPath = ""
+    if race == Constant.RaceType.Ousters then
+        urlPath = _GURL.ImageOuterChatHead
+    elseif race == Constant.RaceType.Vampire then
+        urlPath = string.format(_GURL.GetImageChatVarHead, sex)
+    elseif race == Constant.RaceType.Slayer then
+        urlPath = string.format(_GURL.GetImageChatHead, faceShape)
+    end
+    return urlPath
+end
+
+-- 是否是表情
+function ChatModule:isEmoji(str)
+    return string.match(str, "emoji:")
+end
+
+-- 随机生成大小写字母
+function ChatModule:randomChar(str)
+    if not str then
+        return ""
+    end
+    if type(str) ~= "string" then
+        return ""
+    end
+    local strFilter = ""
+    for i = 1, string.len(str) do
+        local base = math.random(2) == 1 and 65 or 97                -- A 或 a 的 ASCII 码
+        strFilter = strFilter .. string.char(base + math.random(25)) -- 加上 0 到 25 的偏移量
+    end
+    return strFilter
+end
+
+-- 处理chatmsg -- isSelf 翻译器 是不是自己 或者世界频道 不加乱码
+function ChatModule:initChatMsg(tableStr, chatinfo, isSelf, type)
+    if not chatinfo then
+        return tableStr
+    end
+    local translater = chatinfo.translater -- 是否有翻译器
+    local isTran = false
+    if not isSelf then
+        isTran = translater
+    else
+        isTran = true
+    end
+    if chatinfo.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_WORD or
+        chatinfo.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_NEW_SYSTEM or
+        chatinfo.chatType == Constant.MESSAGE_TALK_TYPE.LANTERN_NOTICE or
+        chatinfo.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_WEB_NOTICE then -- 世界,系统 不乱码
+        isTran = true
+    end
+    local myRace = GameModule:getHeroRace()
+    local sendManRace = chatinfo.sendRace
+    local isNeedFilter = false
+    if myRace ~= sendManRace and not isTran then --不同种族乱码
+        isNeedFilter = true
+    end
+    local lastPos = 1
+    local input = chatinfo.chatMsg
+    local inputLen = #input
+    local strColor = "#ffffff"
+    local function insertStr(str)
+        if not str or str == "" then
+            return tableStr
+        end
+        local strFilter = ""
+        if isNeedFilter then
+            if chatinfo.strFilter == nil then
+                chatinfo.strFilter = self:randomChar(str)
+            end
+            strFilter = chatinfo.strFilter
+        else
+            strFilter = str
+            chatinfo.strFilter = nil
+        end
+
+        if chatinfo.sendColor and chatinfo.sendColor ~= "" then
+            strColor = chatinfo.sendColor
+            table.insert(tableStr, string.format("[color=%s]", strColor))
+            table.insert(tableStr, strFilter)
+            table.insert(tableStr, "[/color]")
+        else
+            table.insert(tableStr, strFilter)
+        end
+    end
+
+    -- 需要翻译
+    if isNeedFilter then
+        local setstr, setname, linkindex = ChatModule:getItemInfo(input, 1)
+        if setstr then
+            input = setstr
+        end
+        insertStr(input)
+        return tableStr
+    end
+
+    if chatinfo.chatType == Constant.MESSAGE_TALK_TYPE.LANTERN_NOTICE then
+        -- local array = string.split(input, "|?")
+        local jsonInfo = json.decode(input)
+        local msg = jsonInfo.msg
+        local color = jsonInfo.color
+        local name = jsonInfo.name
+        local race = jsonInfo.race
+        -- input = Constant.RaceStr[tonumber(array[4])] .. ":" .. array[3] .. ">" .. array[1]
+        strColor = "#" .. color
+        input = ">" .. msg
+
+        table.insert(tableStr, string.format("[color=%s]", strColor))
+        table.insert(tableStr, Constant.RaceStr[tonumber(race)] .. ":")
+        table.insert(tableStr, "[/color]")
+
+        table.insert(tableStr, "<a href=\"" .. name .. "\" target=\"_blank\">")
+        table.insert(tableStr, string.format("[color=%s]", strColor))
+        table.insert(tableStr, name)
+        table.insert(tableStr, "[/color]")
+        table.insert(tableStr, "</a>")
+    end
+
+    while lastPos <= inputLen do
+        local startPos, endPos = input:find("%b[]", lastPos)
+        if not startPos then
+            -- No more brackets found, add remaining text
+            insertStr(input:sub(lastPos))
+            break
+        end
+        -- Add text before the bracket
+        if startPos > lastPos then
+            table.insert(tableStr, input:sub(lastPos, startPos - 1))
+        end
+
+        local match = input:sub(startPos, endPos)
+        -- Process the matched content
+        if match:sub(1, 2) == "[:"
+            and tonumber(match:sub(3, -2)) then
+            -- Emoji processing
+            local num = tonumber(match:sub(3, -2))
+            if num and num >= 1 and num <= 16 then
+                local emojiUrl = string.format(_GURL.GetCompChatEmoji, num)
+                table.insert(tableStr, "[img]" .. emojiUrl .. "[/img]")
+            else
+                insertStr(match)
+            end
+        elseif match:find("%#%?") then
+            local equipName = match:sub(4, -2) -- Remove brackets
+            local mapName, x, y = equipName:match("(.-)%s*(%d+),(%d+)")
+            if mapName and x and y then
+                local posStr = "[" .. mapName .. " " .. x .. "," .. y .. "]"
+                table.insert(tableStr, "<a href=\"" .. posStr .. "\" target=\"_blank\">")
+                table.insert(tableStr, "[color=#dda411]" .. posStr .. "[/color]")
+                table.insert(tableStr, "</a>")
+            else
+                insertStr(match)
+            end
+        elseif match:find("%/%?") then
+            -- Equipment processing
+            local equipName = match:sub(2, -2) -- Remove brackets
+            local setstr, setname, linkindex = ChatModule:getItemInfo(equipName, 1)
+
+            table.insert(tableStr, "<a href=\"" .. setname .. "\" target=\"_blank\">")
+            table.insert(tableStr, "[color=#d61d29]" .. setname .. "[/color]")
+            table.insert(tableStr, "</a>")
+        elseif string.find(match, "teamId=") then
+            --队伍id不显示
+            -- local teamId = match:sub(9, -2)
+        else
+            insertStr(match)
+        end
+
+        lastPos = endPos + 1
+    end
+
+    return tableStr
+end
+
+function ChatModule:isValidString(text)
+    -- 检查字符串是否为空或仅包含空白字符
+    if string.match(text, "^%s*$") then
+        return false
+    end
+
+    -- 检查字符串是否完全由字母组成
+    if string.match(text, "^%a+$") then
+        return true
+    end
+
+    -- 检查字符串是否完全由数字组成
+    if string.match(text, "^%d+$") then
+        return true
+    end
+
+    -- 检查字符串是否同时包含字母和数字，且没有其他字符
+    if string.match(text, "^%w+$") and not string.match(text, "%s") then
+        return true
+    end
+
+    -- 如果不符合上述所有条件，则字符串包含不允许的字符
+    return false
+end
+
+--type 1 是有头像框 只处理chatMsg
+function ChatModule:initStr(chatinfo, type)
+    local tableStr = {}
+    --频道
+    if type ~= 1 then
+        if chatinfo.chatType == Constant.MESSAGE_TALK_TYPE.LANTERN_NOTICE then -- 喇叭
+            table.insert(tableStr, "[img]" .. _GURL.GetImageLaba .. "[/img]")
+        else
+            -- table.insert(tableStr,
+            --     "[img]" .. string.format(_GURL.GetImageChat, ChatModule.CHATTYPEURL[chatinfo.chatType] or "") .. "[/img]")
+            local chatTypeStr = "[" .. (ChatModule.CHATTYPESTR[chatinfo.chatType] or "") .. "]"
+            local chatTypeColor = ChatModule.CHATTYPECOLOR[chatinfo.chatType] or ""
+            table.insert(tableStr, string.format("[color=%s]", chatTypeColor))
+            table.insert(tableStr, chatTypeStr)
+            table.insert(tableStr, "[/color]")
+        end
+    end
+
+    if chatinfo.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_PRIVATE then -- 私聊
+        local sendman = GameModule:getHeroData():getName()
+        if chatinfo.sendMan == sendman then                                  -- 你对别人说
+            table.insert(tableStr, "你对")
+            local nameStr = "[" .. chatinfo.recieveMan .. "]"
+            table.insert(tableStr, "<a href=\"" .. nameStr .. "\" target=\"_blank\">")
+            table.insert(tableStr, "[color=#d03333]" .. nameStr .. "[/color]")
+            table.insert(tableStr, "</a>")
+            table.insert(tableStr, "说：")
+            tableStr = ChatModule:initChatMsg(tableStr, chatinfo, true)
+        else -- 别人对我说
+            local nameStr = "[" .. chatinfo.sendMan .. "]"
+            table.insert(tableStr, "<a href=\"" .. nameStr .. "\" target=\"_blank\">")
+            table.insert(tableStr, "[color=#d03333]" .. nameStr .. "[/color]")
+            table.insert(tableStr, "</a>")
+            table.insert(tableStr, "对你说：")
+            tableStr = ChatModule:initChatMsg(tableStr, chatinfo)
+        end
+    else
+        -- 发送者
+        if chatinfo.sendMan and chatinfo.sendMan ~= "" and type ~= 1 and chatinfo.chatType ~= Constant.MESSAGE_TALK_TYPE.LANTERN_NOTICE then -- 喇叭 then
+            local nameStr = "[" .. chatinfo.sendMan .. "]"
+            table.insert(tableStr, "<a href=\"" .. nameStr .. "\" target=\"_blank\">")
+            table.insert(tableStr, "[color=#59abff]" .. nameStr .. "[/color]")
+            table.insert(tableStr, "</a>")
+        end
+
+        -- 除了世界频道 都要判断是否统一种族
+        if self:isEmoji(chatinfo.chatMsg) then -- 弃用了
+            local indexstr = string.gsub(chatinfo.chatMsg, "emoji:", "")
+            table.insert(tableStr, "[img]" .. string.format(_GURL.GetCompChatEmoji, tonumber(indexstr)) .. "[/img]")
+        else
+            tableStr = ChatModule:initChatMsg(tableStr, chatinfo, false, type)
+        end
+    end
+
+    return table.concat(tableStr)
+end
+
+--TODO 纯英文不换行问题
+function ChatModule:wrapText(text, maxWidth, fontSize, fontName)
+    local words = {}
+    for word in string.gmatch(text, ".") do
+        table.insert(words, word)
+    end
+
+    local wrappedText = ""
+    local currentLine = ""
+    local fontSize = fontSize or 20
+    local label = fgui.GBasicTextField:create()
+    for _, word in ipairs(words) do
+        local testLine = currentLine .. word
+        label:setFontSize(fontSize) -- 字体大小
+        label:setText(testLine)
+        if label:getSize().width > maxWidth then
+            if currentLine ~= "" then
+                wrappedText = wrappedText .. currentLine .. "<br/>"
+            end
+            currentLine = word
+        else
+            currentLine = testLine
+        end
+    end
+
+    if currentLine ~= "" then
+        wrappedText = wrappedText .. currentLine
+    end
+
+    return wrappedText
+end
+
+---@param playername 私聊名字
+function ChatModule:openChatUI(playername)
+    local open, tips = lt.FunctionToggleModule:checkOpen(lt.FunctionToggleModule.FunctionHelpId.Chat)
+    --vip 激活聊天（提前开启条件）。
+    local meta = lt.VipModule:getCurVipMeta()
+    local canChat = false
+    if meta and meta:getActivateChat() == 1 then
+        canChat = true
+    end
+    if not canChat and not open then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = tips })
+        return
+    end
+    if playername then
+        if not lt.FriendModule:checkIsFriend(playername) then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = "请添加好友" })
+            return
+        end
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW,
+        { class = "UIWndChat", playername = playername, offset = { x = ChatModule.offsetX, y = 0 } })
+end
+
+--系统消息
+function ChatModule:sendSystemMsg(chatMsg)
+    local iteminfo            = {}
+    iteminfo.chatType         = Constant.MESSAGE_TALK_TYPE.TALKTYPE_NEW_SYSTEM
+    iteminfo.sendMan          = ""
+    iteminfo.recieveMan       = ""
+    iteminfo.chatMsg          = chatMsg
+    iteminfo.sendLevel        = ""
+    iteminfo.sendRace         = ""
+    iteminfo.translater       = ""
+    iteminfo.sendSex          = ""
+    iteminfo.sendFaceShape    = ""
+    iteminfo.sendTendencies   = ""
+    iteminfo.sendAdvanceState = ""
+    iteminfo.sendAdvanceLv    = ""
+    iteminfo.sendGradeLv      = ""
+    iteminfo.sendGuildName    = ""
+    iteminfo.fontColor        = ""
+    iteminfo.sendColor        = ""
+    self:setChatTypeInfo(iteminfo)
+    self:setChatInfo(iteminfo)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_CHAT)
+end
+
+return ChatModule

@@ -1,0 +1,134 @@
+---@删除角色提示
+---@class UICompMessageBoxRemove
+local UICompMessageBoxRemove = class("UICompMessageBoxRemove", lt.UICompBase, lt.UICompChangeSkin)
+local NtfManager = lt.NtfManager
+UICompMessageBoxRemove.ChangeSkinConf = {
+    ["MessageBox"] = {
+        ["bg"] = "bg_jueseliebiao_jsxztanchuang",
+        ["inputBg"] = "bg_jueseliebiao_shurukuang"
+    },
+    ["CommonTL"] = {
+        closeButton = {bg  = "sort"},
+        confirm = {bg  = "sort"},
+    } 
+}
+
+function UICompMessageBoxRemove:ctor()
+    UICompMessageBoxRemove.super.ctor(self)
+
+    self._data = nil
+end
+
+function UICompMessageBoxRemove:onClear()
+    self._data = nil
+    self._nameInput = nil
+    self._confirm = nil
+    self._closeButton = nil
+    self._inputBg = nil
+
+    UICompMessageBoxRemove.super.onClear(self)
+end
+
+function UICompMessageBoxRemove:onEnter()
+    self._confirm:addClickListener(handler(self, self.onBtnClick))
+    self._closeButton:addClickListener(handler(self, self.onCloseBtnClick))
+
+end
+function UICompMessageBoxRemove:onExit()
+    self._confirm:removeClickListener()
+    self._closeButton:removeClickListener()
+end
+
+function UICompMessageBoxRemove:initUI(data)
+    UICompMessageBoxRemove.super.startSkin(self)
+
+    self._data = data or {}
+    self._confirm = self:getChild("confirm")
+    
+    self._closeButton = self:getChild("closeButton")
+
+    self._inputBg = self:getChild("inputBg")
+    -- self._nameInput = self:getChild("nameInput")
+    self:initCocosInputUI()
+    self:refreshDesc()
+end
+
+function UICompMessageBoxRemove:onCloseBtnClick()
+    if self._nameInput then
+        self._nameInput:setText("")
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX_REMOVE)
+    self._nameInput:setText("")
+    local cancelCallback = self._data.cancelCallback
+    if cancelCallback then
+        cancelCallback()
+    end
+end
+
+function UICompMessageBoxRemove:onBtnClick()
+    local closeLimitFunc = self._data.closeLimitFunc
+    local name = self._nameInput:getText()
+    if closeLimitFunc then
+        if closeLimitFunc(name) then  -- closeLimitFunc  返回true return
+            return
+        end
+    end
+
+    self._nameInput:setText("")
+    local confirmCallback = self._data.confirmCallback
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX_REMOVE)
+    if confirmCallback then
+        confirmCallback()
+    end
+end
+
+function UICompMessageBoxRemove:initCocosInputUI()
+    if not self._nameInput then
+        self._nameInput = ccui.EditBox:create(cc.size(340, 45),"", ccui.TextureResType.localType)
+        self._nameInput:setAnchorPoint(cc.p(0, 0))
+        self._nameInput:setFontName(lt.Constant.FONT_4)
+        self._nameInput:setFontSize(18)
+        self._nameInput:setReturnType(cc.KEYBOARD_RETURNTYPE_SEND)
+        self._nameInput:setInputMode(cc.EDITBOX_INPUT_MODE_SINGLELINE)
+        self._nameInput:registerScriptEditBoxHandler(handler(self, self.editBoxEvent))
+        self._inputBg:displayObject():addChild(self._nameInput)
+    end
+end
+
+function UICompMessageBoxRemove:editBoxEvent(eventType,sender)
+    if eventType == "began" then
+    elseif eventType == "ended" then
+    elseif eventType == "changed" then
+        local str = sender:getText()
+        str = string.gsub(str," ","")--过滤掉空格
+        str = lt.CommonUtil:rmSpecChars(str)
+        local count = string.len(str)
+        local reCount = 0
+        local beginIndex = -1
+        local reString = ""
+        for i = 1, count do
+            local s = string.sub(str, i, i)
+            local t = string.byte(s)
+            if t < 128 then
+                reCount = reCount + 1--1字节文字，长度加1
+            elseif t >= 192 then
+                reCount = reCount + 2--1字节以上文字，长度加2
+            end
+            if reCount > 10 then
+                beginIndex = i - 1
+                break
+            end
+            beginIndex = i
+        end
+        reString = string.sub(str, 1, beginIndex)
+        sender:setText("")
+        self._nameInput:setText(reString)
+    elseif eventType == "return" then
+    end
+end
+
+function UICompMessageBoxRemove:refreshDesc()
+ 
+end
+
+return UICompMessageBoxRemove

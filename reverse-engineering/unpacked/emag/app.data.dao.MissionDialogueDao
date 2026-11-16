@@ -1,0 +1,13 @@
+local MissionDialogueDao = {}
+
+function MissionDialogueDao:queryAll()
+    local map = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM MissionDialogue") do
+        local meta = lt.MissionDialogueMeta.new(row)
+        map[meta:getMissionId()] = meta
+    end
+    return map
+end
+
+return MissionDialogueDao

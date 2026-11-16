@@ -1,0 +1,157 @@
+---@装备融合二次确认
+---@class UICompStFusionPreview
+local UICompStFusionPreview = class("UICompStFusionPreview", lt.UIGButtonBase, lt.UICompChangeSkin)
+
+UICompStFusionPreview.ChangeSkinConf = {
+    ["Strengthen"] = {
+        ["img_di2"] = "bg_zhuangbei_di1",
+    },
+    ["MessageBox"] = {
+        ["img_di"] = "bg_tytanchuang_03",
+    },
+    ["CommonTL"] = {
+        ["btn_cancel"] = {bg = "sort"},
+        ["btn_confirm"] = {bg = "sort"},
+    }
+}
+
+local FUSION_TYPES = {
+    COMPOSE = 1,        --合成
+    INHERIT = 2,        --传承
+}
+
+local NtfManager = lt.NtfManager
+local Constant = lt.Constant
+local StrengthenModule = lt.StrengthenModule
+local ServerClientEnum = lt.ServerClientEnum
+
+function UICompStFusionPreview:ctor()
+    self:registerComponent("UICompItem", "UICompEnchantItem")
+    UICompStFusionPreview.super.ctor(self)
+    --UI
+    self._titleLabel = nil
+    self._equipIcon = nil
+    self._attrlist = nil
+    self._btnCancel = nil
+    self._btnConfirm = nil
+    self._icon = nil
+    --数据
+    self._newItemInfo = nil
+    self._attr = nil
+end
+
+function UICompStFusionPreview:onClear()
+    self:unregisterAllComponent()
+    --UI
+    self._titleLabel = nil
+    self._equipIcon = nil
+    self._btnCancel = nil
+    self._btnConfirm = nil
+    self._icon = nil
+    --数据
+    self._newItemInfo = nil
+    self._attr = nil
+
+    if self._attrlist then
+        self._attrlist:removeChildrenToPool()
+        self._attrlist:removeItemRenderer()
+        self._attrlist = nil
+    end
+end
+
+function UICompStFusionPreview:onConstruct()
+    self:startSkin()
+    self:initUI()
+end
+
+function UICompStFusionPreview:initUI()
+    self._titleLabel = self:getChild("label_title")
+    self._equipIcon = self:getChild("panel_icon")
+    self._attrlist = self:getChild("list_attr")
+    self._attrlist:setItemRenderer(handler(self, self.renderListItem))
+    self._btnCancel = self:getChild("btn_cancel")
+    self._btnConfirm = self:getChild("btn_confirm")
+    if self._icon == nil then
+        self._icon = fgui.UIPackage:createObject("Item", "Item")
+        self._icon:setPivot(0.5,0.5, true)
+        self._equipIcon:addChild(self._icon)
+    end
+end
+
+function UICompStFusionPreview:onEnter()
+    self._icon:insertObjectToFactory(self:getRegClass())
+    self:getChild("panel_btn"):addClickListener(handler(self, self.onEquipClick))
+    self._btnCancel:addClickListener(handler(self, self.onCancelBtnClick))
+    self._btnConfirm:addClickListener(handler(self, self.onConfirmBtnClick))
+end
+
+function UICompStFusionPreview:onExit()
+    self:getChild("panel_btn"):removeClickListener()
+    self._btnCancel:removeClickListener()
+    self._btnConfirm:removeClickListener()
+end
+
+function UICompStFusionPreview:refreshView(index, itemInfo1, itemInfo2)
+    self._titleLabel:setText(index == FUSION_TYPES.COMPOSE and GReadText.KEY_STRENGTHEN_TIPS29 or GReadText.KEY_STRENGTHEN_TIPS30)
+    if index == FUSION_TYPES.COMPOSE then
+        --判断预留哪件装备(留等级高的，一样的留左边)
+        self._newItemInfo = clone(itemInfo1:getILevel() >= itemInfo2:getILevel() and itemInfo1 or itemInfo2)
+        self._icon:setItemInfo(self._newItemInfo)
+        local tempInfo = itemInfo1:getILevel() >= itemInfo2:getILevel() and itemInfo2 or itemInfo1
+        local tempAffixId = tempInfo:getFirstAffixId()
+        local tempAffixLevel = tempInfo:getFirstAffixLevel()
+        if tempAffixId == nil or tempAffixId == 0 then
+            tempAffixId = tempInfo:getSecondAffixId()
+            tempAffixLevel = tempInfo:getSecondAffixLevel()
+        end
+        if tempAffixId == nil or tempAffixId == 0 then
+            tempAffixId = tempInfo:getThirdAffixId()
+            tempAffixLevel = tempInfo:getThirdAffixLevel()
+        end
+        if self._newItemInfo:getSecondAffixId() ~= 0 then
+            self._newItemInfo:setValue(ServerClientEnum.ItemValueDef.Attr_FirstAffixId, tempAffixId)
+            self._newItemInfo:setValue(ServerClientEnum.ItemValueDef.Attr_FirstAffixLevel, tempAffixLevel)
+        else
+            self._newItemInfo:setValue(ServerClientEnum.ItemValueDef.Attr_SecondAffixId, tempAffixId)
+            self._newItemInfo:setValue(ServerClientEnum.ItemValueDef.Attr_SecondAffixLevel, tempAffixLevel)
+        end
+        self._attr = StrengthenModule:transformAffix(self._newItemInfo)
+        self._attrlist:setNumItems(#self._attr)
+    else
+        self._newItemInfo = clone(itemInfo2)
+        self._icon:setItemInfo(self._newItemInfo)
+        self._newItemInfo:setValue(ServerClientEnum.ItemValueDef.Attr_FirstAffixId, itemInfo1:getFirstAffixId())
+        self._newItemInfo:setValue(ServerClientEnum.ItemValueDef.Attr_FirstAffixLevel, itemInfo1:getFirstAffixLevel())
+        self._newItemInfo:setValue(ServerClientEnum.ItemValueDef.Attr_SecondAffixId, itemInfo1:getSecondAffixId())
+        self._newItemInfo:setValue(ServerClientEnum.ItemValueDef.Attr_SecondAffixLevel, itemInfo1:getSecondAffixLevel())
+        self._newItemInfo:setValue(ServerClientEnum.ItemValueDef.Attr_ThirdAffixId, itemInfo1:getThirdAffixId())
+        self._newItemInfo:setValue(ServerClientEnum.ItemValueDef.Attr_ThirdAffixLevel, itemInfo1:getThirdAffixLevel())
+        self._attr = StrengthenModule:transformAffix(itemInfo1)
+        self._attrlist:setNumItems(#self._attr)
+    end
+end
+
+function UICompStFusionPreview:closeView()
+    self:setVisible(false)
+end
+
+function UICompStFusionPreview:onEquipClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,{itemInfo = self._newItemInfo, tipsType = Constant.EquipShowTipsType.Display})
+end
+
+function UICompStFusionPreview:onConfirmBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_CONFIRM_FUSION)
+    self:closeView()
+end
+
+function UICompStFusionPreview:onCancelBtnClick()
+    self:closeView()
+end
+
+function UICompStFusionPreview:renderListItem(index, obj)
+    local equipProp = self._attr[index + 1]
+    obj:setAttr(equipProp)
+    obj:insertObjectToFactory(self)
+end
+
+return UICompStFusionPreview

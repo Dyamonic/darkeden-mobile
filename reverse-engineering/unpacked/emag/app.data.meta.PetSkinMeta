@@ -1,0 +1,75 @@
+local PetSkinMeta = class("PetSkinMeta")
+
+local CommonFunc = lt.CommonFunc
+local Constant = lt.Constant
+
+
+function PetSkinMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function PetSkinMeta:initWithRow(row)
+    self._skinId      = row.SkinId
+    self._level       = row.Level
+    self._accumAttr1  = row.AccumAttr1
+    self._accumAttr2  = row.AccumAttr2
+    self._accumAttr3  = row.AccumAttr3
+    if type(row.ConsumeItem) == "string" then
+        self._consumeItem = CommonFunc:analysisJson2Number(row.ConsumeItem)
+    else
+        self._consumeItem = row.ConsumeItem
+    end
+    
+    if type(row.AccumAttr1) == "string" then
+        self._accumAttr1 = CommonFunc:analysisJson2Number(row.AccumAttr1)
+    else
+        self._accumAttr1 = row.AccumAttr1
+    end
+    
+    if type(row.AccumAttr2) == "string" then
+        self._accumAttr2 = CommonFunc:analysisJson2Number(row.AccumAttr2)
+    else
+        self._accumAttr2 = row.AccumAttr1
+    end
+    
+    if type(row.AccumAttr3) == "string" then
+        self._accumAttr3 = CommonFunc:analysisJson2Number(row.AccumAttr3)
+    else
+        self._accumAttr3 = row.AccumAttr1
+    end
+end
+
+function PetSkinMeta:getAccumAttr1()
+    return self._accumAttr1
+end
+
+function PetSkinMeta:getAccumAttr2()
+    return self._accumAttr2
+end
+
+function PetSkinMeta:getAccumAttr3()
+    return self._accumAttr3
+end
+
+function PetSkinMeta:getAccumAttrByRace(race)
+    if race == Constant.RaceType.Slayer then
+        return self:getAccumAttr1()
+    elseif race == Constant.RaceType.Vampire then
+        return self:getAccumAttr2()
+    elseif race == Constant.RaceType.Ousters then
+        return self:getAccumAttr3()
+    end
+end
+
+function PetSkinMeta:getConsumeItem()
+    return self._consumeItem
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function PetSkinMeta:getSkinId() return self._skinId end
+function PetSkinMeta:getLevel() return self._level end
+
+-- AUTO GENERATED GETTERS END
+return PetSkinMeta

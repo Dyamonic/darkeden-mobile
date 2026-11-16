@@ -1,0 +1,408 @@
+---@class UICompMagicOTree 魔族技能树
+local UICompMagicOTree = class("UICompMagicOTree", lt.UICompBase)
+
+local Constant = lt.Constant
+local CacheManager = lt.CacheManager
+local SkillModule = lt.SkillModule
+local NtfManager = lt.NtfManager
+local WndLockManager = lt.WndLockManager
+local ShaderBackendUtil = lt.ShaderBackendUtil
+local SkeletonManager = lt.SkeletonManager
+local AudioManager = lt.AudioManager
+
+function UICompMagicOTree:ctor()
+    UICompMagicOTree.super.ctor(self)
+    self._nodePosList   = nil
+    self._nodeList      = nil
+    self._lvTextList    = nil
+    self._nodeCyanList  = nil
+    self._nodeLineList  = nil
+    self._nodeArrowList = nil
+    self._nodeSpineList = nil
+    -- self._nodeMaxList   = nil
+end
+
+function UICompMagicOTree:onClear()
+    self._nodePosList   = nil
+    self._nodeList      = nil
+    self._lvTextList    = nil
+    self._nodeCyanList  = nil
+    self._nodeLineList  = nil
+    self._nodeArrowList = nil
+    self._nodeSpineList = nil
+    -- self._nodeMaxList   = nil
+    UICompMagicOTree.super.onClear(self)
+end
+
+function UICompMagicOTree:onConstruct()
+    self:initUIData()
+end
+
+function UICompMagicOTree:onEnter()
+    self:addNodeClick()
+end
+
+function UICompMagicOTree:onExit()
+    self:removeNodeClick()
+end
+
+function UICompMagicOTree:removeNodeClick()
+    -- icon 常态node
+    for k,v in pairs(self._nodePosList) do
+        local skillId = k
+        local skillCfg = CacheManager:querySkillMeta(skillId)
+        if skillCfg and self._nodeList[skillId] then
+            self._nodeList[skillId]:removeClickListener()
+        end
+    end
+end
+
+function UICompMagicOTree:addNodeClick()
+    -- icon 常态node
+    for k,v in pairs(self._nodePosList) do
+        local skillId = k
+        local skillCfg = CacheManager:querySkillMeta(skillId)
+        if skillCfg and self._nodeList[skillId] then
+            local function onTouchOperate(target)
+                if self._type == Constant.ENTER_TYPES.FORGET then
+                    --判断是否未学习(遗忘技能时)
+                    local state = SkillModule:getCurSkillState(skillId)
+                    if state ~= Constant.SkillState.Learned then
+                        lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KET_SKILL_TIPS27})
+                        return
+                    end
+                end
+
+                local perSkillId = WndLockManager:getMagicSelectId()
+                if perSkillId == skillId then -- 重复点击关闭技能tips
+                    WndLockManager:closeIgnoreRoleInfo()
+                    -- WndLockManager:setCloseIgnore({["UIWndRoleInfo"] = true})
+                    -- NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndLock", close = true})
+                    return
+                end
+
+                WndLockManager:setMagicSelectId(skillId)
+                if WndLockManager:getWndLockType() then
+                    -- NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndMagicOTips", reopen = true})
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_SKILL_TIPS_INFO)
+                    AudioManager:playSound(Constant.SoundEffect.OustersSkillInfoSound)
+                    return
+                end
+           
+                local isOpenRoleEquip = self:isOpenRoleEquip("UIWndRoleEquip")
+                local param = {
+                    [1] = { class = "UIWndRoleInfo", reopen = true},
+                    [2] = { class = "UIWndMagicOTips", reopen = true, param = {type = self._type, skillType = self._skillType}}, 
+                    WndLockType = Constant.WndLockType.SkillTips
+                }
+                if isOpenRoleEquip then
+                    param[3] = { class = "UIWndRoleEquip", reopen = true}
+                end
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {
+                    class = "UIWndLock",
+                    reopen = true,
+                    param = param,
+                    fromNpc = self._type == Constant.ENTER_TYPES.FORGET,
+                })
+
+                AudioManager:playSound(Constant.SoundEffect.OustersSkillInfoSound)
+                -- print("touch", skillId)
+            end
+            self._nodeList[skillId]:addClickListener(handler(self, onTouchOperate))
+        end
+    end
+end
+
+function UICompMagicOTree:isOpenRoleEquip(layerName)
+    local layerManager = display.getRunningScene():getLayerManager()
+    local wndLayer = layerManager:getWndLayer()
+    local openArray = wndLayer:getViewOpenArray()
+    for _,v in ipairs(openArray) do
+        if v:getParam().layerName == layerName then
+            return true
+        end
+    end
+    return false
+end
+
+function UICompMagicOTree:initUIData()
+    if self._nodePosList then
+        return
+    end
+
+    if not self._nodePosList then self._nodePosList = {} end
+    if not self._nodeList then self._nodeList = {} end
+    if not self._lvTextList then self._lvTextList = {} end
+    if not self._nodeCyanList then self._nodeCyanList = {} end
+    if not self._nodeLineList then self._nodeLineList = {} end
+    if not self._nodeArrowList then self._nodeArrowList = {} end
+    if not self._nodeSpineList then self._nodeSpineList = {} end
+    -- if not self._nodeMaxList then self._nodeMaxList = {} end
+
+    local nodes = self:getChildren()
+    -- 技能位置数据
+    for _,v in pairs(nodes) do
+        local skillId = tonumber(v.name)
+        if type(skillId) == "number" then
+            self._nodePosList[skillId] = v:getPosition()
+        end
+        v:setSortingOrder(6)
+    end
+
+    -- icon 常态node
+    for k,v in pairs(self._nodePosList) do
+        local skillId = k
+        local skillCfg = CacheManager:querySkillMeta(skillId)
+        if skillCfg then
+            local size = self:getChild(skillId):getSize()
+            local x,y = self._nodePosList[skillId].x+size.width/2, self._nodePosList[skillId].y+size.height/2
+            local resPath = string.format("ui://Skill/%s", skillCfg:getSpriteID())
+            local icon = fgui.GLoader:create()
+            icon:setIcon (resPath)
+            icon:setAutoSize(true)
+            self:addChild(icon)
+            icon:setPivot(0.5,0.5,true)
+            icon:setScale(1.8,1.8)
+            icon:setPosition(x, y)
+            icon:setSortingOrder(9)
+
+            self._nodeList[skillId] = icon
+
+            --技能等级
+            local lvCom = fgui.UIPackage:createObject("RoleInfo", "MagicOLevel")
+            lvCom:setTouchable(false)
+            lvCom:setSortingOrder(10)
+            lvCom:setPosition(x - 34, y + 17)
+            self:addChild(lvCom)
+            self._lvTextList[skillId] = lvCom
+        end
+    end
+
+    for k,v in pairs(self._nodePosList) do
+        local skillId = k
+        local skillCfg = CacheManager:querySkillMeta(skillId)
+        if skillCfg and skillCfg:getPassiveSkill() == 1 then
+            local size = self:getChild(skillId):getSize()
+            local resPath = string.format("ui://Skill/%s", skillCfg:getSpriteID())
+            local icon = fgui.UIPackage:createObjectFromURL(resPath)
+            self:addChild(icon)
+            icon:setPivot(0.5,0.5,true)
+            icon:setScale(1.8,1.8)
+            icon:setPosition(v.x+size.width/2, v.y+size.height/2)
+            icon:setColor(cc.c3b(0,255,0))
+            icon:setVisible(false)
+            --[[
+                cocos4.0 FIXME:To be verified, shader change use.
+            ]] 
+            ShaderBackendUtil:makeCyanEffect(icon:displayObject())
+
+            self._nodeCyanList[skillId] = icon
+            icon:setSortingOrder(7)
+        end
+    end
+
+    -- 线条,箭头
+    for curSkillId,v in pairs(self._nodePosList) do
+        local skillCfg = CacheManager:querySkillMeta(curSkillId)
+        local requireSkills = skillCfg:getRequireSkillList()
+        for _,requireSkill in ipairs(requireSkills) do
+            local key1 = curSkillId .. requireSkill
+            local key2 = requireSkill .. curSkillId
+            if not self._nodeLineList[key1] then--(not self._nodePosList[key1]) and (not self._nodePosList[key2]) then
+                local target1 = self:getChild(curSkillId)
+                -- if not target1 then
+                --     print("target1 not found ----->>>>", curSkillId)
+                -- end
+                local target2 = self:getChild(requireSkill)
+                -- if not target2 then
+                --     print("target2 not found ----->>>>", requireSkill)
+                -- end
+                if target1 and target2 then
+                    -- 计算线的位置
+                    local size = target1:getSize()
+                    local x = (target1:getPosition().x+target2:getPosition().x)/2+size.width/2
+                    local y = (target1:getPosition().y+target2:getPosition().y)/2+size.height/2
+
+                    -- 需要旋转的角度
+                    local deltaX,deltaY = target1:getPosition().x-target2:getPosition().x, target1:getPosition().y-target2:getPosition().y
+                    local distance = math.sqrt(math.pow(deltaX, 2) + math.pow(deltaY, 2))
+                    local angle = math.deg(math.atan(-deltaX/deltaY))
+
+                    -- 如果两个技能之间没划线就创建
+                    if not self._nodeLineList[key2] then
+                        local resPath = string.format(_GURL.GetCompRoleInfo,"bg_jinengmo_xian_02")
+                        local line = fgui.UIPackage:createObjectFromURL(resPath)
+                        self:addChild(line)
+                        line:setPivot(0.5,0.5,true)
+                        line:setScale(1,1)
+                        line:setRotation(angle)
+                        line:setSize(2, distance)
+                        line:setPosition(x,y)
+                        self._nodeLineList[key1] = line
+                    end
+                    -- line:setVisible(false)
+                    
+                    local scale = 1
+                    if self._nodeLineList[key2] then
+                        scale = -1
+                    end
+                    local resPath2 = string.format(_GURL.GetCompRoleInfo,"bg_jinengmo_xian_01")
+                    local arrow = fgui.UIPackage:createObjectFromURL(resPath2)
+                    arrow:setPivot(0.5,0.5,true)
+                    arrow:setScale(1,scale)
+                    self:addChild(arrow)
+                    arrow:setPosition(x,y)
+                    local offsetAngle = 0
+                    if target1:getPosition().y < target2:getPosition().y then
+                        offsetAngle = 180
+                    end
+                    arrow:setRotation(angle-offsetAngle)
+
+                    self._nodeArrowList[key1] = arrow
+
+                    -- 双向箭头尖对尖
+                    if self._nodeLineList[key2] then
+                        local offsetX = 3
+                        local offsetY = offsetX*deltaY/deltaX
+                        self._nodeArrowList[key1]:setPosition(x-offsetX,y-offsetY)
+                        self._nodeArrowList[key2]:setPosition(x+offsetX,y+offsetY)
+                        self._nodeArrowList[key2]:setRotation(angle)
+                    end
+                end
+            end
+        end
+    end
+end
+
+function UICompMagicOTree:setSkillType(skillType)
+    --储存技能类型
+    self._skillType = skillType
+end
+
+-- 技能单个按钮状态刷新
+function UICompMagicOTree:refreshTargetNodeState(skillId)
+    local node = self._nodeList[skillId]
+    if not node then
+        return
+    end
+
+    local skillCfg = CacheManager:querySkillMeta(skillId)
+    if not skillCfg then
+        return
+    end
+    
+    local state = SkillModule:getCurSkillState(skillId, table.keys(self._nodeList))
+    
+    local white = cc.c3b(255,255,255)
+    if self._nodeCyanList[skillId] then
+        self._nodeCyanList[skillId]:setVisible(false)
+    end
+    node:setAlpha(1)
+
+    local lvText = self._lvTextList[skillId]:getChild("label_lv")
+    local spine = self._nodeSpineList[skillId]
+    if spine then
+        spine:setVisible(false)
+    end
+
+    if state == Constant.SkillState.NotLearnable then
+        node:setGrayed(true)
+        node:setColor(white)
+        self._lvTextList[skillId]:setVisible(false)
+    elseif state == Constant.SkillState.Learnable then
+        node:setGrayed(false)
+        node:setColor(cc.c3b(0,255,0))
+        self._lvTextList[skillId]:setVisible(false)
+        --添加特效
+        if spine then
+            if spine:getName() ~= "JNXX02_skeleton" then
+                spine:removeFromParent()
+                spine = nil
+            end
+        end
+        if spine == nil then
+            spine = SkeletonManager:createSkeletonEffectWithFile("JiNengXueXi02", "JNXX02_skeleton")
+            self:getChild("spine_"..skillId):displayObject():addChild(spine)
+            spine:setPosition(0, 0)
+            spine:setName("JNXX02_skeleton")
+            self._nodeSpineList[skillId] = spine
+        end
+        spine:setVisible(true)
+        spine:setAnimation(0, "HuXi_xuexi02", true)
+    elseif state == Constant.SkillState.Learned then
+        node:setGrayed(false)
+        node:setColor(white)
+        if self._nodeCyanList[skillId] then
+            self._nodeCyanList[skillId]:setVisible(true)
+            node:setAlpha(0)
+        end
+        local lv = SkillModule:getSkillLevel(skillId)
+        local maxLv = skillCfg:getLeveUpPoint() == 0 and 1 or Constant.MAXLEVEL
+        if lv > maxLv then lv = maxLv end
+        lvText:setText(lv.."/"..maxLv)
+        self._lvTextList[skillId]:setVisible(true)
+
+        ---------------------------------------------------------------------------------------------
+        -- 技能等级到达最高级显示MAX 暂时去掉
+        -- if lv == maxLv then
+        --     if not self._nodeMaxList[skillId] then
+        --         local maxPath = string.format(_GURL.GetCompRoleInfo,"bg_skill_lvl_max")
+        --         local imageMax = fgui.UIPackage:createObjectFromURL(maxPath)
+        --         self:addChild(imageMax)
+        --         imageMax:setPivot(1,0,true)
+        --         imageMax:setSortingOrder(20)
+        --         local pos = node:getPosition()
+        --         imageMax:setPosition(pos.x+32,pos.y-32)
+        --         self._nodeMaxList[skillId] = imageMax
+        --     end
+        --     self._nodeMaxList[skillId]:setVisible(true)
+        -- else
+        --     if self._nodeMaxList[skillId] then
+        --         self._nodeMaxList[skillId]:setVisible(false)
+        --     end
+        -- end
+        ---------------------------------------------------------------------------------------------
+        --添加特效
+        -- 技能点限制
+        local skillPointLimit = true
+        local skillPoint = skillCfg:getSkillPoint()
+        local targetPoint = lv == 0 and skillPoint or skillCfg:getLeveUpPoint()
+        local heroData = lt.GameModule:getHeroData()
+        local curSkillPoint = heroData:getSkillPoints()
+        if curSkillPoint >= targetPoint then
+            skillPointLimit = false
+        end
+
+        if (lv < maxLv) and (not skillPointLimit) then
+            if spine then
+                if spine:getName() ~= "JNXX_skeleton" then
+                    spine:removeFromParent()
+                    spine = nil
+                end
+            end
+            if spine == nil then
+                spine = SkeletonManager:createSkeletonEffectWithFile("JiNengXueXi", "JNXX_skeleton")
+                self:getChild("spine_"..skillId):displayObject():addChild(spine)
+                spine:setPosition(0, 0)
+                spine:setName("JNXX_skeleton")
+                self._nodeSpineList[skillId] = spine
+            end
+            spine:setVisible(true)
+            spine:setAnimation(0, "XueXi03", true)
+        end
+    end
+end
+
+-- 刷新所有按钮状态
+function UICompMagicOTree:refreshAllNode()
+    for k,v in pairs(self._nodeList or {}) do
+        self:refreshTargetNodeState(k)
+    end
+end
+
+--设置类型
+function UICompMagicOTree:setType(type)
+    self._type = type
+end
+
+return UICompMagicOTree

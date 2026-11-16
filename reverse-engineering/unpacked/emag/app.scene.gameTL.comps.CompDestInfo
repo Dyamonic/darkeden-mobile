@@ -1,0 +1,212 @@
+---@class CompDestInfo 主界面-目标血条
+local CompDestInfo = class("CompDestInfo", lt.UICompBase)
+
+local NtfManager = lt.NtfManager
+local Constant = lt.Constant
+local GameModule = lt.GameModule
+
+function CompDestInfo:ctor(view)
+    CompDestInfo.super.ctor(self)
+    self._view = view
+    self._targetAgentId = nil
+    self:initUI()
+end
+
+function CompDestInfo:initUI()
+    self._btnHead     = self._view:getChild("head")
+    self._bg          = self._view:getChild("bg")
+    self._friendFrame = self._view:getChild("friendFrame")
+    self._enemyFrame  = self._view:getChild("enemyFrame")
+    self._destHP      = self._view:getChild("destHP")
+    self._labelHp     = self._view:getChild("label_hp")
+    self._head        = self._view:getChild("head")
+    self._headFrame   = self._view:getChild("headFrame")
+    self._clsIcon     = self._view:getChild("clsIcon")
+    self._guildIcon   = self._view:getChild("guildIcon")
+    self._targetName  = self._view:getChild("targetName")
+    self._monsterHead = self._view:getChild("monsterHead")
+    self._monsterName = self._view:getChild("monsterName")
+end
+
+function CompDestInfo:onClear()
+    self._view = nil
+    self._targetAgentId = nil
+    self._btnHead     = nil
+    self._bg          = nil
+    self._friendFrame = nil
+    self._enemyFrame  = nil
+    self._destHP      = nil
+    self._labelHp     = nil
+    self._head        = nil
+    self._headFrame   = nil
+    self._clsIcon     = nil
+    self._guildIcon   = nil
+    self._targetName  = nil
+    self._monsterHead = nil
+    self._monsterName = nil
+end
+
+function CompDestInfo:onEnter()
+    self._btnHead:addClickListener(handler(self, self.onBtnFncHeadClick))
+    self:addAllListener()
+end
+
+function CompDestInfo:onExit()
+    self:removeAllListener()
+    self:removeCustomClickListener(self._btnHead)
+end
+
+function CompDestInfo:addAllListener()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_SET_TARGET, handler(self, self.refreshDataTargetInfo), "CompDestInfo:refreshDataTargetInfo")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_SELECT_TARGET_HPMP_EVENT, handler(self, self.refreshUITargetInfo), "CompDestInfo:HPMP")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_SELECT_TARGET_NAME_EVENT, handler(self, self.refreshUITargetInfo), "CompDestInfo:NAME")
+end
+
+function CompDestInfo:removeAllListener()
+    NtfManager:removeNtfListenerByTag("CompDestInfo:refreshDataTargetInfo")
+    NtfManager:removeNtfListenerByTag("CompDestInfo:HPMP")
+    NtfManager:removeNtfListenerByTag("CompDestInfo:NAME")
+end
+
+function CompDestInfo:refreshDataTargetInfo(event)
+    local param = event.param
+    local targetAgentId = param.targetAgentId
+    -- local targetAgentName = param.targetAgentName
+    -- local targetAgentType = param.targetAgentType
+    
+    if targetAgentId then
+        self._view:setVisible(true)
+    else
+        self._view:setVisible(false)
+    end
+    self._targetAgentId = targetAgentId
+
+    self:refreshUITargetInfo()
+end
+
+function CompDestInfo:refreshUITargetInfo()
+    -- 信息刷新
+    if not self._targetAgentId then
+        return
+    end
+
+    -- 刷新背景
+    local bg = self._view:getChild("bg")
+    -- 通用
+    local friendFrame = self._friendFrame
+    local enemyFrame  = self._enemyFrame
+    local destHP      = self._destHP
+    local labelHp     = self._labelHp
+
+    -- 人
+    local head = self._head
+    head:setVisible(false)
+
+    local headFrame = self._headFrame
+    headFrame:setVisible(false)
+    local clsIcon = self._clsIcon
+    clsIcon:setVisible(false)
+    local guildIcon = self._guildIcon
+    guildIcon:setVisible(false)
+    local targetName = self._targetName
+    targetName:setVisible(false)
+
+    -- 怪
+    local monsterHead = self._monsterHead
+    monsterHead:setVisible(false)
+    local monsterName = self._monsterName
+    monsterName:setVisible(false)
+
+    local agent = lt.AgentManager:getAgent(self._targetAgentId)
+    if agent then
+        -- yflog:Info("agent---")
+        -- targetAgentType=agent:getAgentType()
+
+        -- 英雄类型
+        local roleData = agent:getRoleData()
+        if agent:getAgentType() == Constant.AGENT_TYPE_HERO then
+            local selfRace = GameModule:getHeroData():getRace()
+
+            local hpPercent = roleData:getHpPercent()
+            destHP:setFillAmount(hpPercent)
+            labelHp:setText((math.ceil(hpPercent*100)).."%")
+
+            -- 人名
+            targetName:setText(agent:getName())
+            targetName:setVisible(true)
+            local heroData = agent:getHeroData()
+            if heroData then
+                targetName:setColor(lt.CommonUtil:calcColor(heroData:getNameColor()))
+            end
+
+            -- 头像
+            local headUrl = roleData:getHeadUrl()
+            head:setURL(headUrl)
+            head:setVisible(true)
+            headFrame:setVisible(true)
+
+            -- 阶级
+            local race = roleData:getRace()
+            local grade = roleData:getGrade()
+            local clsData = lt.CacheManager:getRoleRankByRaceAndLvl(race, grade)
+            clsIcon:setVisible(true)
+            if clsData then
+                clsIcon:setURL(string.format(_GURL.GetGradePath, clsData:getIconId()))
+            end
+
+            -- 公会
+            local guilData = roleData:getGuildIcon()
+            if guilData then
+                guildIcon:setVisible(true)
+                guildIcon:setURL(string.format(_GURL.GetGuidePath, guilData))
+            end
+            
+            bg:setURL(string.format(_GURL.GetImageMain,"bg_zjm_wanjiaxinxidi" .. (Constant.RaceSkinRes[clsData:getRace()] or "_o")))
+
+            -- 选中框颜色
+            local isSelf = GameModule:getHeroData():getPlayerId() == roleData:getPlayerId()
+            friendFrame:setVisible(selfRace == race and not isSelf)
+            enemyFrame:setVisible(selfRace ~= race)
+            
+            -- yflog:Info("HERO--headUrl--------------------------->%s",headUrl)
+        elseif agent:getAgentType() == Constant.AGENT_TYPE_MONSTER then
+            local race = GameModule:getHeroData():getRace() or Constant.RaceType.Ousters
+            bg:setURL(string.format(_GURL.GetImageMain,"bg_zjm_wanjiaxinxidi" .. (Constant.RaceSkinRes[race] or "_o")))
+
+            -- Constant.RaceSkinRes[]
+    
+            local hpPercent = roleData:getHpPercent()
+            destHP:setFillAmount(hpPercent)
+            labelHp:setText((math.floor(hpPercent*100)).."%")
+            
+            -- 怪物头像
+            monsterHead:setVisible(true)
+
+            -- 怪物名
+            monsterName:setText(agent:getName())
+            monsterName:setVisible(true)
+
+            -- 选中框颜色
+            friendFrame:setVisible(false)
+            enemyFrame:setVisible(true)
+        end
+    end
+end
+
+function CompDestInfo:onBtnFncHeadClick(context)
+    local agent = lt.AgentManager:getAgent(self._targetAgentId)
+    if agent then
+        --英雄类型
+        local roleData = agent:getRoleData()
+        if agent:getAgentType() == Constant.AGENT_TYPE_HERO then
+            local worldAgent = lt.AgentManager:getWorldAgent()
+            local selfAgent = worldAgent:getHeroAgent()
+            --自己不能点开
+            if self._targetAgentId ~= selfAgent:getAgentId() then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_DESTINFOTIPS, {roleData = roleData})
+            end
+        end
+    end
+end
+
+return CompDestInfo

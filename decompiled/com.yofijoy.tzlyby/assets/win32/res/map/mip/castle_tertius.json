@@ -1,0 +1,207 @@
+{
+    "Height": 128,
+    "MPortals": [
+        {
+            "Bottom": 22,
+            "Left": 64,
+            "M_Type": 0,
+            "M_ZoneID": [
+                1221
+            ],
+            "Right": 64,
+            "Top": 22
+        },
+        {
+            "Bottom": 23,
+            "Left": 63,
+            "M_Type": 0,
+            "M_ZoneID": [
+                1221
+            ],
+            "Right": 65,
+            "Top": 23
+        },
+        {
+            "Bottom": 25,
+            "Left": 62,
+            "M_Type": 0,
+            "M_ZoneID": [
+                1221
+            ],
+            "Right": 65,
+            "Top": 24
+        },
+        {
+            "Bottom": 26,
+            "Left": 63,
+            "M_Type": 0,
+            "M_ZoneID": [
+                1221
+            ],
+            "Right": 65,
+            "Top": 26
+        },
+        {
+            "Bottom": 27,
+            "Left": 64,
+            "M_Type": 0,
+            "M_ZoneID": [
+                1221
+            ],
+            "Right": 64,
+            "Top": 27
+        },
+        {
+            "Bottom": 26,
+            "Left": 106,
+            "M_Type": 0,
+            "M_ZoneID": [
+                1221
+            ],
+            "Right": 106,
+            "Top": 26
+        },
+        {
+            "Bottom": 27,
+            "Left": 105,
+            "M_Type": 0,
+            "M_ZoneID": [
+                1221
+            ],
+            "Right": 107,
+            "Top": 27
+        },
+        {
+            "Bottom": 28,
+            "Left": 104,
+            "M_Type": 0,
+            "M_ZoneID": [
+                1221
+            ],
+            "Right": 108,
+            "Top": 28
+        },
+        {
+            "Bottom": 29,
+            "Left": 105,
+            "M_Type": 0,
+            "M_ZoneID": [
+                1221
+            ],
+            "Right": 107,
+            "Top": 29
+        },
+        {
+            "Bottom": 30,
+            "Left": 106,
+            "M_Type": 0,
+            "M_ZoneID": [
+                1221
+            ],
+            "Right": 106,
+            "Top": 30
+        }, 
+        {
+            "Bottom": 91,
+            "Left": 11,
+            "M_Type": 0,
+            "M_ZoneID": [
+                71
+            ],
+            "Right": 11,
+            "Top": 91
+        },
+        {
+            "Bottom": 92,
+            "Left": 11,
+            "M_Type": 0,
+            "M_ZoneID": [
+                71
+            ],
+            "Right": 12,
+            "Top": 92
+        },
+        {
+            "Bottom": 93,
+            "Left": 11,
+            "M_Type": 0,
+            "M_ZoneID": [
+                71
+            ],
+            "Right": 13,
+            "Top": 93
+        },
+        {
+            "Bottom": 94,
+            "Left": 11,
+            "M_Type": 0,
+            "M_ZoneID": [
+                71
+            ],
+            "Right": 14,
+            "Top": 94
+        },
+        {
+            "Bottom": 95,
+            "Left": 11,
+            "M_Type": 0,
+            "M_ZoneID": [
+                71
+            ],
+            "Right": 15,
+            "Top": 95
+        },
+        {
+            "Bottom": 113,
+            "Left": 11,
+            "M_Type": 0,
+            "M_ZoneID": [
+                71
+            ],
+            "Right": 16,
+            "Top": 96
+        },
+        {
+            "Bottom": 98,
+            "Left": 100,
+            "M_Type": 0,
+            "M_ZoneID": [
+                71
+            ],
+            "Right": 102,
+            "Top": 98
+        },
+        {
+            "Bottom": 99,
+            "Left": 99,
+            "M_Type": 0,
+            "M_ZoneID": [
+                71
+            ],
+            "Right": 103,
+            "Top": 99
+        },
+        {
+            "Bottom": 100,
+            "Left": 98,
+            "M_Type": 0,
+            "M_ZoneID": [
+                71
+            ],
+            "Right": 103,
+            "Top": 100
+        },
+        {
+            "Bottom": 105,
+            "Left": 100,
+            "M_Type": 0,
+            "M_ZoneID": [
+                71
+            ],
+            "Right": 105,
+            "Top": 101
+        }
+    ],
+    "SafeRects": null,
+    "Width": 128
+}

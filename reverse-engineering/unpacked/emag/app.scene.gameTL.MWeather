@@ -1,0 +1,462 @@
+-- MWeather.lua
+local MWeather = class("MWeather")
+local MapEffect = lt.MapEffect
+local Constant = lt.Constant
+
+local WEATHER_TYPE =
+{
+    WEATHER_NULL = 0,
+    WEATHER_STOP = 1, --
+    WEATHER_RAIN = 2, -- 雨
+    WEATHER_SNOW = 3, -- 雪
+    WEATHER_SPOT = 4, -- 雷
+}
+
+MWeather.WEATHER_TYPE = WEATHER_TYPE
+
+-- Constructor
+function MWeather:ctor()
+    self._weatherType = WEATHER_TYPE.WEATHER_NULL
+    self._mapEffectCount = 0 -- 特效数量
+    self._activeMapEffectCount = 0
+    self._pMapEffect = nil
+    self._startX = 0
+    self._startY = 0
+    self._moreEffectCount = 0
+end
+
+-- Release memory
+function MWeather:onRelease()
+    if self._pMapEffect then
+        self._pMapEffect = nil
+        self._mapEffectCount = 0
+        self._activeMapEffectCount = 0
+        self._weatherType = WEATHER_TYPE.WEATHER_NULL
+    end
+end
+
+-- Initialize weather effects
+function MWeather:onInit(n)
+    if n == self._mapEffectCount then
+        return
+    end
+    self:onRelease()
+    self._mapEffectCount = n
+    self._pMapEffect = {}
+    for i = 1, n do
+        self._pMapEffect[i] = MapEffect.new()
+    end
+end
+
+-- Set Rain
+function MWeather:setRain(number)
+    if number == 0 then
+        return
+    end
+    if self._weatherType == WEATHER_TYPE.WEATHER_RAIN then
+        if number == self._mapEffectCount then
+            return
+        end
+        -- Handle changing the number of raindrops
+        local pMapEffect = {}
+        for i = 1, number do
+            pMapEffect[i] = MapEffect.new()
+        end
+
+        if number > self._mapEffectCount then
+            for i = 1, self._activeMapEffectCount do
+                pMapEffect[i] = self._pMapEffect[i]
+            end
+            self._moreEffectCount = 2
+        else
+            self._activeMapEffectCount = math.min(self._activeMapEffectCount, number)
+            for i = 1, self._activeMapEffectCount do
+                pMapEffect[i] = self._pMapEffect[i]
+            end
+        end
+
+        self:onRelease()
+        self._weatherType = WEATHER_TYPE.WEATHER_RAIN
+        self._pMapEffect = pMapEffect
+        self._mapEffectCount = number
+        return
+    end
+
+    self:onInit(number)
+    self._weatherType = WEATHER_TYPE.WEATHER_RAIN
+    local heroAgent = lt.AgentManager:getWorldAgent():getHeroAgent()
+    if not heroAgent then
+        return
+    end
+    local mHero, nHero = heroAgent:getMNExactly()
+    self._startX = mHero * Constant.MAP_BLOCK_WIDTH
+    self._startY = nHero * Constant.MAP_BLOCK_HEIGHT
+    self._activeMapEffectCount = 1
+    for i = 1, self._activeMapEffectCount do
+        self:onGenerateRain(i)
+    end
+    self._moreEffectCount = 2
+end
+
+-- Set Snow
+function MWeather:setSnow(number)
+    if number == 0 then return end
+
+    if self._weatherType == WEATHER_TYPE.WEATHER_SNOW then
+        if number == self._mapEffectCount then return end
+
+        local pMapEffect = {}
+        for i = 1, number do
+            pMapEffect[i] = MapEffect.new()
+        end
+
+        if number > self._mapEffectCount then
+            for i = 1, self._activeMapEffectCount do
+                pMapEffect[i] = self._pMapEffect[i]
+            end
+            self._moreEffectCount = 2
+        else
+            self._activeMapEffectCount = math.min(self._activeMapEffectCount, number)
+            for i = 1, self._activeMapEffectCount do
+                pMapEffect[i] = self._pMapEffect[i]
+            end
+        end
+
+        self:onRelease()
+        self._weatherType = WEATHER_TYPE.WEATHER_SNOW
+        self._pMapEffect = pMapEffect
+        self._mapEffectCount = number
+        return
+    end
+
+    self:onInit(number)
+    self._weatherType = WEATHER_TYPE.WEATHER_SNOW
+    local heroAgent = lt.AgentManager:getWorldAgent():getHeroAgent()
+    if not heroAgent then
+        return 
+    end
+    local mHero, nHero = heroAgent:getMNExactly()
+    self._startX = mHero * Constant.MAP_BLOCK_WIDTH
+    self._startY = nHero * Constant.MAP_BLOCK_HEIGHT
+    self._activeMapEffectCount = 1
+
+    for i = 1, number do
+        self:onGenerateSnow(i)
+    end
+
+    self._moreEffectCount = 2
+end
+
+function MWeather:onGenerateRain(n)
+    local type
+
+    -- 获取当前的地图效果类型
+    local effectType = self._pMapEffect[n]:GetType()
+
+    if effectType == MapEffect.MAP_EFFECT_ARRIVE4 then
+        -- 随机生成类型
+        type = math.random(0, 1) -- 0 或 1
+        local speedx = 0.1
+        local speedy = 0.3
+        if type == 0 then
+            self._pMapEffect[n]:Set(
+                MapEffect.MAP_EFFECT_FALL,
+                0,
+                math.random(0, display.width - 1),
+                math.random(0, display.height - 1),
+                -1 * math.random(1, 4) * speedx,
+                math.random(20, 49) * speedy, -- 随机范围 [20, 49)
+                math.random(0, 24)       -- 随机范围 [0, 24)
+            )
+        elseif type == 1 then
+            self._pMapEffect[n]:Set(
+                MapEffect.MAP_EFFECT_FALL,
+                math.random(1, 2), -- 随机范围 [1, 2]
+                math.random(0, display.width - 1),
+                math.random(0, display.height - 1),
+                -1 * (math.random(3, 8))* speedx, -- 随机范围 [-8, -3]
+                math.random(17, 45)* speedy,      -- 随机范围 [17, 45)
+                math.random(0, 19)        -- 随机范围 [0, 19)
+            )
+        end
+    elseif effectType == MapEffect.MAP_EFFECT_FALL then
+        self._pMapEffect[n]:Set(
+            MapEffect.MAP_EFFECT_ARRIVE1,
+            3,
+            self._pMapEffect[n]:GetX(),
+            self._pMapEffect[n]:GetY(),
+            0, 0,
+            1
+        )
+    elseif effectType == MapEffect.MAP_EFFECT_ARRIVE1 then
+        self._pMapEffect[n]:Set(
+            MapEffect.MAP_EFFECT_ARRIVE2,
+            4,
+            self._pMapEffect[n]:GetX(),
+            self._pMapEffect[n]:GetY(),
+            0, 0,
+            1
+        )
+    elseif effectType == MapEffect.MAP_EFFECT_ARRIVE2 then
+        self._pMapEffect[n]:Set(
+            MapEffect.MAP_EFFECT_ARRIVE3,
+            5,
+            self._pMapEffect[n]:GetX(),
+            self._pMapEffect[n]:GetY(),
+            0, 0,
+            1
+        )
+    elseif effectType == MapEffect.MAP_EFFECT_ARRIVE3 then
+        self._pMapEffect[n]:Set(
+            MapEffect.MAP_EFFECT_ARRIVE4,
+            6,
+            self._pMapEffect[n]:GetX(),
+            self._pMapEffect[n]:GetY(),
+            0, 0,
+            1
+        )
+    end
+end
+
+-- Action
+function MWeather:onAction()
+    if not self._pMapEffect then
+        return
+    end
+    if self._weatherType == WEATHER_TYPE.WEATHER_NULL then
+        return
+    end
+    if self._weatherType == WEATHER_TYPE.WEATHER_STOP then
+        local k = 0
+        for i = 1, self._mapEffectCount do
+            if not self._pMapEffect[i]:Move() then
+                k = k + 1
+            end
+        end
+        if k == self._mapEffectCount then
+            self._weatherType = WEATHER_TYPE.WEATHER_NULL
+        end
+        return
+    end
+
+    if self._activeMapEffectCount < self._mapEffectCount then
+        if self._moreEffectCount == 0 then
+            local start = self._activeMapEffectCount
+            self._activeMapEffectCount = self._activeMapEffectCount + 5
+            if self._activeMapEffectCount > self._mapEffectCount then
+                self._activeMapEffectCount = self._mapEffectCount
+            end
+
+            for i = start + 1, self._activeMapEffectCount do
+                if self._weatherType == WEATHER_TYPE.WEATHER_RAIN then
+                    self:onGenerateRain(i)
+                elseif self._weatherType == WEATHER_TYPE.WEATHER_SNOW then
+                    self:onGenerateSnow(i)
+                elseif self._weatherType == WEATHER_TYPE.WEATHER_SPOT then
+                    self:onGenerateSpot(i)
+                end
+            end
+
+            self._moreEffectCount = 10
+        else
+            self._moreEffectCount = self._moreEffectCount - 1
+        end
+    end
+
+    for i = 1, self._activeMapEffectCount do
+        if self._pMapEffect[i]:Move() then
+            if self._weatherType == WEATHER_TYPE.WEATHER_SNOW then
+                if bit.band(self._pMapEffect[i]:GetCount(), 0x08) ~= 0 then
+                    self._pMapEffect[i]:SetSX(-1 * (math.random(0, 3) - 1) * (math.random(1, 3))*0.2)
+                end
+            end
+        else
+            if self._weatherType == WEATHER_TYPE.WEATHER_RAIN then
+                self:onGenerateRain(i)
+            elseif self._weatherType == WEATHER_TYPE.WEATHER_SNOW then
+                self:onGenerateSnow(i)
+            elseif self._weatherType == WEATHER_TYPE.WEATHER_SPOT then
+                self:onGenerateSpot(i)
+            end
+        end
+    end
+end
+
+function MWeather:onGenerateSnow(n)
+    local type = 0
+    -- 获取当前的地图效果类型
+    local effectType = self._pMapEffect[n]:GetType()
+    if effectType == MapEffect.MAP_EFFECT_ARRIVE6 then
+        -- 随机生成类型
+        local speedx = 0.2
+        local speedy = 0.2
+        type = math.random(0, 1) -- 0 或 1
+        if type == 0 then
+            self._pMapEffect[n]:Set(
+                MapEffect.MAP_EFFECT_FALL,
+                math.random(7, 11),                        -- 随机范围 [7, 11) sid
+                math.random(0, display.width - 1),         -- x
+                math.random(0, display.height - 1),        -- y
+                speedx * (-1 * (math.random(0, 2) + 1)), --sx
+                speedy * math.random(4, 10),            -- 随机范围 [4, 10) -- sy
+                math.random(0, 119)                        -- 随机范围 [0, 119) -- count
+            )
+        elseif type == 1 then
+            self._pMapEffect[n]:Set(
+                MapEffect.MAP_EFFECT_FALL,
+                math.random(7, 11),
+                math.random(0, display.width - 1),
+                math.random(0, display.height - 1),
+                speedx * (-1 * (math.random(0, 2) + 3)),
+                speedy * (math.random(4, 10)),
+                math.random(0, 119)
+            )
+        end
+    elseif effectType == MapEffect.MAP_EFFECT_FALL then
+        self._pMapEffect[n]:Set(
+            MapEffect.MAP_EFFECT_ARRIVE1,
+            12,
+            self._pMapEffect[n]:GetX(),
+            self._pMapEffect[n]:GetY(),
+            0, 0,
+            math.random(2, 3) -- 随机范围 [2, 3)
+        )
+    elseif effectType == MapEffect.MAP_EFFECT_ARRIVE1 then
+        self._pMapEffect[n]:Set(
+            MapEffect.MAP_EFFECT_ARRIVE2,
+            13,
+            self._pMapEffect[n]:GetX(),
+            self._pMapEffect[n]:GetY(),
+            0, 0,
+            math.random(2, 3)
+        )
+    elseif effectType == MapEffect.MAP_EFFECT_ARRIVE2 then
+        self._pMapEffect[n]:Set(
+            MapEffect.MAP_EFFECT_ARRIVE3,
+            14,
+            self._pMapEffect[n]:GetX(),
+            self._pMapEffect[n]:GetY(),
+            0, 0,
+            math.random(2, 3)
+        )
+    elseif effectType == MapEffect.MAP_EFFECT_ARRIVE3 then
+        self._pMapEffect[n]:Set(
+            MapEffect.MAP_EFFECT_ARRIVE4,
+            15,
+            self._pMapEffect[n]:GetX(),
+            self._pMapEffect[n]:GetY(),
+            0, 0,
+            math.random(2, 3)
+        )
+    elseif effectType == MapEffect.MAP_EFFECT_ARRIVE4 then
+        self._pMapEffect[n]:Set(
+            MapEffect.MAP_EFFECT_ARRIVE5,
+            16,
+            self._pMapEffect[n]:GetX(),
+            self._pMapEffect[n]:GetY(),
+            0, 0,
+            math.random(2, 3)
+        )
+    elseif effectType == MapEffect.MAP_EFFECT_ARRIVE5 then
+        self._pMapEffect[n]:Set(
+            MapEffect.MAP_EFFECT_ARRIVE6,
+            17,
+            self._pMapEffect[n]:GetX(),
+            self._pMapEffect[n]:GetY(),
+            0, 0,
+            math.random(2, 3)
+        )
+    end
+end
+
+function MWeather:setSpot(number)
+    if number == 0 then
+        return
+    end
+
+    if self._weatherType == WEATHER_TYPE.WEATHER_SPOT then
+        if number == self._mapEffectCount then
+            return
+        end
+        local pMapEffect = {}
+        for i = 1, number do
+            pMapEffect[i] = MapEffect.new()
+        end
+
+        if number > self._mapEffectCount then
+            for i = 1, self._activeMapEffectCount do
+                pMapEffect[i] = self._pMapEffect[i]
+            end
+
+            self._moreEffectCount = 2
+        else
+            self._activeMapEffectCount = math.min(self._activeMapEffectCount, number)
+
+            for i = 1, self._activeMapEffectCount do
+                pMapEffect[i] = self._pMapEffect[i]
+            end
+        end
+
+        self:onRelease()
+        self._weatherType = WEATHER_TYPE.WEATHER_SPOT
+        self._pMapEffect = pMapEffect
+        self._mapEffectCount = number
+
+        return
+    end
+
+    self:onInit(number)
+
+    self._weatherType = WEATHER_TYPE.WEATHER_SPOT
+    local heroAgent = lt.AgentManager:getWorldAgent():getHeroAgent()
+    local mHero, nHero = heroAgent:getMNExactly()
+    self._startX = mHero * Constant.MAP_BLOCK_WIDTH
+    self._startY = nHero * Constant.MAP_BLOCK_HEIGHT
+    self._activeMapEffectCount = 1
+    for i = 1, number do
+        self:onGenerateSpot(i)
+    end
+    self._moreEffectCount = 2
+end
+
+function MWeather:onGenerateSpot(n)
+    self._pMapEffect[n]:Set(MapEffect.MAP_EFFECT_FALL,
+        18 + math.random(0, 5),
+        math.random(0, display.width - 1),
+        math.random(0, display.height - 1),
+        0,
+        -(math.random(0, 3) + 1),
+        30 + math.random(0, 29)
+    )
+end
+
+-------------- get -----------------
+function MWeather:isActive()
+    return self._weatherType ~= WEATHER_TYPE.WEATHER_NULL
+end
+
+function MWeather:getWeatherType()
+    return self._weatherType
+end
+
+function MWeather:stop()
+    self._weatherType = WEATHER_TYPE.WEATHER_STOP
+end
+
+function MWeather:getStartX()
+    return self._startX
+end
+
+function MWeather:getStartY()
+    return self._startY
+end
+
+function MWeather:getSize()
+    return self._activeMapEffectCount
+end
+
+function MWeather:getMapEffects()
+    return self._pMapEffect
+end
+
+return MWeather

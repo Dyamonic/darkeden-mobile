@@ -1,0 +1,56 @@
+
+local AgentManager = {}
+
+AgentManager._worldAgent = nil
+AgentManager._agentTable = {}
+
+function AgentManager:addAgent(agent)
+    self._agentTable[agent:getAgentId()] = agent
+end
+
+function AgentManager:removeAgent(agent)
+    self._agentTable[agent:getAgentId()] = nil
+    self:getWorldAgent():getMapAgent():removeAgentMN(agent, agent:getMNExactly())
+end
+
+function AgentManager:getAgent(agentId)
+    return self._agentTable[agentId]
+end
+
+function AgentManager:clear()
+    self._worldAgent = nil
+    self._agentTable = {}
+end
+
+-- Setter && Getter
+function AgentManager:setWorldAgent(worldAgent)
+    self._worldAgent = worldAgent
+end
+
+function AgentManager:getWorldAgent()
+    return self._worldAgent
+end
+
+function AgentManager:clearMapLinkRouteInfo()
+    if self._worldAgent then
+        self._worldAgent:clearMapLinkRouteInfo()
+    end
+end
+
+function AgentManager:getHeroAgent()
+    if not self._worldAgent then
+    	return nil
+    end
+
+    return self._worldAgent:getHeroAgent()
+end
+
+function AgentManager:getMapAgent()
+    if not self._worldAgent then
+    	return nil
+    end
+
+    return self._worldAgent:getMapAgent()
+end
+
+return AgentManager

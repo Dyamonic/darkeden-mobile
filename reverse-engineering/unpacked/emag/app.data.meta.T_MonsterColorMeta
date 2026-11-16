@@ -1,0 +1,29 @@
+local MonsterColorMeta = class("MonsterColorMeta")
+
+
+
+function MonsterColorMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function MonsterColorMeta:initWithRow(row)
+    if row.Cmyk then
+        self._color = self:hexToRgb(row.Cmyk)
+    end
+end
+
+function MonsterColorMeta:hexToRgb(hex)
+    local r = tonumber(hex:sub(1, 2), 16) or 0
+    local g = tonumber(hex:sub(3, 4), 16) or 0
+    local b = tonumber(hex:sub(5, 6), 16) or 0
+    
+    return cc.vec3(r/255, g/255, b/255)
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function MonsterColorMeta:getColor() return self._color end
+
+-- AUTO GENERATED GETTERS END
+return MonsterColorMeta

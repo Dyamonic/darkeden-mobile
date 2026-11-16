@@ -1,0 +1,18 @@
+local BuffHandsOfFire = class("BuffHandsOfFire", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+
+--[[
+    火焰之触
+]]
+function BuffHandsOfFire:ctor(time, actor, skilllevel)    
+    BuffHandsOfFire.super.ctor(self, BuffEnum.EFFECT_HANDS_OF_FIRE, time, actor)
+    actor:playQueueEffect(SkillEnum.SKILL_HANDS_OF_FIRE, 1)
+end
+
+function BuffHandsOfFire:onClear()
+    self._actor:stopQueueEffect(SkillEnum.SKILL_HANDS_OF_FIRE)
+    BuffHandsOfFire.super.onClear(self)
+end
+
+return BuffHandsOfFire

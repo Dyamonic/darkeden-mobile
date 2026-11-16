@@ -1,0 +1,66 @@
+---@class UICompInventoryTiled 地图块
+---
+local UICompInventoryTiled = class("UICompInventoryTiled", lt.UIGButtonBase, lt.UICompChangeSkin) 
+UICompInventoryTiled.ChangeSkinConf = {
+    ["Inventory"] = {
+        ["selectHide"] = "bg_beibao_tbd07",
+        ["select"] = "tiled_bgSelect",
+        ["bgHide"] = "bg_beibao_tbd06",
+        ["bg"] = "tiled_bg",
+        ["gridHide"] = "bg_beibao_tbd05",
+        ["grid"] = "tiled",
+        ["special"] = "bg_beibao_tbd03",
+    },
+}
+
+function UICompInventoryTiled:ctor()
+    UICompInventoryTiled.super.ctor(self)
+end
+
+function UICompInventoryTiled:onConstruct()
+    self._bg = self:getChild("bg")
+    self._bgHide = self:getChild("bgHide")
+    self._select = self:getChild("select")
+    self._selectHide = self:getChild("selectHide")
+    self._special = self:getChild("special")
+    self._grid = self:getChild("grid")
+    self._gridHide = self:getChild("gridHide")
+    self._bgVisible = true
+    self:startSkin()
+end
+
+function UICompInventoryTiled:onClear()
+    self._bg = nil
+    self._bgHide = nil
+    self._select = nil
+    self._selectHide = nil
+    self._special = nil
+    self._grid = nil
+    self._gridHide = nil
+    UICompInventoryTiled.super.onClear(self)
+end
+
+function UICompInventoryTiled:setSelectedShow(isShow)
+    self._isSelect = isShow
+    self._select:setVisible(isShow and self._bgVisible)
+    self._selectHide:setVisible(isShow and not self._bgVisible)
+end
+
+function UICompInventoryTiled:isSelect()
+    return self._isSelect
+end
+
+function UICompInventoryTiled:setSpecialShow(isShow)
+    self._special:setVisible(isShow)
+end
+
+function UICompInventoryTiled:setBGVisible(isShow)
+    self._bgVisible = isShow
+    self._bg:setVisible(isShow)
+    self._bgHide:setVisible(not isShow)
+    self._grid:setVisible(isShow)
+    self._gridHide:setVisible(not isShow)
+    self._select:setVisible(self._isSelect and isShow)
+    self._selectHide:setVisible(self._isSelect and not isShow)
+end
+return UICompInventoryTiled

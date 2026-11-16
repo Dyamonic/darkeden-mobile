@@ -1,0 +1,19 @@
+local BuffBless = class("BuffBless", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+local ScheduleUtil  = lt.ScheduleUtil
+
+--[[
+    大地祝福
+]]
+function BuffBless:ctor(time, actor, skilllevel)    
+    BuffBless.super.ctor(self, BuffEnum.EFFECT_MAGIC_BLESS, time, actor)
+    actor:playParallelEffect(SkillEnum.SKILL_BLESS, 2, true) 
+end
+
+function BuffBless:onClear()
+    self._actor:stopParallelEffect(SkillEnum.SKILL_BLESS)
+    BuffBless.super.onClear(self)
+end
+
+return BuffBless

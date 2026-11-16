@@ -1,0 +1,264 @@
+
+local SkillMeta = class("SkillMeta")
+
+local CommonFunc = lt.CommonFunc
+local raceType = lt.Constant.RaceType
+
+
+--- 轮盘相关
+
+function SkillMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function SkillMeta:initWithRow(row)
+    self._skillId = row.SkillId
+    self._name = row.Name
+    self._enName = row.ENName
+    self._skillMenu = row.SkillMenu
+    self._race = row.Race
+    self._raceSkill = row.RaceSkill
+    self._passiveSkill = row.PassiveSkill
+    self._spriteID = row.SpriteID
+    self._skillReleaseForm = row.SkillReleaseForm
+    self._needLevel = row.NeedLevel
+    self._minDam = row.MinDam
+    self._maxDam = row.MaxDam
+    self._cd = row.CD
+    self._duration = row.Duration
+    self._mana = row.Mana
+    self._minRange = row.MinRange
+    self._maxRange = row.Range
+    self._target = row.Target
+    self._subExp = row.SubExp
+    self._pointEXP = row.PointEXP
+    self._domain = row.Domain
+    self._magicDomain = row.MagicDomain
+    self._elementalDomain = row.ElementalDomain
+    self._melee = row.Melee
+    self._magic = row.Magic
+    self._physic = row.Physic
+    self._skillPoint = row.SkillPoint
+    self._leveUpPoint = row.LeveUpPoint
+    self._requireSkillBattle = row.RequireSkillBattle
+    self._requireSkillMagic = row.RequireSkillMagic
+    self._canDelete = row.CanDelete
+    self._fire = row.Fire
+    self._water = row.Water
+    self._earth = row.Earth
+    self._weapon = row.Weapon
+    self._stone1 = row.Stone1
+    self._stone2 = row.Stone2
+    self._stone3 = row.Stone3
+    self._stone4 = row.Stone4
+    self._description = row.Description
+    self._selectTarget = row.SelectTarget
+    self._targetType = row.TargetType
+    self._gunEffects = row.GunEffects
+    self._actionTimeLimit = row.ActionTimeLimit
+    self._consecutiveSpells = row.ConsecutiveSpells
+    self._dieNeedSkillEffect = row.DieNeedSkillEffect
+    self._isNeedBullet = row.IsNeedBullet
+    self._skillGenreType = row.SkillGenreType
+    self._movingTarget = row.MovingTarget
+    self._aberrationContr = row.AberrationControlled == 0 --等于0代表受控制
+
+    self._sight = row.Sight
+    self._visibleSkillOperator = row.VisibleSkillOperator
+    self._releaseOpen = row.ReleaseOpen
+
+    self._toSelf = row.ToSelf
+    self._needHitAction = row.NeedHitAction
+    self._skillPriority = row.SkillPriority
+    self._skillInfo = row.SkillInfo
+    self._individualOrGroup = row.IndividualOrGroup
+    if self._weapon ~= "" then
+        self._weaponMap = CommonFunc:analysisJsonToTable(self._weapon, true)
+    end
+end
+
+-- 只供单种族技能使用
+function SkillMeta:getSkillRace()
+    for k,v in pairs(raceType) do
+        local tempRace = math.pow(2,v-1)
+        if self._race == tempRace then
+            return v
+        end
+        -- if bit.band(v , self._race) > 0 then
+        --     return v
+        -- end
+    end
+end
+
+-- 获取前置技能Id列表
+function SkillMeta:getRequireSkillList()
+    local requireSkillBattle = self:getRequireSkillBattle()
+    requireSkillBattle = string.split(requireSkillBattle, ";")
+    local skillList = {}
+    for k, v in pairs(requireSkillBattle) do
+        table.insert(skillList,tonumber(v))
+    end
+    local requireSkillMagic = self:getRequireSkillMagic()
+    requireSkillMagic = string.split(requireSkillMagic, ";")
+    for k, v in pairs(requireSkillMagic) do
+        table.insert(skillList,tonumber(v))
+    end
+    return skillList
+end
+
+-- 获取需求装备
+function SkillMeta:getWeaponMap()
+    return self._weaponMap or {}
+end
+
+-- 检查当前武器小类是否满足释放条件
+function SkillMeta:checkArmsKind(kind)
+    local weaponMap = self:getWeaponMap()
+    if #weaponMap > 0 then
+        -- 武器小类限制
+        for _,v in pairs(weaponMap) do
+            if v == kind then
+                return true
+            end
+        end
+
+        return false
+    else
+        -- 无武器小类限制
+        return true
+    end
+end
+
+-- ***************** 表中TODO未配置参数，先临时写死 补充后需删除 *****************
+-- 释放的目标类型 
+function SkillMeta:getTargetType()
+    -- if self._targetType == 0 then
+    --     self._targetType = 2
+    -- end
+    if self._skillId == lt.SkillEnum.SKILL_ICE_LANCE_M then
+        self._targetType = lt.Constant.SkillTargetType.AREA
+    end
+    return self._targetType
+end
+
+-- 释放权重
+function SkillMeta:getSelfPriority()
+    return 1
+end
+
+-- 释放距离X
+function  SkillMeta:getTargetDisX()
+    return self._maxRange
+end
+
+function  SkillMeta:getTargetDisY()
+    return self._maxRange
+end
+
+function SkillMeta:isGunEffectLimit()
+    return self._gunEffects == 1
+end
+
+function SkillMeta:isNeedBullet()
+    return self._isNeedBullet == 1
+end
+
+---轮盘按钮
+function SkillMeta:getSight()
+    return self._sight == 1
+end
+
+function SkillMeta:getVisibleSkillOperator()
+    if not self._visibleOperators and type(self._visibleSkillOperator) == "string" and self._visibleSkillOperator ~= "" then
+        local tempDatas = string.split(self._visibleSkillOperator, ";")
+        self._visibleOperators = {}
+        for _, tempData in ipairs(tempDatas) do
+           local visibleData = string.split(tempData, ",")
+           table.insert(self._visibleOperators, tonumber(visibleData[1]) == 1)
+           table.insert(self._visibleOperators, tonumber(visibleData[2]) == 1)
+        end
+    end
+    return self._visibleOperators
+end
+
+function SkillMeta:getReleaseOpen()
+    if not self._releaseOpenTable and type(self._releaseOpen) == "string" and self._releaseOpen ~= "" then
+        self._releaseOpenTable = {}
+        local tempDatas = string.split(self._releaseOpen, ",")
+        for index, tempData in ipairs(tempDatas) do
+           table.insert(self._releaseOpenTable, tonumber(tempData) == 1)
+        end
+    end
+    return self._releaseOpenTable
+end
+
+function SkillMeta:isToSelf()
+    return tonumber(self._toSelf) == 1 
+end
+
+function SkillMeta:needHitAction()
+    return tonumber(self._needHitAction) == 1 
+end
+
+--移动到目标
+function SkillMeta:getMoveingTarget()
+    return tonumber(self._movingTarget) == 1
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function SkillMeta:getSkillId() return self._skillId end
+function SkillMeta:getName() return self._name end
+function SkillMeta:getEnName() return self._enName end
+function SkillMeta:getSkillMenu() return self._skillMenu end
+function SkillMeta:getRace() return self._race end
+function SkillMeta:getRaceSkill() return self._raceSkill end
+function SkillMeta:getPassiveSkill() return self._passiveSkill end
+function SkillMeta:getSpriteID() return self._spriteID end
+function SkillMeta:getSkillReleaseForm() return self._skillReleaseForm end
+function SkillMeta:getNeedLevel() return self._needLevel end
+function SkillMeta:getMinDam() return self._minDam end
+function SkillMeta:getMaxDam() return self._maxDam end
+function SkillMeta:getCd() return self._cd end
+function SkillMeta:getDuration() return self._duration end
+function SkillMeta:getMana() return self._mana end
+function SkillMeta:getMinRange() return self._minRange end
+function SkillMeta:getMaxRange() return self._maxRange end
+function SkillMeta:getTarget() return self._target end
+function SkillMeta:getSubExp() return self._subExp end
+function SkillMeta:getPointEXP() return self._pointEXP end
+function SkillMeta:getDomain() return self._domain end
+function SkillMeta:getMagicDomain() return self._magicDomain end
+function SkillMeta:getElementalDomain() return self._elementalDomain end
+function SkillMeta:getMelee() return self._melee end
+function SkillMeta:getMagic() return self._magic end
+function SkillMeta:getPhysic() return self._physic end
+function SkillMeta:getSkillPoint() return self._skillPoint end
+function SkillMeta:getLeveUpPoint() return self._leveUpPoint end
+function SkillMeta:getRequireSkillBattle() return self._requireSkillBattle end
+function SkillMeta:getRequireSkillMagic() return self._requireSkillMagic end
+function SkillMeta:getCanDelete() return self._canDelete end
+function SkillMeta:getFire() return self._fire end
+function SkillMeta:getWater() return self._water end
+function SkillMeta:getEarth() return self._earth end
+function SkillMeta:getWeapon() return self._weapon end
+function SkillMeta:getStone1() return self._stone1 end
+function SkillMeta:getStone2() return self._stone2 end
+function SkillMeta:getStone3() return self._stone3 end
+function SkillMeta:getStone4() return self._stone4 end
+function SkillMeta:getDescription() return self._description end
+function SkillMeta:getSelectTarget() return self._selectTarget end
+function SkillMeta:getActionTimeLimit() return self._actionTimeLimit end
+function SkillMeta:getConsecutiveSpells() return self._consecutiveSpells end
+function SkillMeta:getDieNeedSkillEffect() return self._dieNeedSkillEffect end
+function SkillMeta:getIsNeedBullet() return self._isNeedBullet end
+function SkillMeta:getSkillGenreType() return self._skillGenreType end
+function SkillMeta:getSkillPriority() return self._skillPriority end
+function SkillMeta:getSkillInfo() return self._skillInfo end
+function SkillMeta:getIndividualOrGroup() return self._individualOrGroup end
+function SkillMeta:getMovingTarget() return self._movingTarget end
+function SkillMeta:getAberrationContr() return self._aberrationContr end
+
+-- AUTO GENERATED GETTERS END
+return SkillMeta

@@ -1,0 +1,201 @@
+local GameFGUI = class("GameFGUI")
+local Constant = lt.Constant
+
+
+local fguiPackageConf = {
+    -- "fairygui/Activity",
+    -- "fairygui/Common",
+    "fairygui/GM",
+    "fairygui/GM3",
+    -- "fairygui/Mail",
+    ------------------- 天之炼狱----------------------------------------------
+    "fairygui/CommonTL",        --通用包
+    "fairygui/Item",            --物品包（装备、道具）
+    "fairygui/Skill",           --技能
+
+    "fairygui/Inventory", --背包界面
+    "fairygui/Main",      --主界面
+    "fairygui/CompItemTips", --通用道具提示
+    "fairygui/RoleEquip",    --装备界面
+    "fairygui/EquipTips",    --通用装备提示
+    "fairygui/RoleInfo",     --人物信息
+    "fairygui/WareHouse",    --仓库
+    "fairygui/HelpTips",     --通用帮助提示
+    "fairygui/MessageBox",   --通用消息提示
+    "fairygui/Edit",         --编辑界面包
+    "fairygui/Mail",         --邮件界面
+    "fairygui/Strengthen",   --装备强化界面
+    "fairygui/NPC",          --npc
+    "fairygui/MiniMap",      --小地图
+    "fairygui/Appearance",   --外观
+    "fairygui/Team",         --组队
+    "fairygui/Chat",         --聊天
+    "fairygui/Task",         --任务
+    "fairygui/Friend",       --好友
+    "fairygui/Setting",      --设置
+    "fairygui/Recharge",     --商城
+    "fairygui/Guild",        --公会
+    "fairygui/Pet",          --宠物
+    "fairygui/Vip",          --Vip
+    "fairygui/Transaction",  --交易行
+    "fairygui/Guide",        --引导
+    "fairygui/Rank",         --排行榜
+    "fairygui/Help",         --帮助
+    "fairygui/Achievements", --成就系统
+    "fairygui/Strong",       --我要变强
+    "fairygui/Activity",     --首充活动
+    "fairygui/SevenDays",    --七日活动
+    "fairygui/DailySpecialGiftBag",    --每日特惠
+    "fairygui/Dungeon",      --副本
+    "fairygui/MonthCard",    --月卡
+    "fairygui/Energy",       --精力系统
+    "fairygui/Mount",        --坐骑
+    "fairygui/HolyFight",    --圣战
+    "fairygui/RewardTips",   --奖励展示
+    "fairygui/Welfare",      --开服福利
+    "fairygui/TriggerGift",  --触发礼包
+}
+local fguiCommonExtConf = {
+    ------------------- 天之炼狱----------------------------------------------
+    -- {"ui://Main/SureLayer", lt.UICompMessageBoxSure},  --消息窗口
+    -- {"ui://Item/Item", lt.UICompItem},    --背包物品单个组件
+    -- {"ui://CompItemTips/CompItemTips", lt.CompItemTips},  --道具tips 组件
+    -- {"ui://Item/RoleEquipItem", lt.UICompRoleEquipItem},   --人物装备单个组件
+    -- {"ui://EquipTips/ShowEquipTips", lt.UICompShowEquipTips}, --装备提示遮罩层
+    -- {"ui://EquipTips/EquipTips", lt.UICompEquipTips},        --装备提示
+    -- {"ui://EquipTips/ShowTextTips", lt.UICompShowTextTips},  --文本提示
+    -- {"ui://RoleInfo/SkillItemCom", lt.UICompSkillItem},      --人物信息单个技能组件
+    -- {"ui://MessageBox/MessageBox", lt.UICompMessageBox},     --消息窗口（两个按钮）  
+    -- {"ui://MessageBox/MessageBoxSmall", lt.UICompMessageBoxSmall},  --消息窗口（单、双个按钮）
+    -- {"ui://MessageBox/MessageBoxNum", lt.UICompMessageBoxNum}, --消息窗口（存钱）
+    -- {"ui://MessageBox/MessageBoxSell", lt.UICompMessageBoxSell}, --消息窗口（通用买卖）
+    -- {"ui://MessageBox/MessageBoxRemove", lt.UICompMessageBoxRemove}, --消息窗口（删除角色）
+    -- {"ui://Skill/SkillTips", lt.UICompSkillTips},   --技能tips
+    -- {"ui://Skill/ShowSkillTips", lt.UICompShowSkillTips}, --技能tips(遮罩)
+    -- {"ui://RoleInfo/MagicItem", lt.UICompMagicItem},  --角色信息（人族、鬼族）技能信息
+    -- {"ui://RoleInfo/TransferSkillItem", lt.UICompTSkillItem}, --转职技能信息
+    -- {"ui://HelpTips/HelpTips", lt.UICompHelpTips},  --帮助提示
+    -- {"ui://MessageBox/MessageBoxRename", lt.UICompRename},  --改名
+    -- {"ui://MessageBox/MessageChatEdit", lt.UICompChatEdit},  --聊天文字编辑
+    -- {"ui://MessageBox/MessageBoxAddFriend", lt.UICompFriendAdd},  --添加好友
+    -- {_GURL.CompBuffItem, lt.CompBuffItem}, --buffItem
+    -- {_GURL.GetCompPlayerTips, lt.CompPlayerTips},  --玩家tips 组件
+    -- {_GURL.GetCompDestInfoTips, lt.UICompShowDestInfoTips},  --头像交互组件
+    -- {_GURL.GuildInfoTips, lt.UICompGuildInfoTips},  --公会交互组件
+    -- {_GURL.GompPetTipsPanel, lt.UICompPetDetailTips},  --宠物详情组件
+    -- {_GURL.UICompUseCode, lt.UICompUseCode},  --礼包码
+        "UICompMessageBoxSure",     -- 消息窗口
+        "UICompItem",               -- 背包物品单个组件
+        "CompItemTips",             -- 道具tips 组件
+        "UICompRoleEquipItem",      -- 人物装备单个组件
+        "UICompShowEquipTips",      -- 装备提示遮罩层
+        "UICompEquipTips",          -- 装备提示
+        "UICompShowTextTips",       -- 文本提示
+        "UICompSkillItem",          -- 人物信息单个技能组件
+        "UICompMessageBox",         -- 消息窗口（两个按钮）  
+        "UICompMessageBoxSmall",    -- 消息窗口（单、双个按钮）
+        "UICompMessageBoxNum",      -- 消息窗口（存钱）
+        "UICompMessageBoxSell",     -- 消息窗口（通用买卖）
+        "UICompMessageBoxRemove",   -- 消息窗口（删除角色）
+        "UICompSkillTips",          -- 技能tips
+        "UICompShowSkillTips",      -- 技能tips(遮罩)
+        "UICompMagicItem",          -- 角色信息（人族、鬼族）技能信息
+        "UICompTSkillItem",         -- 转职技能信息
+        "UICompHelpTips",           -- 帮助提示
+        "UICompRename",             -- 改名
+        "UICompChatEdit",           -- 聊天文字编辑
+        "UICompFriendAdd",          -- 添加好友
+        "CompBuffItem",             -- 单个Buff
+        "CompPlayerTips",           -- 玩家tips 组件
+        "UICompShowDestInfoTips",   -- 头像交互组件
+        "UICompGuildInfoTips",      -- 公会交互组件
+        "UICompPetDetailTips",      -- 宠物详情组件
+        "UICompUseCode",            -- 礼包码
+}
+
+local commonPlist = {
+    
+}
+
+function GameFGUI:ctor()
+    self:loadFGUI()
+end
+
+function GameFGUI:loadFGUI()
+    self:registerFont()
+    self:createCommonParent()
+    self:loadPackage()
+    self:registCommonExtend()
+    self:loadCommonPlist()
+end
+
+function GameFGUI:registerFont()
+    fgui.UIConfig:registerFont("FONT_1", "font/chs/FONT_1.TTF");
+    fgui.UIConfig:registerFont("FONT_2", "font/chs/FONT_2.TTF");
+    fgui.UIConfig:registerFont("fangzheng", "font/fangzheng.ttf");
+    fgui.UIConfig.defaultFont = "fangzheng"
+    local curRace = lt.GameModule:getHeroRace()
+    if curRace == Constant.RaceType.Slayer then
+        fgui.UIConfig.buttonSound = _GURL.SlayerButtonSound
+    elseif curRace == Constant.RaceType.Ousters then
+        fgui.UIConfig.buttonSound = _GURL.OustersButtonSound
+    elseif curRace == Constant.RaceType.Vampire then
+        fgui.UIConfig.buttonSound = _GURL.VampireButtonSound
+    end
+end
+
+--- 生成FGUI与Cocos公共父节点（用于Cocos界面与FGUI兼容） 
+--- 不需要FGUI 与cocos界面共存情况，屏蔽相关代码
+function GameFGUI:createCommonParent()
+    -- _GAME_FGUI_GROOT = self:getParent()._groot 
+   
+    -- window层
+    -- local layerChild = fgui.GComponent:create()
+    -- _GAME_FGUI_GROOT:addChild(layerChild)
+    -- _GAME_DIALOG_GROOT = layerChild:displayObject():getParent()
+
+    -- gameLayerUI
+    -- local innerLayerChild = fgui.GComponent:create()
+    -- innerLayerChild:setSize(display.width, display.height)
+    -- _GAME_FGUI_GROOT:addChild(innerLayerChild)
+    -- _GAME_LAYER_GROOT = innerLayerChild:displayObject():getParent()
+end
+
+function GameFGUI:loadPackage()
+    for _,package in ipairs(fguiPackageConf) do
+        fgui.UIPackage:addPackage(package)
+    end
+end
+
+function GameFGUI:loadCommonPlist()
+    for _, plistInfo in pairs(commonPlist) do
+        display.loadSpriteFrames(plistInfo..".plist", plistInfo..".png")
+    end
+end
+
+function GameFGUI:registCommonExtend()
+    -- for _,component in ipairs(fguiCommonExtConf) do
+    --     lt.FGuiManager:registerComponent("GameFGUI", component)
+    -- end
+end
+
+function GameFGUI:removePackage()
+    for _,package in ipairs(fguiPackageConf) do
+        fgui.UIPackage:removePackage(package)
+    end
+end
+
+function GameFGUI:removeCommonPlist()
+    for _, plistInfo in pairs(commonPlist) do
+        display.removeSpriteFrames(plistInfo..".plist", plistInfo..".png")
+    end
+end
+
+function GameFGUI:onClear()
+    yflog:Info("GameFGUI:onClear()")
+    -- lt.FGuiManager:unregisterAllComponent("GameFGUI")
+    self:removePackage()
+    self:removeCommonPlist()
+end
+
+return GameFGUI

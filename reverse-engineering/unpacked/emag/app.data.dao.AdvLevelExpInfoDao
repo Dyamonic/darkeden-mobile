@@ -1,0 +1,15 @@
+
+local AdvLevelExpInfoDao = {}
+
+function AdvLevelExpInfoDao:queryAll()
+    local advLevelExpInfoMap = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM AdvancementClassEXPInfo;") do
+    	local advLevelExpInfoMeta = lt.AdvLevelExpInfoMeta.new(row)
+        advLevelExpInfoMap[advLevelExpInfoMeta:getLevel()] = advLevelExpInfoMeta
+    end
+
+    return advLevelExpInfoMap
+end
+
+return AdvLevelExpInfoDao

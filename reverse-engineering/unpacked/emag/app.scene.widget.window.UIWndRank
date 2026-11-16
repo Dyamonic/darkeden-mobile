@@ -1,0 +1,212 @@
+---@ 排行榜 界面
+---@class UIWndRank:UIWindowBase
+local UIWndRank        = class("UIWndRank", lt.UIWindowBase)
+
+local NtfManager       = lt.NtfManager
+local RankModule       = lt.RankModule
+local Constant         = lt.Constant
+local GameModule       = lt.GameModule
+local CreatureValueDef = lt.ServerClientEnum.CreatureValueDef
+local PlayerValueDef   = lt.ServerClientEnum.PlayerValueDef
+
+local FITER_TYPES      = {
+    ALL     = 1, --全族
+    SLAYER  = 2, --人类
+    VAMPIRE = 3, --吸血鬼
+    OUSTERS = 4, --魔灵
+}
+
+-- index 对应排行榜表里面的映射
+local btnTypes         = {
+    [Constant.RANK_TYPES.LEVEL] = { name = GReadText.KEY_RANK_TIPS1, index = 1 },
+    [Constant.RANK_TYPES.SCORE] = { name = GReadText.KEY_RANK_TIPS2, index = 3 },
+    [Constant.RANK_TYPES.WEALTH] = { name = GReadText.KEY_RANK_TIPS3, index = 2 }
+}
+
+function UIWndRank:ctor(param)
+    self:registerComponent("UICompRankCell")
+    UIWndRank.super.ctor(self, param)
+    self._openViewType = nil
+    self._fiterBtns = {}
+    self._ranks = table.nums(Constant.RANK_TYPES)
+    self._menus = table.nums(FITER_TYPES)
+end
+
+function UIWndRank:onShown()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_RANK_LIST_CHANGE, handler(self, self.refreshList),
+        "UIWndRank:refreshList")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_RANK_LIST_SELECT, handler(self, self.onRankSelect),
+        "UIWndRank:onRankSelect")
+    for fiterType = 1, self._ranks do
+        self._fiterBtns[fiterType]:addClickListener(handler(self, self.openFiterBtnClick))
+    end
+    self._listMenu:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickMenu))
+
+    local param = self:getParam().param or {}
+    local mainIdx = param.index or Constant.RANK_TYPES.LEVEL
+    local defaultView = self._fiterBtns[mainIdx]
+    defaultView:setSortingOrder(self._ranks)
+    self:openFiterView(defaultView)
+end
+
+function UIWndRank:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndRank:refreshList")
+    NtfManager:removeNtfListenerByTag("UIWndRank:onRankSelect")
+    for fiterType = 1, self._ranks do
+        self._fiterBtns[fiterType]:removeClickListener()
+    end
+    self._listMenu:removeEventListener(fgui.UIEventType.ClickItem)
+    UIWndRank.super.onHide(self)
+end
+
+function UIWndRank:onClear()
+    self._listRank     = nil
+    self._lblRankIndex = nil
+    self._lblRankNo    = nil
+    self._listMenu     = nil
+    self._controlTab   = nil
+    self._controlMenu  = nil
+    self._lblTypeText  = nil
+    self._lblRankDesc  = nil
+    for fiterType = 1, self._ranks do
+        self._fiterBtns[fiterType] = nil
+    end
+    self._fiterBtns    = {}
+    self._openViewType = nil
+    self:unregisterAllComponent()
+    UIWndRank.super.onClear(self)
+end
+
+function UIWndRank:onInit()
+    UIWndRank.super.onInit(self, _GURL.WndRankPanel)
+    self._listRank     = self:getChild("list_rank")
+    self._lblRankIndex = self:getChild("lbl_rankIndex")
+    self._lblRankNo    = self:getChild("lbl_rankNo")
+    self._lblTypeText  = self:getChild("lbl_TypeText")
+    self._controlTab   = self:getController("tabs")
+    self._listMenu     = self:getChild("list_menu")
+    self._controlMenu  = self:getController("menus")
+    self._lblRankDesc  = self:getChild("lbl_rankDesc")
+
+    for fiterType = 1, self._ranks do
+        local obj = self:getChild("btnFiter" .. fiterType)
+        obj.fiterType = fiterType
+        self._fiterBtns[fiterType] = obj
+    end
+    self._listRank:setItemRenderer(handler(self, self.onItemRender))
+end
+
+function UIWndRank:refreshList()
+    self:initUI()
+end
+
+function UIWndRank:onItemRender(index, obj)
+    local index = index + 1
+    local id = self:onGetRankId()
+    local rank = RankModule:getRankById(id)
+    if rank then
+        obj:setInfo(rank.array[index], index, self._openViewType)
+    end
+end
+
+function UIWndRank:openFiterBtnClick(context)
+    local sender = context:getSender()
+    for fiterType = 1, self._ranks do
+        if fiterType == sender.fiterType then
+            self._fiterBtns[fiterType]:setSortingOrder(self._ranks)
+        else
+            self._fiterBtns[fiterType]:setSortingOrder(1)
+        end
+    end
+
+    self:openFiterView(sender)
+end
+
+function UIWndRank:openFiterView(sender)
+    if self._openViewType == sender.fiterType then
+        return
+    end
+
+    self._openViewType = sender.fiterType
+    self._listMenu:setSelectedIndex(0)
+    local name = btnTypes[self._openViewType] and btnTypes[self._openViewType].name or ""
+    self._lblTypeText:setText(name)
+    local content = string.format(GReadText.KEY_RANK_TIPS5, name)
+    self._lblRankDesc:setText(content)
+    self:onSendReq()
+end
+
+function UIWndRank:onClickMenu(context)
+    self:onSendReq()
+end
+
+function UIWndRank:onSendReq()
+    local id = self:onGetRankId()
+    RankModule:onRankListReq(id)
+end
+
+function UIWndRank:onGetRankId()
+    local index = self._listMenu:getSelectedIndex() + 1
+    local rankIndex = btnTypes[self._openViewType].index or 0
+    local id = (rankIndex - 1) * self._menus + index
+    return id
+end
+
+function UIWndRank:initUI()
+    local id = self:onGetRankId()
+    local rank = RankModule:getRankById(id)
+    if not rank then
+        return
+    end
+    local array = rank.array
+    self._listRank:setNumItems(#array)
+    if #array > 0 then
+        self:clearSelect()
+        self._listRank:scrollToView(0)
+        -- self._selectItem = self._listRank:getChildAt(0)
+    end
+    local myRank = rank.myRank
+    if myRank > 0 then
+        self._lblRankIndex:setVar("rank", tostring(myRank)):flushVars()
+    end
+    self._lblRankIndex:setVisible(myRank > 0)
+    self._lblRankNo:setVisible(not (myRank > 0))
+end
+
+function UIWndRank:onRankSelect(event)
+    local param = event.param
+    -- if self._selectItem == param.data then
+    --     return
+    -- end
+    if self._selectItem then
+        self._selectItem:setSelected(false)
+    end
+    self._selectItem = param.data
+    self:refreshInfo()
+end
+
+function UIWndRank:refreshInfo()
+    local data = nil
+    if self._selectItem then
+        self._selectItem:setSelected(true)
+        data = self._selectItem._playerInfo
+    end
+
+    if data then
+        -- local playerId = data.role.playerId
+        -- RankModule:onQueryPlayerReq(playerId)
+        local itemSize = self._selectItem:getSize()
+        local pos = self._selectItem:localToGlobal({ x = itemSize.width / 2 - 80, y = 0 })
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_RANK_INFO_TIPS,
+            { roleData = data.role, pos = pos })
+    end
+end
+
+function UIWndRank:clearSelect()
+    if self._selectItem then
+        self._selectItem:setSelected(false)
+    end
+    self._selectItem = nil
+end
+
+return UIWndRank

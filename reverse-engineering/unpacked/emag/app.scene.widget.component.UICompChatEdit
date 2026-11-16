@@ -1,0 +1,127 @@
+---@聊天消息修改
+---@class UICompChatEdit
+local UICompChatEdit = class("UICompChatEdit", lt.UIGButtonBase)
+
+local NtfManager = lt.NtfManager
+
+UICompChatEdit.ChangeSkinConf = {
+    ["MessageBox"] = {
+        ["bg"] = "bg_tytanchuang_02",
+    },
+    ["CommonTL"] = {
+        closeButton = { loaderdown = "bg_beibao_ren_anniu" },
+        confirm = { loaderdown = "bg_beibao_ren_anniu" },
+    }
+}
+
+function UICompChatEdit:ctor()
+    UICompChatEdit.super.ctor(self)
+    self._data       = nil
+    self._curMessage = nil
+end
+
+function UICompChatEdit:onEnter()
+    UICompChatEdit.super.onEnter(self)
+    self._confirm:addClickListener(handler(self, self.onBtnClick))
+    self._closeButton:addClickListener(handler(self, self.onCloseBtnClick))
+    -- self:initUI()
+end
+
+function UICompChatEdit:onExit()
+    self._confirm:removeClickListener()
+    self._closeButton:removeClickListener()
+    UICompChatEdit.super.onExit(self)
+end
+
+function UICompChatEdit:onClear()
+    self._data       = nil
+    self._curMessage = nil
+    UICompChatEdit.super.onClear(self)
+end
+
+function UICompChatEdit:onConstruct()
+
+end
+
+function UICompChatEdit:initUI()
+    self._confirm = self:getChild("confirm")
+    self._closeButton = self:getChild("closeButton")
+    self:initCocosInputUI()
+end
+
+function UICompChatEdit:onCloseBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_CHATEDIT_MESSAGE_BOX)
+end
+
+function UICompChatEdit:onBtnClick()
+    local name = self._Input:getText()
+    if name == "" then
+        return
+    end
+    if self._curMessage == name then
+        return
+    end
+
+    yflog:Info("------------->>>>>name:%s,", name)
+
+    local confirmCallback = self._data.confirmCallback
+    if confirmCallback then
+        confirmCallback(name)
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_CHATEDIT_MESSAGE_BOX)
+end
+
+function UICompChatEdit:initCocosInputUI()
+    if not self._Input then
+        self._Input = ccui.EditBox:create(cc.size(441, 108), "", ccui.TextureResType.localType)
+        self._Input:setAnchorPoint(cc.p(0, 0))
+        self._Input:setFontName(lt.Constant.FONT_4)
+        self._Input:setFontSize(22)
+        self._Input:setReturnType(cc.KEYBOARD_RETURNTYPE_SEND)
+        self._Input:setInputMode(cc.EDITBOX_INPUT_MODE_ANY)
+        self._Input:registerScriptEditBoxHandler(handler(self, self.editBoxEvent))
+        self:getChild("nameBg"):displayObject():addChild(self._Input)
+    end
+end
+
+function UICompChatEdit:editBoxEvent(eventType, sender)
+    if eventType == "began" then
+    elseif eventType == "ended" then
+    elseif eventType == "changed" then
+        local str = sender:getText()
+        -- str = string.gsub(str," ","")--过滤掉空格
+        -- str = lt.CommonUtil:rmSpecChars(str)
+        local count = string.len(str)
+        local reCount = 0
+        local beginIndex = -1
+        local reString = ""
+        for i = 1, count do
+            local s = string.sub(str, i, i)
+            local t = string.byte(s)
+            if t < 128 then
+                reCount = reCount + 1 --1字节文字，长度加1
+            elseif t >= 192 then
+                reCount = reCount + 2 --1字节以上文字，长度加2
+            end
+            if reCount > 50 then
+                beginIndex = i - 1
+                break
+            end
+            beginIndex = i
+        end
+        reString = string.sub(str, 1, beginIndex)
+        sender:setText("")
+        self._Input:setText(reString)
+    elseif eventType == "return" then
+    end
+end
+
+function UICompChatEdit:refreshTips(param)
+    if self._Input then
+        self._Input:setText(param.content)
+    end
+    self._data = param or {}
+    self._curMessage = param.content
+end
+
+return UICompChatEdit

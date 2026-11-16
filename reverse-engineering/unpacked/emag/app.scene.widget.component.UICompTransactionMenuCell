@@ -1,0 +1,101 @@
+---@class UICompTransactionMenuCell
+--- 交易行 menu cell
+local UICompTransactionMenuCell = class("UICompTransactionMenuCell", lt.UIGButtonBase)
+
+local NtfManager                = lt.NtfManager
+local Constant                  = lt.Constant
+local GameModule                = lt.GameModule
+
+local BTN_HEIHT                     = 48 --(46 + 2)
+local BTN_WIDTH                     = 180
+
+UICompTransactionMenuCell.ChangeSkinConf = {
+    ["Transaction"] = {
+        ["icon"] = "bg_pmh_yeqian01",
+    },
+}
+
+function UICompTransactionMenuCell:ctor()
+    UICompTransactionMenuCell.super.ctor(self)
+    --UI
+    self._list = nil
+    self._icon = nil
+    --数据
+    self._secondList = nil
+end
+
+function UICompTransactionMenuCell:onClear()
+    --UI
+    if self._list then
+        self._list:removeChildrenToPool()
+        self._list:removeItemRenderer()
+        self._list:removeEventListener(fgui.UIEventType.ClickItem)
+        self._list = nil
+    end
+    if self._icon then
+        self._icon:removeClickListener()
+        self._icon = nil
+    end
+    --数据
+    self._secondList = nil
+    self._race = nil
+    UICompTransactionMenuCell.super.onClear(self)
+end
+
+function UICompTransactionMenuCell:onConstruct()
+    self._list = self:getChild("list")
+    self._list:setItemRenderer(handler(self, self.renderTargetItem))
+    self._icon = self:getChild("icon")
+end
+
+function UICompTransactionMenuCell:onEnter()
+    UICompTransactionMenuCell.super.onEnter(self)
+    self._list:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickTargetItem))
+    self._icon:addClickListener(handler(self, self.onIconBtnClick))
+end
+
+function UICompTransactionMenuCell:onExit()
+    self._list:removeEventListener(fgui.UIEventType.ClickItem)
+    self._icon:removeClickListener()
+    UICompTransactionMenuCell.super.onExit(self)
+end
+
+function UICompTransactionMenuCell:setObjInfo(secondList)
+    self._secondList = secondList
+    self._list:setNumItems(#self._secondList)
+    self._list:setSize(BTN_WIDTH, BTN_HEIHT * #self._secondList)
+    self._race = GameModule:getHeroRace()
+end
+
+function UICompTransactionMenuCell:renderTargetItem(index, obj)
+    local meta = self._secondList[index + 1]
+    obj:getChild("title"):setText(meta[1]:getSecondName())
+    obj.index = index + 1
+end
+
+function UICompTransactionMenuCell:onClickTargetItem(context)
+    local obj = context:getData()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSACTION_SELECT_SECOND, { subIdx = obj.index })
+end
+
+function UICompTransactionMenuCell:onIconBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSACTION_SELECT_FIRST, { mainIdx = self.index })
+end
+
+--选中二级按钮回调
+function UICompTransactionMenuCell:selectSubIdx(subIdx)
+    local childs = self._list:getChildren()
+    for i = 1, #childs do
+        if childs[i].index == subIdx then
+            childs[i]:getChild("icon"):setURL(
+                string.format(_GURL.GetTransactionImg, "bg_pmh_yeqian04" .. Constant.RaceSkinRes[self._race]))
+            childs[i]:getChild("title"):setColor(cc.c3b(255, 255, 255))
+        else
+            childs[i]:getChild("icon"):setURL(
+                string.format(_GURL.GetTransactionImg, "bg_pmh_yeqian03" .. Constant.RaceSkinRes[self._race]))
+            childs[i]:getChild("title"):setColor(cc.c3b(179, 179, 179))
+        end
+    end
+end
+
+return UICompTransactionMenuCell

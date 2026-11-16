@@ -1,0 +1,31 @@
+local BuffHolyArmor = class("BuffHolyArmor", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+local CacheManager = lt.CacheManager
+
+--[[
+    神圣装甲
+]]
+function BuffHolyArmor:ctor(time, actor, skilllevel,source,bufferId)    
+    BuffHolyArmor.super.ctor(self, bufferId, time, actor)
+    local objId = actor:getAgent():getObjId()
+    local fromObjId = source.srcId
+
+    self._skillId = SkillEnum.SKILL_HOLY_ARMOR
+    local actionInfoMetas = CacheManager:getBuffMetas(self._skillId, 0)
+    if fromObjId == objId then
+        actor:playParallelEffectSpecial(self._skillId, actionInfoMetas)
+    else
+        local meta = clone(actionInfoMetas[3])
+        meta:setOrder(1)
+        actor:playQueueEffectSpecial(self._skillId, {actionInfoMetas[3]})
+    end
+end
+
+function BuffHolyArmor:onClear()
+    self._actor:stopParallelEffect(self._skillId)
+    self._actor:stopQueueEffect(self._skillId)
+    BuffHolyArmor.super.onClear(self)
+end
+
+return BuffHolyArmor

@@ -1,0 +1,67 @@
+--- 公会列表cell
+---@class UICompGuildListCell
+local UICompGuildListCell = class("UICompGuildListCell", lt.UIGButtonBase)
+
+local NtfManager = lt.NtfManager
+local GuildModule = lt.GuildModule
+
+UICompGuildListCell.ChangeSkinConf = {
+    ["Guild"] = {
+        ["bg"] = "bg_gonghuixt_03",
+    },
+}
+
+function UICompGuildListCell:ctor()
+    UICompGuildListCell.super.ctor(self)
+    self._playerInfo = nil
+end
+
+function UICompGuildListCell:onClear()
+    self._playerInfo    = nil
+    self._bgGuildIcon   = nil
+    self._lblGuildName  = nil
+    self._lblMasterName = nil
+    self._lblCount      = nil
+    self._lbl_state     = nil
+    self._bgSelect      = nil
+    UICompGuildListCell.super.onClear(self)
+end
+
+function UICompGuildListCell:onEnter()
+    UICompGuildListCell.super.onEnter(self)
+    self:addClickListener(handler(self, self.onClickBtn))
+end
+
+function UICompGuildListCell:onExit()
+    self:removeClickListener()
+    UICompGuildListCell.super.onExit(self)
+end
+
+function UICompGuildListCell:onConstruct()
+    self._bgGuildIcon = self:getChild("bg_guildIcon")
+    self._lblGuildName = self:getChild("lbl_guildName")
+    self._lblMasterName = self:getChild("lbl_masterName")
+    self._lblCount = self:getChild("lbl_count")
+    self._lbl_state = self:getChild("lbl_state")
+    self._bgSelect = self:getChild("bg_select")
+end
+
+function UICompGuildListCell:setInfo(info, index)
+    self._lblGuildName:setText(info.guildName)
+    self._lblMasterName:setText(info.masterName)
+    self._lblCount:setText(info.curMemberSize .. "/" .. info.maxMemberSize)
+    self._bgGuildIcon:setURL(string.format(_GURL.GetGuildIcon, info.icon))
+    local hashtb = GuildModule:getMyApplyGuildHash()
+    self._lbl_state:setVisible(hashtb[info.guildId])
+    self._playerInfo = info
+end
+
+function UICompGuildListCell:setSelected(select)
+    self._bgSelect:setVisible(select)
+end
+
+function UICompGuildListCell:onClickBtn(obj)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_GUILD_LIST_SELECT, { data = self })
+end
+
+return UICompGuildListCell

@@ -1,0 +1,334 @@
+---@class CompRevive 主界面-复活系统
+local CompRevive = class("CompRevive", lt.UICompBase)
+
+local Constant = lt.Constant
+local ItemModule = lt.ItemModule
+local GameModule = lt.GameModule
+local NtfManager = lt.NtfManager
+local SkillEnum = lt.SkillEnum
+local BuffEnum = lt.BuffEnum
+local SkillModule = lt.SkillModule
+local SkillCdManager = lt.SkillCdManager
+local CacheManager = lt.CacheManager
+local TimeCounterManager = lt.TimeCounterManager
+
+function CompRevive:ctor()
+    CompRevive.super.ctor(self)
+    self:registerComponent("CompReviveItem", "UICompItem")
+end
+
+function CompRevive:onConstruct()
+    self:initUI()
+end
+
+function CompRevive:onClear()
+    self:unregisterAllComponent()
+
+    self._reviveList = nil
+    self._reviveBtn = nil
+    self._lastLabel = nil
+    self._stateLabel = nil
+    self._itemImg = nil
+    self._itemNode = nil
+    self._hideNode = nil
+    self._selectIdx = nil
+
+    CompRevive.super.onClear(self)
+end
+
+function CompRevive:onEnter()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_HERO_DIE, handler(self, self.changeState), "CompRevive:NTF_HERO_DIE")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_HERO_RELIVE, handler(self, self.changeState), "CompRevive:NTF_HERO_RELIVE")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_HERO_EVENT, handler(self, self.changeState), "CompRevive:NTF_UPDATE_HERO_EVENT")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_BUFF_UPDATE, handler(self, self.setBuffFlag), "CompRevive:NTF_BUFF_UPDATE")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_ITEM_NUMB, handler(self, self.refreshItemNum), "CompRevive:NTF_UPDATE_ITEM_NUMB")
+
+    self._reviveBtn:addClickListener(handler(self, self.btnReviveClick))
+    self._reviveList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+end
+
+function CompRevive:onExit()
+    NtfManager:removeNtfListenerByTag("CompRevive:NTF_HERO_DIE")
+    NtfManager:removeNtfListenerByTag("CompRevive:NTF_HERO_RELIVE")
+    NtfManager:removeNtfListenerByTag("CompRevive:NTF_UPDATE_HERO_EVENT")
+    NtfManager:removeNtfListenerByTag("CompRevive:NTF_BUFF_UPDATE")
+    NtfManager:removeNtfListenerByTag("CompRevive:NTF_UPDATE_ITEM_NUMB")
+
+    self._reviveBtn:removeClickListener()
+    self._reviveList:removeEventListener(fgui.UIEventType.ClickItem)
+end
+
+function CompRevive:initUI()
+    -- 复活列表
+    self._reviveList = self:getChild("list_revive")
+    self._reviveList:setItemRenderer(handler(self, self.renderReviveItem))
+
+    self._reviveBtn = self:getChild("btn_revive")
+
+    self._lastLabel = self:getChild("label_last")
+    self._stateLabel = self:getChild("label_state")
+    self._itemImg = self:getChild("img_item")
+    self._itemNode = self:getChild("node_item")
+    self._titleLabel = self:getChild("label_title")
+    self._hideNode = self:getChild("node_hide")
+end
+
+-- 切换状态
+-- 正常状态切换到死亡要五秒后再刷新
+function CompRevive:changeState()
+    local heroData = GameModule:getHeroData()
+    if not heroData then
+        return
+    end
+    local isAlive = heroData:isAlive()
+    if isAlive then
+        self:clearTimeCounter()
+        self:setVisible(false)
+        self._buffFlag = false
+    else
+        -- 死亡60秒后自动复活 这边-5s   55s
+        if self._remainTs then
+            return
+        end
+        self:clearTimeCounter()
+
+        --昏迷buff剩余时间
+        local bufferTable = GameModule:getBufferTable() or {}
+        local remainTime = math.floor(bufferTable[BuffEnum.EFFECT_CLASS_COMA] or 0)
+        self._remainTs = remainTime
+        self._titleLabel:setText(GReadText.KEY_REVIVE_TIPS5)
+        TimeCounterManager:startTimeCounter(TimeCounterManager.TC.HERO_REVIVE_AUTO, {callback = function()
+            self._remainTs = self._remainTs - 1
+            local flagTime = remainTime - Constant.ReviveShowTime
+            if self._remainTs == flagTime then
+                -- 死亡显示
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_REVIVE_EVENT)
+            elseif self._remainTs < 0 then
+                GameModule:sendRelive()
+                self:clearTimeCounter()
+            end
+            self:refreshTime()
+        end })
+    end
+end
+
+function CompRevive:refreshTime()
+    if self:isVisible() and self._remainTs and self._remainTs >= 0 then
+        self._lastLabel:setText(self._remainTs.."s")
+    end
+end
+
+function CompRevive:clearTimeCounter()
+    TimeCounterManager:stopTimeCounter(TimeCounterManager.TC.HERO_REVIVE_AUTO)
+    self._remainTs = nil
+end
+
+function CompRevive:setBuffFlag()
+    if self._buffFlag then
+        return
+    end
+
+    --转生术
+    local bufferSource = GameModule:getBufferSourceByBuffId(BuffEnum.EFFECT_ETERNITY)
+    if bufferSource then
+        self._buffFlag = true
+        self._remainTs = 5
+        self._titleLabel:setText(GReadText.KEY_REVIVE_TIPS6)
+        self:refreshTime()
+        self._hideNode:setVisible(false)
+    end
+
+    --别人复活
+    bufferSource = GameModule:getBufferSourceByBuffId(BuffEnum.EFFECT_REVIVE)
+    if bufferSource and bufferSource.srcId then
+        self._buffFlag = true
+        local skillId = bufferSource.srcId
+        local enable = false
+        if skillId == SkillEnum.SKILL_SOUL_REBIRTH then
+            enable = true
+        elseif skillId == SkillEnum.SKILL_RESURRECT or skillId == SkillEnum.SKILL_WHITSUNTIDE then
+            enable = true
+        end
+        if enable then
+            self:refreshView()
+        end
+    end
+end
+
+-- 复活逻辑
+function CompRevive:refreshView()
+    local reviveList = {}
+    local heroData = GameModule:getHeroData()
+    local race = heroData:getRace()
+    -- 普通复活
+    -- icon 三族不一样 写死
+    local reviveIcon = "levelup_5"  -- 人
+    if race == Constant.RaceType.Vampire then
+        reviveIcon = "levelup_6"    -- 吸血鬼
+    elseif race == Constant.RaceType.Ousters then
+        reviveIcon = "levelup_7"    -- 魔灵
+    end
+    table.insert(reviveList, {name = GReadText.KEY_REVIVE_TIPS1, icon = string.format(_GURL.GetImageMain, reviveIcon), touchFunc = function ()
+        GameModule:sendRelive()
+    end, enable = true})
+    
+    -- 背包两种固定卷轴复活
+    local itemList = {
+        {itemId = 306001, icon = "levelup_10"},
+        {itemId = 306002, icon = "levelup_11"}
+    }
+    for _,v in ipairs(itemList) do
+        local itemCfg = CacheManager:getItemMeta(v.itemId)
+        local itemName = itemCfg:getName()
+        local objId = ItemModule:getObjIdById(v.itemId) or 0
+        local enable = objId > 0
+        table.insert(reviveList, {name = itemName, icon = string.format(_GURL.GetImageMain,v.icon), touchFunc = function ()
+            local isEnough = ItemModule:enoughItem(itemCfg:getItemType(), v.itemId, 1, {tips = true})
+            if isEnough then
+                local itemData = ItemModule:getItemByItemId(v.itemId, itemCfg:getItemType())
+                ItemModule:sendUseItemLimit(itemData)
+            end
+        end, enable = enable, itemId = v.itemId})
+    end
+
+    -- 同意他人请求技能复活
+    local agreeReviveIcon = nil
+    if race == Constant.RaceType.Slayer then
+        agreeReviveIcon = "levelup_13"  -- 人
+    elseif race == Constant.RaceType.Ousters then
+        agreeReviveIcon = "levelup_14"  -- 魔灵
+    end
+    if agreeReviveIcon then
+        local bufferSource = GameModule:getBufferSourceByBuffId(BuffEnum.EFFECT_REVIVE)
+        local enable = false
+        if bufferSource and bufferSource.srcId then
+            local skillId = bufferSource.srcId
+            if skillId == SkillEnum.SKILL_SOUL_REBIRTH then
+                enable = true
+            elseif skillId == SkillEnum.SKILL_RESURRECT or skillId == SkillEnum.SKILL_WHITSUNTIDE then
+                enable = true
+            end
+        end
+        table.insert(reviveList, {name = GReadText.KEY_REVIVE_TIPS2, icon = string.format(_GURL.GetImageMain,agreeReviveIcon), touchFunc = function ()
+            GameModule:sendAgreeRelive()
+        end, enable = enable, hasBuff = 1})
+    end
+
+    -- 自己复活技能
+    if race == Constant.RaceType.Slayer then
+        local enable = SkillModule:hasSkill(SkillEnum.SKILL_ETERNITY)
+        local lastTimes = heroData:getEternityLeftCount()
+        if enable then
+            enable = lastTimes > 0
+        end
+        table.insert(reviveList, {name = GReadText.KEY_REVIVE_TIPS3, icon = string.format(_GURL.GetImageMain,"levelup_12"), touchFunc = function ()
+            GameModule:sendAttack(SkillEnum.SKILL_ETERNITY, 0, 0, 0, 0, 0)
+        end, enable = enable, lastTimes = lastTimes})
+    end
+
+    self._listData = reviveList
+    self._reviveList:setNumItems(#reviveList)
+
+    --默认第一个
+    self._selectIdx = 1
+    self._reviveList:setSelectedIndex(self._selectIdx - 1)
+
+    self._hideNode:setVisible(true)
+
+    self:refreshCostView()
+end
+
+-- 刷新消耗
+function CompRevive:refreshCostView()
+    self._itemContentTable = {}
+    local data = self._listData[self._selectIdx]
+    if data.itemId then
+        self._stateLabel:setVisible(false)
+        if not self._item then
+            self._item = fgui.UIPackage:createObject("Item", "Item")
+            self._item:setPivot(0.5, 0.5, true)
+            self._item:setScale(0.8, 0.8)
+            self._itemNode:addChild(self._item)
+            self._item:insertObjectToFactory(self)
+        end
+        local itemMeta = CacheManager:getItemMeta(data.itemId)
+        local itemInfo = ItemModule:getItemDataByConfig(itemMeta)
+        self._item:setItemInfo(itemInfo)
+        self._item:setItemNums("")
+        local itemNum = ItemModule:getItemNum(data.itemId)
+        self._item:setNeedNum(itemNum ,1)
+        self._itemImg:setVisible(true)
+        self._itemNode:setVisible(true)
+
+        local itemkey = string.format("%d_%d", 1, data.itemId)
+        self._itemContentTable[itemkey] = true
+    elseif data.lastTimes then
+        self._itemImg:setVisible(false)
+        self._itemNode:setVisible(false)
+        local enable = SkillModule:hasSkill(SkillEnum.SKILL_ETERNITY)
+        if enable then
+            self._stateLabel:setText(GReadText.KEY_REVIVE_TIPS4..data.lastTimes.."/1")
+            self._stateLabel:setColor(data.lastTimes > 0 and Constant.COLOR_GREEN or Constant.COLOR_TEXT_RED)
+        else
+            self._stateLabel:setText(GReadText.KEY_PET_TIPS43)
+            self._stateLabel:setColor(Constant.COLOR_TEXT_RED)
+        end
+        self._stateLabel:setVisible(true)
+    elseif data.hasBuff then
+        self._itemImg:setVisible(false)
+        self._itemNode:setVisible(false)
+        self._stateLabel:setColor(data.enable and Constant.COLOR_GREEN or Constant.COLOR_TEXT_RED)
+        self._stateLabel:setText(data.enable and GReadText.KEY_ENERGY_TIPS5 or GReadText.KEY_ENERGY_TIPS4)
+        self._stateLabel:setVisible(true)
+    else
+        self._itemImg:setVisible(false)
+        self._itemNode:setVisible(false)
+        self._stateLabel:setText(GReadText.KEY_BUTTON_TEXT_FREE)
+        self._stateLabel:setColor(Constant.COLOR_TEXT_WHITE_PURE)
+        self._stateLabel:setVisible(true)
+    end
+    self._reviveBtn:setText(data.name)
+    self._reviveBtn:getController("c1"):setSelectedIndex(data.enable and 0 or 1)
+end
+
+function CompRevive:btnReviveClick()
+    local touchFunc = self._listData[self._selectIdx].touchFunc
+    if type(touchFunc) == "function" then
+        touchFunc()
+    else
+        yflog:Info("touchFunc is nil")
+    end
+end
+
+function CompRevive:onClickItem(context)
+    local data = context:getData()
+    self._selectIdx = data.index
+    self:refreshCostView()
+end
+
+function CompRevive:renderReviveItem(index, obj)
+    obj.index = index + 1
+    local data = self._listData[index + 1]
+    if not data then
+        return
+    end
+    obj:setInfo(data)
+    obj:insertObjectToFactory(self)
+end
+
+function CompRevive:refreshItemNum(event)
+    if event and event.name == "NTF_UPDATE_ITEM_NUMB" then
+        if event.param and event.param.content then
+            if self._itemContentTable and self._itemContentTable[event.param.content] then
+                
+            else
+                return
+            end
+        end
+    end
+    local itemId = event.param.content
+    local itemNum = ItemModule:getItemNum(itemId)
+    self._item:setNeedNum(itemNum ,1)
+end
+
+return CompRevive

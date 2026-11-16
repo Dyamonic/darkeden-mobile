@@ -1,0 +1,26 @@
+
+local SkillAgentManager = {}
+
+SkillAgentManager._skillAgentTable = {}
+
+function SkillAgentManager:onUpdate()
+    local removeTable = {}
+    for skillAgentId, skillAgent in pairs(self._skillAgentTable) do
+        if skillAgent:getWaitingForClear() then
+            removeTable[#removeTable + 1] = skillAgentId
+        end
+    end
+
+    for i = 1, #removeTable do
+        local skillAgent = self._skillAgentTable[removeTable[i]]
+        skillAgent:clear()
+        
+        self._skillAgentTable[removeTable[i]] = nil
+    end
+end
+
+function SkillAgentManager:addSkillAgent(skillAgent)
+    self._skillAgentTable[skillAgent:getAgentId()] = skillAgent
+end
+
+return SkillAgentManager

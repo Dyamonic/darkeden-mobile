@@ -1,0 +1,781 @@
+
+---@class CompSkillOperate 技能轮盘
+local CompSkillOperate = class("CompSkillOperate", lt.UIGButtonBase, lt.UICompChangeSkin)
+local Constant = lt.Constant
+local Operate = Constant.SkillOperate
+local SkillModule = lt.SkillModule
+local NtfManager = lt.NtfManager
+local SkillEnum = lt.SkillEnum
+local SkillCdManager =lt.SkillCdManager
+local MonsterModule = lt.MonsterModule
+local GuideModule = lt.GuideModule
+
+local AutoFightManager = lt.AutoFightManager
+local SLOT_CONDITION_TYPE = Constant.SLOT_CONDITION_TYPE
+
+
+local MAX_BTN_COUNT = Constant.MAX_BTN_COUNT --最大按钮数
+local AUTO_NORMAL_INEDX = 30 --自动战斗模式普攻按钮序列
+
+
+local EXCLUDE_MINX, EXCLUDE_MINY = 0, 0 -- 排除区域的左上角
+local EXCLUDE_WIDTH, EXCLUDE_HEIGHT = 648, 114 -- 排除区域的宽度和高度
+local MOVE_MINX, MOVE_MAXX = 0, display.width -- 允许的水平移动范围
+local MOVE_MINY, MOVE_MAXY = 0, display.height -- 允许的垂直移动范围
+local DEFAULT_SCALE = 0.9  -- 默认放大倍率
+
+CompSkillOperate.ChangeSkinConf = {
+   ["Skill"] = {
+        ["btnSwitchIn"] = {
+            ["n0"] = "bg_jnlp_jinengkuang07",
+            ["n1"] = "bg_jnlp_jinengkuang08",
+        },
+        ["btnSwitchOut"] = {
+            ['bg'] = "bg_jnlp_jinengkuang03",
+            ['lightbg'] = "bg_jnlp_jinengkuang04",
+        },
+        ["btnSelMonster"] = {
+            ['bg'] = "bg_jnlp_jinengkuang03",
+            ['lightbg'] = "bg_jnlp_jinengkuang04",
+        },
+        ["btnSelRole"] = {
+            ['bg'] = "bg_jnlp_jinengkuang03",
+            ['lightbg'] = "bg_jnlp_jinengkuang04",
+        },
+        -- ["operate"] = {
+        --     ["circle"] = "bg_jnlp_jinenglunpan04",
+        --     ["move"] = "bg_jnlp_jinenglunpan03"
+        -- },
+   },
+}
+
+function CompSkillOperate:ctor()
+    CompSkillOperate.super.ctor(self)
+    self._skillBtnGroups = {}
+    self._operateMode = 0 -- 操作模式：1：战斗 2：编辑正常中 3：正在设置技能 4：设置位置
+    self._equipPos = nil
+    self._editorData = nil
+    self._skillActor = nil
+    self._operateBtn = nil
+    self._editCom = nil
+    self._replaceSkillId = nil
+    self._maxZorder = 0
+    self._heroAgent = nil
+    self._touchLayer = nil
+    self._conditionOfType = {}
+    self.rightUITablePos = nil
+end
+
+function CompSkillOperate:onConstruct()
+    self:startSkin()
+    
+    self._btnSwitchIn = self:getChild('btnSwitchIn')
+    self._btnSwitchOut = self:getChild('btnSwitchOut')
+    
+    self._switchOutController = self:getController("switchOut")
+    self._switchInController = self:getController("switchIn")
+
+    self._btnSelMonster = self:getChild('btnSelMonster')
+    self._btnSelRole = self:getChild('btnSelRole')
+
+    self._btnCancel = self:getChild("btnCanel")
+    self._btnCancel:setVisible(false)
+    self._touchLayer = self:getChild("touch")
+    self._touchLayer:setVisible(false)
+    self._touchLayer:setSortingOrder(9999)
+
+    
+    local editTable = lt.AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.RIGHT_OFFSET) or {}
+    local value = editTable.value or 0
+    local defaultConf = lt.SkillEditDefaultConf
+    -- 39个技能按钮位置初始化
+    for index = 1, MAX_BTN_COUNT do
+        local skillBtn = self:getChild("skill"..index)
+        skillBtn.index = index
+        table.insert(self._skillBtnGroups, skillBtn)
+
+        local pos = skillBtn:getPosition()
+        if defaultConf and defaultConf and not defaultConf[index].x then
+            defaultConf[index].x = pos.x - value
+            defaultConf[index].y = pos.y
+            defaultConf[index].offsetX = value
+        end
+    end
+end
+
+function CompSkillOperate:onClear()
+    self:unregisterAllComponent()
+    for index, _ in pairs(self._skillBtnGroups) do
+        self._skillBtnGroups[index] = nil
+    end
+    self._skillBtnGroups = nil
+    self._operateMode = nil 
+    self._equipPos = nil
+    self._editorData = nil
+    self._skillActor = nil
+    self._operateBtn = nil
+    self._editCom = nil
+    self._replaceSkillId = nil
+    self._maxZorder = nil
+    self._heroAgent = nil
+    self._touchLayer = nil
+    self._btnSwitchIn = nil
+    self._btnSwitchOut = nil
+
+    self._switchOutController = nil
+    self._btnSelMonster = nil
+
+    self._btnCancel = nil
+    self._touchLayer = nil
+
+    self._newXY = nil
+    self._conditionOfType  = nil
+    self.rightUITablePos = nil
+    CompSkillOperate.super.onClear(self)
+end
+
+function CompSkillOperate:onEnter()
+    CompSkillOperate.super.onEnter(self)
+    self._btnSwitchIn:addClickListener(handler(self, self.btnSwitchInClick))
+    self._btnSwitchOut:addClickListener(handler(self, self.btnSwitchOutClick))
+    self._btnSelMonster:addClickListener(handler(self, self.btnSelMonsterClick))
+    self._btnSelRole:addClickListener(handler(self, self.btnSelRoleClick))
+
+    for _, skillBtn in pairs(self._skillBtnGroups) do
+        skillBtn:addClickListener(handler(self, self.btnSkillBtnClick))
+    end
+
+    --技能轮盘条件刷新
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_HERO_DIE, handler(self, self.onDieConditionUI), "CompSkillOperate:NTF_HERO_DIE")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_HERO_EQUIP_EVENT, handler(self, self.onEquipConditionUI), "CompSkillOperate:NTF_UPDATE_HERO_EQUIP_EVENT")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT, handler(self, self.onItemConditionUI), "CompSkillOperate:NTF_UPDATE_ITEM_EVENT")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPT_SKILL_SLOT_CONDITION, handler(self, self.onConditionUI), "CompSkillOperate:NTF_UPT_SKILL_SLOT_CONDITION")
+
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_AUTOFIGHT_START, handler(self, self.refreshAutoFightBtn), "CompSkillOperate:NTF_AUTOFIGHT_START")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_AUTOFIGHT_END, handler(self, self.refreshAutoFightBtn), "CompSkillOperate:NTF_AUTOFIGHT_END")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_SLOT, handler(self, self.refreshSlot), "CompSkillOperate:NTF_REFRESH_SLOT")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CHANGE_SETTINGS, handler(self, self.changeSettings), "CompSkillOperate:changeSettings")
+
+    if self._operateMode == Operate.Battle then
+        local isAuto = AutoFightManager:isAuto()
+        local param = {param = {noAnim = true}}
+        self:refreshAutoFightBtn(param)
+    end
+
+    --这两个方法都会修改技能按钮位置
+    self:refreshRightUIOffset(Constant.SETTINGS_TYPES.RIGHT_OFFSET)
+    self:refreshSlot()
+
+    if self._operateMode > 1 then
+        self._btnSelMonster:setTouchable(false)
+        self._btnSelRole:setTouchable(false)
+    else
+        NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_HERO_EVENT, handler(self, self.refreshHero), "CompSkillOperate:refreshHero")
+        self:operateBattle()
+    end
+
+    self:onlyRefreshConditionUI()
+
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_PICK_UP)
+end
+
+function CompSkillOperate:onUpdate(dt)
+    if self._skillBtnGroups then
+        for _, skillBtn in pairs(self._skillBtnGroups) do
+            skillBtn:onUpdate(dt)
+        end
+    end
+end
+
+function CompSkillOperate:onExit()
+    NtfManager:removeNtfListenerByTag("CompSkillOperate:refreshHero")
+    NtfManager:removeNtfListenerByTag("CompSkillOperate:NTF_HERO_DIE")
+    NtfManager:removeNtfListenerByTag("CompSkillOperate:NTF_UPT_SKILL_SLOT_CONDITION")
+    NtfManager:removeNtfListenerByTag("CompSkillOperate:NTF_UPDATE_HERO_EQUIP_EVENT")
+    NtfManager:removeNtfListenerByTag("CompSkillOperate:NTF_UPDATE_ITEM_EVENT")
+    NtfManager:removeNtfListenerByTag("CompSkillOperate:NTF_AUTOFIGHT_START")
+    NtfManager:removeNtfListenerByTag("CompSkillOperate:NTF_AUTOFIGHT_END")
+    NtfManager:removeNtfListenerByTag("CompSkillOperate:NTF_REFRESH_SLOT")
+    NtfManager:removeNtfListenerByTag("CompSkillOperate:changeSettings")
+    NtfManager:removeNtfListenerByTag("CompSkillOperate:onReturnSkill")
+    NtfManager:removeNtfListenerByTag("CompSkillOperate:onResetAllSkill")
+
+    self._btnSwitchIn:removeClickListener()
+    self._btnSwitchOut:removeClickListener()
+    self._btnSelMonster:removeClickListener()
+    self._btnSelRole:removeClickListener()
+
+    for _, skillBtn in pairs(self._skillBtnGroups) do
+        skillBtn:removeClickListener()
+        skillBtn:removeEventListener(fgui.UIEventType.DragStart)
+        skillBtn:removeEventListener(fgui.UIEventType.DragMove)
+        skillBtn:removeEventListener(fgui.UIEventType.DragEnd)
+
+    end
+    CompSkillOperate.super.onExit(self)
+end
+
+function CompSkillOperate:onDieConditionUI()
+    self:onConditionUI({param = {type = SLOT_CONDITION_TYPE.DIE}})
+end
+function CompSkillOperate:onItemConditionUI()
+    self:onConditionUI({param = {type = SLOT_CONDITION_TYPE.ITEM}})
+end
+function CompSkillOperate:onEquipConditionUI()
+    self:onConditionUI({param = {type = SLOT_CONDITION_TYPE.EQUIP}})
+end
+
+function CompSkillOperate:refreshHero(event)
+    local param = event.param
+    if param and param.isInit then
+        local worldAgent = lt.AgentManager:getWorldAgent()
+        local heroAgent = worldAgent:getHeroAgent()
+        if not heroAgent or heroAgent:getIsOutOfGame() then
+            return
+        end
+        self._skillActor = heroAgent:getActor():getSkillActor()
+        self._heroAgent = heroAgent
+        
+        self:refreshSlot()
+    end
+end
+
+--------------------btn click ---------------------------
+function CompSkillOperate:btnSwitchInClick(context)
+    local curIndex = self._switchInController:getSelectedIndex()
+    self._switchInController:setSelectedIndex(curIndex == 0 and 1 or 0)
+end
+function CompSkillOperate:btnSwitchOutClick(context)
+    local curIndex = self._switchOutController:getSelectedIndex()
+    self._switchOutController:setSelectedIndex(curIndex == 0 and 1 or 0)
+end
+
+function CompSkillOperate:btnSkillBtnClick(context)
+    local btn = context:getSender()
+    if self._operateMode > 1 then 
+        self:editorClick(btn)
+    end
+end
+
+function CompSkillOperate:refreshSlot()
+    self._editorData = SkillModule:getEditConf()
+    for nodeId = 1, MAX_BTN_COUNT do
+        local skillBtn = self:getChild("skill"..nodeId)
+        local nodeInfo = self._editorData[nodeId]
+        local skillId = nodeInfo.skillId
+    
+        if self._operateMode == Operate.Battle and not skillId then
+            skillBtn:setVisible(false)
+        else
+            skillBtn:setVisible(true)
+            skillBtn:setNodeComVisible(true)
+            local isCondition = false
+            local url = ""
+            if skillId then
+                skillBtn.skillId = skillId
+                local iconId = SkillModule:getSkillIcon(skillId)
+                url = string.format(_GURL.GetImageSkill, iconId)
+                local skillInfo = SkillModule:getSkillTable()[skillId]
+                if skillInfo then
+                    local skillCd = skillInfo:getSkillCd()
+                    if SkillCdManager:isSet(skillId) then
+                        skillCd = lt.SkillCdManager:getCd(skillId)
+                    end
+                    if skillCd then
+                        SkillCdManager:setCd(skillId, skillCd)
+                    end
+                end
+                for _, conType in pairs(Constant.SLOT_CONDITION_TYPE) do
+                    if conType then
+                        if not self._conditionOfType[skillId] then
+                            self._conditionOfType[skillId] = {}
+                        end
+                        isCondition = SkillModule:isBtnUIConditionByType(skillId, conType)
+                        
+                        self._conditionOfType[skillId][conType] = isCondition == true and 1 or 0
+                        if table.keyof(self._conditionOfType[skillId], 0) then
+                            isCondition = false
+                        end
+                    else
+                        isCondition = SkillModule:isBtnUICondition(skillId)
+                    end
+                end
+            else
+               isCondition = true
+               skillBtn.skillId = nil
+            end
+            skillBtn:setItemInfo({nodeInfo = nodeInfo, url = url, isCondition = isCondition, operateMode = self._operateMode, parent = self})
+        end
+    end
+    
+    self:setSelectTagShow(false)
+end
+
+------------------ battle start-------------------------
+function CompSkillOperate:operateBattle()
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    if not worldAgent then
+        return
+    end
+
+    local heroAgent = worldAgent:getHeroAgent()
+    if not heroAgent or heroAgent:getIsOutOfGame() then
+        return
+    end
+    self._skillActor = heroAgent:getActor():getSkillActor()
+    self._heroAgent = heroAgent
+end
+
+
+function CompSkillOperate:checkCancelRect(pt)
+    local size = self._btnCancel:getSize()
+    local btnCanelXY = self._btnCancel:getPosition()
+    local cpt = self:globalToLocal(pt); 
+    local rect = {x = btnCanelXY.x, y = btnCanelXY.y, width = size.width, height = size.height}
+    return cc.rectContainsPoint(rect, cpt)
+end
+
+function CompSkillOperate:onConditionUI(event)
+    local param = event.param
+    self:onlyRefreshConditionUI(param.type)
+end
+
+--- 刷新技能释放UI显示
+function CompSkillOperate:onlyRefreshConditionUI(conType)
+    local heroAgent = lt.AgentManager:getHeroAgent()
+    if not heroAgent then
+        return
+    end
+    
+    for nodeId = 1, MAX_BTN_COUNT do
+        local skillBtn = self:getChild("skill"..nodeId)
+        local skillId = skillBtn.skillId
+        if skillId then
+            local isCondition = true
+            if conType then
+                if not self._conditionOfType[skillId] then
+                    self._conditionOfType[skillId] = {}
+                end
+                isCondition = SkillModule:isBtnUIConditionByType(skillId, conType)
+                
+                self._conditionOfType[skillId][conType] = isCondition == true and 1 or 0
+                if table.keyof(self._conditionOfType[skillId], 0) then
+                    isCondition = false
+                end
+            else
+                isCondition = SkillModule:isBtnUICondition(skillId, conType)
+            end
+
+
+            skillBtn:setIsCondition(isCondition)
+
+            -----------------------------------------------------------------------------------------
+            -- 变身图标修改
+            if table.keyof(SkillEnum.TRANSFORM_SKILL, skillId) then
+                local isTransforming, transformId = SkillModule:isTransforming()
+                if isTransforming then
+                    if SkillEnum.TRANSFORM_SKILL[transformId] == skillId then
+                        skillBtn:setTransformIcon(true)
+                    end
+                else
+                    skillBtn:setTransformIcon(false)
+                end
+            end
+            -----------------------------------------------------------------------------------------
+            -- 炮塔图标修改
+            if skillId == SkillEnum.SKILL_INSTALL_TURRET and self._heroAgent then  -- 安装炮塔
+                skillBtn:setTransformIcon(self._heroAgent:hasBuffer(lt.BuffEnum.EFFECT_INSTALL_TURRET))
+            end
+        end
+    end
+end
+
+---选怪
+function CompSkillOperate:btnSelMonsterClick()
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    if worldAgent then
+        worldAgent:nextTargetAgent(Constant.AGENT_TYPE_MONSTER)
+    end
+    local agent = self._heroAgent:getTargetAgent()
+    if not agent then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KET_SKILL_TIPS46})
+    end
+end
+
+---选人
+function CompSkillOperate:btnSelRoleClick()
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    if worldAgent then
+        worldAgent:nextTargetAgent(Constant.AGENT_TYPE_HERO)
+    end
+    local agent = self._heroAgent:getTargetAgent()
+    if not agent then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KET_SKILL_TIPS45})
+    end
+end
+
+function CompSkillOperate:btnAutoFightClick()
+    if self._operateMode == Operate.Battle then
+        AutoFightManager:startAutoFight()
+    end
+end
+
+function CompSkillOperate:refreshAutoFightBtn(param)
+    param = (param and param.param) and param.param or {}
+    self:playControlAnim(param.noAnim)
+end
+
+function CompSkillOperate:mainlayerSwitch(param)
+    local index = param.param.idx
+    if index and index == 0 then
+        return
+    end
+    if self._operateMode == Operate.Battle and AutoFightManager:isAuto() then
+        self._autoTrans:setVisible(true)
+    else
+        self._autoTrans:setVisible(false)
+    end
+end
+
+function CompSkillOperate:setTouchLayerVisible(isVisible)
+    self._touchLayer:setVisible(isVisible)
+end
+function CompSkillOperate:setCancelVisible(isVisible)
+    self._btnCancel:setVisible(isVisible)
+end
+
+
+------------------ battle end-------------------------
+
+------------------ edit start-------------------------
+function CompSkillOperate:editorClick(btn)
+    if self._operateMode == Operate.Edit_Normal
+    or self._operateMode == Operate.Auto_Normal then
+        if btn.index == AUTO_NORMAL_INEDX then
+            --自动挂机的普攻也不能卸下
+            return
+        end
+        if btn:isComVisible() then
+            self:takeoff(btn)
+        end
+        return 
+    elseif self._operateMode == Operate.Edit_Set
+    or self._operateMode == Operate.Auto_Set then
+        if btn.index == AUTO_NORMAL_INEDX then
+            --自动挂机的普攻也不能卸下
+            return
+        end
+        btn:setComVisible(true)
+
+        if self._selectSkillId == btn.skillId then
+            self._editCom:takeonSuccess()
+            return 
+        end
+        local iconId = lt.SkillModule:getSkillIcon(self._selectSkillId)
+        local isCondition = SkillModule:isBtnUICondition(self._selectSkillId)
+
+        btn:setIconUrl(string.format(_GURL.GetImageSkill, iconId))
+        btn:setIsCondition(isCondition)
+        if btn.skillId then
+            self._replaceSkillId = btn.skillId
+        else
+            self._replaceSkillId = nil
+        end
+        btn.skillId = self._selectSkillId
+      
+        self:takeon(btn)
+    elseif self._operateMode == Operate.Edit_Pos then
+        self:editPosClick(btn)
+    end
+end
+
+function CompSkillOperate:takeon(btn)
+    if self._equipPos then ---已经装备了
+        self:clearSkill(self._equipPos)
+    end
+    SkillModule:setEditConfByIndex(btn.index, {skillId = self._selectSkillId})
+    self._editCom:takeonSuccess(self._replaceSkillId)
+end
+
+function CompSkillOperate:takeoff(btn)
+    if btn.skillId then
+        self._editCom:takeoffSuccess(btn.skillId)
+        self:clearSkill(btn.index)
+    end
+end
+
+
+function CompSkillOperate:clearSkill(index)
+    self._skillBtnGroups[index]:setComVisible(false) --清空
+    SkillModule:setEditConfByIndex(index, {skillId = "nil"})
+    self._skillBtnGroups[index].skillId = nil
+end
+
+function CompSkillOperate:setSelectSkillInfo(skillId, equipPos)
+    self._selectSkillId = skillId
+    self._equipPos = equipPos
+end
+
+function CompSkillOperate:setOpMode(op)
+    self._operateMode = op
+end
+function CompSkillOperate:getOpMode()
+    return self._operateMode
+end
+function CompSkillOperate:setEditCom(Com)
+    self._editCom = Com
+end
+
+function CompSkillOperate:editPosClick(btn)
+    if self._operateBtn then
+        self:setSelectTagShow(false)
+    end
+    self._operateBtn = btn
+    local maxZorder = self:getMaxZorder()
+    local curZorder = maxZorder + 1
+    self:setMaxZorder(curZorder)
+    self._operateBtn:setSortingOrder(curZorder)
+    SkillModule:setEditConfByIndex(self._operateBtn.index, {zorder = curZorder})
+    self:setSelectTagShow(true)
+    self._editCom:refreshEditUI(btn.index)
+end
+
+function CompSkillOperate:setLight(isLight)
+    for index = 1, MAX_BTN_COUNT do
+        if index ~= AUTO_NORMAL_INEDX then
+            local skillBtn = self:getChild("skill"..index)
+            skillBtn:setSelect(isLight)
+        end
+    end
+end
+
+--- edit pos----------
+function CompSkillOperate:setDrag(isDrag)
+    for _, btn in pairs(self._skillBtnGroups) do
+        btn:setDraggable(isDrag)
+        btn:addEventListener(fgui.UIEventType.DragStart, function(context)
+            self:editPosClick(btn)
+            context:captureTouch() 
+        end);
+        btn:addEventListener(fgui.UIEventType.DragMove, function(context)
+            local evt = context:getInput();
+            self._editCom:setOpenControl(2)
+            self._editCom:setHideBtnState(1)
+            local pt = self:globalToLocal(evt:getPosition());
+            local oript = fgui.GRoot:getInstance():globalToLocal(evt:getPosition())
+            local calcX, calcY = self:excludeXY(pt.x, pt.y, oript.x, oript.y)
+            btn:setPosition(calcX, calcY)
+        end)
+        
+        btn:addEventListener(fgui.UIEventType.DragEnd, function(context)
+            SkillModule:setEditConfByIndex(self._operateBtn.index, {
+                x = self._newXY.x,
+                y = self._newXY.y,
+            })
+            self._editCom:setOpenControl(1)
+            self._editCom:setHideBtnState(0)
+            context:uncaptureTouch()
+        end)
+    end
+end
+
+
+function CompSkillOperate:excludeXY(newX, newY, oriX, oriY)
+    --适配
+    local disX = oriX - newX
+    local disY = oriY - newY
+    local width = self._operateBtn:getWidth()/2 * 1.5
+    local height = self._operateBtn:getHeight()/2* 1.5
+
+    local editTable = lt.AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.LEFT_OFFSET) or {}
+    local value = editTable.value or 0
+
+    local left = MOVE_MINX + width - disX
+    local right = MOVE_MAXX - width - disX
+    local top = MOVE_MAXY - height - disY
+    local bottom = MOVE_MINY + height - disY
+
+    if newX < left then
+        newX = left
+    elseif newX > right then
+        newX = right
+    end
+
+    if newY < bottom then
+        newY = bottom
+    elseif newY > top then
+        newY = top
+    end
+
+    local exclude_minx = EXCLUDE_MINX - disX
+    local exclude_miny = EXCLUDE_MINY - disY
+    local excludeMaxX = exclude_minx + EXCLUDE_WIDTH + width + value
+    local excludeMaxY = exclude_miny + EXCLUDE_HEIGHT + height
+    if newX >= exclude_minx and newX <= excludeMaxX and newY >= exclude_miny and newY <= excludeMaxY then
+        if self._newXY.y >= excludeMaxY then
+            newY = excludeMaxY
+        end
+        if self._newXY.x >= excludeMaxX then
+            newX = excludeMaxX
+        end
+        return newX,newY
+    end
+    self._newXY = cc.p(newX, newY)
+    return newX, newY
+end
+
+function CompSkillOperate:startScale(scale)
+    self._operateBtn:setScale(scale, scale)
+    SkillModule:setEditConfByIndex(self._operateBtn.index, {scale = scale})
+end
+
+function CompSkillOperate:removeBtn()
+    self._operateBtn:setPosition(1408, 768)
+    self._operateBtn.skillId = nil
+    self._operateBtn:setIconUrl("")
+    self._operateBtn:setSelectTag(false)
+    self._operateBtn:setScale(DEFAULT_SCALE, DEFAULT_SCALE)
+    SkillModule:setEditConfByIndex(self._operateBtn.index, {
+        isAdd = false,
+        skillId = "nil",
+        scale = DEFAULT_SCALE,
+        x = 1408,
+        y = 768,
+    })
+    self._operateBtn = nil
+    
+end
+
+function CompSkillOperate:addBtn(index)
+    local pt = self:globalToLocal(cc.p(display.cx, display.cy))
+    self._skillBtnGroups[index]:setPosition(pt.x + 150, pt.y)
+    SkillModule:setEditConfByIndex(index, {
+        isAdd = true,
+        x = pt.x,
+        y = pt.y,
+        })
+end
+
+function CompSkillOperate:getRemoveSkillId()
+    return self._operateBtn.skillId
+end
+
+function CompSkillOperate:clearOperateBtn()
+    if self._operateBtn then
+        self._operateBtn = nil
+    end
+end
+
+function CompSkillOperate:isExistOperateBtn()
+    return self._operateBtn ~= nil
+end
+function CompSkillOperate:canRemove()
+    return self._operateBtn ~= nil and self._operateBtn.index > 19
+end
+
+function CompSkillOperate:setSelectTagShow(isShow)
+    if self._operateBtn then
+        self._operateBtn:setSelectTag(isShow)
+    end
+end
+
+function CompSkillOperate:getMaxZorder()
+    if not self._maxZorder then
+        local maxZorder = 0
+        for _, itemInfo in pairs(self._editorData) do
+            if itemInfo.zorder > maxZorder then
+                maxZorder = itemInfo.zorder
+            end
+        end
+        self._maxZorder = maxZorder
+    end
+    return self._maxZorder
+end
+function CompSkillOperate:setMaxZorder(zorder)
+    self._maxZorder = zorder
+end
+
+function CompSkillOperate:showAutoFightUi(show)
+    self:getChild("node_operate"):setVisible(not show)
+    self:getChild("node_autofight"):setVisible(show)
+end
+
+function CompSkillOperate:playControlAnim(noAnim)
+    local isAuto = AutoFightManager:isAuto()
+    local anim1 = self:getTransition("autofightToOperate")
+    local anim2 = self:getTransition("operateToAutofight")
+    local noAnim1 = self:getTransition("normal")
+    local noAnim2 = self:getTransition("autofight")
+    if isAuto then
+        if noAnim then
+            noAnim2:play()
+        else
+            if anim1:isPlaying() then
+                anim1:stop()
+            end
+            anim2:play()
+        end
+    else
+        if noAnim then
+            noAnim1:play()
+        else
+            if anim2:isPlaying() then
+                anim2:stop()
+            end
+            anim1:play()
+        end
+    end
+end
+
+--设置修改
+function CompSkillOperate:changeSettings(params)
+    local param = params.param or {}
+    local index = param.index
+    if index == Constant.SETTINGS_TYPES.RIGHT_OFFSET then -- 右侧屏幕边缘偏移
+        self:refreshRightUIOffset(index)
+    end
+end
+
+-- 右侧屏幕边缘偏移
+function CompSkillOperate:refreshRightUIOffset(index)
+    local editTable = lt.AutoFightManager:getEditConfByIndex(index) or {}
+    local value = editTable.value or 0
+
+    -- 固定位置设置偏移
+    local rightUITable = {
+        "node_control",
+        "btnCanel",
+    }
+    if not self.rightUITablePos then
+        self.rightUITablePos = {}
+    end
+    for _, v in ipairs(rightUITable) do
+        local ui = self:getChild(v)
+        if ui then
+            local pos = ui:getPosition()
+            if not self.rightUITablePos[v] then
+                self.rightUITablePos[v] = pos
+            end
+
+            if self.rightUITablePos[v] then
+                ui:setPosition(self.rightUITablePos[v].x-value,self.rightUITablePos[v].y)
+            end
+        end
+    end
+
+    self._editorData = SkillModule:getEditConf()
+    -- 39个技能按钮设置偏移量
+    for index = 1, MAX_BTN_COUNT do
+        local skillBtn = self:getChild("skill"..index)
+        if self._editorData[index] then
+            local offsetX = self._editorData[index].offsetX or 0
+            self._editorData[index].x = self._editorData[index].x + offsetX - value
+            self._editorData[index].offsetX = value
+            skillBtn:setPosition(self._editorData[index].x,self._editorData[index].y)
+        end
+    end
+end
+
+------------------ edit end------------------------
+
+return CompSkillOperate

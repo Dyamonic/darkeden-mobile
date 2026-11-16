@@ -1,0 +1,192 @@
+---@class UICompChatPlayerCell
+--- 带头像框的聊天cell
+local UICompChatPlayerCell = class("UICompChatPlayerCell", lt.UIGButtonBase)
+local Constant             = lt.Constant
+local GameModule           = lt.GameModule
+local ChatModule           = lt.ChatModule
+local NtfManager           = lt.NtfManager
+local RaceSkinRes          = Constant.RaceSkinRes
+local CommonUtil           = lt.CommonUtil
+local TeamModule           = lt.TeamModule
+
+function UICompChatPlayerCell:ctor()
+    UICompChatPlayerCell.super.ctor(self)
+    self._chatInfo = nil
+end
+
+function UICompChatPlayerCell:onClear()
+    self._chatInfo     = nil
+    self._leftLblName  = nil
+    self._leftLblMsg   = nil
+    self._leftHead     = nil
+    self._leftLvl      = nil
+    self._leftKuang    = nil
+    self._rightLblName = nil
+    self._rightLblMsg  = nil
+    self._rightHead    = nil
+    self._rightLvl     = nil
+    self._rightKuang   = nil
+    self._controlSelf  = nil
+    self._leftType     = nil
+    self._rightType    = nil
+    self._leftHeadBtn  = nil
+    UICompChatPlayerCell.super.onClear(self)
+end
+
+function UICompChatPlayerCell:onEnter()
+    UICompChatPlayerCell.super.onEnter(self)
+    self._leftHeadBtn:addClickListener(handler(self, self.onClickPrivateBtn))
+    self._leftLblMsg:addEventListener(fgui.UIEventType.ClickLink, handler(self, self.ClickLinkChat))
+    self._rightLblMsg:addEventListener(fgui.UIEventType.ClickLink, handler(self, self.ClickLinkChat))
+end
+
+function UICompChatPlayerCell:onExit()
+    self._leftHeadBtn:removeClickListener()
+    self._leftLblMsg:removeEventListener(fgui.UIEventType.ClickLink)
+    self._rightLblMsg:removeEventListener(fgui.UIEventType.ClickLink)
+    UICompChatPlayerCell.super.onExit(self)
+end
+
+function UICompChatPlayerCell:onConstruct()
+    self._leftLblName  = self:getChild("leftLblName")
+    self._leftLblMsg   = self:getChild("leftLblMsg")
+    self._leftHead     = self:getChild("leftHead"):getChild("icon")
+    self._leftLvl      = self:getChild("leftLblLv")
+    self._leftKuang    = self:getChild("leftHead"):getChild("n0")
+    self._rightLblName = self:getChild("rightLblName")
+    self._rightLblMsg  = self:getChild("rightLblMsg")
+    self._rightHead    = self:getChild("rightHead"):getChild("icon")
+    self._rightLvl     = self:getChild("rightLblLv")
+    self._rightKuang   = self:getChild("rightHead"):getChild("n0")
+    self._controlSelf  = self:getController("c1")
+    self._leftType     = self:getChild("leftLblChatType")
+    self._rightType    = self:getChild("rightLblChatType")
+    self._leftHeadBtn  = self:getChild("leftHead")
+end
+
+--
+-- chatInfo :聊天内容
+-- chatType :聊天频道
+function UICompChatPlayerCell:setInfo(chatInfo, chatType)
+    local sendMan       = GameModule:getHeroData():getName()
+    local headUrl       = ChatModule:getHeadUrl(chatInfo.sendRace, chatInfo.sendSex, chatInfo.sendFaceShape)
+    local isemoji       = ChatModule:isEmoji(chatInfo.chatMsg)
+    local richstr       = ChatModule:initStr(chatInfo, 1)
+    -- local kuangUrl      = string.format(_GURL.GetCompChatHeadKuang, RaceSkinRes[chatInfo.sendRace])
+    self._chatInfo      = chatInfo
+    local nameStr       = chatInfo.sendMan
+    local chatTypeStr   = "[" .. (ChatModule.CHATTYPESTR[chatInfo.chatType] or "") .. "]"
+    local chatTypeColor = ChatModule.CHATTYPECOLOR[chatInfo.chatType] or "#FFFFFF"
+    local color         = CommonUtil:convertColorWithX(chatTypeColor)
+
+    if sendMan == chatInfo.sendMan then -- 是自己发的消息
+        self._controlSelf:setSelectedIndex(1)
+        self._rightHead:setURL(headUrl)
+        self._rightType:setText(chatTypeStr)
+        self._rightType:setColor(color)
+        self._rightLblName:setText(nameStr)
+        self._rightLblMsg:setAutoSize(fgui.AutoSizeType.BOTH)
+        self._rightLblMsg:setText(richstr)
+        self._rightLvl:setText("Lv" .. chatInfo.sendLevel)
+        -- self._rightKuang:setURL(kuangUrl)
+
+        -- 虚拟列表 会复用资源 渲染的时候 长度会变化 这边直接 setSize
+        if isemoji then
+            self._rightLblMsg:setAutoSize(fgui.AutoSizeType.NONE)
+            self._rightLblMsg:setSize(30, 29)
+        else
+            -- local txtwidth = self._rightLblMsg:getTextSize().width
+            local width = self._rightLblMsg:getSize().width
+            if width > 280 then
+                self._rightLblMsg:setAutoSize(fgui.AutoSizeType.HEIGHT)
+            else
+                local richText = fgui.GRichTextField:create() -- 一行时 背景要自适应字体长度 创建一个richText 算出长度
+                richText:setFontSize(20)                      -- 字体大小
+                richText:setAutoSize(fgui.AutoSizeType.BOTH)
+                richText:setText(richstr)
+                richText:setUBBEnabled(true)
+                local curheight = self._rightLblMsg:getSize().height
+                local curwidth = richText:getSize().width
+                self._rightLblMsg:setAutoSize(fgui.AutoSizeType.BOTH)
+                self._rightLblMsg:setSize(curwidth, curheight)
+            end
+        end
+    else
+        self._controlSelf:setSelectedIndex(0)
+        self._leftHead:setURL(headUrl)
+        self._leftType:setText(chatTypeStr)
+        self._leftType:setColor(color)
+        self._leftLblName:setText(nameStr)
+        self._leftLblMsg:setAutoSize(fgui.AutoSizeType.BOTH)
+        self._leftLblMsg:setText(richstr)
+        self._leftLvl:setText("Lv" .. chatInfo.sendLevel)
+        -- self._leftKuang:setURL(kuangUrl)
+
+        if isemoji then -- 表情
+            self._leftLblMsg:setAutoSize(fgui.AutoSizeType.NONE)
+            self._leftLblMsg:setSize(30, 29)
+        else
+            local width = self._leftLblMsg:getSize().width
+            if width > 280 then
+                self._leftLblMsg:setAutoSize(fgui.AutoSizeType.HEIGHT)
+            else
+                local richText = fgui.GRichTextField:create() -- 一行时 背景要自适应字体长度 创建一个richText 算出长度
+                richText:setFontSize(20)                      -- 字体大小
+                richText:setAutoSize(fgui.AutoSizeType.BOTH)
+                richText:setText(richstr)
+                richText:setUBBEnabled(true)
+                self._leftLblMsg:setAutoSize(fgui.AutoSizeType.BOTH)
+                local curheight = self._leftLblMsg:getSize().height
+                local curwidth = richText:getSize().width
+                self._leftLblMsg:setSize(curwidth, curheight)
+            end
+        end
+    end
+end
+
+function UICompChatPlayerCell:onClickPrivateBtn()
+    local playerInfo = {}
+    playerInfo.playerName = self._chatInfo.sendMan
+    playerInfo.level = self._chatInfo.sendLevel
+    playerInfo.race = self._chatInfo.sendRace
+    playerInfo.sex = self._chatInfo.sendSex
+    playerInfo.faceShape = self._chatInfo.sendFaceShape or 1
+    playerInfo.advanceState = self._chatInfo.sendAdvanceState or 1
+    playerInfo.advanceLv = self._chatInfo.sendAdvanceLv or 1
+    playerInfo.gradeLevel = self._chatInfo.sendGradeLv or 1
+    playerInfo.tendencies = self._chatInfo.sendTendencies or 1
+    playerInfo.guildName = self._chatInfo.sendGuildName or ""
+
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_PLAYER_TIPS, { playerInfo = playerInfo, isPrivateChat = true })
+end
+
+function UICompChatPlayerCell:ClickLinkChat(context)
+    local datavalue = context:getDataValue()
+    -- yflog:Info("---datavalue-" .. datavalue)
+    if self._chatInfo ~= nil then
+        local mapName, x, y = datavalue:match("%[(.-)%s*(%d+),(%d+)%]")
+        if mapName and x and y then
+            yflog:Info("---------------------" .. "[" .. mapName .. " " .. x .. "," .. y .. "]")
+            return
+        end
+        local item, type = ChatModule:getItemInfo(self._chatInfo.chatMsg, 2)
+        if item then
+            if type == "item" then
+                local itemType = item:getItemType()
+                if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,
+                        { itemInfo = item, tipsType = Constant.PROPTIPS_FORM.Display })
+                elseif itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,
+                        { itemInfo = item, tipsType = Constant.EquipShowTipsType.Display })
+                end
+            end
+        elseif string.find(self._chatInfo.chatMsg, "teamId") then
+            local msg = string.split(self._chatInfo.chatMsg, "teamId=")[2]
+            local teamId = tonumber(string.sub(msg, 1, #msg - 1))
+            TeamModule:sendApplyInTeam(teamId)
+        end
+    end
+end
+
+return UICompChatPlayerCell

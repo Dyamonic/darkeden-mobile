@@ -1,0 +1,77 @@
+
+local BaseSetMeta = class("BaseSetMeta")
+
+BaseSetMeta._settype        = nil
+BaseSetMeta._setidx         = nil
+BaseSetMeta._name           = nil
+BaseSetMeta._option         = nil
+BaseSetMeta._sequence       = nil
+BaseSetMeta._category       = nil
+BaseSetMeta._linkskill      = nil
+BaseSetMeta._optiontype     = nil
+BaseSetMeta._job            = nil
+BaseSetMeta._tipstr         = nil
+ 
+function BaseSetMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function BaseSetMeta:initWithRow(row)
+    self._settype       = row.SetType
+    self._setidx        = row.SetIdx
+    self._name          = row.TitleName
+    self._option        = row.Option
+    self._sequence      = row.Sequenc
+    self._category      = row.Category
+    self._linkskill     = row.LinkSkill
+    self._optiontype    = row.OptionType
+    self._job           = row.Job
+    self._tipstr        = row.OptionTips
+end
+
+-- Setter && Getter
+function BaseSetMeta:getTypes()
+    return self._settype
+end
+
+function BaseSetMeta:getIdx()
+    return self._setidx
+end
+
+function BaseSetMeta:getName()
+    return self._name
+end
+
+function BaseSetMeta:getOption()
+    return self._option
+end
+
+function BaseSetMeta:getSequence()
+    return self._sequence
+end
+
+function BaseSetMeta:getCategory()
+    return self._category
+end
+
+function BaseSetMeta:getLinkSkill()
+    return self._linkskill
+end
+
+function BaseSetMeta:getOptionType()
+    return self._optiontype or 0
+end
+
+function BaseSetMeta:getJob()
+    return self._job
+end 
+
+function BaseSetMeta:getTips()
+    if self._tipstr and self._tipstr ~= "" then
+        return self._tipstr
+    else
+        return nil
+    end
+end
+
+return BaseSetMeta

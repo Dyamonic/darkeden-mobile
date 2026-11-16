@@ -1,0 +1,273 @@
+---@class UICompMagicV 角色阶级技能界面
+local UICompMagicV = class("UICompMagicV", lt.UICompBase)
+
+-- local Constant = lt.Constant
+-- local RaceSkinRes = lt.Constant.RaceSkinRes
+local GameModule = lt.GameModule
+local NtfManager = lt.NtfManager
+local CacheManager = lt.CacheManager
+local Constant = lt.Constant
+local SkillModule = lt.SkillModule
+
+local domainAll = 11
+
+function UICompMagicV:ctor()
+    self:registerComponent("UICompMagicItem")
+    self._btnIndex = nil
+    self._race = nil
+    self._domainIndex  = nil
+    self._skillData = nil
+    UICompMagicV.super.ctor(self)
+end
+
+function UICompMagicV:onConstruct()
+    self._magicVlist = self:getChild("list")
+    self._magicVlist:setItemRenderer(handler(self, self.renderListItem))
+end
+
+function UICompMagicV:onClear()
+    self:unregisterAllComponent()
+    self._btnIndex = nil
+    self._race = nil
+    self._domainIndex  = nil
+    self._skillData = nil
+    self._magicVlist = nil
+    UICompMagicV.super.onClear(self)
+end
+
+function UICompMagicV:onEnter()
+
+    self._magicVlist:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+end
+
+function UICompMagicV:onExit()
+ 
+    self._magicVlist:removeEventListener(fgui.UIEventType.ClickItem)
+end
+
+function UICompMagicV:initUI()
+    self._btnList = {}
+    -- 技能列表
+
+    self._btnIndex = 1
+
+    -- 鬼族技能分类
+    self._race = GameModule:getHeroRace()
+    local curSkills = CacheManager:getSkillByRace(self._race)
+    local tempSkillData = {}
+    local tempDomainIndex = {}
+    for k,v in pairs(curSkills) do
+        local skillId = v:getSkillId() or 0
+        local domain = math.floor(skillId/1000)
+        if not tempSkillData[domain] then
+            tempSkillData[domain] = {}
+            table.insert(tempDomainIndex, domain)
+        end
+        if v:getSkillMenu() == 1 then
+            table.insert(tempSkillData[domain], v)
+        end
+    end
+
+    -- 分类排序
+    table.sort(tempDomainIndex, function(a,b)
+        return a < b
+    end)
+    self._domainIndex  = tempDomainIndex
+
+    -- 通用技能插入鬼族最后一个分类
+    local commonSkill = CacheManager:getShowCommonSkill()
+    for k,v in pairs(commonSkill) do
+        table.insert(tempSkillData[domainAll], v)
+    end
+
+    -- 每个分类数据排序
+    for k,v in pairs(tempSkillData) do
+        table.sort(v, function(a,b)
+            if a:getNeedLevel() == b:getNeedLevel() then
+                return a:getSkillId() < b:getSkillId()
+            else
+                return a:getNeedLevel() < b:getNeedLevel()
+            end
+        end)
+    end
+
+    self._skillData = tempSkillData
+
+    -- 初始化技能系列
+    for i=1,#tempDomainIndex do
+        local domain = tempDomainIndex[i]
+        local btn = self:getChild("btn" .. i)
+        if domain and btn then
+            btn.controlIndex = i
+            btn:getChild("nameSelect"):setText(GReadText["KEY_DOMAIN_NAME" .. domain])
+            btn:getChild("name"):setText(GReadText["KEY_DOMAIN_NAME" .. domain])
+            if domain == domainAll then
+                btn:getChild("nameSelect"):setFontSize(18)
+                btn:getChild("name"):setFontSize(18)
+            end
+            local isRed = SkillModule:getRedPoint(2, i)
+            btn:getChild("reddot"):setVisible(isRed)
+            table.insert(self._btnList, btn)
+            btn:addClickListener(handler(self, function()
+                self._btnIndex = i
+                self:refreshCurInfo()
+                self._magicVlist:scrollToView(0)
+            end))
+        end
+    end
+
+    self:refreshCurInfo()
+end
+
+function UICompMagicV:uptRedDotEvt()
+    for i = 1, #self._btnList do
+        local isRed = SkillModule:getRedPoint(2, i)
+        self._btnList[i]:getChild("reddot"):setVisible(isRed)
+    end
+end
+
+function UICompMagicV:refreshCurInfo(isSelect)
+    if not self._btnIndex then
+        return    
+    end
+
+    local domain = self._domainIndex [self._btnIndex]
+    if not domain then
+        return
+    end
+
+    local skillData = self._skillData[domain] or {}
+    if not skillData then
+        return
+    end
+
+    self:refreshBtnName(self._btnIndex)
+    local skillNum = #skillData
+    if skillNum < 6 then
+        skillNum = 6
+    end
+    self._magicVlist:setNumItems(skillNum)
+    if isSelect then
+        self._magicVlist:scrollToView(0)
+    end
+end
+
+function UICompMagicV:refreshBtnName(index)
+    for j=1,6 do
+        local btn = self:getChild("btn" .. j)
+        local btnControl = btn:getController("name")
+        if index == btn.controlIndex then
+            btnControl:setSelectedIndex(0)
+        else
+            btnControl:setSelectedIndex(1)
+        end
+    end
+end
+
+function UICompMagicV:renderListItem(index, obj)
+    local icon = obj:getChild("icon")
+    local name = obj:getChild("name")
+    local value = obj:getChild("value")
+
+    local exist1 = obj:getChild("exist1")
+    local exist2 = obj:getChild("exist2")
+    local empty1 = obj:getChild("empty1")
+    local empty2 = obj:getChild("empty2")
+
+    local domain = self._domainIndex[self._btnIndex]
+    if not domain then
+        return
+    end
+
+    local skillData = self._skillData[domain]
+    if not skillData then
+        return
+    end
+
+    local resetIndex = index+1
+    if not skillData[resetIndex] then
+        -- 如果空显示
+        icon:setVisible(false)
+        name:setVisible(false)
+        value:setVisible(false)
+
+        empty1:setVisible(true)
+        empty2:setVisible(true)
+        exist1:setVisible(false)
+        exist2:setVisible(false)
+        -- yflog:Info("empty----------->>>>>>>")
+        return
+    end
+    -- yflog:Info("not empty----------->>>>>>>")
+    icon:setVisible(true)
+    name:setVisible(true)
+    value:setVisible(true)
+
+    local curBtnState = Constant.SkillState.NotLearnable
+    local needLvl = skillData[resetIndex]:getNeedLevel()
+    local skillId = skillData[resetIndex]:getSkillId()
+    
+    local herodata = lt.GameModule:getHeroData()
+    local playerlv = herodata:getLevel()
+    local hasSkill = SkillModule:hasSkill(skillId)
+    -- local skillLevel = SkillModule:getSkillLevel(skillId)
+    if playerlv >= needLvl then
+        curBtnState = Constant.SkillState.Learnable
+    end
+
+    if hasSkill then
+        curBtnState = Constant.SkillState.Learned
+    end
+
+    obj:initItem(skillData[resetIndex],curBtnState)
+    
+    obj:insertObjectToFactory(self)
+end
+
+function UICompMagicV:onClickItem(context)
+    local data = context:getData()
+
+    local skillCfg = data:getSkillCfg()
+    if not skillCfg then
+        return
+    end
+
+    local domain = self._domainIndex[self._btnIndex]
+    local skillId = skillCfg:getSkillId() or 0
+
+    -- 判断是否为通用技能
+    local isCommon = false
+    if domain == domainAll then
+        local commonSkill = CacheManager:getShowCommonSkill()
+        for k, v in pairs(commonSkill) do
+            if v:getSkillId() == skillId then
+                isCommon = true
+                break
+            end
+        end
+    end
+    
+    if math.floor(skillId/1000) ~= domain and not isCommon then
+        return
+    end
+
+    local btnList = { Constant.SkillTipBtns.Detail }
+    if data:getCurState() == Constant.SkillState.Learnable then
+        table.insert(btnList, Constant.SkillTipBtns.Study)
+    end
+
+    local descTips = string.format(GReadText.KET_SKILL_TIPS2, skillCfg:getName())
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_SHOW_SKILL_TIPS, 
+    {
+        skillInfo = skillCfg,
+        btnList = btnList,
+        btnState = data:getCurState(),
+        studyCallback = function()
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {content = descTips, confirmCallback = function()
+                SkillModule:sendLearnSkill(0,skillCfg:getSkillId())
+            end})
+        end
+    })
+end
+
+return UICompMagicV

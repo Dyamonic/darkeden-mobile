@@ -1,0 +1,406 @@
+
+local BufferSystem = class("BufferSystem")
+
+local BuffEnum = lt.BuffEnum
+local SkillModule = lt.SkillModule
+
+BufferSystem.BUFFER = {}
+-- BufferSystem.BUFFER = {
+--     MB          = 1,
+--     DS          = 2,
+--     ZD          = 3,
+--     SSZJS       = 4,
+--     YLD         = 5,
+--     HSZQ        = 6,
+--     JGHT        = 7,
+--     MFD         = 11,
+--     SDS         = 13,
+--     YSS         = 14,
+--     FYD         = 15,
+--     ZZS         = 16,
+--     DELAYMOVE   = 20,
+--     SGS         = 23,
+--     MFDS        = 25,
+--     BPS         = 26,
+--     TSXL        = 10002,
+--     SHLJ        = 10003,
+-- }
+
+BufferSystem._actor = nil
+BufferSystem._bufferTable = nil
+
+function BufferSystem:ctor(actor)
+    self._actor = actor
+    self._bufferTable = {}
+    self._bufferIsExitTable = {}
+end
+
+function BufferSystem:clear()
+    self._bufferTable = {}
+    self._bufferIsExitTable = {}
+end
+
+function BufferSystem:addItemBuffer(bufferId, agent, itemId, source)
+    if self._bufferTable[bufferId] then
+        return
+    end
+
+    local buffer = nil
+    buffer = self:createItemBuffer(bufferId, agent, itemId, source)
+
+    if not buffer then
+        return
+    end
+
+    self._bufferTable[bufferId] = buffer
+end
+
+function BufferSystem:addBuffer(bufferId,times,skilllevel,source)
+    ------------------------------------------------------------------------------
+    -- 怪物分身术
+    if bufferId == BuffEnum.EFFECT_CLASS_DUPLICATE_SELF then
+        local agent = self._actor:getAgent()
+        if agent and agent:isMonsterAgent() then
+            local srcId = (source or {}).srcId or 0
+            local worldAgent = lt.AgentManager:getWorldAgent()
+            if worldAgent then
+                local monsterAgent = worldAgent:getAgent(srcId)
+                if monsterAgent then
+                    monsterAgent:addDuplicateList(agent:getObjId())
+                end 
+            end
+        end
+    end
+    ------------------------------------------------------------------------------
+
+    self._bufferIsExitTable[bufferId] = (source or {}).isExist or false
+    if self._bufferTable[bufferId]  then
+        print("BufferSystem:addBuffer already has buffer:\nThe requirement of", bufferId)
+        return
+    end
+
+    local buffer = nil
+    if skilllevel and skilllevel > 0 then
+        buffer = self:createBuffer(bufferId, times, skilllevel, source)
+    else
+        buffer = self:createBuffer(bufferId, times, nil, source)
+    end
+    
+    if not buffer then
+        return
+    end
+
+    self._bufferTable[bufferId] = buffer
+
+    --[[
+    if bufferId == self.BUFFER.MFDS and self:getBuffer(self.BUFFER.FYD) then
+        self:dealSpecialBuffer(self.BUFFER.FYD,false)
+    end
+    --]]
+
+    
+    self:actorChange(bufferId,true)
+    -- 判断颜色
+    self:checkColor()
+end
+
+function BufferSystem:delBuffer(bufferId)
+    yflog:Info("buff disappears:%s", bufferId)
+    local buffer = self._bufferTable[bufferId]
+    if buffer then
+        buffer:onClear()
+        self._bufferTable[bufferId] = nil
+    end
+    self._bufferIsExitTable[bufferId] = nil
+    self:actorChange(bufferId,false)
+    -- 判断颜色
+    self:checkColor()
+end
+
+function BufferSystem:changeBuffer2Temp(bufferId)
+    local buffer = self._bufferTable[bufferId]
+    local bufferData = self._bufferTable[bufferId]:getBufferData()
+    if buffer then
+        buffer:onClear()
+    end
+    
+    -- yflog:Info("changeBuffer2Temp :%s %s %s %s %s", bufferId, bufferData.time, bufferData.actor, bufferData.skilllevel, bufferData.source)
+    self._bufferTable[bufferId] = lt.BufferBase.new(bufferId, bufferData.time, bufferData.actor, bufferData.skilllevel, bufferData.source)
+    self._bufferTable[bufferId]:setIsTemp(true)
+
+    self:checkColor()
+end
+
+function BufferSystem:getBuffer(bufferId)
+    return self._bufferTable[bufferId]
+end
+
+function BufferSystem:getBufferTable()
+    return self._bufferTable
+end
+
+function BufferSystem:getBufferLvl(bufferId)
+    if not self._bufferTable[bufferId] then
+        return 0
+    end
+
+    local level = self._bufferTable[bufferId]:getSkilllevel()
+    return level or 0
+end
+
+function BufferSystem:getBufferIsExit(bufferId)
+    return self._bufferIsExitTable[bufferId] or false
+end
+
+function BufferSystem:clearAllBuffer()
+    if not self._bufferTable then
+        return 
+    end
+    for k,v in pairs(self._bufferTable) do
+        local buffMeta = lt.CacheManager:getBuffById(k)
+        local needClear = false
+        if buffMeta then
+            needClear = buffMeta:isDeathClear()
+        end
+
+        if needClear then
+            self:changeBuffer2Temp(k)
+        end
+    end
+end
+
+function BufferSystem:resumeAllBuffer()
+    if not self._bufferTable then
+        return 
+    end
+
+    local resumeList = {}
+    for k,v in pairs(self._bufferTable) do
+        local isTemp = v:getIsTemp()
+        if isTemp then
+            local data = v:getBufferData()
+            self:delBuffer(k)
+            table.insert(resumeList, data)
+        end
+    end
+
+    for k,v in pairs(resumeList) do
+        if not v.source then
+            v.source = {}
+        end
+        if type(v.source) == "table" then
+            v.source.isExist = true
+        end
+        self:addBuffer(v.bufferId, v.time, v.skilllevel, v.source)
+    end
+end
+
+function BufferSystem:createItemBuffer(bufferId, agent, itemId, source)
+     -- 物品相关buff单例
+    if not self.ITEM_BUFF_MAP then
+        self.ITEM_BUFF_MAP = {
+            [BuffEnum.EFFECT_CLASS_SLAYER_MOUNT] = lt.BuffMount, -- 坐骑buff
+        }
+    end
+
+    if self.ITEM_BUFF_MAP[bufferId] then
+        -- 物品buff
+        return self.ITEM_BUFF_MAP[bufferId].new(agent, itemId, source)
+    end
+end
+
+function BufferSystem:createBuffer(bufferId, time, skilllevel, source)
+    if not self.CREATE_MAP then
+        self.CREATE_MAP = {
+            [BuffEnum.EFFECT_CLASS_DARKBLUE_POISON] = lt.BufferDarkBluePoison,  -- 幽暗之毒
+            [BuffEnum.EFFECT_CLASS_GREEN_STALKER] = lt.BufferGreenStalker,  -- 毒物
+            [BuffEnum.EFFECT_CLASS_PARALYZE] = lt.BufferMagicParalyze,  -- 麻痹
+            [BuffEnum.EFFECT_CLASS_DOOM] = lt.BuffMagicDoom,  -- 毁灭
+            -- [BuffEnum.EFFECT_CLASS_SEDUCTION] = lt.BuffMagicSeduction,  -- 诱惑
+            [BuffEnum.EFFECT_CLASS_DEATH] = lt.BuffMagicDeath,  -- 致死术
+            [BuffEnum.EFFECT_CLASS_MEPHISTO] = lt.BuffMagicMephisto,  -- 死亡契约
+            [BuffEnum.EFFECT_CLASS_DARK_REVENGE] = lt.BuffDarkRevenge,  -- 黑暗复仇者
+            [BuffEnum.EFFECT_CLASS_RING_OF_FLARE] = lt.BuffRingOfFlare,  -- 光耀之环
+            [BuffEnum.EFFECT_CLASS_WATER_BARRIER] = lt.BuffWaterBarrier,  -- 水之壁障
+            [BuffEnum.EFFECT_CLASS_VINE] = lt.BuffVine,  -- 藤蔓
+            [BuffEnum.EFFECT_CLASS_DARKNESS] = lt.BuffDraknessVisible,  --黑暗之触视野效果
+            [BuffEnum.EFFECT_CLASS_GRAY_DARKNESS] = lt.BuffDraknessVisible,  --黑暗神力视野效果
+
+            -- [BuffEnum.EFFECT_HANDS_OF_FIRE] = lt.BuffHandsOfFire,  -- 火焰之触
+            [BuffEnum.EFFECT_GNOMES_WHISPER] = lt.BuffGnomesWhisper,  -- 真实视野
+            [BuffEnum.EFFECT_HEART_CATALYST] = lt.BuffHeartCatalyst,  -- 快速恢复
+            -- [BuffEnum.EFFECT_PROTECTION_FROM_POISON] = lt.BuffProtFromPoison, -- 毒液抵抗
+            -- [BuffEnum.EFFECT_MAGIC_BLESS] = lt.BuffBless, -- 大地祝福
+            [BuffEnum.EFFECT_SLAYER_FLARE] = lt.BuffSlayerFlare, -- 光耀之环
+            -- [BuffEnum.EFFECT_PROTECTION_FROM_CURSE] = lt.BuffProtFromCurse, -- 诅咒抗力
+            [BuffEnum.EFFECT_DETECT_HIDDEN] = lt.BuffDetectHidden,-- 探测术
+            [BuffEnum.EFFECT_SUMMON_SYLPH]  = lt.BuffSummonSylph,  -- 召唤-精灵playCommonSkill
+            [BuffEnum.EFFECT_CLASS_FADE_OUT]  = lt.BuffInvisibleFade,  -- 隐身淡入效果
+            [BuffEnum.EFFECT_CLASS_INVISIBILITY]  = lt.BuffInvisibility,  -- 隐身
+            [BuffEnum.EFFECT_SAND_OF_SOUL_STONE] = lt.BuffSandOfSoulStone,
+            [BuffEnum.EFFECT_SAND_CROSS]  = lt.BuffSandCross,
+            [BuffEnum.EFFECT_CLASS_SNIPING_MODE]  = lt.BuffSnipingMode, -- 狙击
+            [BuffEnum.EFFECT_CLASS_SNIPING_FADE_OUT]  = lt.BuffSnipingBlack, -- 狙击黑化
+            [BuffEnum.EFFECT_CLASS_TRAPPED]  = lt.BuffTrap, -- 陷阱
+            [BuffEnum.EFFECT_CLASS_BERSERKER]  = lt.BuffBerserker, -- 狂暴
+            [BuffEnum.EFFECT_CLASS_OBSERVING_EYE]  = lt.BuffObservingEye, -- 专注之眼
+            [BuffEnum.EFFECT_CLASS_ACTIVATION]  = lt.BuffActivation, -- 天使之赐福
+            [BuffEnum.EFFECTSTATUS_FIRE_ELEMENTAL]  = lt.BuffFireElement, -- 火元素
+            [BuffEnum.EFFECTSTATUS_FIRE_ELEMENTAL_ATTACK]  = lt.BuffFireElementAttack, -- 火元素-攻击
+            [BuffEnum.EFFECTSTATUS_FIRE_ELEMENTAL_DAMGE]  = lt.BuffFireElementDamage, -- 火元素-伤害
+
+            [BuffEnum.EFFECTSTATUS_WATER_ELEMENTAL]  = lt.BuffWaterElement, -- 水元素
+            [BuffEnum.EFFECTSTATUS_WATER_ELEMENTAL_HEAL]  = lt.BuffWaterElementHeal, -- 水元素-加血
+            [BuffEnum.EFFECTSTATUS_WATER_ELEMENTAL_HEALED]  = lt.BuffWaterElementHealed, -- 被水元素加血
+            [BuffEnum.EFFECT_CLASS_FROZEN_ARMOR_TO_CREATURE]  = lt.BuffIceField, --寒冰护甲反伤
+            [BuffEnum.EFFECT_CLASS_STONE_SKIN]  = lt.BuffStoneSkin, --石之肌肤
+            [BuffEnum.EFFECT_CLASS_DEAD_BLOOD_LOSS]  = lt.BuffComa, --死亡掉血
+            [BuffEnum.EFFECT_CLASS_DIVINE_GUIDANCE]  = lt.BuffDivineGuidance, --神之诅咒
+            [BuffEnum.EFFECT_CLASS_LIGHTNESS]  = lt.BuffLightness, --终极照明术
+            [BuffEnum.EFFECT_CLASS_HALO]  = lt.BuffHalo, --光晕
+            [BuffEnum.EFFECT_CLASS_TRANSFORM_TO_WERWOLF]  = lt.BuffTransform, --变身
+            [BuffEnum.EFFECT_CLASS_TRANSFORM_TO_WOLF]  = lt.BuffTransform, --变身
+            [BuffEnum.EFFECT_CLASS_TRANSFORM_TO_BAT]  = lt.BuffTransform, --变身
+            [BuffEnum.EFFECT_CLASS_DUMMY_DRAKE_BOMB]  = lt.BuffDummyDrake,-- 德雷克傀儡二次伤害
+            [BuffEnum.EFFECT_CLASS_DUMMY_DRAKE]  = lt.BuffDummyDrake,--德雷克傀儡
+            [BuffEnum.EFFECT_CLASS_PASSING_HEAL]  = lt.BuffPassHeal,--传递治疗
+            [BuffEnum.EFFECT_CLASS_GROUND_ELEMENTAL_AURA]  = lt.BuffGroundElement,--土精灵光环效果
+            [BuffEnum.EFFECT_CLASS_BLOODY_SCARIFY]  = lt.BuffBloodyScarify,--血之烙印
+            [BuffEnum.EFFECT_CLASS_BLOODY_SCARIFY_BOMB]  = lt.BuffBloodyScarify,--血之烙印(爆炸)
+            [BuffEnum.EFFECT_CLASS_HYDRO_CONVERGENCE] = lt.BuffHyDroConvergence, --复合水疗
+            [BuffEnum.EFFECT_CLASS_HOLY_ARMOR]  = lt.BuffHolyArmor, --神圣装甲
+            [BuffEnum.EFFECT_CLASS_BLIND]  = lt.BuffBlind, --卫星轰击致盲效果
+            [BuffEnum.EFFECT_CLASS_TRANSFORM_TO_CASKET]  = lt.BuffCasket, --棺材
+            [BuffEnum.EFFECT_INSTALL_TURRET]  = lt.BuffTransform,
+            [BuffEnum.EFFECT_CLASS_HALO_SHOW]  = lt.BuffHaloShow,--光环特效
+        }
+    end
+
+    -- 存在特殊buff走buff
+    if self.CREATE_MAP[bufferId] then
+        if skilllevel then
+            -- local skillGrade = SkillModule:getGradeBySkillLevel(skilllevel)
+            return self.CREATE_MAP[bufferId].new(time, self._actor, skilllevel, source,bufferId)
+        else
+            return self.CREATE_MAP[bufferId].new(time, self._actor, skilllevel, source, bufferId)
+        end
+    else
+        return lt.BuffCommon.new(bufferId, time, self._actor, skilllevel, source)
+        -- return lt.BufferBase.new(bufferId, time, self._actor, skilllevel)
+    end
+end
+
+function BufferSystem:dealSpecialBuffer(bufferId,types)
+    if self:getBuffer(bufferId) and self:getBuffer(bufferId):getArmatureAni() then
+        self:getBuffer(bufferId):getArmatureAni():setVisible(types)
+    end
+    -- body
+end
+
+-- 麻痹(1) > 定身(2) > 施毒术(13) > 诅咒术(16) > 中毒(3)
+function BufferSystem:checkColor()
+    local colorList = {
+        [1] = cc.vec4(1.0, 1.0, 1.0, 1.0)
+    }
+    local weaponColorList = {
+        [1] = cc.vec4(1.0, 1.0, 1.0, 1.0)
+    }
+    if self._actor:getAgent():getAgentType() == lt.Constant.AGENT_TYPE_MONSTER then
+        colorList[1] = self._actor:getSpColor()
+    end
+    
+    for buffId, colorInfo in pairs(BuffEnum.COLOR_OF_BUFFID) do
+        local buffer = self._bufferTable[buffId]
+        if buffer and not buffer:getIsTemp() then
+            if buffId == BuffEnum.EFFECT_CLASS_PARALYZE then
+                colorList[1] = colorInfo
+            else
+                if buffId ~= BuffEnum.EFFECT_STRIKING and  buffId ~= BuffEnum.EFFECT_CLASS_REDIANCE then
+                    table.insert(colorList, colorInfo)
+                end
+                table.insert(weaponColorList, colorInfo)
+            end
+        end
+    end
+
+    self._actor:setColorAll(colorList, weaponColorList)
+end
+
+function BufferSystem:setPosY(y)
+    if self._bufferTable[11] then
+        self._bufferTable[11]:setPosY(y)
+    end
+end
+
+function BufferSystem:canAttack()
+    -- 是否有麻痹debuff
+    return not self:getBuffer(BuffEnum.EFFECT_CLASS_PARALYZE) and not self:getBuffer(BuffEnum.EFFECT_CAUSE_CRITICAL_WOUNDS) and not self:getBuffer(BuffEnum.EFFECT_EXPLOSION_WATER)
+end
+
+function BufferSystem:canMove()
+    if not self:canAttack() then
+        return false
+    end
+    for _, buffId in ipairs(BuffEnum.LOCK_MOVE_BUFFS) do
+        if self:getBuffer(buffId) then
+            return false
+        end
+    end
+    return true
+end
+
+function BufferSystem:canMoveAttack()
+    return self:canAttack() and not self:getBuffer(BuffEnum.DELAYMOVE)
+end
+
+function BufferSystem:actorChange(bufferId,isAdd)
+    if bufferId == BuffEnum.EFFECT_INSTALL_TURRET then
+        self._actor:startAction()
+        local agent = self._actor:getAgent()
+        if not agent then return end
+        if isAdd then
+            self._actor:hideSprite()
+            self._actor:setDirection(lt.Constant.DIRECTION_DOWN)
+            self:clearAllBuffer()
+        else
+            self._actor:showSprite()
+            self._actor:clearTurret()
+            agent:changeState(lt.HeroStateIdle.new(agent))
+            self._actor:setDirection(lt.Constant.DIRECTION_DOWN)
+            self:resumeAllBuffer()
+        end
+    elseif bufferId == BuffEnum.EFFECT_HALLUCINATION then
+        local worldAgent = lt.AgentManager:getWorldAgent()
+        if not worldAgent then return end
+        
+        local agent = self._actor:getAgent()
+        if not agent then return end
+        
+        if not agent:isHeroAgent() then
+           return 
+        end
+        if not agent:getIsSelf() then
+            return
+        end
+        if isAdd then
+            worldAgent:changeToHalluCreature()
+        else
+            worldAgent:removeHalluCreature()
+        end
+    elseif bufferId == BuffEnum.EFFECT_CLASS_RELIVE_EFFECT then
+        if isAdd then
+            local agent = self._actor:getAgent()
+            local buffer = self:getBuffer(bufferId)
+            local skillEternity = lt.SkillEnum.SKILL_ETERNITY
+            if buffer and (buffer:getSource() or {}).srcId == skillEternity then
+                -- 转生术播放特效
+                local hitMetas = lt.CacheManager:getHitMetas(skillEternity)
+                agent:playParallelEffectSpecial(skillEternity,hitMetas)
+            else
+                agent:playReviveEffect()
+            end
+        end
+    end
+end
+
+return BufferSystem

@@ -1,0 +1,31 @@
+
+local NpcStateGlobal = class("NpcStateGlobal", lt.NpcStateBase)
+
+function NpcStateGlobal:ctor(npcAgent)
+    NpcStateGlobal.super.ctor(self, npcAgent)
+end
+
+function NpcStateGlobal:onClear()
+end
+
+function NpcStateGlobal:onEnter()
+end
+
+function NpcStateGlobal:onExit()
+end
+
+function NpcStateGlobal:onUpdate()
+end
+
+function NpcStateGlobal:onMessage(msg)
+end
+
+function NpcStateGlobal:getStateId()
+    return lt.Constant.MONSTER_STATE_GLOBAL
+end
+
+function NpcStateGlobal:getStateName()
+    return "NpcStateGlobal"
+end
+
+return NpcStateGlobal

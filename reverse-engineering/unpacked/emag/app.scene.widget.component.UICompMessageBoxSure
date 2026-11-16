@@ -1,0 +1,25 @@
+---@通用提示框小
+---@class UICompMessageBoxSure
+local UICompMessageBoxSure = class("UICompMessageBoxSure", lt.UIGButtonBase, lt.UICompChangeSkin)
+
+UICompMessageBoxSure.ChangeSkinConf = {
+    ["MessageBox"] = {
+        bg = "bg_tytanchuang_01",
+    },
+    ["CommonTL"] = {
+        ok = {bg = "sort"},
+    } 
+}
+
+function UICompMessageBoxSure:ctor()
+    UICompMessageBoxSure.super.ctor(self)
+end
+
+function UICompMessageBoxSure:onClear()
+end
+
+function UICompMessageBoxSure:onConstruct()
+    self:startSkin()
+end
+
+return UICompMessageBoxSure

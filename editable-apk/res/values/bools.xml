@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <bool name="abc_action_bar_embed_tabs">true</bool>
+    <bool name="abc_allow_stacked_button_bar">false</bool>
+    <bool name="abc_config_actionMenuItemAllCaps">true</bool>
+    <bool name="SY_ONEKEY_LOGIN_SHOW">false</bool>
+    <bool name="YOFI_SHOW_FLOAT_BUTTON">false</bool>
+    <bool name="TAPTAP_SHOW">true</bool>
+    <bool name="GUEST_SHOW">true</bool>
+    <bool name="THIRD_LOGIN_SHOW">false</bool>
+    <bool name="YOFI_LOGIN_WITHOUT_ACCOUNT">false</bool>
+</resources>

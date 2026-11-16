@@ -1,0 +1,375 @@
+
+---fairygui url 映射表
+--[[
+    每个需添加对应注释
+    Key命名规则：
+    图片： Image + 相关提示
+    组件： Comp + 相关提示
+    窗口： Wnd  + 相关提示
+    自定义窗口： CWnd + 相关提示
+    层级： Layer + 相关提示
+    动态访问包下图片： GetImage + 相关提示
+    动态访问包下组件： GetComp + 相关提示
+    TODO
+]]
+return {
+    ---技能编辑与技能轮盘
+    CompSkillEditTips = "ui://Edit/CompSkillEditTips", --技能编辑tips
+    EditSkill = "ui://Edit/EditSkill", --技能编辑界面
+    GetImageSkill = "ui://Skill/%s", --技能包下访问图片
+    CompSkillOperateSlot = "ui://Skill/CompSkill", --技能轮盘组件
+    CompSkillEditItem = "ui://Skill/CompSkillEditItem", --技能编辑列表单个技能组件
+    CompSkillOperateItem = "ui://Skill/CompSkillOperateItem", --操作轮盘单个技能组件
+    CompAutoFightBtn = "ui://Skill/BtnAutoFight",     --自动战斗按钮
+
+    ---创建角色
+    ImageColorItem = "ui://CreateRole/btn_CharCreate_yanse", --颜色图块框
+    GetImageRoleModel = "ui://CreateRole/role_%s_%s",--人物模型
+
+    GetImageSlayerHead = "ui://CommonTL/head_%s%s%s",--人族头像
+    GetImageVarHead = "ui://CommonTL/head_2%s1",--鬼族头像
+    ImageOuterHead = "ui://CommonTL/head_301", --魔族头像
+
+    CompTabCreateRole = "ui://CreateRole/TabCreateRole", -- 创建角色页签
+    CompColorTiled = "ui://CreateRole/colorTiled", -- 创建角色颜色块
+    CompTabSelectRole = "ui://CreateRole/TabSelectRole", -- 选择角色页签
+    CompSelectRoleItem = "ui://CreateRole/selRole", -- 选择角色单个页签
+
+    GetImageHead = "ui://CommonTL/head_%s",--头像
+
+    ---主界面
+    CompMiniMap = "ui://Main/CompMiniMap", --小地图
+    CompQuickItem = "ui://Main/CompQuickItem", --快捷栏单个道具
+    CompQuickBar = "ui://Main/CompQuickBar", -- 快捷栏
+    CompBuffItem = "ui://Main/BuffItem", --单个Buff
+    CompFunc = "ui://Main/CompFunc", -- 功能按钮
+    GetImageMain = "ui://Main/%s",  -- 主界面图片
+    GetImageMainDur = "ui://Main/ItemBroken%s_%s_%s",--耐久度
+    GetImageMainDurEx = "ui://Main/ItemBroken%s_%s_%s_%s",--耐久度 4 个参数
+    CompGroupItem = "ui://Main/CompGroupItem", --单个队伍成员
+    CompTaskItems = "ui://Main/CompTaskItem", --单个任务
+    CompTargetItem = "ui://Main/CompTargetItem", --单个目标
+    CompLeftTime = "ui://Main/CompLeftTime", --副本倒计时
+    CompAutoEquip = "ui://Main/CompAutoEquip", --自动穿戴
+    CompImprove = "ui://Main/CompImprove", --提升界面
+    CompSure = "ui://Main/CompSure", -- 确认
+
+
+
+    ---装备tips
+    GetImageCommonTL = "ui://CommonTL/%s",
+    GetImageRoleEquip = "ui://RoleEquip/%s",
+    GetImageItemEquip = "ui://Item/equip_%s",
+    GetImageItemEquipPath = "icon/itemTL/bag/equip/%s.png",
+
+
+    WndNPC = "ui://NPC/NpcDlg", --npc对话界面
+    CompNpcTalkItem = "ui://NPC/NpcListItem", --npc对话列表单个回复
+    NPCHeadURL = "ui://NPC/NpcFace_%s", --npc头像资源
+    NPCNameText = "ui//NPC/NpcName", --npc名称文本
+    WndNpcSkill = "ui://NPC/NpcSkill", --npc学习技能
+    WndNpcSkillBox = "ui://NPC/NpcSkillBox", --npc学习技能圣书
+    NpcClsSkill = "ui://NPC/NpcClsSkill", --npc阶级技能清洗
+    GetCompNpcClsSkill = "ui://NPC/NpcClsSkillItem", -- npc阶级技能清洗Item
+    GetNpcImage = "ui://NPC/%s",
+    NpcSkilItem = "ui//NPC/NpcSkilItem", --技能图标
+    
+    -- 小地图
+    GetMiniMap = "map/minimap/%s.png", -- 小小地图资源路径
+    GetMiniMapState = "ui://MiniMap/StateMapCom", -- 州地图组件
+    GetMiniMapStateMap = "ui://MiniMap/StateMap", -- 州地图
+    GetMiniMapCom = "ui://MiniMap/MinimapCom", -- 小地图组件
+    GetMiniMapCurMap = "ui://MiniMap/CurrentMap", -- 当前地图
+    GetMiniMapFGUI = "ui://MiniMap/%s", -- 小地图资源路径FGUI
+    GetMinMapPlayer = "ui://MiniMap/minimap_player%s", -- 小地图玩家自己player
+    GetSmallMap = "map/smallmap/%s.png", -- 小地图资源路径
+    GetMapObjPath = "ui://MiniMap/%s", -- 小地图icon
+    GetSlayerTransmitMap = "ui://MiniMap/SlayerTransmitMap", -- 人族传送界面
+    GetSlayerTransmitSubMap = "ui://MiniMap/SlayerTransmitSubMap", -- 人族传送二级界面
+    GetOustersTransmitMap = "ui://MiniMap/OustersTransmitMap", -- 魔族传送界面
+    GetOustersTransmitSubMap = "ui://MiniMap/OustersTransmitSubMap", -- 魔族传送二级界面
+    GetCompOustersTransmitMapItem = "ui://MiniMap/OustersTransmitMapCell", --魔族传送cell
+    WndElevator = "ui://MiniMap/ElevatorPanel", --电梯界面
+
+    -- 公会，阶级图标
+    GetGuidePath = "ui/guide/file_%s.png", -- 公会图标
+    GetGradePath = "ui/grade/%s.png", -- 阶级图标
+
+    -- 角色信息界面
+    CompRoleInfo = "ui://RoleInfo/RoleInfo",
+    GetCompRoleInfo = "ui://RoleInfo/%s", -- 角色信息包
+    CompCls = "ui://RoleInfo/ClsCom", -- 阶级技能界面
+    CompTransfer = "ui://RoleInfo/TransferCom", -- 转职技能界面
+    CompMagicOCom = "ui://RoleInfo/MagicOCom", -- 魔族技能
+    CompMagicSCom = "ui://RoleInfo/MagicSCom", -- 人族技能
+    CompMagicVCom = "ui://RoleInfo/MagicVCom", -- 鬼族技能
+    CheckRoleInfo = "ui://RoleInfo/CheckRoleInfo", -- 查看他人信息
+
+    --通用组件
+    CompItem = "ui://Item/Item", --物品item
+    GetImageItem = "ui://Item/prop_%s", --物品icon
+    GetCompInventoryTiled = "ui://Inventory/Tiled", --背包格子
+
+    --装备强化
+    WndStrengthen = "ui://Strengthen/StrengthenPanel", --装备强化主界面
+    GetCompStrengthen = "ui://Strengthen/%s", -- 强化包
+    GetCompLevelupPanel = "ui://Strengthen/LevelupPanel", --装备升级界面
+    GetCompEnchantPanel = "ui://Strengthen/EnchantPanel", --装备附魔界面
+    GetCompFusionPanel = "ui://Strengthen/FusionPanel", --装备融合界面
+    GetCompSuccinctPanel = "ui://Strengthen/SuccinctPanel", --装备洗炼界面
+    GetImageCitiao = "ui://Strengthen/bg_zhuangbeisj_citiao01", --装备词条图片
+    GetCompEnchantItem = "ui://Strengthen/EnchantItem", --装备附魔词条组件
+    GetCompEnchantCost = "ui://Strengthen/EnchantCost", --装备附魔消耗组件
+    GetCompEnchantGem = "ui://Strengthen/EnchantGem", --装备附魔选中组件
+    GetCompEnchantResult = "ui://Strengthen/EnchantResult", --装备附魔结果界面
+    GetCompFusionPreview = "ui://Strengthen/FusionPreview", --装备融合预览界面
+    GetCompRefinePreview = "ui://Strengthen/RefinePreview", --首饰套精炼预览界面
+    GetImageMoren = "ui://Strengthen/bg_zhuangbei_sjmoren", --装备升级默认图片
+    GetImageSuccess = "ui://Strengthen/bg_zhuangbei_sjchenggong", --装备升级成功图片
+    GetImageFailed = "ui://Strengthen/bg_zhuangbei_sjshibai", --装备升级失败图片
+    GetCompAttrItem = "ui://Strengthen/AttrItem", --装备升级小词条
+    GetCompSuccinctConfirm = "ui://Strengthen/SuccinctConfirm", --装备洗炼确认界面
+    GetImageAffix = "ui://Strengthen/bg_zhuangbeisj_citiao%s", --词条图片
+    GetImageAffixBroken = "ui://Strengthen/bg_zhuangbeisj_posuicitiao%s", --词条图片
+    WndTransform = "ui://Strengthen/TransformPanel", --装备转换界面
+    GetCompTransformItem = "ui://CommonTL/ComboBox_item", --选中框
+
+    TradePanel = "ui://NPC/TradePanel",     --买卖界面
+    RepairPanel = "ui://NPC/RepairPanel",   --维修/镀银界面
+    WndNpcExchange = "ui://NPC/NpcExchange", --npc兑换界面
+    GetCompExchangeItem = "ui://NPC/NpcExchangeItem", --兑换cell
+    WndCleanPoint = "ui://MessageBox/NpcCleanPoint", --鬼族清洗属性点
+    UsePointsCreate = "ui://MessageBox/UsePointsCreate",-- 创角技能点
+
+    --外观界面
+    WndAppearance = "ui://Appearance/AppearancePanel", --外观界面
+    GetCompAppearanceItem = "ui://Appearance/AppearanceItem", -- 外观listitem
+
+    --组队界面
+    TeamPanel = "ui://Team/TeamPanel",
+    GetCompHallPanel = "ui://Team/TeamHallPanel",   --大厅界面
+    GetCompHallFilterBtn = "ui://Team/hallFilterBtn", --大厅界面左侧页签
+    GetCompTeamHallCell = "ui://Team/TeamHallCell", --大厅界面队伍cell
+    GetCompTeamPlayer = "ui://Team/TeamPlayerCell", --大厅玩家icon
+    GetCompTeamMyPanel = "ui://Team/TeamMyPanel",   --我的队伍界面
+    GetCompTeamMyCell = "ui://Team/TeamMyCell",     --我的队伍cell
+    GetCompTeamCreatePanel = "ui://Team/TeamCreatePanel", --队伍创建界面
+    GetCompTeamCreateCell = "ui://Team/TeamCreateCell", --队伍创建cell
+    GetCompTeamApplyPanel = "ui://Team/TeamApplyPanel",   --申请列表界面
+    GetCompTeamApplyCell = "ui://Team/TeamApplyCell",     --申请列表cell
+    GetCompPlayerTips = "ui://Team/PlayerTips",     --玩家tips
+
+    -- 聊天功能
+    ChatPanel = "ui://Chat/ChatPanel",
+    CompChat = "ui://Main/CompChat",
+    GetImageChat = "ui://Chat/%s",
+    GetCompChatPlayerCell = "ui://Chat/CompMsgPlayer", -- 带头像框的聊天列表cell
+    GetCompMsgSys = "ui://Chat/CompMsgSys", -- 富文本cell
+    ChatSettingPanel = "ui://Chat/ChatSettingPanel",
+    ChatPrivatePanel = "ui://Chat/ChatPrivatePanel", -- 私聊选择界面
+    GetImageChatVarHead = "ui://Chat/head_2%s1",--鬼族头像
+    ImageOuterChatHead = "ui://Chat/head_301", --魔族头像
+    GetImageChatHead = "ui://Chat/head_%s",--头像
+    GetImageChatBtnColor = "ui://Chat/Btn_Color",--颜色框
+    GetCompChatQuick = "ui://Chat/CompBottom", -- 快捷消息
+    GetCompChatEditCell = "ui://Chat/CompLbl", -- 文本编辑cell
+    GetCompChatHeadKuang = "ui://Chat/bg_liaotian_headkuang%s", -- 头像框
+    GetCompChatEmoji = "ui://Chat/emoji_%02d", --表情
+    GetCompChatColor = "ui://Chat/bg_liaotian_yanse%02d", --颜色
+    GetChatLabaPanel = "ui://Chat/ChatLabaPanel", --喇叭
+    GetCompLabaEmoji = "ui://Chat/CompLabaEmoji", --喇叭表情
+    GetCompNoticeSys = "ui://Main/ComSysTips", --系统消息
+    GetCustomizePanel = "ui://Chat/CustomizePanel", --广告牌
+    
+    GetImageLaba = "ui://CommonTL/icon_gglb_anniu_02", --喇叭图标
+    GetImageJob = "ui://CommonTL/profession_icon_%s", --职业图标
+
+    --任务
+    WndTask = "ui://Task/TaskPanel", --主线支线任务
+    CompTaskItem = "ui://Task/TaskCell", --主线任务cell
+    CompBranchItem = "ui://Task/TaskBranchCell", --支线任务cell
+    CompTaskReward = "ui://Task/TaskRewardCell", --主线任务奖励cell
+    CompBranchTaskReward = "ui://Task/TaskBranchRewardCell", --支线任务奖励cell
+    WndActivityTask = "ui://Task/ActivityTaskPanel", --日常周常任务
+    CompActivityTaskCell = "ui://Task/ActivityTaskCell", --日常周常任务cell
+    WndTaskTalk = "ui://Task/TaskTalkPanel", --对话任务
+    WndTaskUseItem = "ui://Task/TaskUseItemPanel", --提交道具任务
+    GetTaskPath = "ui://Task/%s", -- 任务图标
+
+    UIWndRecharge = "ui://Recharge/RechargePanel", --商城
+    CompRechargeCell = "ui://Recharge/RechargeCell", --商城页签
+    CompRechargeItem = "ui://Recharge/RechargeItem", --商城cell
+    CompRechargeBuy = "ui://Recharge/RechargeBuyPanel", --商城购买二级
+    GetRechargeFGUI = "ui://Recharge/%s", -- 商城资源路径FGUI
+    CompRechargeRmbCell = "ui://Recharge/RechargeRmb",
+    GetRmbImg = "ui://Recharge/btn_sdiancz_anniu_%s", --按钮
+    GetHuobiImg = "ui://Recharge/bg_sdiancz_dianquan_%02d", --货币
+    GetVoucherImg = "ui://Recharge/bg_sdiancz_daijinquan_%02d", --代金券VOUCHER
+    
+    -- 好友
+    FriendListPanel = "ui://Friend/FriendListPanel", --好友主界面
+    CompFriendCell = "ui://Friend/CompFriendCell", --好友列表cell
+    FriendTipsPanel = "ui://Friend/FriendTips",     --玩家tips
+    GetImageFriend = "ui://Friend/%s",  -- 好友图片
+    GetCompDestInfoTips = "ui://Friend/DestInfoTips",  -- 头像交互按钮
+    GetImageDestInfoTipsIcon = "ui://Friend/bth_haoyou_anniu%s", --交互图标
+
+    -- 追踪（灵魂锁链）
+    CompTrace = "ui://Skill/ComTrace", --追踪界面
+
+    
+    WndSetting = "ui://Setting/SettingPanel", --设置界面
+    GetImageSetting = "ui://Setting/%s", --设置包下访问图片
+
+    -- 公会
+    GuildListPanel = "ui://Guild/GuildListPanel", --公会列表
+    CompGuildListCell = "ui://Guild/CompGuildListCell", --公会列表cell
+    GuildCreatePanel = "ui://Guild/GuildCreatePanel", --公会创建
+    GetGuildIcon = "ui://Guild/file_%s", --公会icon
+    GuildMainPanel = "ui://Guild/GuildMainPanel", --公会主界面
+    GuildInfoPanel = "ui://Guild/GuildInfoPanel", --公会信息
+    GuildMemberListPanel = "ui://Guild/GuildMemberListPanel", --公会成员
+    GuildUnionList = "ui://Guild/GuildUnionList", --公会同盟列表
+    GuildNoticePanel = "ui://Guild/GuildNoticePanel", --公会公告修改
+    CompGuildMemberListCell = "ui://Guild/CompGuildMemberListCell", --公会成员列表cell
+    GuildApplyListPanel = "ui://Guild/GuildApplyListPanel", --公会申请列表
+    CompApplyListCell = "ui://Guild/CompApplyListCell", --公会申请列表cell
+    GuildInfoTips = "ui://Guild/GuildInfoTips", --公会交互tips
+    CompUnionCell = "ui://Guild/CompUnionCell", --联盟列表cell
+    GuildUnionApplyList = "ui://Guild/GuildUnionApplyList", --联盟申请列表
+    CompUnionApplyCell = "ui://Guild/CompUnionApplyCell", --联盟申请列表cell
+    GuildUnionPanel = "ui://Guild/GuildUnionPanel", --联盟信息
+
+    --宠物
+    WndPet            = "ui://Pet/PetPanel", --宠物主界面
+    CompPetItem       = "ui://Pet/PetItem", --宠物cell
+    CompPetAttrPanel  = "ui://Pet/PetAttrPanel", --属性界面
+    CompPetTamePanel  = "ui://Pet/PetTamePanel", --驯养界面
+    CompPetSkillPanel = "ui://Pet/PetSkillPanel", --胶囊（技能）界面
+    CompPetSkinPanel  = "ui://Pet/PetSkinPanel", --皮肤界面
+    WndPetFeedPanel   = "ui://Pet/PetFeedPanel", --喂养界面
+    CompPetUseItem    = "ui://Pet/PetUseItem", --喂养消耗cell
+    GompPetTipsPanel  = "ui://Pet/PetTipsPanel", --宠物详情tips
+    GetImagePet       = "ui://Pet/%s", --设置包下访问图片
+    CompPetSkinItem   = "ui://Pet/PetSkinItem", --皮肤cell
+    WndPetUseSkinPanel= "ui://Pet/PetUseSkinPanel", --皮肤界面
+
+    -- Vip界面
+    VipWndPanel  = "ui://Vip/VipWndPanel", --Vip主界面
+    VipDescCell  = "ui://Vip/VipDescCell", --描述Cell
+    VipItemCell  = "ui://Vip/VipItemCell", --物品Cell
+    VipTitleCell = "ui://Vip/VipTitleCell", --标题Cell
+    GetVipLibao  =  "ui://Vip/bg_vip_libao%02d",  -- 主界面图片
+    GetVipTitleImg = "ui://Vip/%s", --设置包下访问图片
+    -- 交易行
+    TransactionMain = "ui://Transaction/WndTransactionMain", -- 主界面
+    TransactionBuyPanel = "ui://Transaction/TransactionBuyPanel", -- 购买
+    TransactionMenuCell = "ui://Transaction/TransactionMenuCell", -- 菜单
+    TransactionBuySimpleCell = "ui://Transaction/CompItem1", -- 简易版 单个售卖物品Cell
+    TransactionBuyDetailCell = "ui://Transaction/CompItemshow", -- 详细版 单个售卖物品Cell
+    WndTransactionBuyTips = "ui://Transaction/WndTransactionBuyTips",
+    WndTransactionDownTips = "ui://Transaction/WndTransactionDownTips", 
+    WndTransactionUpTips = "ui://Transaction/WndTransactionUpTips",
+    WndTransactionBidTips = "ui://Transaction/WndTransactionBidTips",
+    TransactionSellPanel = "ui://Transaction/TransactionSellPanel", -- 售卖
+    TransactionSellCell = "ui://Transaction/CompItem2", -- 单个售卖物品Cell
+    TransactionShowPanel = "ui://Transaction/TransactionShowPanel", -- 公示
+    TransactionCompareCell = "ui://Transaction/CompItem3", -- 单个参考物品Cell
+    TransactionRecord = "ui://Transaction/WndTransactionRecord", -- 记录
+    TransactionRecordCell = "ui://Transaction/CompRecordCell", -- 交易记录Cell
+    GetTransactionImg = "ui://Transaction/%s", --设置包下访问图片
+
+    -- 排行榜
+    WndRankPanel  = "ui://Rank/WndRankPanel", --排行榜主界面
+    CompRankCell  = "ui://Rank/RankCell", --单条信息Cell
+    GetRankCellBg = "ui://Rank/bg_paihangbang_pmdi_%02d", --单条bg
+    GetRankCellIndexIcon = "ui://Rank/bg_paihangbang_denji_%02d", --单条排行icon
+
+    -- 自动回收
+    AutoRecycleSettings  = "ui://NPC/AutoRecycleSettings", --自动售卖
+    AutoRecycleItem      = "ui://NPC/AutoRecycleItem",     --自动售卖cell
+    AutoRecycleMenuItem  = "ui://CommonTL/ComboBox_Recycle",     --自动售卖cell
+
+    -- 帮助
+    UIWndHelp  = "ui://Help/WndHelp", --帮助主界面
+    CompHelpMenuCell  = "ui://CommonTL/ComboBox_help",
+
+    -- 成就系统
+    WndAchievementPanel  = "ui://Achievements/WndAchievement", --帮助主界面
+    CompContentCell  = "ui://Achievements/CompContentCell",
+    GetAchievementCellIcon = "ui://Achievements/icon_chengjiu_%02d", --单条排行icon
+
+    --我要变强
+    UIWndStrong = "ui://Strong/WndStrong",
+    CompStrongFilterCell  = "ui://Strong/StrongFilterCell",
+    CompStrongCell  = "ui://Strong/StrongCell",
+
+    --菜单
+    UIWndExit = "ui://Main/CompExit",
+
+    --按钮音效
+    SlayerButtonSound = "ui://CommonTL/SLAYER_BUTTON",
+    VampireButtonSound = "ui://CommonTL/VAMPIRE_BUTTON",
+    OustersButtonSound = "ui://CommonTL/OUSTERS_INTERFACE",
+
+    -- 七日活动
+    SevenDaysPanel = "ui://SevenDays/SevenDaysPanel",
+    CompSevenDayTaskCell = "ui://SevenDays/CompTaskItem",
+    CompSevenDayRewardCell = "ui://SevenDays/CompRewardItem",
+    --兑换码
+    UICompUseCode = "ui://MessageBox/MessageBoxCode",
+    --首充
+    UIWndFirstRecharge = "ui://Activity/WndFirstRechargePanel",
+    --每日特惠
+    UIWndDailyGift = "ui://DailySpecialGiftBag/WndDailyGiftBagPanel",
+    UICompDailyGiftRewardCell = "ui://DailySpecialGiftBag/DayGiftCell",
+
+    --月卡
+    UIWndMonthCard = "ui://MonthCard/MonthCardPanel",
+
+    GetLvUpImg = "ui://Main/bg_djts_di%02d%s", --等级升级
+    -- 副本界面
+    DungeonPanel = "ui://Dungeon/DungeonPanel",
+    MonthCardMapPanel = "ui://Dungeon/MonthCardMapPanel",  -- 月卡地图
+    GetDungeonTitle = "ui://Dungeon/bg_fuben_yeqiandi%s",--标题图片
+    GetDungeonItem = "ui://Dungeon/bg_cwrw_djk%s",--道具图片
+
+    -- 坐骑
+    MountMainPanel = "ui://Mount/MountMain",      --  坐骑主界面
+    MountPanel = "ui://Mount/MountPanel",    --  坐骑
+    CompMountItem = "ui://Mount/CompItem",    --  坐骑光环
+    CompMountNumbCell = "ui://Mount/compProp",    --  坐骑光环条目属性
+    GetMountIcon = "ui://Mount/%s", -- 坐骑图片
+
+    GetDungeonImg = "ui://Dungeon/%s", -- 图片
+
+    --背包
+    Inventory = "ui://Inventory/Inventory", --背包
+    ExpandBag = "ui://Inventory/Expand", -- 拓展背包
+
+    CompMsgItem = "ui://Main/CompMsgItem", --消息列表小组件
+    --皮肤属性
+    UICompSkinAttrTips = "ui://Pet/SkinAttrTips",
+    --使用道具【洗点】
+    MessageBoxUseItem = "ui://MessageBox/MessageBoxUseItem",
+
+    --精力系统
+    UIWndEnergy = "ui://Energy/EnergyPanel",
+    UIWndEnergyBuy = "ui://Energy/EnergyBuyPanel",
+
+    --精英BOSS
+    UIWndLeader = "ui://HolyFight/BossElitePanel",
+    GetLeaderImg = "ui://HolyFight/%s", -- 图片
+    
+    GetImageCoin = "[img]ui://CommonTL/icon_coin[/img]", --金币icon
+    GetImagePoint = "[img]ui://CommonTL/icon_point[/img]", --点券icon
+    GetImageVoucher = "[img]ui://CommonTL/icon_voucher[/img]", --代金券
+
+    -- 触发礼包
+    TriggerGiftPanel = "ui://TriggerGift/TriggerGiftPanel",
+    GetTriggerGiftImg = "ui://TriggerGift/%s", -- 图片
+
+    --开服活动:签到礼包
+    WelfareWndPanel = "ui//Welfare/WelfareWndPanel",
+    UIWndSignGift = "ui//Welfare/WelfareCell"
+}

@@ -1,0 +1,102 @@
+---@class UICompTransactionBuySimpleCell
+--- 交易行  简易版单个售卖物品结构
+local UICompTransactionBuySimpleCell = class("UICompTransactionBuySimpleCell", lt.UIGButtonBase)
+
+local NtfManager = lt.NtfManager
+local CacheManager = lt.CacheManager
+local Constant = lt.Constant
+local TransactionModule = lt.TransactionModule
+
+UICompTransactionBuySimpleCell.ChangeSkinConf = {
+    ["Transaction"] = {
+        ["btn"] = "bg_pmh_djkdiban01",
+        ["bg_txt"] = "bg_pmh_wzbtmdiban02",
+    },
+}
+
+function UICompTransactionBuySimpleCell:ctor()
+    UICompTransactionBuySimpleCell.super.ctor(self)
+    --UI
+    self._icon = nil
+    self._lblCount = nil
+    self._lblName = nil
+    self._lblNum = nil
+    self._rareImg = nil
+    --数据
+    self._itemInfo = nil
+    self._sprite = nil
+end
+
+function UICompTransactionBuySimpleCell:onClear()
+    --UI
+    self._icon = nil
+    self._lblCount = nil
+    self._lblName = nil
+    self._lblNum = nil
+    self._rareImg = nil
+    --数据
+    self._itemInfo = nil
+    self._sprite = nil
+    UICompTransactionBuySimpleCell.super.onClear(self)
+end
+
+function UICompTransactionBuySimpleCell:onConstruct()
+    self._icon = self:getChild("icon")
+    self._lblCount = self:getChild("lbl_count")
+    self._lblName = self:getChild("lbl_name")
+    self._lblNum = self:getChild("lbl_num")
+    self._rareImg = self:getChild("img_rare")
+end
+
+function UICompTransactionBuySimpleCell:setObjInfo(itemInfo)
+    self._itemInfo = itemInfo
+    local sid = itemInfo:getItemId()
+    local itemType = itemInfo:getType()
+    local itemMeta = nil
+
+    if self._sprite then
+        self._sprite:removeFromParent()
+        self._sprite = nil
+    end
+    
+    if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+        itemMeta = CacheManager:getItemMeta(sid)
+        self._icon:setURL(string.format("ui://Item/prop_%s", itemMeta and itemMeta:getIconId() or ""))
+        self._icon:setVisible(true)
+    elseif itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+        itemMeta = CacheManager:queryEquipMeta(sid)
+        self._icon:setURL(string.format("ui://Item/equip_%s", itemMeta and itemMeta:getIconId() or ""))
+        self._icon:setVisible(false)
+
+        local iconId = itemMeta:getIconId()
+        if iconId then
+            local sprite = lt.CommonFunc.createEquipById(iconId,0,0)
+            self:displayObject():addChild(sprite)
+            local pos = self._icon:getPosition()
+            sprite:setPosition(pos.x,pos.y)
+            self._sprite = sprite
+        end
+    end
+    --缩放尺寸
+    local itemSize = self._icon:getSize()
+    local heightS = 50/itemSize.height
+    local widthS = 50/itemSize.width
+    local scale = heightS
+    if widthS < heightS then
+        scale = widthS
+    end
+    self._icon:setScale(scale, scale)
+    if self._sprite then
+        self._sprite:setScale(scale)
+    end
+    if not itemMeta then
+        yflog:Info("--------ERROR--itemInfo-" .. sid)
+    end
+    self._lblName:setText(itemMeta and itemMeta:getName() or "")
+    local id = itemInfo:getId()
+    local meta = CacheManager:getTransactionsById(id)
+    self._rareImg:setVisible(meta:getAnnounce() == 1)
+    self._lblNum:setText(TransactionModule:getNumbyId(id))
+end
+
+return UICompTransactionBuySimpleCell

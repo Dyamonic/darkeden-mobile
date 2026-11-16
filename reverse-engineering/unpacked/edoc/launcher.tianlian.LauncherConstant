@@ -1,0 +1,14 @@
+local LauncherConstant = {}
+
+LauncherConstant.GAME_STAGE = {
+    CHECK_START_UPDATE = 1,         -- 检测启动器更新
+    COMPLETE_START_DOWNLOAD = 2,    -- 启动器热更新下载完成
+    LOGIN_SDK = 3,                  -- 登录sdk
+    CHOOSE_SERVER_LIST = 4,         -- 选择区服
+    CHECK_GAME_UPDATE = 5,          -- 检测游戏更新
+    START_GAME_UPDATE = 6,          -- 开始游戏热新
+    COMPLETE_GAME_DOWNLOAD = 7,     -- 游戏热更新下载完成
+    ENTER_GAME = 8,                 -- 正式进入游戏
+}
+
+return LauncherConstant

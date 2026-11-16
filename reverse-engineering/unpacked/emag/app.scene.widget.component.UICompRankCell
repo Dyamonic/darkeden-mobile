@@ -1,0 +1,100 @@
+--- 排行榜Cell
+---@class UICompRankCell
+local UICompRankCell = class("UICompRankCell", lt.UIGButtonBase)
+
+local NtfManager     = lt.NtfManager
+local CommonUtil     = lt.CommonUtil
+local Constant       = lt.Constant
+function UICompRankCell:ctor()
+    UICompRankCell.super.ctor(self)
+    self._playerInfo = nil
+end
+
+function UICompRankCell:onEnter()
+    UICompRankCell.super.onEnter(self)
+    self:addClickListener(handler(self, self.onClickBtn))
+end
+
+function UICompRankCell:onExit()
+    self:removeClickListener()
+    UICompRankCell.super.onExit(self)
+end
+
+function UICompRankCell:onClear()
+    self._playerInfo   = nil
+    self._bg           = nil
+    self._iconRank     = nil
+    self._imgJob       = nil
+    self._lblName      = nil
+    self._lblGuildName = nil
+    self._lblLv        = nil
+    self._lblRank      = nil
+    self._bgSelect     = nil
+    self._ctlGuild     = nil
+    self._bgCoin       = nil
+    UICompRankCell.super.onClear(self)
+end
+
+function UICompRankCell:onConstruct()
+    self._bg           = self:getChild("bg")
+    self._iconRank     = self:getChild("icon_rank")
+    self._imgJob       = self:getChild("icon_job")
+    self._lblName      = self:getChild("lbl_name")
+    self._lblGuildName = self:getChild("lbl_guildName")
+    self._lblLv        = self:getChild("lbl_lv")
+    self._lblRank      = self:getChild("lbl_rank")
+    self._bgSelect     = self:getChild("bgSelect")
+    self._ctlGuild     = self:getController("c1")
+    self._bgCoin       = self:getChild("bg_coin")
+end
+
+function UICompRankCell:setInfo(data, index, rankType)
+    local info = data.role
+    local value = tonumber(data.value)
+    if rankType == Constant.RANK_TYPES.LEVEL then
+        if value > Constant.TransferLevel then
+            value = "Av." .. (value - Constant.TransferLevel) --转职
+        else
+            value = "Lv." .. value
+        end
+    end
+    self._bgCoin:setVisible(rankType == Constant.RANK_TYPES.WEALTH)
+    self._lblLv:setText(value)
+    if index <= 3 then
+        self._bg:setURL(string.format(_GURL.GetRankCellBg, index))
+        self._iconRank:setURL(string.format(_GURL.GetRankCellIndexIcon, index))
+        self._lblRank:setVisible(false)
+        self._iconRank:setVisible(true)
+    else
+        self._bg:setURL(string.format(_GURL.GetRankCellBg, 4))
+        self._lblRank:setVisible(true)
+        self._lblRank:setText(index)
+        self._iconRank:setVisible(false)
+    end
+    self._lblName:setText(info.playerName)
+    if info.guildName == "" then
+        self._ctlGuild:setSelectedIndex(1)
+    else
+        self._ctlGuild:setSelectedIndex(0)
+        self._lblGuildName:setText(info.guildName)
+    end
+    self._imgJob:setURL(string.format(_GURL.GetImageJob, info.icon))
+
+    self._playerInfo = data
+end
+
+function UICompRankCell:setSelected(select)
+    self._bgSelect:setVisible(select)
+    local color = (select) and CommonUtil:convertColorWithX("#fdeaad") or
+        CommonUtil:convertColorWithX("#ffffff")
+    self._lblLv:setColor(color)
+    self._lblName:setColor(color)
+    self._lblGuildName:setColor(color)
+    self._lblRank:setColor(color)
+end
+
+function UICompRankCell:onClickBtn(obj)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_RANK_LIST_SELECT, { data = self })
+end
+
+return UICompRankCell

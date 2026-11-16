@@ -1,0 +1,83 @@
+--- 私聊 选择人名界面
+---@class UIWndChatPrivate:UIWindowBase
+local UIWndChatPrivate            = class("UIWndChatPrivate", lt.UIWindowBase)
+local Constant                    = lt.Constant
+local NtfManager                  = lt.NtfManager
+local RaceType                    = Constant.RaceType
+local ChatModule                  = lt.ChatModule
+
+UIWndChatPrivate.ChangeSkinConf   = {
+    ["Chat"] = {
+        ["bg"]    = "bg_liaotian_di1",
+        ["bg_xk"] = "bg_liaotian_xk02",
+    },
+
+    ["CommonTL"] = {
+        ["frame"] = {
+            closeButton = { bg = "bg_beibao_anniu01", bgup = "bg_beibao_anniu02" },
+        }
+    }
+}
+
+UIWndChatPrivate.ChangeSkinOffset = {
+    [RaceType.Slayer] = {
+        ["frame"] = {
+            closeButton = { x = -2, y = -7 },
+        },
+    },
+    [RaceType.Vampire] = {
+        ["frame"] = {
+            closeButton = { x = -2, y = -8 },
+        },
+    },
+    [RaceType.Ousters] = {
+    }
+}
+
+function UIWndChatPrivate:onShown()
+    self._listName:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+
+    local list = ChatModule._chatPrivateList
+    self._listName:setNumItems(#list)
+end
+
+function UIWndChatPrivate:onHide()
+    self._listName:removeEventListener(fgui.UIEventType.ClickItem)
+    UIWndChatPrivate.super.onHide(self)
+end
+
+function UIWndChatPrivate:ctor(param)
+    UIWndChatPrivate.super.ctor(self, param)
+end
+
+function UIWndChatPrivate:onClear()
+    self._listName = nil
+    UIWndChatPrivate.super.onClear(self)
+end
+
+function UIWndChatPrivate:onInit()
+    UIWndChatPrivate.super.onInit(self, _GURL.ChatPrivatePanel)
+
+    self._listName = self:getChild("list_name")
+    self._listName:setItemRenderer(handler(self, self.renderChatItem))
+end
+
+function UIWndChatPrivate:renderChatItem(index, obj)
+    local index = index + 1
+    local list = ChatModule._chatPrivateList
+    local playerName = list[index]
+    obj:getChild("lbl_Name"):setText(playerName)
+    obj.playerName = playerName
+end
+
+function UIWndChatPrivate:onClickItem(context)
+    local data = context:getData()
+    local playerName = data.playerName or ""
+    if playerName == "" then
+        return
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_CHAT_PRIVATE, { playername = playerName })
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndChatPrivate", close = true })
+end
+
+return UIWndChatPrivate

@@ -1,0 +1,241 @@
+---@组队大厅
+---@class UICompTeamHall
+local UICompTeamHall = class("UICompTeamHall", lt.UICompBase, lt.UICompChangeSkin)
+
+UICompTeamHall.ChangeSkinConf = {
+    ["Team"] = {
+        ["img_bg"] = "bg_zuduixitong_zddtdi01",
+        ["checkbox_lv"] = {btn_choose = "bg_zuduixitong_yeqiandi", loader_choose1 = "icon_zuduixitong_shouqi_xia"},
+        ["checkbox_dungeon"] = {btn_choose = "bg_zuduixitong_yeqiandi", loader_choose1 = "icon_zuduixitong_shouqi_xia"},
+    },
+    ["CommonTL"] = {
+        ["btn_allapply"] = {bg = "bg_youjian_changanniu01", disabled = "bg_youjian_changanniu02"},
+        ["checkbox_lv"] = {loader_choose2 = "icon_zuduixitong_shouqi"},
+        ["checkbox_dungeon"] = {loader_choose2 = "icon_zuduixitong_shouqi"},
+    }
+}
+
+local StringManager = lt.StringManager
+local CacheManager = lt.CacheManager
+local NtfManager = lt.NtfManager
+local GameModule = lt.GameModule
+local TeamModule = lt.TeamModule
+local Constant = lt.Constant
+local TimeCounterManager = lt.TimeCounterManager
+
+function UICompTeamHall:ctor()
+    self:registerComponent("UICompTeamHallTab")
+    self:registerComponent("UICompTeamHallCell")
+    UICompTeamHall.super.ctor(self)
+    --UI
+    self._lvCheckBox = nil
+    self._dungeonCheckBox = nil
+    self._filterList = nil
+    self._teamList = nil
+    self._allapplyBtn = nil
+    self._emptyLabal = nil
+    self._chooseLvLabel = nil
+    self._chooseLvArrowUp = nil
+    self._chooseLvArrowDown = nil
+    self._chooseLvBtn = nil
+    self._chooseDgLabel = nil
+    self._chooseDgArrowUp = nil
+    self._chooseDgArrowDown = nil
+    self._chooseDgBtn = nil
+    --数据
+    self._mainIdx = nil
+    self._subIdx = nil
+    self._hallTeamMeta = nil
+    self._selectItem = nil
+end
+
+function UICompTeamHall:onClear()
+    --UI
+    self._lvCheckBox = nil
+    self._dungeonCheckBox = nil
+    self._filterList = nil
+    self._teamList = nil
+    self._allapplyBtn = nil
+    self._emptyLabal = nil
+    self._chooseLvLabel = nil
+    self._chooseLvArrowUp = nil
+    self._chooseLvArrowDown = nil
+    self._chooseLvBtn = nil
+    self._chooseDgLabel = nil
+    self._chooseDgArrowUp = nil
+    self._chooseDgArrowDown = nil
+    self._chooseDgBtn = nil
+    --数据
+    self._mainIdx = nil
+    self._subIdx = nil
+    self._hallTeamMeta = nil
+    self._selectItem = nil
+    self._isOpenApplyCounter = false
+    self:unregisterAllComponent()
+    UICompTeamHall.super.onClear(self)
+end
+
+function UICompTeamHall:onConstruct()
+    self:startSkin()
+    self._lvCheckBox = self:getChild("checkbox_lv")
+    self._dungeonCheckBox = self:getChild("checkbox_dungeon")
+    self._filterList = self:getChild("list_filter")
+    self._filterList:setItemRenderer(handler(self, self.renderFilterItem))
+    self._teamList = self:getChild("list_team")
+    self._teamList:setItemRenderer(handler(self, self.renderTeamItem))
+    self._allapplyBtn = self:getChild("btn_allapply")
+    self._emptyLabal = self:getChild("label_empty")
+
+    self._chooseLvLabel = self._lvCheckBox:getChild("text_choose")
+    self._chooseLvLabel:setText(GReadText.KEY_TEAM_HALL_TIPS1)
+    self._chooseLvArrowUp = self._lvCheckBox:getChild("loader_choose2")
+    self._chooseLvArrowDown = self._lvCheckBox:getChild("loader_choose1")
+    self._chooseLvBtn = self._lvCheckBox:getChild("btn_choose")
+
+    self._chooseDgLabel = self._dungeonCheckBox:getChild("text_choose")
+    self._chooseDgLabel:setText(GReadText.KEY_TEAM_HALL_TIPS2)
+    self._chooseDgArrowUp = self._dungeonCheckBox:getChild("loader_choose2")
+    self._chooseDgArrowDown = self._dungeonCheckBox:getChild("loader_choose1")
+    self._chooseDgBtn = self._dungeonCheckBox:getChild("btn_choose")
+end
+
+function UICompTeamHall:initUI(mapcode)
+    --默认
+    self:resetIndex(mapcode)
+end
+
+function UICompTeamHall:resetIndex(mapcode)
+    if mapcode then
+        self:onChooseDgBtnClick(mapcode)
+    else
+        self:onChooseLvBtnClick()
+    end
+end
+
+function UICompTeamHall:onEnter()
+    UICompTeamHall.super.onEnter(self)
+    self._filterList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+    self._allapplyBtn:addClickListener(handler(self, self.onAllApplyBtnClick))
+    self._chooseLvBtn:addClickListener(handler(self, self.onChooseLvBtnClick))
+    self._chooseDgBtn:addClickListener(handler(self, self.onChooseDgBtnClick))
+    TimeCounterManager:startTimeCounter(TimeCounterManager.TC.TEAM_HALL_UPDATE, {callback = function()
+        if self._isOpenApplyCounter then
+            self:refreshApplyCountDown()
+        end
+    end })
+
+end
+function UICompTeamHall:onExit()
+    TimeCounterManager:stopTimeCounter(TimeCounterManager.TC.TEAM_HALL_UPDATE)
+
+    self._allapplyBtn:removeClickListener()
+    self._chooseLvBtn:removeClickListener()
+    self._chooseDgBtn:removeClickListener()
+    self._filterList:removeEventListener(fgui.UIEventType.ClickItem)
+    UICompTeamHall.super.onExit(self)
+end
+
+
+function UICompTeamHall:refreshLeftView()
+    self._hallTeamMeta = TeamModule:getHallTeamMeta(self._mainIdx)
+    self._filterList:setNumItems(#self._hallTeamMeta)
+    self._filterList:scrollToView(self._subIdx-1)
+    --发送协议
+    local meta = self._hallTeamMeta[self._subIdx]
+    TeamModule:sendTeamHallList(meta:getIdxId())
+end
+
+function UICompTeamHall:refreshLeftList()
+    self._hallTeamMeta = TeamModule:getHallTeamMeta(self._mainIdx)
+    self._filterList:setNumItems(#self._hallTeamMeta)
+    self._filterList:scrollToView(self._subIdx-1)
+end
+
+function UICompTeamHall:refreshView()
+    local hallTeamList = TeamModule:getHallTeamList()
+    self._teamList:setNumItems(#hallTeamList)
+    self._emptyLabal:setVisible(#hallTeamList == 0)
+    self._teamList:setVisible(#hallTeamList > 0)
+    local cd = TeamModule:getOneKeyApplyInCdTime()
+    self._allapplyBtn:setGrayed(TeamModule:getTeamId() ~= 0 or #hallTeamList == 0 or cd > 0)
+end
+
+function UICompTeamHall:onAllApplyBtnClick()
+    local hallTeamList = TeamModule:getHallTeamList()
+    if #hallTeamList == 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_HALL_TIPS29})
+        return
+    end
+    local meta = self._hallTeamMeta[self._subIdx]
+    TeamModule:sendOneKeyApplyInTeam(meta:getIdxId())
+end
+
+function UICompTeamHall:onChooseLvBtnClick()
+    self._mainIdx = Constant.TEAMHALL_TYPES.LEVEL
+    --默认符合自己的等级页签
+    self._subIdx = TeamModule:getFilterLevelIdx()
+    self._filterList:setPosition(17, 99)
+    self._chooseLvArrowUp:setVisible(true)
+    self._chooseLvArrowDown:setVisible(false)
+    self._chooseDgArrowUp:setVisible(false)
+    self._chooseDgArrowDown:setVisible(true)
+    self._dungeonCheckBox:setPosition(13, 364)
+    self:refreshLeftView()
+end
+
+function UICompTeamHall:onChooseDgBtnClick(mapcode)
+    self._mainIdx = Constant.TEAMHALL_TYPES.DUNGEON
+    self._subIdx = TeamModule:getFilterDungeonIdx(mapcode) or 1
+    self._filterList:setPosition(17, 147)
+    self._chooseLvArrowUp:setVisible(false)
+    self._chooseLvArrowDown:setVisible(true)
+    self._chooseDgArrowUp:setVisible(true)
+    self._chooseDgArrowDown:setVisible(false)
+    self._dungeonCheckBox:setPosition(13, 100)
+    self:refreshLeftView()
+end
+
+function UICompTeamHall:onClickItem(context)
+    local data = context:getData()
+    self._subIdx = data.index
+    self:refreshLeftView()
+end
+
+function UICompTeamHall:renderFilterItem(index, obj)
+    local meta = self._hallTeamMeta[index + 1]
+    local btnName = meta:getPurposeName()
+    local teamNum = TeamModule:getHallTeamNum(meta:getIdxId()) or 0
+    if btnName then
+        local teamNumStr = teamNum
+        if teamNum > 0 then
+            teamNumStr = string.format("[color=#00F0FF]%s[/color]",teamNum)
+        end
+        btnName = table.concat({btnName,"(",teamNumStr,")"})
+    end
+    obj:setInfo(btnName)
+    obj:setSelected(self._subIdx == index + 1)
+    obj.index = index + 1
+end
+
+function UICompTeamHall:renderTeamItem(index, obj)
+    local teamInfo = TeamModule:getHallTeamByIdx(index + 1)
+    obj:setInfo(teamInfo)
+end
+
+--开始一键申请倒计时
+function UICompTeamHall:startApplyCountDown()
+    self._isOpenApplyCounter = true
+    self:refreshApplyCountDown()
+end
+
+--刷新按钮(一键申请)倒计时
+function UICompTeamHall:refreshApplyCountDown()
+    local cd = TeamModule:getOneKeyApplyInCdTime()
+    self._allapplyBtn:setText(cd <= 0 and GReadText.KEY_TEAM_HALL_TIPS26 or cd.."s")
+    self._allapplyBtn:setGrayed(cd > 0)
+    if cd <= 0 then
+        self._isOpenApplyCounter = false
+    end
+end
+
+return UICompTeamHall

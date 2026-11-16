@@ -1,0 +1,283 @@
+--所有GS游戏逻辑消息都定义在这里
+--协议定义编号从100开始
+--协议定义请按功能划分
+
+---------------客户端发往服务器消息---------------
+-----------基础功能协议定义从101开始到200------------
+local ClientCmdDef = { }
+ClientCmdDef.test = "test is a test mode ClientCmdDef"
+
+ClientCmdDef.CONFIRM_ON_LOGIN      = { reqID =  101, proto = "LogonInfo", }    -- 进入游戏时点确定
+ClientCmdDef.QUIT                  = { reqID =  102, proto = "", }    -- 点退出游戏
+ClientCmdDef.MOVE                  = { reqID =  103, proto = "ObjMove", }    -- 移动或转身
+ClientCmdDef.ATTACK                = { reqID =  104, proto = "ObjAttack", }    -- 攻击
+ClientCmdDef.CHAT                  = { reqID =  105, proto = "ChatInfo", }    -- 聊天
+ClientCmdDef.RELIVE                = { reqID =  106, proto = "", }    -- 复活
+ClientCmdDef.CLICK_NPC             = { reqID =  107, proto = "ClickNpc", }    -- 点击npc
+ClientCmdDef.NPC_COMMAND           = { reqID =  108, proto = "NpcCommand", }    -- 和npc对话
+ClientCmdDef.TASK_TRANSFER         = { reqID =  109, proto = "TaskTransfer", }    -- 飞鞋任务传送
+ClientCmdDef.C_SWORD_SWITCH		   = { reqID =  111, proto = "SwordSwitch", }	-- 烈火雷霆开关
+ClientCmdDef.C_QUERY_PET           = { reqID =  112, proto = "", }    -- 查询宠物情况
+ClientCmdDef.ACTIVITY_UPDATE_REQ   = { reqID =  113, proto = "ActivityInfo", }	-- 在线活动请求
+ClientCmdDef.QUERY_APPEAR          = { reqID =  114, proto = "ObjDisappear", }    -- 人物突斩野蛮消失后再出现纠出现纠错
+
+----------物品装备协议200开始---------------------------
+ClientCmdDef.EQUIP				   = { reqID =  200, proto = "Equip", }    -- 装备物品
+ClientCmdDef.UNEQUIP			   = { reqID =  201, proto = "UnEquip", }	-- 卸除物品
+ClientCmdDef.USE_ITEM			   = { reqID =  202, proto = "UseItem", }    -- 使用物品(玩家包裹)
+ClientCmdDef.PECK				   = { reqID =  203, proto = "Peck", }	-- 丢物品
+ClientCmdDef.PICKUP			       = { reqID =  204, proto = "Pick", }	-- 捡物品
+ClientCmdDef.SPLIT_ITEM 		   = { reqID =  205, proto = "SplitItem", }    -- 拆分物品协议
+ClientCmdDef.SUPERPOSITION_ITEM    = { reqID =  206, proto = "SuperPositionItem", }    -- 叠加物品协议
+ClientCmdDef.AUTOTIDY_ITEM		   = { reqID =  207, proto = "", }    -- 自动整理物品协议
+ClientCmdDef.STORE_ITEM            = { reqID =  208, proto = "StoreItem", }    -- 物品存仓
+ClientCmdDef.TAKEOUT_STORAGE_ITEM  = { reqID =  209, proto = "TakeoutStorageItem", }    -- 从仓库取出物品
+ClientCmdDef.RECYCLE_ITEM          = { reqID =  210, proto = "", }    -- 回收物品
+ClientCmdDef.ARMOR_MAKE            = { reqID =  211, proto = "ArmorMake", }    -- 衣服合成
+ClientCmdDef.JEWELRY_MAKE          = { reqID =  212, proto = "JewelryMake", }    -- 首饰合成
+ClientCmdDef.WEAPON_MAKE           = { reqID =  213, proto = "WeaponMake", }    -- 装备锻造
+ClientCmdDef.WEAPON_DESTROY        = { reqID =  214, proto = "WeaponDestroy", }    -- 装备熔炼
+ClientCmdDef.WEAPON_DESTROY_SIGN   = { reqID =  215, proto = "WeaponDestroySign", }    -- 锻造后自动熔炼简易物品
+ClientCmdDef.SELLITEM_TONPC        = { reqID =  216, proto = "NpcItemSellAndBuy", }    -- 向NPC卖东西时，把要卖的东西放入托盘
+ClientCmdDef.CONFIRM_SELLITEM_TONPC= { reqID =  217, proto = "NpcItemSellAndBuy", }    -- 卖东西点击确认
+ClientCmdDef.BUYITEM_FROMNPC       = { reqID =  218, proto = "NpcItemSellAndBuy", }    -- 选择好要买的东西点击OK
+ClientCmdDef.ITEMCATEGORY_FROMNPC  = { reqID =  219, proto = "NpcItemSellAndBuy", }    -- 选择好要购买的物品种类点击OK
+ClientCmdDef.BATCH_WEAPON_DESTROY  = { reqID =  220, proto = "WeaponBatchDestroy", }    -- 批量熔炼物品
+ClientCmdDef.FLY_TRANSFER          = { reqID =  221, proto = "UseFeiXie", }    -- 使用飞鞋传送
+ClientCmdDef.NEW_BPCSHOP_BUY       = { reqID =  222, proto = "NpcShopBuy", }    -- 新版npc兑换商店 购买
+ClientCmdDef.ACTIVECODE            = { reqID =  223, proto = "ActiveCode", }    -- 激活码
+ClientCmdDef.RECOVERY_ITEM         = { reqID =  224, proto = "", }    -- 一键回收物品
+ClientCmdDef.RELEASE_EXP_BOX       = { reqID =  299, proto = "ReleaseExpBox", }    -- 自动释放月光宝盒经验
+
+----------功能协议300开始---------------------------
+ClientCmdDef.CONVERT_EXP_BOX       = { reqID =  300, proto = "", }    -- 兑换月光宝盒经验
+ClientCmdDef.EQUIP_ENCHANTMENT_ACK = { reqID =  302, proto = "Enchantment", }    -- 请求部位附魔
+
+ClientCmdDef.EQUIP_PROP_RESET      = { reqID =  304, proto = "EquipPropReset", }    -- 极品属性洗练
+ClientCmdDef.SAVE_RESET_PROP       = { reqID =  305, proto = "SaveResetProp", }    -- 保存洗练属性
+
+ClientCmdDef.MOUNTS_STATE          = { reqID =  307, proto = "SetMountsState", }    -- 坐骑状态
+ClientCmdDef.MOUNTS_SHAPE          = { reqID =  308, proto = "SetMountsShape", }    -- 坐骑皮肤
+ClientCmdDef.APPRAPROP_RECYCLE     = { reqID =  309, proto = "EquipRecovery", }    -- 装备回收
+ClientCmdDef.APPRAPROP_PROP        = { reqID =  310, proto = "AppraProp", }    -- 装备炼器
+ClientCmdDef.MOUNTS_BREAK_THROUTH  = { reqID =  311, proto = "MountsBreakThrough", }    -- 坐骑突破
+
+ClientCmdDef.ATTACK_MODE           = { reqID =  312, proto = "SetAttackMode", }    -- 攻击状态
+ClientCmdDef.CREATE_GUILD          = { reqID =  313, proto = "CreateGuild", }    -- 创建公会
+ClientCmdDef.GUILD_LIST            = { reqID =  314, proto = "GuildList", }    -- 请求公会列表
+ClientCmdDef.DELETE_GUILD          = { reqID =  315, proto = "DeleteGuild", }    -- 解散工会
+ClientCmdDef.APPLY_JOIN_GUILD      = { reqID =  316, proto = "ApplyGuild", }    -- 申请加入
+ClientCmdDef.GUILD_DETAIL          = { reqID =  317, proto = "GuildDetail", }    -- 请求本公会信息
+ClientCmdDef.GUILD_APPLY_LIST      = { reqID =  318, proto = "AppliedList", }    -- 公会申请列表
+ClientCmdDef.OPERATE_GUILD_APPLICATION = { reqID =  319, proto = "OperateApplication", }    -- 处理申请
+ClientCmdDef.FIND_GUILD            = { reqID =  320, proto = "FindGuild", }    -- 查找公会
+ClientCmdDef.RECRUIT_CONFIG        = { reqID =  321, proto = "RecruitConfig", }    -- 招人条件
+ClientCmdDef.REMOVE_GUIlD_MEMBER   = { reqID =  322, proto = "RemoveGuildMember", }    -- 请离公会
+ClientCmdDef.MODIFY_GUIlD_DUTY     = { reqID =  323, proto = "ModifyGuildDuty", }    -- 修改职位
+ClientCmdDef.QUIT_GUILD            = { reqID =  324, proto = "QuitGuild", }    -- 退出公会
+ClientCmdDef.RELATION_INFO         = { reqID =  325, proto = "RelationInfo", }    -- 获得关系列表
+ClientCmdDef.REQ_RELATION          = { reqID =  326, proto = "AddRelation", }    -- 申请关系
+ClientCmdDef.ACK_RELATION          = { reqID =  327, proto = "AddRelation", }    -- 申请关系结果
+ClientCmdDef.DEL_RELATION          = { reqID =  328, proto = "DelRelation", }    -- 删除关系
+ClientCmdDef.INVITE_IN_TEAM        = { reqID =  330, proto = "InviteTeam", }    -- 邀请入队
+ClientCmdDef.APPLY_IN_TEAM         = { reqID =  331, proto = "CApplyInTeam", }    -- 申请入队
+ClientCmdDef.QUIT_TEAM             = { reqID =  332, proto = "CaptainKick", }    -- 退出队伍
+ClientCmdDef.KIKC_TEAM             = { reqID =  333, proto = "CaptainKick", }    -- 踢出队伍
+ClientCmdDef.TEAM_INFO_REFURBISH   = { reqID =  334, proto = "", }    -- 信息更新
+ClientCmdDef.TEAM_FREE_SIGN        = { reqID =  335, proto = "SetFreeTeam", }    -- 信息更新
+ClientCmdDef.GUILD_CONTENT         = { reqID =  336, proto = "ModifyGuildContent", }    -- 修改公会公告 招人宣言
+ClientCmdDef.GUILD_AUTHORITY       = { reqID =  337, proto = "ModifyGuildAuthority", }    -- 职位权限
+ClientCmdDef.GUILD_CUSTOMIZE_DUTY  = { reqID =  338, proto = "CustomizeGuildDuty", }    -- 自定义职位
+ClientCmdDef.NEARBY_TEAM_REQUEST   = { reqID =  339, proto = "NearbyTeam", }    -- 附近队伍消息
+ClientCmdDef.TAME_WAIT_CAPTAIN_CON = { reqID =  340, proto = "WaitCaptainRes", }    -- 请求队伍消息
+ClientCmdDef.REQ_GET_EMAIL_LIST    = { reqID =  341, proto = "", }    -- 获取邮件列表
+ClientCmdDef.REQ_GET_EMAIL_INFO    = { reqID =  342, proto = "MeailInfoRequest", }    -- 获取邮件信息
+ClientCmdDef.REQ_RECEIVE_EMAIL_ITEM = { reqID =  343, proto = "ReceiveMailItem", }   -- 领取邮件物品
+ClientCmdDef.REQ_DELETE_EMAIL      = { reqID =  344, proto = "DeleteMailRes", }    -- 删除邮件
+ClientCmdDef.GUILD_HAND_OVER       = { reqID =  345, proto = "TransferGuildMaster", }    -- 公会转让
+ClientCmdDef.GUILD_IMPEACH         = { reqID =  346, proto = "ImpeachGuildMaster", }    -- 弹劾会长
+ClientCmdDef.SHOP_BUY_LIMIT_REQ    = { reqID =  347, proto = "BuyLimitInfo", }    -- 限购信息请求
+ClientCmdDef.SHOP_BUY_ITEM_REQ     = { reqID =  348, proto = "BuyShopID", }    -- 购买道具请求
+ClientCmdDef.MOUNTS_SKIN		   = { reqID =  349, proto = "SetMountsShape", }    -- 灵兽幻化
+ClientCmdDef.TEAMMATE_POS_INFO	   = { reqID =  350, proto = "", }    -- 队友位置请求
+ClientCmdDef.TRADING_ITEM_ON_THE_SHELF = { reqID =  351, proto = "ItemOnTheShelf", } -- 上架
+ClientCmdDef.TRADING_ITEM_BUY      = { reqID =  352, proto = "BuyItem", }    -- 购买
+ClientCmdDef.TRADING_ITEM_DISMOUNT = { reqID =  353, proto = "DismountItem", }    -- 下架
+ClientCmdDef.TRADING_ITEM_RECEIVE  = { reqID =  354, proto = "ReceiveItem", }    -- 领取物品
+ClientCmdDef.TRANING_REQUEST_ITEM_LIST = { reqID =  355, proto = "RequestItemList", } -- 请求物品列表
+ClientCmdDef.TRANING_FIND_ITEM_LIST= { reqID =  356, proto = "ItemNameFind", } -- 查找物品
+ClientCmdDef.REQ_SOUND_HORN        = { reqID =  361, proto = "SoundHorn", }    -- 传音号角发送消息
+ClientCmdDef.REQ_READ_EMAIL        = { reqID =  362, proto = "OneClickRead", }    -- 邮件一键已读
+ClientCmdDef.FACE_TRANS_REQUEST    = { reqID =  363, proto = "RequestTrans", }    -- 面对面交易请求
+ClientCmdDef.FACE_TRANS_RESPOND    = { reqID =  364, proto = "", }    -- 响应交易请求
+ClientCmdDef.FACE_TRANS_LOCK	   = { reqID =  365, proto = "RequestTrans", }    -- 确定交易（锁定）
+ClientCmdDef.FACE_TRANS_DETERMINE  = { reqID =  366, proto = "RequestTrans", }    -- 再次确定交易
+ClientCmdDef.FACE_TRANS_CANCEL	   = { reqID =  367, proto = "RequestTrans", }    -- 取消交易
+ClientCmdDef.FACE_TRANS_ITEM	   = { reqID =  368, proto = "", }    -- 交易物品操作
+ClientCmdDef.EQUIP_ENCHANTMENTLIST = { reqID =  369, proto = "", }    -- 附魔数据
+ClientCmdDef.ROLE_INFO             = { reqID =  370, proto = "MSRequestRoleInfo", }    -- 请求角色信息
+ClientCmdDef.DISCARD_JINBI         = { reqID =  371, proto = "DiscardJinbi", }    -- 丢弃金币
+ClientCmdDef.SET_PET_STATE         = { reqID =  372, proto = "SetPetState", }    -- 设置宠物状态
+ClientCmdDef.BATCH_USE_ITEM        = { reqID =  373, proto = "BatchUseItem", }    -- 批量使用物品
+ClientCmdDef.SEVEN_DAYS_CHECKIN    = { reqID =  374, proto = "SignInState", }    -- 签到打卡
+ClientCmdDef.SEVEN_DAYS_LIST       = { reqID =  375, proto = "", }    -- 七日签到状态列表
+ClientCmdDef.RANK_LIST_REQ         = { reqID =  376, proto = "RankListReq", }    -- 排行榜
+ClientCmdDef.USE_KUN_YAO_ITEM      = { reqID =  377, proto = "UseKunShengItem", }    -- 捆药绳
+ClientCmdDef.LV_LUCKYBAG_CHANGE    = { reqID =  378, proto = "LevelGiftState", }    -- 列表项状态发生变化
+ClientCmdDef.LV_LUCKYBAG_LIST      = { reqID =  379, proto = "", }    -- 等级福袋列表
+ClientCmdDef.FOOD_USE_FLAG         = { reqID =  380, proto = "FoodUseFlag", }    -- 兽粮使用标志
+ClientCmdDef.USE_FOOD      		   = { reqID =  381, proto = "FoodUseFlag", }    -- 兽粮使用
+ClientCmdDef.HANDBOOK_TRANSFER     = { reqID =  382, proto = "UseFeiXie", }    -- 图鉴飞鞋传送
+ClientCmdDef.ONLINE_TIME_CHANGE    = { reqID =  383, proto = "OnlinePrizeInfo", }    -- 在线时长状态发生变化
+ClientCmdDef.ONLINE_TIME_VALUE     = { reqID =  384, proto = "", }    -- 获取在线时长时间 
+ClientCmdDef.EVERYDAY_SIGN         = { reqID =  385, proto = "EverydaySign", }    -- 签到 (每日签到)
+ClientCmdDef.EVERYDAY_SIGN_EXTRA   = { reqID =  386, proto = "EverydaySign", }    -- 签到领取额外奖励
+ClientCmdDef.EVERYDAY_SIGN_LIST    = { reqID =  387, proto = "", }    -- 每日签到列表
+ClientCmdDef.RECEIVE_LINGQI        = { reqID =  388, proto = "", }    -- 领取灵气
+ClientCmdDef.BACK_TO_TOWN          = { reqID =  389, proto = "", }    -- 回城
+ClientCmdDef.ACHIEVEMENT_RW        = { reqID =  391, proto = "AchievementProgress", }    -- 成就领奖
+ClientCmdDef.EQUIP_TITLE           = { reqID =  392, proto = "EquipTitle", }    -- 装备称号
+ClientCmdDef.UNLOAD_TITLE          = { reqID =  393, proto = "EquipTitle", }    -- 卸下称号
+ClientCmdDef.GUILD_APPLY_STATE     = { reqID =  394, proto = "GuildApplyState", }    -- 行会申请状态
+ClientCmdDef.MOUNTS_INSIGHT        = { reqID =  395, proto = "MountsInsight", }    -- 灵兽顿悟
+ClientCmdDef.LIMIT_BUY             = { reqID =  396, proto = "", }    -- 抢购(限时抢购)
+ClientCmdDef.SKILL_UP              = { reqID =  397, proto = "SkillUpgrade", }    -- 技能升级
+ClientCmdDef.LIMIT_BUY_INFO        = { reqID =  400, proto = "", }    -- 限时抢购信息
+ClientCmdDef.GET_GAME_CONFIG       = { reqID =  398, proto = "", }    -- 获取游戏设置
+ClientCmdDef.SET_GAME_CONFIG       = { reqID =  399, proto = "SetGameConfigReq", }    -- 游戏设置
+ClientCmdDef.TEAM_INFO_REQUST      = { reqID =  401, proto = "getTeamMateInfo", }    -- 获得队伍成员信息
+ClientCmdDef.FIRST_CHARGE_DRAW     = { reqID =  402, proto = "", }    -- 首冲领取奖励
+ClientCmdDef.BUY_MONTH_CARD        = { reqID =  403, proto = "", }    -- 购买月卡
+ClientCmdDef.RECEIVE_MONTH_CARD_AWARD  = { reqID =  404, proto = "", }    -- 领取月卡奖励
+ClientCmdDef.BUY_WEEK_FUND         = { reqID =  405, proto = "", }    -- 购买周基金
+ClientCmdDef.RECEIVE_WEEK_FUND_AWARD   = { reqID =  406, proto = "", }    -- 领取周基金奖励
+ClientCmdDef.NEW_SERVER_BUY        = { reqID =  407, proto = "", }    -- 开服礼包购买
+ClientCmdDef.CONTINUED_CHARGE_DRAW  = { reqID =  410, proto = "GetConRechargePrize", }    -- 连续充值获取奖励
+ClientCmdDef.WEAPON_UNSEAL         = { reqID =  411, proto = "WeaponUnseal", }    -- 武器解封
+ClientCmdDef.WEAPON_INLAY          = { reqID =  412, proto = "WeaponInlaySeal", }    -- 武器镶嵌
+ClientCmdDef.SHIELD_STRENGTJEN     = { reqID =  413, proto = "StrengthSheild", }    -- 护盾强化
+ClientCmdDef.CHANGE_OF_NAME        = { reqID =  414, proto = "CChangeOfName", }    -- 改名
+ClientCmdDef.GET_CASHGIFTINFO_REQ  = { reqID =  415, proto = "", }   -- 获取礼包购买次数
+ClientCmdDef.BUY_CASHGIFTINFO_REQ  = { reqID =  416, proto = "BuyCashGift", }   -- 请求购买礼包
+ClientCmdDef.SHIELD_SPIRIT         = { reqID =  417, proto = "ShieldSpirit", }   -- 护盾皮肤注灵
+ClientCmdDef.SHIELD_SKIN_EQUIP     = { reqID =  418, proto = "ShieldSkinEquip", }   -- 护盾皮肤穿戴
+ClientCmdDef.SHIELD_SKIN_ACTIVATE  = { reqID =  419, proto = "ShieldSpirit", }   -- 护盾皮肤激活
+ClientCmdDef.APPLY_RELIVE_REQ      = { reqID =  420, proto = "PlayerApplyRelive", }   -- 申请原地复活
+ClientCmdDef.GUILDWAR_COMBAT       = { reqID =  421, proto = "GuildWarCombat", }   -- 行会宣战
+ClientCmdDef.LOGIN_GIFT_CHECKIN    = { reqID =  422, proto = "SignInState", }   -- 登陆签到打卡
+ClientCmdDef.OPEN_SHIELDS          = { reqID =  423, proto = "", }   -- 开启护盾强化
+ClientCmdDef.WEAPON_SEAL_DEMOUNT   = { reqID =  424, proto = "WeaponInlaySeal", }   -- 符文卸下
+ClientCmdDef.APPLY_YUANQI_UPGRADE  = { reqID =  425, proto = "YuanQiUpgrade", }   -- 修炼等级突破
+ClientCmdDef.WING_STRENGTHEN       = { reqID =  426, proto = "", }   -- 神翼强化
+ClientCmdDef.EQUIP_WING_SKIN       = { reqID =  427, proto = "EquipWingSkin", }   -- 幻化神翼
+ClientCmdDef.CARD_MONTH_BUY        = { reqID =  428, proto = "", }   -- 购买贵族月卡
+ClientCmdDef.CARD_MONTH_DRAW       = { reqID =  429, proto = "", }   -- 领取贵族月卡
+ClientCmdDef.CARD_WEEK_BUY         = { reqID =  430, proto = "", }   -- 购买特权周卡
+ClientCmdDef.CARD_WEEK_DRAW        = { reqID =  431, proto = "", }   -- 领取特权周卡
+ClientCmdDef.CARD_MONTH_DAILY_DRAW = { reqID =  432, proto = "", }   -- 领取月卡每日奖励
+ClientCmdDef.C_SHOW_WING           = { reqID =  433, proto = "ShowWing", }   -- 显示（隐藏）神翼
+ClientCmdDef.BUY_ZHIGOULIBAO       = { reqID =  434, proto = "BuyZhiGouLiBao", }   -- 购买直购礼包
+ClientCmdDef.DRAW_CELEBRATE_INFO   = { reqID =  435, proto = "", }   -- 庆典转盘
+ClientCmdDef.WEAPON_STRENGHTEN     = { reqID =  436, proto = "WeaponStrengthen", }   -- 武器强化
+ClientCmdDef.REQ_SEAL_UP_LEVEL     = { reqID =  437, proto = "SealUpLevel", }   -- 符文升级
+ClientCmdDef.REQ_SEAL_RESOLVE      = { reqID =  438, proto = "DestroyItemList", }   -- 符文分解
+ClientCmdDef.REQ_MOUNTS_SKIN_RISING     = { reqID =  439, proto = "SkinLevelProp", }   -- 坐骑升星
+ClientCmdDef.EQUIP_IDENTIFY        = { reqID =  440, proto = "EquipIdentify", }   -- 装备鉴定
+ClientCmdDef.PRAY_THAT_TREE        = { reqID =  441, proto = "PrayThatTree", }   -- 祈愿树
+ClientCmdDef.PRAY_THAT_TREE_STATE  = { reqID =  442, proto = "StageAward", }   -- 祈愿树阶段奖励
+ClientCmdDef.LUCKYCARD_SIGN        = { reqID =  443, proto = "CLuckyDraw", }   -- 幸运签抽奖
+ClientCmdDef.LUCKYCARD_DRAW        = { reqID =  444, proto = "StageAward", }   -- 幸运签阶段奖励
+ClientCmdDef.C_ENCHANTMENT_BREAK   = { reqID =  445, proto = "", }   -- 心魔突破
+ClientCmdDef.LUCKY_UPGRADE         = { reqID =  446, proto = "LuckyItem", }   -- 宝物幸运升级 baowu add
+ClientCmdDef.MOUNTS_AWAKENING      = { reqID =  449, proto = "", }   -- 兽魂觉醒
+ClientCmdDef.WING_UP_LEVEL         = { reqID =  452, proto = "WingSkinInfo", }   -- 翅膀升级
+ClientCmdDef.FAST_USE_ITEMS        = { reqID =  453, proto = "UseItems", }   -- 批量使用多个物品(全部使用)
+ClientCmdDef.LEVEL_GUIDE_GET       = { reqID =  454, proto = "LevelGiftState", }   -- 新手等级引导礼包
+ClientCmdDef.KF_CHONG_BANG		   = { reqID =  455, proto = "KaiFuPaiMing", }   -- 开服冲榜
+ClientCmdDef.C_GET_TOTAL_RECHARGE  = { reqID =  456, proto = "GetRechargeConsumeBonus", }   -- 累充返利领取
+ClientCmdDef.C_GET_TOTAL_CONSUME   = { reqID =  457, proto = "GetRechargeConsumeBonus", }   -- 累消返利领取
+ClientCmdDef.SUPER_MONEY_TREE	   = { reqID =  458, proto = "SuperMoneyTrees", }   -- 超级摇钱树抽奖
+ClientCmdDef.SUPER_MONEY_TREE_COUNT= { reqID =  459, proto = "SuperMoneyTrees", }   -- 超级摇钱树累计奖励
+ClientCmdDef.SUPER_MONEY_TREE_INFO = { reqID =  460, proto = "", }   -- 获取超级摇钱树信息
+ClientCmdDef.C_SUPER_OPEN_JINGMI   = { reqID =  461, proto = "OpenJingMi", }   -- 开启精密宝盒
+ClientCmdDef.DRAW_BOOK             = { reqID =  462, proto = "DrawBook", }   -- 技能书抽奖
+ClientCmdDef.RETRIEVE_BOOK         = { reqID =  463, proto = "SellBook", }   -- 技能书回收
+ClientCmdDef.EXCHANGE_BOOK         = { reqID =  464, proto = "ExchangeBook", }   -- 技能书兑换
+ClientCmdDef.RAFFLE_RECORDS_INFO   = { reqID =  465, proto = "", }   -- 获取全服寻宝抽奖信息
+ClientCmdDef.WEAPON_WAREHOUSE      = { reqID =  466, proto = "RaffleWeaponList", }   -- 领取寻宝仓库道具
+ClientCmdDef.DEL_WEAPON_WAREHOUSE  = { reqID =  467, proto = "RaffleWeaponList", }   -- 分解武器仓库武器
+ClientCmdDef.XUNZHANG_UP_LEVEL     = { reqID =  471, proto = "", }   -- 勋章升级
+ClientCmdDef.C_CUSTOM_TITLE        = { reqID =  468, proto = "CustomTitle", }   -- 定制称号
+ClientCmdDef.C_CRAZY_SHOPPING_BUY  = { reqID =  469, proto = "HiBuyACars", }   -- 嗨购一车(购买)
+ClientCmdDef.C_CRAZY_SHOPPING_DRAW = { reqID =  470, proto = "Gear", }   -- 嗨购一车(奖励)
+ClientCmdDef.YBJIJIN		       = { reqID =  472, proto = "YBJiJinAck", }   -- 开服基金
+ClientCmdDef.REQ_BUY_GROWTH_GIFT   = { reqID =  473, proto = "BuyGrowthGift", }   -- 购买成长礼包
+
+ClientCmdDef.C_BUY_PRIVILEGE_CARD = { reqID =  474, proto = "PrivilegeCard", }   -- 购买特权卡
+ClientCmdDef.C_RECEIVE_PRIVILEGE_DAILY_REWARD = { reqID =  475, proto = "PrivilegeCard", }   -- 领取特权卡每日奖励
+ClientCmdDef.C_GET_DRUG_ITEM_LIST = { reqID =  476, proto = "", }   -- 随身商店
+
+ClientCmdDef.C_DAILYTASK          = { reqID =  477, proto = "C2S_DailyTask", }   -- 每日任务
+ClientCmdDef.C_COST_RANK          = { reqID =  478, proto = "", }   -- 消费排行
+ClientCmdDef.REQ_DRAW_DAILY_RECHARGE = { reqID =  479, proto = "C2S_GetDailyRecharge", }  --每日累充领取奖励
+ClientCmdDef.GET_LEVEL_REWARD     = { reqID =  480, proto = "LevelRewardInfo", }   -- 领取冲级礼包
+ClientCmdDef.ALL_LEVEL_REWARD_STATE   = { reqID =  481, proto = "", }   -- 获取冲级礼包信息
+ClientCmdDef.BUY_HOLIDAY_DISCOUNT   = { reqID =  482, proto = "C2S_BuyHolidayDiscount", }   -- buy节日折扣
+ClientCmdDef.C2S_HolidayExchange    = { reqID =  483, proto = "C2S_HolidayExchange", }   -- 庆典兑换
+ClientCmdDef.HolidaySignIn          = { reqID =  484, proto = "GetHolidaySignIn", }   -- 节日登陆签到
+ClientCmdDef.HolidaySignInState     = { reqID =  485, proto = "HolidaySignInState", }   -- 节日登陆签到状态
+ClientCmdDef.C_C2S_Respect          = { reqID =  486, proto = "C2S_Respect", }   -- 膜拜
+ClientCmdDef.C_RankTopInfo          = { reqID =  487, proto = "", }   -- 天下第一列表
+ClientCmdDef.C_NewSuperRing			= { reqID =  488, proto = "C2S_NewSuperRing", }   -- 特戒升级
+
+ClientCmdDef.C_ShenLuLevelUp          = { reqID =  489, proto = "C2S_ShenLuLevelUp", }   --  神炉升级
+ClientCmdDef.C_ShenLuGoToMap          = { reqID =  492, proto = "C2S_ShenLuGoToMap", }   --  神炉进入地图
+ClientCmdDef.C_ShenLuAward            = { reqID =  491, proto = "C2S_ShenLuAward", }   --  神炉领奖
+ClientCmdDef.C_TreActRefresh		  = { reqID =  493, proto = "", }   -- 乾坤宝藏开启,刷新请求
+ClientCmdDef.C_TreActDrawAward		  = { reqID =  494, proto = "C2S_TreActDrawAward", }   -- 乾坤宝藏抽取请求
+ClientCmdDef.C_GetTreActInfo		  = { reqID =  495, proto = "", }   -- 获取乾坤宝藏信息
+ClientCmdDef.C_UpgradeFashion		  = { reqID = 	496, proto = "C2S_UpgradeFashion", }   --  升级时装
+ClientCmdDef.C_WieldFashion			  = { reqID = 	497, proto = "C2S_WieldFashion", }   --  穿时装
+ClientCmdDef.C_UnwieldFashion		  = { reqID = 	498, proto = "C2S_UnwieldFashion", }   --  脱时装
+ClientCmdDef.C_UpgradeFashionCharm	  = { reqID = 	499, proto = "C2S_UpgradeFashionCharm", }   --  升级魅力时装
+ClientCmdDef.C_HideFashion	          = { reqID = 	500, proto = "C2S_HideFashion", }   --  隐藏时装
+
+ClientCmdDef.C_BabelReq	            = { reqID =  490, proto = "C2S_Babel_Req", }   -- 爬塔请求
+ClientCmdDef.C_RedPack				= { reqID =  506, proto = "RedPack_Proto", }   --天降红包
+
+ClientCmdDef.C_BlackMarkReq			= { reqID =  503, proto = "", }	--黑市商人请求
+ClientCmdDef.C_BlackMarkDis			= { reqID =  504, proto = "", }	--黑市商人折扣
+ClientCmdDef.C_BlackMarkBuy			= { reqID =  505, proto = "C2S_BlackMartBuy", }	--黑市商人购买
+
+ClientCmdDef.C_ApplyEscort          = { reqID =  507, proto = "", }       --申请押镖
+ClientCmdDef.C_RefreshEscort        = { reqID =  508, proto = "", }       --刷新押镖
+ClientCmdDef.C_ApplyRob             = { reqID =  509, proto = "C2S_ApplyRobGoods", }       --开始劫镖
+ClientCmdDef.C_EscortRobMaster      = { reqID =  510, proto = "C2S_RobGoodsReply", }       --劫镖(押镖人作出回应)
+ClientCmdDef.C_OpenEscortRob        = { reqID =  516, proto = "", }       --打开劫镖界面
+ClientCmdDef.C_CloseEscortRob       = { reqID =  517, proto = "", }       --关闭劫镖界面
+ClientCmdDef.C_InviteRob            = { reqID =  511, proto = "", }       --邀请他人劫镖
+ClientCmdDef.C_InviteProtectRob     = { reqID =  512, proto = "", }       --邀请他人护镖
+ClientCmdDef.C_InviteRobRsp         = { reqID =  513, proto = "C2S_InviteRobGoods", }       --受邀请他人劫镖(回应)
+ClientCmdDef.C_InviteProtectRobRsp  = { reqID =  514, proto = "C2S_InviteProtectGoods", }       --受邀请他人护镖(回应)
+
+ClientCmdDef.C_ItemCompose			= { reqID =  515, proto = "C2S_ItemCompose", }   --道具合成
+ClientCmdDef.C_CheckItemCompose	    = { reqID =  518, proto = "C2S_ItemCompose", }   --检查道具合成
+
+ClientCmdDef.C_BossHomeDigTreasure	= { reqID =  501, proto = "", }	--Boss之家挖宝
+ClientCmdDef.C_EnterBossHome		= { reqID =  502, proto = "", }	--进入Boss之家
+ClientCmdDef.C_OneBuckActivation	= { reqID =  519, proto = "", }   -- 一元神卡激活
+ClientCmdDef.C_OneBuckBuyGift		= { reqID =  520, proto = "C2S_OneBuckBuyGift", }   -- 一元神卡购买
+ClientCmdDef.C_OneBuckActivationYB  = { reqID =  521, proto = "", }   -- 一元神卡激活
+ClientCmdDef.C_SpiritEquip          = { reqID =  523, proto = "C2S_SpiritEquip", }   -- 坐骑装备
+
+ClientCmdDef.C_ActivityValueReward  = { reqID =  522, proto = "C2S_ActivityValueReward", }   -- 领取活跃度奖励
+
+ClientCmdDef.C_LimitBagReq          = { reqID =  526, proto = "C2S_LimitBagReq", }   -- 限时礼包购买
+
+ClientCmdDef.C_PlayerUpLevel        = { reqID =  524, proto = "", }   -- 人物转生升级
+ClientCmdDef.C_ReincarnatedExchange = { reqID =  525, proto = "", }   -- 人物转生兑换
+ClientCmdDef.C_ReBorn               = { reqID =  527, proto = "", }   -- 人物转生
+
+return ClientCmdDef
+
+

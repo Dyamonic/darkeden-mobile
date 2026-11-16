@@ -1,0 +1,193 @@
+---选服
+local CompSelectZone = class("CompSelectZone", fgui.GButton)
+local LaunchModuleTL = require("launcher.tianlian.LaunchModuleTL")
+local EventTagClickItem = 10000
+
+function CompSelectZone:ctor()
+    self._curSelectZoneId = nil
+    self._curSelectServerId = nil
+    self:enableComponentEvents()
+end
+
+function CompSelectZone:onConstruct()
+    self._btnPre = self:getChild("btnPre")
+    self._btnNext = self:getChild("btnNext")
+    self._openType = self:getController("openType")
+    self._zoneList = self:getChild("zoneList")
+    self._serverList = self:getChild("serverList")
+    self._roleZoneInfoList = self:getChild("roleZoneInfoList")
+    self._roleServerInfoList = self:getChild("roleServerInfoList")
+
+    self._btnNext:addClickListener(handler(self, self.btnNextClick));
+    self._btnPre:addClickListener(handler(self, self.btnPreClick));
+end
+
+function CompSelectZone:onClear()
+
+    self._curSelectZoneId = nil
+    
+    self._curSelectServerId = nil
+    self._btnPre = nil
+    self._btnNext  = nil
+    self._openType = nil
+    self._zoneList = nil
+    self._serverList = nil
+    self._roleZoneInfoList = nil
+    self._roleServerInfoList = nil
+end
+
+function CompSelectZone:onEnter()
+    self._zoneList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onZoneItemClickNode), EventTagClickItem);
+    self._serverList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onServerItemClickNode),EventTagClickItem);
+    self:refreshUI()
+end
+
+function CompSelectZone:onExit()
+    self._zoneList:removeEventListener(fgui.UIEventType.ClickItem, EventTagClickItem)
+    self._serverList:removeEventListener(fgui.UIEventType.ClickItem, EventTagClickItem)
+end
+
+
+function CompSelectZone:btnNextClick()
+    local curSelect = self._openType:getSelectedIndex();
+    if curSelect == 1 then
+        LaunchModuleTL:setEnterGameZoneInfo(self._curSelectZoneId, self._curSelectServerId)
+        self.delegateLayer:onStartGame()
+        return  
+    end
+
+    -- 进入选服重置到默认serverId
+    if curSelect == 0 then
+        local default = LaunchModuleTL:getDefaultZoneInfo()
+        local defaultZoneId = default.zoneId
+        self.serverListData = LaunchModuleTL:getServerListByZoneId(self._curSelectZoneId)
+
+        if defaultZoneId == self._curSelectZoneId then
+            self._curSelectServerId = default.serverId
+        else
+            self._curSelectServerId = self.serverListData[1].serverId
+        end
+        self:refreshServerUI()
+
+        
+    end  
+
+    ---切换回loading
+    self._openType:setSelectedIndex(curSelect + 1);
+   
+end
+
+function CompSelectZone:btnPreClick()
+    local curSelect = self._openType:getSelectedIndex();
+    if curSelect == 0 then
+        self.delegateLayer:enterCurOpenType()
+        self._curSelectZoneId = nil
+        self._curSelectServerId = nil
+        return 
+    end
+
+    self._openType:setSelectedIndex(curSelect - 1);
+end
+
+function CompSelectZone:setDelegateLayer(layer)
+    self.delegateLayer = layer
+end
+
+function CompSelectZone:refreshUI()
+    if not self._curSelectZoneId and not self._curSelectServerId then
+        local default = LaunchModuleTL:getDefaultZoneInfo()
+        self._curSelectZoneId, self._curSelectServerId = default.zoneId, default.serverId
+        self._defaultZoneId,  self._defaultServerId = default.zoneId, default.serverId
+        self.zoneListData = LaunchModuleTL:getZoneFormatList()
+    end
+    
+    self._zoneList:setItemRenderer(handler(self, self.renderZoneListItem))
+    self._zoneList:setVirtual();
+    self._zoneList:setNumItems(#self.zoneListData);
+
+    self:refreshZoneList()
+end
+
+function CompSelectZone:refreshZoneList()
+    self.zoneRoleList = LaunchModuleTL:getZoneRoleList(self._curSelectZoneId)
+    self._roleZoneInfoList:setItemRenderer(handler(self, self.renderZoneRoleListItem))
+    self._roleZoneInfoList:setVirtual();
+    self._roleZoneInfoList:setNumItems(#self.zoneRoleList);
+end
+
+function CompSelectZone:renderZoneListItem(index, obj)
+    local curIndex = index + 1
+    local curZoneInfo = self.zoneListData[curIndex]
+    obj.zoneId = curZoneInfo.zoneId
+    obj:setSelected(curZoneInfo.zoneId == self._curSelectZoneId)
+    
+    obj:getChild("zoneInfo"):setText(curZoneInfo.zoneName)
+    obj:getChild("roleNum"):setText(curZoneInfo.roleNum)
+    obj:getChild("zoneType"):setVisible(curZoneInfo.isNewServer) --新区
+end
+
+function CompSelectZone:renderZoneRoleListItem(index, obj)
+    local curIndex = index + 1
+    local curZoneRoleInfo = self.zoneRoleList[curIndex]
+    local text = obj:getChild("text")
+    text:setUBBEnabled(true)
+    text:setVar("serverName", curZoneRoleInfo.serverName):setVar("roleName", curZoneRoleInfo.roleName):flushVars()
+end
+
+function CompSelectZone:refreshServerUI()
+    self._serverList:setItemRenderer(handler(self, self.renderServerListItem))
+    self._serverList:setVirtual();
+    self._serverList:setNumItems(#self.serverListData);
+
+   self:refreshServerRoleList()
+end
+
+function CompSelectZone:refreshServerRoleList()
+    self.serverRoleList = LaunchModuleTL:getServerRoleList(self._curSelectZoneId, self._curSelectServerId)
+    self._roleServerInfoList:setItemRenderer(handler(self, self.renderServerRoleListItem))
+    self._roleServerInfoList:setVirtual();
+    self._roleServerInfoList:setNumItems(#self.serverRoleList);
+end
+
+
+function CompSelectZone:renderServerListItem(index, obj)
+    local curIndex = index + 1
+    local curSerInfo = self.serverListData[curIndex]
+    local curServerId = curSerInfo.serverId
+    local isExist = self._defaultZoneId == self._curSelectZoneId
+    local isSelect = curServerId == self._curSelectServerId
+    if not isExist and curIndex == 1 then
+        isSelect = true
+    end
+    obj.serverId = curServerId
+    obj:setSelected(isSelect)
+    obj:getChild("zoneInfo"):setText(curSerInfo.serverName)
+    obj:getChild("roleNum"):setText(curSerInfo.roleNum)
+    obj:getController("state"):setSelectedIndex(curSerInfo.state)
+    obj:getChild("zoneType"):setVisible(curSerInfo.isNewServer)
+end
+
+function CompSelectZone:renderServerRoleListItem(index, obj)
+    local curIndex = index + 1
+    local curZoneRoleInfo = self.serverRoleList[curIndex]
+    obj:getChild("text"):setVar("raceType", curZoneRoleInfo.raceType):setVar("roleName", curZoneRoleInfo.roleName):flushVars()
+end
+
+function CompSelectZone:onZoneItemClickNode(context)
+    local sender = context:getData()
+    self._curSelectZoneId = sender.zoneId
+
+    self:refreshZoneList()
+end
+function CompSelectZone:onServerItemClickNode(context)
+
+    local sender = context:getData()
+    self._curSelectServerId = sender.serverId
+
+    self:refreshServerRoleList()
+    
+end
+
+return CompSelectZone
+
+

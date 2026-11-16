@@ -1,0 +1,221 @@
+---@ 成就 界面
+---@class UIWndAchievement:UIWindowBase
+local UIWndAchievement  = class("UIWndAchievement", lt.UIWindowBase)
+
+local NtfManager        = lt.NtfManager
+local AchievementModule = lt.AchievementModule
+
+local FITER_TYPES       = {
+    GROW       = 1, --成长
+    EXPERIENCE = 2, --历练
+    ACTIVITY   = 3, --活动
+    SOCIAL     = 4  --社交
+}
+
+function UIWndAchievement:ctor(param)
+    self:registerComponent("UICompAchievementDescCell")
+    UIWndAchievement.super.ctor(self, param)
+    self._fiterBtns = {}
+    self._subIndex  = 0
+end
+
+function UIWndAchievement:onShown()
+    UIWndAchievement.super.onShown(self)
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_ACHIEVEMENT_LIST_CHANGE, handler(self, self.refreshList),
+        "UIWndAchievement:refreshList")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_ACHIEVEMENT_LIST_DESC_CHANGE, handler(self, self.refreshDescList),
+        "UIWndAchievement:refreshDescList")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_RED_DOT_EVENT, handler(self, self.uptRedDotEvt),
+        "UIWndAchievement:uptRedDotEvt")
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        self._fiterBtns[fiterType]:addClickListener(handler(self, self.openFiterBtnClick))
+    end
+
+    self._listTitle:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickTitle))
+
+    AchievementModule:sendAchieveListReq()
+    local param = self:getParam().param or {}
+    local mainIdx = param.index or FITER_TYPES.GROW
+    local defaultView = self._fiterBtns[mainIdx]
+    defaultView:setSortingOrder(3)
+    self:openFiterView(defaultView)
+end
+
+function UIWndAchievement:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndAchievement:refreshList")
+    NtfManager:removeNtfListenerByTag("UIWndAchievement:refreshDescList")
+    NtfManager:removeNtfListenerByTag("UIWndAchievement:uptRedDotEvt")
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        self._fiterBtns[fiterType]:removeClickListener()
+    end
+    self._listTitle:removeEventListener(fgui.UIEventType.ClickItem)
+    UIWndAchievement.super.onHide(self)
+end
+
+function UIWndAchievement:onEnter()
+    UIWndAchievement.super.onEnter(self)
+end
+
+function UIWndAchievement:onExit()
+    UIWndAchievement.super.onExit(self)
+end
+
+function UIWndAchievement:onClear()
+    self._fiterBtns   = {}
+    self._subIndex    = 0
+    self._listTitle   = nil
+    self._listContent = nil
+    self._controlTab  = nil
+    self._ctl         = nil
+    self:unregisterAllComponent()
+
+    UIWndAchievement.super.onClear(self)
+end
+
+function UIWndAchievement:onInit()
+    UIWndAchievement.super.onInit(self, _GURL.WndAchievementPanel)
+    self._listTitle   = self:getChild("list_type")
+    self._listContent = self:getChild("list_content")
+    self._controlTab  = self:getController("tabs")
+    self._ctl         = self:getController("c1")
+
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        local obj = self:getChild("btnFiter" .. fiterType)
+        obj.fiterType = fiterType
+        self._fiterBtns[fiterType] = obj
+    end
+
+    self._listTitle:setItemRenderer(handler(self, self.onTitleRender))
+    self._listContent:setItemRenderer(handler(self, self.onContentRender))
+end
+
+function UIWndAchievement:openFiterBtnClick(context)
+    local sender = context:getSender()
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        if fiterType == sender.fiterType then
+            self._fiterBtns[fiterType]:setSortingOrder(3)
+        else
+            self._fiterBtns[fiterType]:setSortingOrder(1)
+        end
+    end
+    self:openFiterView(sender)
+    self:initUI()
+end
+
+function UIWndAchievement:openFiterView(sender)
+    -- if self._openViewType == sender.fiterType then
+    --     return
+    -- end
+    self._openViewType = sender.fiterType
+    self._controlTab:setSelectedIndex(self._openViewType - 1)
+end
+
+function UIWndAchievement:refreshList()
+    self:initUI()
+end
+
+function UIWndAchievement:refreshDescList()
+    self:initListContent()
+end
+
+function UIWndAchievement:initUI()
+    local listData = AchievementModule:getAchivementMap()
+    local data = listData[self._openViewType]
+    self._listTitle:setNumItems(#data + 1)
+    self._subIndex = 1 -- 默认打开第二个页签
+    self._listTitle:setSelectedIndex(self._subIndex)
+    self:initListContent()
+end
+
+function UIWndAchievement:onTitleRender(index, obj)
+    local listData = AchievementModule:getAchivementMap()
+    if index == 0 then
+        obj:getChild("title"):setText("可解锁成就")
+        obj:getChild("redPoint"):setVisible(AchievementModule:getRedPoint(self._openViewType))
+    else
+        local data = listData[self._openViewType][index]
+        if data then
+            local dataTitle = AchievementModule:getAcheivementByTitle(data)
+            obj:getChild("title"):setText(data[1]:getSecondName())
+            obj:getChild("redPoint"):setVisible(#dataTitle > 0)
+        end
+    end
+    obj.index = index
+end
+
+function UIWndAchievement:onClickTitle(context)
+    local obj = context:getData()
+    local index = obj.index
+    self._subIndex = index
+    self:initListContent()
+end
+
+function UIWndAchievement:initListContent()
+    local listData = AchievementModule:getAchivementMap()
+    self._listSecondData = {}
+    if self._subIndex == 0 then -- 可解锁成就
+        self._listSecondData = AchievementModule:getAcheivementByType(self._openViewType)
+    else
+        self._listSecondData = listData[self._openViewType][self._subIndex]
+        --可领取 > 正完成 > 已领取。
+        table.sort(self._listSecondData, function(a, b)
+            local aAchieve = AchievementModule:getAchivementById(a:getId())
+            local bAchieve = AchievementModule:getAchivementById(b:getId())
+            if aAchieve and bAchieve then
+                -- 检查是否已领取奖励
+                if aAchieve.reward and not bAchieve.reward then
+                    return false -- a 已领取，b 未领取，a 排后
+                elseif not aAchieve.reward and bAchieve.reward then
+                    return true  -- a 未领取，b 已领取，a 排前
+                end
+
+                -- 获取目标值
+                local aStepMax = tonumber(a:getMissionTarget()[1]) or 0
+                local bStepMax = tonumber(b:getMissionTarget()[1]) or 0
+
+                -- 检查是否可领取
+                local aCanClaim = aAchieve.step >= aStepMax
+                local bCanClaim = bAchieve.step >= bStepMax
+                if aCanClaim and not bCanClaim then
+                    return true  -- a 可领取，b 不可领取，a 排前
+                elseif not aCanClaim and bCanClaim then
+                    return false -- a 不可领取，b 可领取，a 排后
+                end
+            end
+            return a:getId() < b:getId()
+        end)
+    end
+    self._ctl:setSelectedIndex(#self._listSecondData > 0 and 0 or 1)
+    self._listContent:setNumItems(#self._listSecondData)
+end
+
+function UIWndAchievement:onContentRender(index, obj)
+    local index = index + 1
+    local data = self._listSecondData[index]
+    if data then
+        obj:setInfo(data, index, self._openViewType)
+    end
+    obj.index = index
+end
+
+function UIWndAchievement:uptRedDotEvt(event)
+    local param = event.param
+    if string.find(param.name, "AchievementRedTips") then
+        local fiterType = tonumber(string.split(param.name, "AchievementRedTips")[2])
+        local obj = self:getChild("btnFiter" .. fiterType)
+        obj:getChild("redPoint"):setVisible(AchievementModule:getRedPoint(fiterType))
+        if self._openViewType == fiterType then
+            local listData = AchievementModule:getAchivementMap()
+            local data = listData[self._openViewType]
+            self._listTitle:setNumItems(#data + 1)
+            self._listTitle:setSelectedIndex(self._subIndex)
+            self:initListContent()
+        end
+    end
+end
+
+function UIWndAchievement:onLayerClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndAchievement", close = true })
+end
+
+return UIWndAchievement

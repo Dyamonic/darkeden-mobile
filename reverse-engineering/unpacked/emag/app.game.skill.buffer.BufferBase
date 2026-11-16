@@ -1,0 +1,61 @@
+-- 
+local BufferBase = class("BufferBase")
+
+BufferBase._bufferId    = nil
+BufferBase._time        = nil
+BufferBase._actor       = nil
+BufferBase._skilllevel  = nil
+BufferBase._source      = nil
+BufferBase._isTemp      = nil -- 临时buffer标识，用于buffer的移除和恢复
+
+function BufferBase:ctor(bufferId, time, actor, skilllevel, source)
+    self._bufferId   = bufferId
+    self._time       = time
+    self._actor      = actor
+    self._skilllevel = skilllevel
+    self._source     = source
+end
+
+function BufferBase:onUpdate()
+end
+
+function BufferBase:onClear()
+    self._bufferId   = nil
+    self._time       = nil
+    self._actor      = nil
+    self._skilllevel = nil
+    self._source     = nil
+end
+
+-- Setter && Getter
+function BufferBase:getBufferId()
+    return self._bufferId
+end
+
+function BufferBase:getSkilllevel()
+    return self._skilllevel or 0
+end
+
+function BufferBase:getSource()
+    return self._source
+end
+
+function BufferBase:getBufferData()
+    return {
+        bufferId = self._bufferId,
+        time = self._time,
+        actor = self._actor,
+        skilllevel = self._skilllevel,
+        source = self._source
+    }
+end
+
+function BufferBase:setIsTemp(value)
+    self._isTemp = value
+end
+
+function BufferBase:getIsTemp()
+    return self._isTemp
+end
+
+return BufferBase

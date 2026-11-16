@@ -1,0 +1,39 @@
+-- MMovingEffect.lua
+
+local MMovingEffect = class("MMovingEffect", lt.MEffect)
+
+
+function MMovingEffect:ctor(blt_type)
+    -- 初始化成员变量
+    self._bltType = blt_type
+    self._endFrame = 0
+    self._currentFrame = 0
+    self._frameID = 0
+    self._direction = 0
+    self._light = 0
+
+    return self
+end
+
+function MMovingEffect:update()
+    if self.g_CurrentFrame < self._endFrame then
+        -- 更新帧
+        self:nextFrame()
+
+        -- TODO
+        -- if self._bltType == BLT_EFFECT then
+        --     self._light = g_pTopView.m_EffectAlphaFPK[self._frameID][self._direction][self._currentFrame]:getLight()
+        -- end
+
+        -- 设置 Sector 坐标
+        self:affectPosition()
+
+        return true
+    end
+
+    return false
+end
+
+
+return MMovingEffect
+

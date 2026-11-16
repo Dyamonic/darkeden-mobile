@@ -1,0 +1,28 @@
+
+local MaintenanceCostsMeta = class("MaintenanceCostsMeta")
+
+function MaintenanceCostsMeta:ctor(row)
+    self:initWithRow(row)
+end
+
+function MaintenanceCostsMeta:initWithRow(row)
+    self._repairType            = row.RepairType
+    self._durabilityCost        = json.decode(row.DurabilityCost)
+    self._maintenanceCosts      = json.decode(row.MaintenanceCosts)
+end
+
+function MaintenanceCostsMeta:getDurabilityCost()
+    return self._durabilityCost
+end
+
+function MaintenanceCostsMeta:getMaintenanceCosts()
+    return self._maintenanceCosts
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function MaintenanceCostsMeta:getRepairType() return self._repairType end
+
+-- AUTO GENERATED GETTERS END
+return MaintenanceCostsMeta

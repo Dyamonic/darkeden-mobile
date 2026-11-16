@@ -1,0 +1,1203 @@
+ltMetaTable = {}
+lt = {}
+setmetatable(lt, ltMetaTable)
+
+ltMetaTable.__index = function(table, name)
+    table[name] = require(ltMetaTable[name])
+    return table[name]
+end
+
+function lt.getClass(name)
+    if lt[name] == nil then
+        lt[name] = require(ltMetaTable[name])
+    end
+
+    return lt[name]
+end
+
+-- 重载脚本
+function lt.reload(name)
+    if DEBUG > 0 then
+        if lt[name] then
+            package.loaded[ltMetaTable[name]] = nil
+            lt[name] = nil
+        end
+    end
+end
+
+-- c++
+ltMetaTable["sqlite3"]                  = "lsqlite3"
+ltMetaTable["pb"]                       = "pb"
+
+ltMetaTable["zlib"]                     = "zlib"
+
+ltMetaTable["utf8"]                     = "lib.utf8"
+
+-- app
+ltMetaTable["Game"]                     = "app.Game"
+ltMetaTable["GameConfig"]               = "app.GameConfig"
+
+-- sdk
+ltMetaTable["Sdk"]                      = "app.net.http.Sdk"
+
+-- action
+ltMetaTable["ActionBase"]               = "app.action.ActionBase"
+ltMetaTable["ActionActor"]              = "app.action.ActionActor"
+ltMetaTable["ActionActorWeapon"]        = "app.action.ActionActorWeapon"
+ltMetaTable["ActionActorShield"]        = "app.action.ActionActorShield"
+ltMetaTable["ActionData"]               = "app.action.ActionData"
+ltMetaTable["ActionMonster"]            = "app.action.ActionMonster"
+ltMetaTable["ActionNpc"]                = "app.action.ActionNpc"
+ltMetaTable["ActionActorMount"]         = "app.action.ActionActorMount"
+
+-- animation
+ltMetaTable["EffectBase"]               = "app.animation.EffectBase"
+ltMetaTable["EffectData"]               = "app.animation.EffectData"
+ltMetaTable["EffectView"]               = "app.animation.EffectView"
+ltMetaTable["SkeletonActor"]            = "app.animation.SkeletonActor"
+ltMetaTable["SkeletonBase"]             = "app.animation.SkeletonBase"
+ltMetaTable["SkeletonView"]             = "app.animation.SkeletonView"
+ltMetaTable["EffectInfo"]               = "app.animation.EffectInfo"
+
+-- common
+ltMetaTable["Constant"]                 = "app.common.Constant"
+ltMetaTable["SoundDef"]                 = "app.common.SoundDef"
+ltMetaTable["ActivityConst"]            = "app.common.ActivityConst"
+ltMetaTable["CheckUtil"]                = "app.common.CheckUtil"
+ltMetaTable["SkillEnum"]                = "app.common.SkillEnum"
+ltMetaTable["EffectEnum"]               = "app.common.EffectEnum"
+ltMetaTable["BuffEnum"]                 = "app.common.BuffEnum"
+ltMetaTable["ServerClientEnum"]         = "app.common.ServerClientEnum"
+ltMetaTable["ConfigLoader"]             = "app.common.ConfigLoader"
+ltMetaTable["ObjectList"]               = "app.common.ObjectList"
+ltMetaTable["HeroAndMonsterEffect"]     = "app.common.HeroAndMonsterEffect"
+ltMetaTable["MonsterEnum"]              = "app.common.MonsterEnum"
+
+-- data
+-- data-dao
+ltMetaTable["AdvLevelExpInfoDao"]       = "app.data.dao.AdvLevelExpInfoDao"
+ltMetaTable["AffixPoolDao"]             = "app.data.dao.AffixPoolDao"
+ltMetaTable["AttrLevelExpInfoDao"]      = "app.data.dao.AttrLevelExpInfoDao"
+ltMetaTable["BaseSetDao"]               = "app.data.dao.BaseSetDao"
+ltMetaTable["ClientTextDao"]            = "app.data.dao.ClientTextDao"
+ltMetaTable["EnchantingAffixDao"]       = "app.data.dao.EnchantingAffixDao"
+ltMetaTable["EquipEnchantingCostDao"]   = "app.data.dao.EquipEnchantingCostDao"
+ltMetaTable["EquipEnchantingDao"]       = "app.data.dao.EquipEnchantingDao"
+ltMetaTable["EquipUpgradeDao"]          = "app.data.dao.EquipUpgradeDao"
+ltMetaTable["ErrorMessageDao"]          = "app.data.dao.ErrorMessageDao"
+ltMetaTable["HelpDao"]                  = "app.data.dao.HelpDao"
+ltMetaTable["ItemDao"]                  = "app.data.dao.ItemDao"
+ltMetaTable["ItemSetDao"]               = "app.data.dao.ItemSetDao"
+ltMetaTable["LevelExpInfoDao"]          = "app.data.dao.LevelExpInfoDao"
+ltMetaTable["MapbinDao"]                = "app.data.dao.MapbinDao"
+ltMetaTable["ModelDao"]                 = "app.data.dao.ModelDao"
+ltMetaTable["NameFirstDao"]             = "app.data.dao.NameFirstDao"
+ltMetaTable["NameLastDao"]              = "app.data.dao.NameLastDao"
+ltMetaTable["NpcDao"]                   = "app.data.dao.NpcDao"
+ltMetaTable["NpcTalkDao"]               = "app.data.dao.NpcTalkDao"
+ltMetaTable["RankBonusInfoDao"]         = "app.data.dao.RankBonusInfoDao"
+ltMetaTable["RankEXPInfoDao"]           = "app.data.dao.RankEXPInfoDao"
+ltMetaTable["SafeAreaDao"]              = "app.data.dao.SafeAreaDao"
+ltMetaTable["SkillDao"]                 = "app.data.dao.SkillDao"
+ltMetaTable["SLevelExpInfoDao"]         = "app.data.dao.SLevelExpInfoDao"
+ltMetaTable["ActionInfoDao"]            = "app.data.dao.T_ActionInfoDao"
+ltMetaTable["EquipDao"]                 = "app.data.dao.T_EquipDao"
+ltMetaTable["MapDao"]                   = "app.data.dao.T_MapDao"
+ltMetaTable["MonsterInfoDao"]           = "app.data.dao.T_MonsterInfoDao"
+ltMetaTable["RankDao"]                  = "app.data.dao.T_RankDao"
+ltMetaTable["RoleModelDao"]             = "app.data.dao.T_RoleModelDao"
+ltMetaTable["TendencyDao"]              = "app.data.dao.T_TendencyDao"
+ltMetaTable["UnlockDao"]                = "app.data.dao.UnlockDao"
+ltMetaTable["ViewDao"]                  = "app.data.dao.ViewDao"
+ltMetaTable["BuffDao"]                  = "app.data.dao.T_BuffDao"
+ltMetaTable["MaintenanceCostsDao"]      = "app.data.dao.MaintenanceCostsDao"
+ltMetaTable["AttributeDao"]             = "app.data.dao.AttributeDao"
+ltMetaTable["ShopTypeDao"]              = "app.data.dao.ShopTypeDao"
+ltMetaTable["NormalGoodsDao"]           = "app.data.dao.NormalGoodsDao"
+ltMetaTable["SpecialGoodsDao"]          = "app.data.dao.SpecialGoodsDao"
+ltMetaTable["GamblingShopDao"]          = "app.data.dao.GamblingShopDao"
+ltMetaTable["ExchangeBoxDao"]           = "app.data.dao.ExchangeBoxDao"
+ltMetaTable["VariableDao"]              = "app.data.dao.VariableDao"
+ltMetaTable["SkillStartActionDao"]      = "app.data.dao.SkillStartActionDao"
+ltMetaTable["VariableDao"]              = "app.data.dao.VariableDao"
+ltMetaTable["EquipTransformDao"]        = "app.data.dao.EquipTransformDao"
+ltMetaTable["OptionInfoDao"]            = "app.data.dao.OptionInfoDao"
+ltMetaTable["DowngradeCostDao"]         = "app.data.dao.DowngradeCostDao"
+ltMetaTable["TeamHallDao"]              = "app.data.dao.TeamHallDao"
+ltMetaTable["ActionStepDao"]            = "app.data.dao.ActionStepDao"
+ltMetaTable["GmCmdDao"]                 = "app.data.dao.GmCmdDao"
+ltMetaTable["MapTransferDao"]           = "app.data.dao.MapTransferDao"
+ltMetaTable["MapTransferPointDao"]      = "app.data.dao.MapTransferPointDao"
+ltMetaTable["TransferPointDao"]         = "app.data.dao.TransferPointDao"
+ltMetaTable["SkillEffectsDao"]          = "app.data.dao.T_SkillEffectsDao"
+ltMetaTable["MissionDao"]               = "app.data.dao.MissionDao"
+ltMetaTable["MessageFormatDao"]         = "app.data.dao.MessageFormatDao"
+ltMetaTable["MessageContentDao"]        = "app.data.dao.MessageContentDao"
+ltMetaTable["MessageFilterDao"]         = "app.data.dao.MessageFilterDao"
+ltMetaTable["SettingsDao"]              = "app.data.dao.SettingsDao"
+ltMetaTable["ALTreasureDao"]            = "app.data.dao.ALTreasureDao"
+ltMetaTable["RelicSystemDao"]           = "app.data.dao.RelicSystemDao"
+ltMetaTable["ShoppingMallDao"]          = "app.data.dao.ShoppingMallDao"
+ltMetaTable["PetDao"]                   = "app.data.dao.PetDao"
+ltMetaTable["NpcVampireLairDao"]        = "app.data.dao.NpcVampireLairDao"
+ltMetaTable["PetLevelDao"]              = "app.data.dao.PetLevelDao"
+ltMetaTable["TransactionsDao"]          = "app.data.dao.TransactionsDao"
+ltMetaTable["ChatDao"]                  = "app.data.dao.ChatDao"
+ltMetaTable["GuidanceDao"]              = "app.data.dao.GuidanceDao"
+ltMetaTable["PrivilegeDao"]             = "app.data.dao.PrivilegeDao"
+ltMetaTable["PrivilegeDescDao"]         = "app.data.dao.PrivilegeDescDao"
+ltMetaTable["MissionDialogueDao"]       = "app.data.dao.MissionDialogueDao"
+ltMetaTable["GateOfAltarDao"]           = "app.data.dao.GateOfAltarDao"
+ltMetaTable["AltarOfBloodDao"]          = "app.data.dao.AltarOfBloodDao"
+ltMetaTable["MirrorOfAbyssDao"]         = "app.data.dao.MirrorOfAbyssDao"
+ltMetaTable["AchievementDao"]           = "app.data.dao.AchievementDao"
+ltMetaTable["MonsterColor"]             = "app.data.dao.T_MonsterColor"
+ltMetaTable["RechargeDao"]              = "app.data.dao.RechargeDao"
+ltMetaTable["DungeonTransferEffectDao"] = "app.data.dao.DungeonTransferEffectDao"
+ltMetaTable["AutoRecycleSettingsDao"]   = "app.data.dao.AutoRecycleSettingsDao"
+ltMetaTable["SevenDayMissionDao"]       = "app.data.dao.SevenDayMissionDao"
+ltMetaTable["ActivityGiftDao"]          = "app.data.dao.ActivityGiftDao"
+ltMetaTable["SoundDao"]                 = "app.data.dao.SoundDao"
+ltMetaTable["SoundActionDao"]           = "app.data.dao.SoundActionDao"
+ltMetaTable["StrongDao"]                = "app.data.dao.StrongDao"
+ltMetaTable["FirstRechargeGiftDao"]     = "app.data.dao.FirstRechargeGiftDao"
+ltMetaTable["EquipSuitDao"]             = "app.data.dao.EquipSuitDao"
+ltMetaTable["FunctionToggleDao"]        = "app.data.dao.FunctionToggleDao"
+ltMetaTable["DungeonDao"]               = "app.data.dao.DungeonDao"
+ltMetaTable["MountDao"]                 = "app.data.dao.MountDao"
+ltMetaTable["HaloDao"]                  = "app.data.dao.HaloDao"
+ltMetaTable["WorldBossDao"]            = "app.data.dao.WorldBossDao"
+ltMetaTable["TransferByConfigDao"]     = "app.data.dao.TransferByConfigDao"
+-- 天天充值
+ltMetaTable["DailyRechargeDao"]        = "app.data.dao.DailyRechargeDao"
+ltMetaTable["DailyRechargeCycleDao"]   = "app.data.dao.DailyRechargeCycleDao"
+
+
+ltMetaTable["MonthCardDao"]            = "app.data.dao.MonthCardDao"
+ltMetaTable["PetAttrDao"]              = "app.data.dao.PetAttrDao"
+ltMetaTable["PetCapsuleDao"]           = "app.data.dao.PetCapsuleDao"
+ltMetaTable["PetRaise1Dao"]            = "app.data.dao.PetRaise1Dao"
+ltMetaTable["PetTypeDao"]              = "app.data.dao.PetTypeDao"
+ltMetaTable["PetSkinDao"]              = "app.data.dao.PetSkinDao"
+ltMetaTable["VitalityDao"]             = "app.data.dao.VitalityDao"
+ltMetaTable["VitalityListDao"]         = "app.data.dao.VitalityListDao"
+ltMetaTable["MonthCardDao"]    = "app.data.dao.MonthCardDao"
+ltMetaTable["PetAttrDao"]      = "app.data.dao.PetAttrDao"
+ltMetaTable["PetCapsuleDao"]   = "app.data.dao.PetCapsuleDao"
+ltMetaTable["PetRaise1Dao"]    = "app.data.dao.PetRaise1Dao"
+ltMetaTable["PetTypeDao"]      = "app.data.dao.PetTypeDao"
+ltMetaTable["PetSkinDao"]      = "app.data.dao.PetSkinDao"
+ltMetaTable["VitalityDao"]     = "app.data.dao.VitalityDao"
+ltMetaTable["VitalityListDao"] = "app.data.dao.VitalityListDao"
+ltMetaTable["SignGiftDao"]     = "app.data.dao.SignGiftDao"
+ltMetaTable["LevelGiftDao"]    = "app.data.dao.LevelGiftDao"
+ltMetaTable["TriggerGiftDao"]          = "app.data.dao.TriggerGiftDao"
+ltMetaTable["SpeedDao"]                = "app.data.dao.SpeedDao"
+
+
+-- data-meta
+ltMetaTable["AdvLevelExpInfoMeta"]       = "app.data.meta.AdvLevelExpInfoMeta"
+ltMetaTable["AffixPoolMeta"]             = "app.data.meta.AffixPoolMeta"
+ltMetaTable["AttrLevelExpInfoMeta"]      = "app.data.meta.AttrLevelExpInfoMeta"
+ltMetaTable["BaseSetMeta"]               = "app.data.meta.BaseSetMeta"
+ltMetaTable["ClientTextMeta"]            = "app.data.meta.ClientTextMeta"
+ltMetaTable["EnchantingAffixMeta"]       = "app.data.meta.EnchantingAffixMeta"
+ltMetaTable["EquipEnchantingCostMeta"]   = "app.data.meta.EquipEnchantingCostMeta"
+ltMetaTable["EquipEnchantingMeta"]       = "app.data.meta.EquipEnchantingMeta"
+ltMetaTable["EquipUpgradeMeta"]          = "app.data.meta.EquipUpgradeMeta"
+ltMetaTable["ErrorMessageMeta"]          = "app.data.meta.ErrorMessageMeta"
+ltMetaTable["HelpMeta"]                  = "app.data.meta.HelpMeta"
+ltMetaTable["ItemSetMeta"]               = "app.data.meta.ItemSetMeta"
+ltMetaTable["LevelExpInfoMeta"]          = "app.data.meta.LevelExpInfoMeta"
+ltMetaTable["MonsterMeta"]               = "app.data.meta.MonsterMeta"
+ltMetaTable["NpcMeta"]                   = "app.data.meta.NpcMeta"
+ltMetaTable["NpcTalkMeta"]               = "app.data.meta.NpcTalkMeta"
+ltMetaTable["RankBonusInfoMeta"]         = "app.data.meta.RankBonusInfoMeta"
+ltMetaTable["RankEXPInfoMeta"]           = "app.data.meta.RankEXPInfoMeta"
+ltMetaTable["SafeAreaMeta"]              = "app.data.meta.SafeAreaMeta"
+ltMetaTable["SkillMeta"]                 = "app.data.meta.SkillMeta"
+ltMetaTable["SLevelExpInfoMeta"]         = "app.data.meta.SLevelExpInfoMeta"
+ltMetaTable["ActionInfoMeta"]            = "app.data.meta.T_ActionInfoMeta"
+ltMetaTable["EquipMeta"]                 = "app.data.meta.T_EquipMeta"
+ltMetaTable["ItemMeta"]                  = "app.data.meta.T_ItemMeta"
+ltMetaTable["MapMeta"]                   = "app.data.meta.T_MapMeta"
+ltMetaTable["MonsterInfoMeta"]           = "app.data.meta.T_MonsterInfoMeta"
+ltMetaTable["RankMeta"]                  = "app.data.meta.T_RankMeta"
+ltMetaTable["RoleModelMeta"]             = "app.data.meta.T_RoleModelMeta"
+ltMetaTable["TendencyMeta"]              = "app.data.meta.T_TendencyMeta"
+ltMetaTable["ModelMeta"]                 = "app.data.meta.T_ModelMeta"
+ltMetaTable["UnlockMeta"]                = "app.data.meta.UnlockMeta"
+ltMetaTable["ViewMeta"]                  = "app.data.meta.ViewMeta"
+ltMetaTable["BuffMeta"]                  = "app.data.meta.T_BuffMeta"
+ltMetaTable["VariableMeta"]              = "app.data.meta.VariableMeta"
+ltMetaTable["SkillStartActionMeta"]      = "app.data.meta.SkillStartActionMeta"
+ltMetaTable["MaintenanceCostsMeta"]      = "app.data.meta.MaintenanceCostsMeta"
+ltMetaTable["AttributeMeta"]             = "app.data.meta.AttributeMeta"
+ltMetaTable["ShopTypeMeta"]              = "app.data.meta.ShopTypeMeta"
+ltMetaTable["NormalGoodsMeta"]           = "app.data.meta.NormalGoodsMeta"
+ltMetaTable["SpecialGoodsMeta"]          = "app.data.meta.SpecialGoodsMeta"
+ltMetaTable["GamblingShopMeta"]          = "app.data.meta.GamblingShopMeta"
+ltMetaTable["ExchangeBoxMeta"]           = "app.data.meta.ExchangeBoxMeta"
+ltMetaTable["EquipTransformMeta"]        = "app.data.meta.EquipTransformMeta"
+ltMetaTable["OptionInfoMeta"]            = "app.data.meta.OptionInfoMeta"
+ltMetaTable["DowngradeCostMeta"]         = "app.data.meta.DowngradeCostMeta"
+ltMetaTable["TeamHallMeta"]              = "app.data.meta.TeamHallMeta"
+ltMetaTable["ActionStepMeta"]            = "app.data.meta.ActionStepMeta"
+ltMetaTable["GmCmdMeta"]                 = "app.data.meta.GmCmdMeta"
+ltMetaTable["MapTransferMeta"]           = "app.data.meta.MapTransferMeta"
+ltMetaTable["MapTransferPointMeta"]      = "app.data.meta.MapTransferPointMeta"
+ltMetaTable["TransferPointMeta"]         = "app.data.meta.TransferPointMeta"
+ltMetaTable["MissionMeta"]               = "app.data.meta.MissionMeta"
+ltMetaTable["SettingsMeta"]              = "app.data.meta.SettingsMeta"
+ltMetaTable["ALTreasureMeta"]            = "app.data.meta.ALTreasureMeta"
+ltMetaTable["RelicSystemMeta"]           = "app.data.meta.RelicSystemMeta"
+ltMetaTable["ShoppingMallMeta"]          = "app.data.meta.ShoppingMallMeta"
+ltMetaTable["PetMeta"]                   = "app.data.meta.PetMeta"
+ltMetaTable["NpcVampireLairMeta"]        = "app.data.meta.NpcVampireLairMeta"
+ltMetaTable["PetLevelMeta"]              = "app.data.meta.PetLevelMeta"
+ltMetaTable["TransactionsMeta"]          = "app.data.meta.TransactionsMeta"
+ltMetaTable["ChatMeta"]                  = "app.data.meta.ChatMeta"
+ltMetaTable["GuidanceMeta"]              = "app.data.meta.GuidanceMeta"
+ltMetaTable["MissionDialogueMeta"]       = "app.data.meta.MissionDialogueMeta"
+ltMetaTable["GateOfAltarMeta"]           = "app.data.meta.GateOfAltarMeta"
+ltMetaTable["AltarOfBloodMeta"]          = "app.data.meta.AltarOfBloodMeta"
+ltMetaTable["MirrorOfAbyssMeta"]         = "app.data.meta.MirrorOfAbyssMeta"
+ltMetaTable["StrongMeta"]                = "app.data.meta.StrongMeta"
+ltMetaTable["SkillEffectsMeta"]          = "app.data.meta.T_SkillEffectsMeta"
+ltMetaTable["EffectMeta"]                = "app.data.meta.T_EffectMeta"
+ltMetaTable["MessageFormatMeta"]         = "app.data.meta.MessageFormatMeta"
+ltMetaTable["MessageContentMeta"]        = "app.data.meta.MessageContentMeta"
+ltMetaTable["MessageFilterMeta"]         = "app.data.meta.MessageFilterMeta"
+ltMetaTable["PrivilegeMeta"]             = "app.data.meta.PrivilegeMeta"
+ltMetaTable["PrivilegeDescMeta"]         = "app.data.meta.PrivilegeDescMeta"
+ltMetaTable["AchievementMeta"]           = "app.data.meta.AchievementMeta"
+ltMetaTable["MonsterColorMeta"]          = "app.data.meta.T_MonsterColorMeta"
+ltMetaTable["RechargeMeta"]              = "app.data.meta.RechargeMeta"
+ltMetaTable["DungeonTransferEffectMeta"] = "app.data.meta.DungeonTransferEffectMeta"
+ltMetaTable["AutoRecycleSettingsMeta"]   = "app.data.meta.AutoRecycleSettingsMeta"
+ltMetaTable["SevenDayMissionMeta"]       = "app.data.meta.SevenDayMissionMeta"
+ltMetaTable["ActivityGiftMeta"]          = "app.data.meta.ActivityGiftMeta"
+ltMetaTable["SoundMeta"]                 = "app.data.meta.SoundMeta"
+ltMetaTable["SoundActionMeta"]           = "app.data.meta.SoundActionMeta"
+ltMetaTable["FirstRechargeGiftMeta"]     = "app.data.meta.FirstRechargeGiftMeta"
+ltMetaTable["EquipSuitMeta"]             = "app.data.meta.EquipSuitMeta"
+ltMetaTable["FunctionToggleMeta"]        = "app.data.meta.FunctionToggleMeta"
+ltMetaTable["DungeonMeta"]               = "app.data.meta.DungeonMeta"
+--坐骑光环
+ltMetaTable["MountMeta"]                 = "app.data.meta.MountMeta"
+ltMetaTable["HaloMeta"]                  = "app.data.meta.HaloMeta"
+ltMetaTable["MonthCardMeta"]             = "app.data.meta.MonthCardMeta"
+ltMetaTable["PetAttrMeta"]               = "app.data.meta.T_PetAttrMeta"
+ltMetaTable["PetCapsuleMeta"]            = "app.data.meta.T_PetCapsuleMeta"
+ltMetaTable["PetRaise1Meta"]             = "app.data.meta.T_PetRaise1Meta"
+ltMetaTable["PetSkinMeta"]               = "app.data.meta.PetSkinMeta"
+ltMetaTable["PetTypeMeta"]               = "app.data.meta.PetTypeMeta"
+ltMetaTable["VitalityMeta"]              = "app.data.meta.VitalityMeta"
+ltMetaTable["VitalityListMeta"]          = "app.data.meta.VitalityListMeta"
+ltMetaTable["WorldBossMeta"]           = "app.data.meta.WorldBossMeta"
+ltMetaTable["TransferByConfigMeta"]    = "app.data.meta.TransferByConfigMeta"
+ltMetaTable["TriggerGiftMeta"]         = "app.data.meta.TriggerGiftMeta"
+-- 天天充值
+ltMetaTable["DailyRechargeMeta"]       = "app.data.meta.DailyRechargeMeta"
+ltMetaTable["DailyRechargeCycleMeta"]  = "app.data.meta.DailyRechargeCycleMeta"
+ltMetaTable["SignGiftMeta"]              = "app.data.meta.SignGiftMeta"
+ltMetaTable["LevelGiftMeta"]             = "app.data.meta.LevelGiftMeta"
+ltMetaTable["SpeedMeta"]                 = "app.data.meta.SpeedMeta"
+
+-- data-model
+ltMetaTable["HeroData"]            = "app.data.model.HeroData"
+ltMetaTable["ItemData"]            = "app.data.model.ItemData"
+ltMetaTable["MonsterData"]         = "app.data.model.MonsterData"
+ltMetaTable["PropertyData"]        = "app.data.model.PropertyData"
+ltMetaTable["RoleData"]            = "app.data.model.RoleData"
+ltMetaTable["SkillData"]           = "app.data.model.SkillData"
+ltMetaTable["TaskData"]            = "app.data.model.TaskData"
+ltMetaTable["ShopItemData"]        = "app.data.model.ShopItemData"
+ltMetaTable["ShopGoodsData"]       = "app.data.model.ShopGoodsData"
+ltMetaTable["UnionData"]           = "app.data.model.UnionData"
+ltMetaTable["UnionMemberData"]     = "app.data.model.UnionMemberData"
+ltMetaTable["UnionPurviewData"]    = "app.data.model.UnionPurviewData"
+ltMetaTable["MailData"]            = "app.data.model.MailData"
+ltMetaTable["EveryDayCheckinData"] = "app.data.model.EveryDayCheckinData"
+ltMetaTable["EveryLvLuckyBagData"] = "app.data.model.EveryLvLuckyBagData"
+ltMetaTable["HandbookMonsterData"] = "app.data.model.HandbookMonsterData"
+ltMetaTable["DailySignData"]       = "app.data.model.DailySignData"
+ltMetaTable["AchivementData"]      = "app.data.model.AchivementData"
+ltMetaTable["AchiveTitleData"]     = "app.data.model.AchiveTitleData"
+ltMetaTable["TrapData"]            = "app.data.model.TrapData"
+ltMetaTable["PetUIData"]           = "app.data.model.PetUIData"
+ltMetaTable["PetSkinData"]         = "app.data.model.PetSkinData"
+
+-- game
+-- game-agent
+ltMetaTable["BaseAgent"]           = "app.game.agent.BaseAgent"
+ltMetaTable["WorldAgent"]          = "app.game.agent.WorldAgent"
+ltMetaTable["MapAgent"]            = "app.game.agent.MapAgent"
+ltMetaTable["HeroAgent"]           = "app.game.agent.HeroAgent"
+ltMetaTable["ItemAgent"]           = "app.game.agent.ItemAgent"
+ltMetaTable["MonsterAgent"]        = "app.game.agent.MonsterAgent"
+ltMetaTable["NpcAgent"]            = "app.game.agent.NpcAgent"
+ltMetaTable["TrapAgent"]           = "app.game.agent.TrapAgent"
+ltMetaTable["FeastCakeAgent"]      = "app.game.agent.FeastCakeAgent"
+ltMetaTable["ElementAgent"]        = "app.game.agent.ElementAgent"
+
+
+-- game-actor
+ltMetaTable["ActionBaseActor"]     = "app.game.actor.ActionBaseActor"
+ltMetaTable["RoleActor"]           = "app.game.actor.RoleActor"
+ltMetaTable["MapActor"]            = "app.game.actor.MapActor"
+ltMetaTable["HeroActor"]           = "app.game.actor.HeroActor"
+ltMetaTable["ItemActor"]           = "app.game.actor.ItemActor"
+ltMetaTable["MonsterActor"]        = "app.game.actor.MonsterActor"
+ltMetaTable["NpcActor"]            = "app.game.actor.NpcActor"
+ltMetaTable["ShadowActor"]         = "app.game.actor.ShadowActor"
+ltMetaTable["TrapActor"]           = "app.game.actor.TrapActor"
+ltMetaTable["MapObjectActor"]      = "app.game.actor.MapObjectActor"
+ltMetaTable["MapObjectTexture"]    = "app.game.actor.MapObjectTexture"
+ltMetaTable["SkillActor"]          = "app.game.actor.SkillActor"
+ltMetaTable["EffectActor"]         = "app.game.actor.EffectActor"
+ltMetaTable["EffectQueueActor"]    = "app.game.actor.EffectQueueActor"
+ltMetaTable["EffectParallelActor"] = "app.game.actor.EffectParallelActor"
+ltMetaTable["HeroSlayerActor"]     = "app.game.actor.HeroSlayerActor"
+ltMetaTable["UIHeroActor"]         = "app.game.actor.UIHeroActor"
+ltMetaTable["UIEffectActor"]       = "app.game.actor.UIEffectActor"
+ltMetaTable["CompEffectActor"]     = "app.game.actor.CompEffectActor"
+ltMetaTable["MapSafeProtalActor"]  = "app.game.actor.MapSafeProtalActor"
+ltMetaTable["CasketActor"]         = "app.game.actor.CasketActor"
+ltMetaTable["ElementActor"]        = "app.game.actor.ElementActor"
+ltMetaTable["PetUIActor"]          = "app.game.actor.PetUIActor"
+ltMetaTable["UIMountActor"]        = "app.game.actor.UIMountActor"
+ltMetaTable["UIMonsterActor"]      = "app.game.actor.UIMonsterActor"
+
+
+
+-- game-cmd
+ltMetaTable["CmdAttack"]    = "app.game.cmd.CmdAttack"
+ltMetaTable["CmdBase"]      = "app.game.cmd.CmdBase"
+ltMetaTable["CmdDie"]       = "app.game.cmd.CmdDie"
+ltMetaTable["CmdMove"]      = "app.game.cmd.CmdMove"
+ltMetaTable["CmdIdle"]      = "app.game.cmd.CmdIdle"
+ltMetaTable["CmdMount"]     = "app.game.cmd.CmdMount"
+ltMetaTable["CmdJump"]      = "app.game.cmd.CmdJump"
+ltMetaTable["CmdTransform"] = "app.game.cmd.CmdTransform"
+ltMetaTable["CmdProperty"]  = "app.game.cmd.CmdProperty"
+
+
+-- game-node
+ltMetaTable["NameNode"]               = "app.game.node.NameNode"
+ltMetaTable["NumberNode"]             = "app.game.node.NumberNode"
+
+-- game-skill
+ltMetaTable["BulletManager"]          = "app.game.skill.BulletManager"
+ltMetaTable["SkillAgentManager"]      = "app.game.skill.SkillAgentManager"
+ltMetaTable["SkillManager"]           = "app.game.skill.T_SkillManager"
+
+-- game-skill-buffer
+ltMetaTable["BufferBase"]             = "app.game.skill.buffer.BufferBase"
+ltMetaTable["BufferDarkBluePoison"]   = "app.game.skill.buffer.BufferDarkBluePoison"
+ltMetaTable["BufferGreenStalker"]     = "app.game.skill.buffer.BufferGreenStalker"
+ltMetaTable["BufferGreenPoison"]      = "app.game.skill.buffer.BufferGreenPoison"
+ltMetaTable["BufferYellowPoison"]     = "app.game.skill.buffer.BufferYellowPoison"
+ltMetaTable["BufferMagicParalyze"]    = "app.game.skill.buffer.BufferMagicParalyze"
+ltMetaTable["BuffMagicDoom"]          = "app.game.skill.buffer.BuffMagicDoom"
+ltMetaTable["BuffMagicSeduction"]     = "app.game.skill.buffer.BuffMagicSeduction"
+ltMetaTable["BuffMagicDeath"]         = "app.game.skill.buffer.BuffMagicDeath"
+ltMetaTable["BuffMagicMephisto"]      = "app.game.skill.buffer.BuffMagicMephisto"
+ltMetaTable["BuffDarkRevenge"]        = "app.game.skill.buffer.BuffDarkRevenge"
+ltMetaTable["BuffRingOfFlare"]        = "app.game.skill.buffer.BuffRingOfFlare"
+ltMetaTable["BuffWaterBarrier"]       = "app.game.skill.buffer.BuffWaterBarrier"
+ltMetaTable["BuffVine"]               = "app.game.skill.buffer.BuffVine"
+ltMetaTable["BuffDraknessVisible"]    = "app.game.skill.buffer.BuffDraknessVisible"
+ltMetaTable["BuffHandsOfFire"]        = "app.game.skill.buffer.BuffHandsOfFire"
+ltMetaTable["BuffGnomesWhisper"]      = "app.game.skill.buffer.BuffGnomesWhisper"
+ltMetaTable["BuffHeartCatalyst"]      = "app.game.skill.buffer.BuffHeartCatalyst"
+ltMetaTable["BuffProtFromPoison"]     = "app.game.skill.buffer.BuffProtFromPoison"
+ltMetaTable["BuffBless"]              = "app.game.skill.buffer.BuffBless"
+ltMetaTable["BuffLight"]              = "app.game.skill.buffer.BuffLight"
+ltMetaTable["BuffSlayerFlare"]        = "app.game.skill.buffer.BuffSlayerFlare"
+ltMetaTable["BuffProtFromCurse"]      = "app.game.skill.buffer.BuffProtFromCurse"
+ltMetaTable["BuffDetectHidden"]       = "app.game.skill.buffer.BuffDetectHidden"
+ltMetaTable["BuffSummonSylph"]        = "app.game.skill.buffer.BuffSummonSylph"
+ltMetaTable["BuffCommon"]             = "app.game.skill.buffer.BuffCommon"
+ltMetaTable["BuffInvisibleFade"]      = "app.game.skill.buffer.BuffInvisibleFade"
+ltMetaTable["BuffInvisibility"]       = "app.game.skill.buffer.BuffInvisibility"
+ltMetaTable["BuffSandOfSoulStone"]    = "app.game.skill.buffer.BuffSandOfSoulStone"
+ltMetaTable["BuffSandCross"]          = "app.game.skill.buffer.BuffSandCross"
+ltMetaTable["BuffSnipingMode"]        = "app.game.skill.buffer.BuffSnipingMode"
+ltMetaTable["BuffSnipingBlack"]       = "app.game.skill.buffer.BuffSnipingBlack"
+ltMetaTable["BuffTrap"]               = "app.game.skill.buffer.BuffTrap"
+ltMetaTable["BuffBerserker"]          = "app.game.skill.buffer.BuffBerserker"
+ltMetaTable["BuffObservingEye"]       = "app.game.skill.buffer.BuffObservingEye"
+ltMetaTable["BuffActivation"]         = "app.game.skill.buffer.BuffActivation"
+ltMetaTable["BuffFireElement"]        = "app.game.skill.buffer.BuffFireElement"
+ltMetaTable["BuffFireElementAttack"]  = "app.game.skill.buffer.BuffFireElementAttack"
+ltMetaTable["BuffFireElementDamage"]  = "app.game.skill.buffer.BuffFireElementDamage"
+ltMetaTable["BuffWaterElement"]       = "app.game.skill.buffer.BuffWaterElement"
+ltMetaTable["BuffWaterElementHeal"]   = "app.game.skill.buffer.BuffWaterElementHeal"
+ltMetaTable["BuffWaterElementHealed"] = "app.game.skill.buffer.BuffWaterElementHealed"
+ltMetaTable["BuffIceField"]           = "app.game.skill.buffer.BuffIceField"
+ltMetaTable["BuffMount"]              = "app.game.skill.buffer.BuffMount"
+ltMetaTable["BufferBaseItem"]         = "app.game.skill.buffer.BufferBaseItem"
+ltMetaTable["BuffStoneSkin"]          = "app.game.skill.buffer.BuffStoneSkin"
+ltMetaTable["BuffComa"]               = "app.game.skill.buffer.BuffComa"
+ltMetaTable["BuffDivineGuidance"]     = "app.game.skill.buffer.BuffDivineGuidance"
+ltMetaTable["BuffLightness"]          = "app.game.skill.buffer.BuffLightness"
+ltMetaTable["BuffHalo"]               = "app.game.skill.buffer.BuffHalo"
+
+ltMetaTable["BuffTransform"]          = "app.game.skill.buffer.BuffTransform"
+ltMetaTable["BuffDummyDrake"]         = "app.game.skill.buffer.BuffDummyDrake"
+ltMetaTable["BuffPassHeal"]           = "app.game.skill.buffer.BuffPassHeal"
+ltMetaTable["BuffGroundElement"]      = "app.game.skill.buffer.BuffGroundElement"
+ltMetaTable["BuffBloodyScarify"]      = "app.game.skill.buffer.BuffBloodyScarify"
+ltMetaTable["BuffHyDroConvergence"]   = "app.game.skill.buffer.BuffHyDroConvergence"
+ltMetaTable["BuffHolyArmor"]          = "app.game.skill.buffer.BuffHolyArmor"
+ltMetaTable["BuffBlind"]              = "app.game.skill.buffer.BuffBlind"
+ltMetaTable["BuffCasket"]             = "app.game.skill.buffer.BuffCasket"
+ltMetaTable["BuffHaloShow"]           = "app.game.skill.buffer.BuffHaloShow"
+
+
+
+
+
+
+
+
+-- game-skill-effect
+ltMetaTable["ShadowDancingEffect"] = "app.game.skill.effect.ShadowDancingEffect"
+
+
+
+
+
+
+-- game-skill-bullet
+ltMetaTable["BulletBase"]               = "app.game.skill.bullet.BulletBase"
+ltMetaTable["BulletLinearEffect"]       = "app.game.skill.bullet.BulletLinearEffect"
+ltMetaTable["BulletMoveEffect"]         = "app.game.skill.bullet.BulletMoveEffect"
+ltMetaTable["BullectScreenEffect"]      = "app.game.skill.bullet.BullectScreenEffect"
+ltMetaTable["BulletSnowEffect"]         = "app.game.skill.bullet.BulletSnowEffect"
+ltMetaTable["BullectScreenQueueEffect"] = "app.game.skill.bullet.BullectScreenQueueEffect"
+ltMetaTable["BulletParallelEffect"]     = "app.game.skill.bullet.BulletParallelEffect"
+ltMetaTable["BulletNormalEffect"]       = "app.game.skill.bullet.BulletNormalEffect"
+ltMetaTable["BulletWindDivider"]        = "app.game.skill.bullet.BulletWindDivider"
+ltMetaTable["BulletSingleEffect"]       = "app.game.skill.bullet.BulletSingleEffect"
+ltMetaTable["BulletVisibleEffect"]      = "app.game.skill.bullet.BulletVisibleEffect"
+ltMetaTable["BulletNoDirEffect"]        = "app.game.skill.bullet.BulletNoDirEffect"
+ltMetaTable["BulletLinear"]             = "app.game.skill.bullet.BulletLinear"
+ltMetaTable["BulletHomingEffect"]       = "app.game.skill.bullet.BulletHomingEffect"
+ltMetaTable["BulletGuidanceEffect"]     = "app.game.skill.bullet.BulletGuidanceEffect"
+ltMetaTable["BullectParabolaEffect"]    = "app.game.skill.bullet.BullectParabolaEffect"
+
+
+---effect generator
+ltMetaTable["MEffectGenerator"]                     = "app.game.skill.effect.generator.MEffectGenerator"
+-- ltMetaTable["MEffectGeneratorDef"]     = "app.game.skill.effect.MEffectGeneratorDef"
+-- ltMetaTable["EffectCommonFunc"] = "app.game.skill.effect.EffectCommonFunc"
+
+ltMetaTable["MEffect"]                              = "app.game.skill.effect.MEffect"
+ltMetaTable["MLinearEffect"]                        = "app.game.skill.effect.MLinearEffect"
+ltMetaTable["MMovingEffect"]                        = "app.game.skill.effect.MMovingEffect"
+
+ltMetaTable["MBloodyWaveEffectGenerator"]           = "app.game.skill.effect.generator.MBloodyWaveEffectGenerator"
+ltMetaTable["MBloodyWallEffectGenerator"]           = "app.game.skill.effect.generator.MBloodyWallEffectGenerator"
+ltMetaTable["MBloodyBreakerEffectGenerator"]        = "app.game.skill.effect.generator.MBloodyBreakerEffectGenerator"
+ltMetaTable["MRippleZonePixelEffectGenerator"]      = "app.game.skill.effect.generator.MRippleZonePixelEffectGenerator"
+ltMetaTable["MAroundZoneEffectGenerator"]           = "app.game.skill.effect.generator.MAroundZoneEffectGenerator"
+ltMetaTable["MSpreadOutEffectGenerator"]            = "app.game.skill.effect.generator.MSpreadOutEffectGenerator"
+ltMetaTable["MFollowPathEffectGenerator"]           = "app.game.skill.effect.generator.MFollowPathEffectGenerator"
+ltMetaTable["MStopZoneRectEffectGenerator"]         = "app.game.skill.effect.generator.MStopZoneRectEffectGenerator"
+ltMetaTable["MAttackZoneEffectGenerator"]           = "app.game.skill.effect.generator.MAttackZoneEffectGenerator"
+ltMetaTable["MAttackCreatureHomingEffectGenerator"] =
+"app.game.skill.effect.generator.MAttackCreatureHomingEffectGenerator"
+ltMetaTable["MAttackCreatureEffectGenerator"]       = "app.game.skill.effect.generator.MAttackCreatureEffectGenerator"
+ltMetaTable["MAttackZoneParabolaEffectGenerator"]   = "app.game.skill.effect.generator.MAttackZoneParabolaEffectGenerator"
+ltMetaTable["MMultipleFallingEffectGenerator"]      = "app.game.skill.effect.generator.MMultipleFallingEffectGenerator"
+ltMetaTable["MPlayingWithFireEffectGenerator"]      = "app.game.skill.effect.generator.MPlayingWithFireEffectGenerator"
+
+
+
+-- game-state
+ltMetaTable["BaseState"]               = "app.game.state.BaseState"
+ltMetaTable["StateMachine"]            = "app.game.state.StateMachine"
+
+-- game-state-hero
+ltMetaTable["HeroStateAttack"]         = "app.game.state.hero.HeroStateAttack"
+ltMetaTable["HeroStateAttackDummy"]    = "app.game.state.hero.HeroStateAttackDummy"
+ltMetaTable["HeroStateBack"]           = "app.game.state.hero.HeroStateBack"
+ltMetaTable["HeroStateBase"]           = "app.game.state.hero.HeroStateBase"
+ltMetaTable["HeroStateChase"]          = "app.game.state.hero.HeroStateChase"
+ltMetaTable["HeroStateDead"]           = "app.game.state.hero.HeroStateDead"
+ltMetaTable["HeroStateDie"]            = "app.game.state.hero.HeroStateDie"
+ltMetaTable["HeroStateDizzy"]          = "app.game.state.hero.HeroStateDizzy"
+ltMetaTable["HeroStateIdle"]           = "app.game.state.hero.HeroStateIdle"
+ltMetaTable["HeroStateGlobal"]         = "app.game.state.hero.HeroStateGlobal"
+ltMetaTable["HeroStateMove"]           = "app.game.state.hero.HeroStateMove"
+ltMetaTable["HeroStateMoveHangup"]     = "app.game.state.hero.HeroStateMoveHangup"
+ltMetaTable["HeroStateOverlapMove"]    = "app.game.state.hero.HeroStateOverlapMove"
+ltMetaTable["HeroStateRoute"]          = "app.game.state.hero.HeroStateRoute"
+ltMetaTable["HeroStateSkill"]          = "app.game.state.hero.HeroStateSkill"
+ltMetaTable["HeroStateAFire"]          = "app.game.state.hero.HeroStateAFire"         -- tl 点燃
+ltMetaTable["HeroStateRapidMove"]      = "app.game.state.hero.HeroStateRapidMove"     -- 快速滑行
+ltMetaTable["HeroStateMoveToCapture"]  = "app.game.state.hero.HeroStateMoveToCapture" -- 移动到宠物并捕捉
+ltMetaTable["HeroStateSplitMove"]      = "app.game.state.hero.HeroStateSplitMove"
+ltMetaTable["HeroStateTeleport"]       = "app.game.state.hero.HeroStateTeleport"
+ltMetaTable["HeroStateTeleportResult"] = "app.game.state.hero.HeroStateTeleportResult"
+ltMetaTable["HeroStateShot"]           = "app.game.state.hero.HeroStateShot"
+ltMetaTable["HeroStateFly"]            = "app.game.state.hero.HeroStateFly"
+ltMetaTable["HeroStateMountIdle"]      = "app.game.state.hero.HeroStateMountIdle"
+ltMetaTable["HeroStateMountMove"]      = "app.game.state.hero.HeroStateMountMove"
+ltMetaTable["EleStateIdle"]            = "app.game.state.hero.EleStateIdle"
+ltMetaTable["EleStateMove"]            = "app.game.state.hero.EleStateMove"
+ltMetaTable["HeroStateTransform"]      = "app.game.state.hero.HeroStateTransform"
+ltMetaTable["HeroStateDancing"]        = "app.game.state.hero.HeroStateDancing"
+
+
+
+
+-- game-state-monster
+ltMetaTable["MonsterStateAppear"]   = "app.game.state.monster.MonsterStateAppear"
+ltMetaTable["MonsterStateBase"]     = "app.game.state.monster.MonsterStateBase"
+ltMetaTable["MonsterStateBack"]     = "app.game.state.monster.MonsterStateBack"
+ltMetaTable["MonsterStateDead"]     = "app.game.state.monster.MonsterStateDead"
+ltMetaTable["MonsterStateDie"]      = "app.game.state.monster.MonsterStateDie"
+ltMetaTable["MonsterStateDizzy"]    = "app.game.state.monster.MonsterStateDizzy"
+ltMetaTable["MonsterStateIdle"]     = "app.game.state.monster.MonsterStateIdle"
+ltMetaTable["MonsterStateMove"]     = "app.game.state.monster.MonsterStateMove"
+ltMetaTable["MonsterStateGlobal"]   = "app.game.state.monster.MonsterStateGlobal"
+ltMetaTable["MonsterStateSkill"]    = "app.game.state.monster.MonsterStateSkill"
+ltMetaTable["MonsterStateFly"]      = "app.game.state.monster.MonsterStateFly"
+ltMetaTable["MissileStateChase"]    = "app.game.state.monster.MissileStateChase"
+ltMetaTable["MonsterStateDig"]      = "app.game.state.monster.MonsterStateDig"
+ltMetaTable["MonsterWolfAttack"]    = "app.game.state.monster.MonsterWolfAttack"
+ltMetaTable["MonsterStateFastMove"] = "app.game.state.monster.MonsterStateFastMove"
+
+
+
+-- game-state-npc
+ltMetaTable["NpcStateBase"]         = "app.game.state.npc.NpcStateBase"
+ltMetaTable["NpcStateIdle"]         = "app.game.state.npc.NpcStateIdle"
+ltMetaTable["NpcStateGlobal"]       = "app.game.state.npc.NpcStateGlobal"
+
+-- game-state-trap
+ltMetaTable["TrapStateBase"]        = "app.game.state.trap.TrapStateBase"
+ltMetaTable["TrapStateMove"]        = "app.game.state.trap.TrapStateMove"
+ltMetaTable["TrapStateIdle"]        = "app.game.state.trap.TrapStateIdle"
+ltMetaTable["TrapStateGlobal"]      = "app.game.state.trap.TrapStateGlobal"
+
+-- game-system
+ltMetaTable["AgentSystem"]          = "app.game.system.AgentSystem"
+ltMetaTable["BufferSystem"]         = "app.game.system.BufferSystem"
+ltMetaTable["CmdSystem"]            = "app.game.system.CmdSystem"
+
+-- helper
+ltMetaTable["ArmatureAni"]          = "app.helper.ArmatureAni"
+ltMetaTable["GameBoard"]            = "app.helper.GameBoard"
+ltMetaTable["MapAnimationInfo"]     = "app.helper.MapAnimationInfo"
+-- ltMetaTable["MapData"]     = "app.helper.MapData"
+ltMetaTable["MN"]                   = "app.helper.MN"
+ltMetaTable["Queue"]                = "app.helper.Queue"
+ltMetaTable["Route"]                = "app.helper.Route"
+ltMetaTable["RouteCell"]            = "app.helper.RouteCell"
+ltMetaTable["TimeCounter"]          = "app.helper.TimeCounter"
+ltMetaTable["TimeTrigger"]          = "app.helper.TimeTrigger"
+ltMetaTable["CommonFunc"]           = "app.helper.CommonFunc"
+
+-- manager
+ltMetaTable["ActionManager"]        = "app.manager.ActionManager"
+ltMetaTable["EffectManager"]        = "app.manager.EffectManager"
+ltMetaTable["AgentManager"]         = "app.manager.AgentManager"
+ltMetaTable["AudioManager"]         = "app.manager.AudioManager"
+ltMetaTable["AutoManager"]          = "app.manager.AutoManager"
+ltMetaTable["CacheManager"]         = "app.manager.CacheManager"
+ltMetaTable["ConnectManager"]       = "app.manager.ConnectManager"
+ltMetaTable["MapbinManager"]        = "app.manager.MapbinManager"
+ltMetaTable["DbManager"]            = "app.manager.DbManager"
+ltMetaTable["GameManager"]          = "app.manager.GameManager"
+ltMetaTable["NtfManager"]           = "app.manager.NtfManager"
+ltMetaTable["PoolManager"]          = "app.manager.PoolManager"
+ltMetaTable["PrefManager"]          = "app.manager.PrefManager"
+ltMetaTable["ResManager"]           = "app.manager.ResManager"
+ltMetaTable["RouteManager"]         = "app.manager.RouteManager"
+ltMetaTable["SkillCdManager"]       = "app.manager.SkillCdManager"
+ltMetaTable["StringManager"]        = "app.manager.StringManager"
+ltMetaTable["UIManager"]            = "app.manager.UIManager"
+ltMetaTable["LoaderManager"]        = "app.manager.LoaderManager"
+ltMetaTable["UIMgr"]                = "app.manager.UIMgr"
+ltMetaTable["TimeCounterManager"]   = "app.manager.TimeCounterManager"
+ltMetaTable["ScheduleManager"]      = "app.manager.ScheduleManager"
+ltMetaTable["ReadTextManager"]      = "app.manager.ReadTextManager"
+ltMetaTable["WndLockManager"]       = "app.manager.WndLockManager"
+ltMetaTable["SkeletonManager"]      = "app.manager.SkeletonManager"
+ltMetaTable["MathTableManger"]      = "app.manager.MathTableManger"
+ltMetaTable["AutoFightManager"]     = "app.manager.AutoFightManager"
+ltMetaTable["EffectPoolManager"]    = "app.manager.EffectPoolManager"
+ltMetaTable["MapManager"]           = "app.manager.MapManager"
+ltMetaTable["FGuiManager"]          = "app.manager.FGuiManager"
+ltMetaTable["BulletSystem"]         = "app.game.skill.BulletSystem"
+
+-- module
+ltMetaTable["ActivityModule"]       = "app.module.ActivityModule"
+ltMetaTable["CommonModule"]         = "app.module.CommonModule"
+ltMetaTable["ChatModule"]           = "app.module.ChatModule"
+ltMetaTable["GameModule"]           = "app.module.GameModule"
+ltMetaTable["ItemModule"]           = "app.module.ItemModule"
+ltMetaTable["MapModule"]            = "app.module.MapModule"
+ltMetaTable["QuicklyWayModule"]     = "app.module.QuicklyWayModule"
+ltMetaTable["RoleModule"]           = "app.module.RoleModule"
+ltMetaTable["SkillModule"]          = "app.module.SkillModule"
+ltMetaTable["TaskModule"]           = "app.module.TaskModule"
+ltMetaTable["TradingModule"]        = "app.module.TradingModule"
+ltMetaTable["MailModule"]           = "app.module.MailModule"
+ltMetaTable["FlyModule"]            = "app.module.FlyModule"
+ltMetaTable["AppraPropModule"]      = "app.module.AppraPropModule"
+ltMetaTable["RedDotModule"]         = "app.module.RedDotModule"
+ltMetaTable["HandbookModule"]       = "app.module.HandbookModule"
+ltMetaTable["AchievementModule"]    = "app.module.AchievementModule"
+ltMetaTable["RuneModule"]           = "app.module.RuneModule"
+ltMetaTable["SheildModule"]         = "app.module.SheildModule"
+ltMetaTable["NpcModule"]            = "app.module.NpcModule"
+ltMetaTable["DailyTaskModule"]      = "app.module.DailyTaskModule"
+ltMetaTable["ToggleMarkModule"]     = "app.module.ToggleMarkModule"
+ltMetaTable["TransLiveModule"]      = "app.module.TransLiveModule"
+ltMetaTable["MonsterModule"]        = "app.module.MonsterModule"
+ltMetaTable["StrengthenModule"]     = "app.module.StrengthenModule"
+ltMetaTable["TeamModule"]           = "app.module.TeamModule"
+ltMetaTable["FriendModule"]         = "app.module.FriendModule"
+ltMetaTable["RechargeModule"]       = "app.module.RechargeModule"
+ltMetaTable["GuildModule"]          = "app.module.GuildModule"
+ltMetaTable["PetModule"]            = "app.module.PetModule"
+ltMetaTable["TransactionModule"]    = "app.module.TransactionModule"
+ltMetaTable["GuideModule"]          = "app.module.GuideModule"
+ltMetaTable["VipModule"]            = "app.module.VipModule"
+ltMetaTable["RankModule"]           = "app.module.RankModule"
+ltMetaTable["SevenDayModule"]       = "app.module.SevenDayModule"
+ltMetaTable["StatisticModule"]      = "app.module.StatisticModule"
+ltMetaTable["MountModule"]          = "app.module.MountModule"
+ltMetaTable["SettingModule"]        = "app.module.SettingModule"
+ltMetaTable["FunctionToggleModule"] = "app.module.FunctionToggleModule"
+ltMetaTable["EnergyModule"]         = "app.module.EnergyModule"
+ltMetaTable["HolyFightModule"]  = "app.module.HolyFightModule"
+ltMetaTable["TriggerGiftModule"]  = "app.module.TriggerGiftModule"
+ltMetaTable["WelfareModule"]        = "app.module.WelfareModule"
+
+
+-- net
+-- net-http
+ltMetaTable["HttpApi"]              = "app.net.http.HttpApi"
+ltMetaTable["HttpClient"]           = "app.net.http.HttpClient"
+
+-- net-socket
+ltMetaTable["SocketApi"]            = "app.net.socket.SocketApi"
+ltMetaTable["SocketManager"]        = "app.net.socket.SocketManager"
+ltMetaTable["NetData"]              = "app.net.socket.NetData"
+ltMetaTable["CliGgProto"]           = "app.net.socket.CliGgProto"
+ltMetaTable["PacketParser"]         = "app.net.socket.PacketParser"
+ltMetaTable["LoginCmd"]             = "app.net.socket.LoginCmd"
+ltMetaTable["ServerCmdDef"]         = "app.net.socket.ServerCmdDef"
+ltMetaTable["ClientCmdDef"]         = "app.net.socket.ClientCmdDef"
+ltMetaTable["ClientCmdDefNew"]      = "app.net.socket.ClientCmdDefNew"
+ltMetaTable["netcmd_pb"]            = "app.net.socket.protocol.netcmd_pb"
+
+-- scene
+-- scene-base
+ltMetaTable["BaseScene"]            = "app.scene.base.BaseScene"
+ltMetaTable["BaseLayer"]            = "app.scene.base.BaseLayer"
+
+ltMetaTable["ConnectLoading"]       = "app.scene.common.ConnectLoading"
+
+-- scene-init
+ltMetaTable["InitLauncherLayer"]    = "app.scene.init.InitLauncherLayer"
+
+ltMetaTable["InitScene"]            = "app.scene.init.InitScene"
+ltMetaTable["InitLayerAccount"]     = "app.scene.init.InitLayerAccount"
+ltMetaTable["InitLayerServer"]      = "app.scene.init.InitLayerServer"
+
+-- scene-game
+ltMetaTable["GameScene"]            = "app.scene.game.GameScene"
+ltMetaTable["GameLayer"]            = "app.scene.game.GameLayer"
+
+-- scene-role
+ltMetaTable["RoleScene"]            = "app.scene.role.RoleScene"
+ltMetaTable["RoleLayer"]            = "app.scene.role.RoleLayer"
+
+-- scene-game-handler
+ltMetaTable["HandlerManager"]       = "app.scene.game.handler.HandlerManager"
+ltMetaTable["HandlerNormal"]        = "app.scene.game.handler.HandlerNormal"
+
+-- scene-widget
+ltMetaTable["FadeOutView"]          = "app.scene.widget.FadeOutView"
+ltMetaTable["LabelEx"]              = "app.scene.widget.LabelEx"
+ltMetaTable["LabelButton"]          = "app.scene.widget.LabelButton"
+ltMetaTable["TextButton"]           = "app.scene.widget.TextButton"
+ltMetaTable["ScrollViewEx"]         = "app.scene.widget.ScrollViewEx"
+ltMetaTable["ServerButton"]         = "app.scene.widget.ServerButton"
+ltMetaTable["ListView"]             = "app.scene.widget.ListView"
+
+-- 需要屏蔽 因报错暂时保留 TODO
+ltMetaTable["UIDialog"]             = "app.scene.widget.dialog.UIDialog"
+ltMetaTable["UIWidget"]             = "app.scene.widget.widget.UIWidget"
+
+-- thirdparty
+ltMetaTable["ByteArray"]            = "app.thirdparty.ByteArray"
+ltMetaTable["ByteArrayVarint"]      = "app.thirdparty.ByteArrayVarint"
+
+-- util
+ltMetaTable["CommonUtil"]                   = "app.util.CommonUtil"
+ltMetaTable["MapUtil"]                      = "app.util.MapUtil"
+ltMetaTable["LogUtil"]                      = "app.util.LogUtil"
+ltMetaTable["ResUtil"]                      = "app.util.ResUtil"
+ltMetaTable["ScheduleUtil"]                 = "app.util.ScheduleUtil"
+ltMetaTable["ShaderBackendUtil"]            = "app.util.ShaderBackendUtil"
+ltMetaTable["RichText"]                     = "app.util.RichText"
+ltMetaTable["MaskWordUtil"]                 = "app.util.MaskWordUtil"
+ltMetaTable["TextFiledScrollUtils"]         = "app.util.TextFiledScrollUtils"
+ltMetaTable["Timetable"]                    = "app.util.luatz.timetable"
+
+-- fgui
+
+--utils
+ltMetaTable["FGUIUtil"]             = "app.util.FGUIUtil"
+ltMetaTable["FGUIRichText"]         = "app.util.FGUIRichText"
+--通用
+ltMetaTable["FGUIURL"]              = "app.scene.common.FGUIURL"
+--base
+ltMetaTable["GameFGUI"]             = "app.scene.game.GameFGUI"
+ltMetaTable["UIWindowBase"]         = "app.scene.widget.window.UIWindowBase"
+ltMetaTable["UIPanelBase"]          = "app.scene.widget.window.UIPanelBase"
+
+--ui base component
+ltMetaTable["UICompBase"]           = "app.scene.widget.component.UICompBase"
+ltMetaTable["UIGButtonBase"]        = "app.scene.widget.component.UIGButtonBase"
+
+
+
+
+ltMetaTable["UIWndGM"]                      = "app.scene.widget.window.UIWndGM"
+ltMetaTable["UICompGMNet"]                  = "app.scene.widget.component.UICompGMNet"
+ltMetaTable["UICompGM"]                     = "app.scene.widget.component.UICompGM"
+
+ltMetaTable["UIWndGMNew"]                   = "app.scene.widget.window.UIWndGMNew"
+ltMetaTable["UICompGmCmdCell"]              = "app.scene.widget.component.UICompGmCmdCell"
+
+ltMetaTable["UIWndMail"]                    = "app.scene.widget.window.UIWndMail"
+ltMetaTable["UICompMailItem"]               = "app.scene.widget.component.UICompMailItem"
+ltMetaTable["UICompMailDetail"]             = "app.scene.widget.component.UICompMailDetail"
+ltMetaTable["UICompMailContent"]            = "app.scene.widget.component.UICompMailContent"
+
+ltMetaTable["UIWndRoleEquip"]               = "app.scene.widget.window.UIWndRoleEquip"
+ltMetaTable["UIWndRoleInfo"]                = "app.scene.widget.window.UIWndRoleInfo"
+ltMetaTable["UIWndCheckRoleInfo"]           = "app.scene.widget.window.UIWndCheckRoleInfo"
+ltMetaTable["UICompRoleSkill"]              = "app.scene.widget.component.UICompRoleSkill"
+ltMetaTable["UICompTransfer"]               = "app.scene.widget.component.UICompTransfer"
+ltMetaTable["UICompMagicV"]                 = "app.scene.widget.component.UICompMagicV"
+ltMetaTable["UICompMagicS"]                 = "app.scene.widget.component.UICompMagicS"
+ltMetaTable["UICompMagicO"]                 = "app.scene.widget.component.UICompMagicO"
+ltMetaTable["UICompHelpTips"]               = "app.scene.widget.component.UICompHelpTips"
+ltMetaTable["UICompMagicOTree"]             = "app.scene.widget.component.UICompMagicOTree"
+ltMetaTable["UICompMagicOTree2"]            = "app.scene.widget.component.UICompMagicOTree2"
+ltMetaTable["UICompMiniMap"]                = "app.scene.widget.component.UICompMiniMap"
+ltMetaTable["UICompStateMap"]               = "app.scene.widget.component.UICompStateMap"
+ltMetaTable["UICompRename"]                 = "app.scene.widget.component.UICompRename"
+ltMetaTable["UICompUseCode"]                = "app.scene.widget.component.UICompMessageCode"
+ltMetaTable["UICompNpcSkillItem"]           = "app.scene.widget.component.UICompNpcSkillItem"
+ltMetaTable["UICompSkinAttrTips"]           = "app.scene.widget.component.UICompSkinAttrTips"
+ltMetaTable["UICompWelfareGiftRewardCell"]  = "app.scene.widget.component.UICompWelfareGiftRewardCell"
+ltMetaTable["UICompWelfareTitle"]           = "app.scene.widget.component.UICompWelfareTitle"
+
+ltMetaTable["UIWndWareHouse"]               = "app.scene.widget.window.UIWndWareHouse"
+ltMetaTable["UIWndMagicOTips"]              = "app.scene.widget.window.UIWndMagicOTips"
+ltMetaTable["UIWndLock"]                    = "app.scene.widget.window.UIWndLock"
+ltMetaTable["UIWndUsePoints"]               = "app.scene.widget.window.UIWndUsePoints"
+ltMetaTable["UIWndUsePointsCreate"]         = "app.scene.widget.window.UIWndUsePointsCreate"
+ltMetaTable["UIWndCurrentMap"]              = "app.scene.widget.window.UIWndCurrentMap"
+ltMetaTable["UIWndStateMap"]                = "app.scene.widget.window.UIWndStateMap"
+ltMetaTable["UIWndAppearance"]              = "app.scene.widget.window.UIWndAppearance"
+ltMetaTable["UIWndSlayerTransmitMap"]       = "app.scene.widget.window.UIWndSlayerTransmitMap"
+ltMetaTable["UICompSlayerTransmitSubMap"]   = "app.scene.widget.component.UICompSlayerTransmitSubMap"
+ltMetaTable["UIWndOustersTransmitMap"]      = "app.scene.widget.window.UIWndOustersTransmitMap"
+ltMetaTable["UICompOustersTransmitSubMap"]  = "app.scene.widget.component.UICompOustersTransmitSubMap"
+ltMetaTable["UICompOustersTransmitMapItem"] = "app.scene.widget.component.UICompOustersTransmitMapItem"
+ltMetaTable["UIWndElevator"]                = "app.scene.widget.window.UIWndElevator"
+ltMetaTable["UIWndUseItem"]                 = "app.scene.widget.window.UIWndUseItem"
+ltMetaTable["UIWndWelfareGift"]             = "app.scene.widget.window.UIWndWelfareGift"
+
+--装备强化
+ltMetaTable["UIWndStrengthen"]              = "app.scene.widget.window.UIWndStrengthen"
+ltMetaTable["UICompStLevelup"]              = "app.scene.widget.component.UICompStLevelup"
+ltMetaTable["UICompAttrItem"]               = "app.scene.widget.component.UICompAttrItem"
+ltMetaTable["UICompStEnchant"]              = "app.scene.widget.component.UICompStEnchant"
+ltMetaTable["UICompStEnchantResult"]        = "app.scene.widget.component.UICompStEnchantResult"
+ltMetaTable["UICompEnchantItem"]            = "app.scene.widget.component.UICompEnchantItem"
+ltMetaTable["UICompEnchantCost"]            = "app.scene.widget.component.UICompEnchantCost"
+ltMetaTable["UICompEnchantGem"]             = "app.scene.widget.component.UICompEnchantGem"
+ltMetaTable["UICompStFusion"]               = "app.scene.widget.component.UICompStFusion"
+ltMetaTable["UICompStFusionPreview"]        = "app.scene.widget.component.UICompStFusionPreview"
+ltMetaTable["UICompStRefinePreview"]        = "app.scene.widget.component.UICompStRefinePreview"
+ltMetaTable["UICompStSuccinct"]             = "app.scene.widget.component.UICompStSuccinct"
+ltMetaTable["UICompStSuccinctConfirm"]      = "app.scene.widget.component.UICompStSuccinctConfirm"
+--装备转换
+ltMetaTable["UICompTransformItem"]          = "app.scene.widget.component.UICompTransformItem"
+
+--npc功能(买卖)
+ltMetaTable["UIWndTrade"]                   = "app.scene.widget.window.UIWndTrade"
+--npc功能(维修/镀银)
+ltMetaTable["UIWndRepair"]                  = "app.scene.widget.window.UIWndRepair"
+--npc功能(兑换)
+ltMetaTable["UIWndNpcExchange"]             = "app.scene.widget.window.UIWndNpcExchange"
+ltMetaTable["UICompExchangeItem"]           = "app.scene.widget.component.UICompExchangeItem"
+--npc功能(鬼族属性点清洗)
+ltMetaTable["UIWndCleanPoint"]              = "app.scene.widget.window.UIWndCleanPoint"
+
+--组队功能
+ltMetaTable["UIWndTeam"]                    = "app.scene.widget.window.UIWndTeam"
+ltMetaTable["UICompTeamHall"]               = "app.scene.widget.component.UICompTeamHall"
+ltMetaTable["UICompTeamHallTab"]            = "app.scene.widget.component.UICompTeamHallTab"
+ltMetaTable["UICompTeamHallCell"]           = "app.scene.widget.component.UICompTeamHallCell"
+ltMetaTable["UICompTeamHallPlayer"]         = "app.scene.widget.component.UICompTeamHallPlayer"
+ltMetaTable["UICompTeamMy"]                 = "app.scene.widget.component.UICompTeamMy"
+ltMetaTable["UICompTeamMyCell"]             = "app.scene.widget.component.UICompTeamMyCell"
+ltMetaTable["UICompTeamCreate"]             = "app.scene.widget.component.UICompTeamCreate"
+ltMetaTable["UICompTeamCreateCell"]         = "app.scene.widget.component.UICompTeamCreateCell"
+ltMetaTable["UICompTeamApply"]              = "app.scene.widget.component.UICompTeamApply"
+ltMetaTable["UICompTeamApplyCell"]          = "app.scene.widget.component.UICompTeamApplyCell"
+
+
+-- 聊天功能
+ltMetaTable["UIWndChat"]                      = "app.scene.widget.window.UIWndChat"
+ltMetaTable["UIWndChatSetting"]               = "app.scene.widget.window.UIWndChatSetting"
+ltMetaTable["UICompChatPlayerCell"]           = "app.scene.widget.component.UICompChatPlayerCell"
+ltMetaTable["UICompChatRichTextCell"]         = "app.scene.widget.component.UICompChatRichTextCell"
+ltMetaTable["UICompChatSettingCell"]          = "app.scene.widget.component.UICompChatSettingCell"
+ltMetaTable["UICompChatQuick"]                = "app.scene.widget.component.UICompChatQuick"
+ltMetaTable["UICompChatEdit"]                 = "app.scene.widget.component.UICompChatEdit"
+ltMetaTable["UICompChatEditCell"]             = "app.scene.widget.component.UICompChatEditCell"
+ltMetaTable["UIWndChatPrivate"]               = "app.scene.widget.window.UIWndChatPrivate"
+
+--任务功能
+ltMetaTable["UIWndTask"]                      = "app.scene.widget.window.UIWndTask"
+ltMetaTable["UICompTaskItem"]                 = "app.scene.widget.component.UICompTaskItem"
+ltMetaTable["UICompBranchItem"]               = "app.scene.widget.component.UICompBranchItem"
+ltMetaTable["UICompTaskRewardItem"]           = "app.scene.widget.component.UICompTaskRewardItem"
+ltMetaTable["UICompBranchRewardItem"]         = "app.scene.widget.component.UICompBranchRewardItem"
+ltMetaTable["UIWndActivityTask"]              = "app.scene.widget.window.UIWndActivityTask"
+ltMetaTable["UICompActivityTaskItem"]         = "app.scene.widget.component.UICompActivityTaskItem"
+ltMetaTable["UIWndTaskTalk"]                  = "app.scene.widget.window.UIWndTaskTalk"
+ltMetaTable["UIWndTaskUseItem"]               = "app.scene.widget.window.UIWndTaskUseItem"
+
+--商城功能
+ltMetaTable["UIWndRecharge"]                  = "app.scene.widget.window.UIWndRecharge"
+ltMetaTable["UICompRechargeCell"]             = "app.scene.widget.component.UICompRechargeCell"
+ltMetaTable["UICompRechargeItem"]             = "app.scene.widget.component.UICompRechargeItem"
+ltMetaTable["UICompRechargeBuy"]              = "app.scene.widget.component.UICompRechargeBuy"
+ltMetaTable["UICompRechargeRmbCell"]          = "app.scene.widget.component.UICompRechargeRmbCell"
+
+--设置
+ltMetaTable["UIWndSetting"]                   = "app.scene.widget.window.UIWndSetting"
+
+ltMetaTable["UIWndChatLaba"]                  = "app.scene.widget.window.UIWndChatLaba"
+ltMetaTable["UICompChatLabaEmoji"]            = "app.scene.widget.component.UICompChatLabaEmoji"
+ltMetaTable["UIWndCustomize"]                 = "app.scene.widget.window.UIWndCustomize"
+
+-- 好友
+ltMetaTable["UIWndFriend"]                    = "app.scene.widget.window.UIWndFriend"
+ltMetaTable["UICompFriendAdd"]                = "app.scene.widget.component.UICompFriendAdd"
+ltMetaTable["UICompFriendCell"]               = "app.scene.widget.component.UICompFriendCell"
+ltMetaTable["UIWndFriendTips"]                = "app.scene.widget.window.UIWndFriendTips"
+ltMetaTable["UICompShowDestInfoTips"]         = "app.scene.widget.component.UICompShowDestInfoTips"
+
+--公会
+ltMetaTable["UIWndGuildList"]                 = "app.scene.widget.window.UIWndGuildList"
+ltMetaTable["UICompGuildListCell"]            = "app.scene.widget.component.UICompGuildListCell"
+ltMetaTable["UIWndGuildCreate"]               = "app.scene.widget.window.UIWndGuildCreate"
+ltMetaTable["UIWndGuildMain"]                 = "app.scene.widget.window.UIWndGuildMain"
+ltMetaTable["UICompGuildInfo"]                = "app.scene.widget.component.UICompGuildInfo"
+ltMetaTable["UICompGuildMemberList"]          = "app.scene.widget.component.UICompGuildMemberList"
+ltMetaTable["UICompGuildUnionList"]           = "app.scene.widget.component.UICompGuildUnionList"
+ltMetaTable["UIWndGuildNotice"]               = "app.scene.widget.window.UIWndGuildNotice"
+ltMetaTable["UICompGuildMemberListCell"]      = "app.scene.widget.component.UICompGuildMemberListCell"
+ltMetaTable["UIWndGuildApplyList"]            = "app.scene.widget.window.UIWndGuildApplyList"
+ltMetaTable["UICompGuildApplyListCell"]       = "app.scene.widget.component.UICompGuildApplyListCell"
+ltMetaTable["UICompGuildInfoTips"]            = "app.scene.widget.component.UICompGuildInfoTips"
+ltMetaTable["UICompGuildUnionListCell"]       = "app.scene.widget.component.UICompGuildUnionListCell"
+ltMetaTable["UIWndGuildUnionApplyList"]       = "app.scene.widget.window.UIWndGuildUnionApplyList"
+ltMetaTable["UICompGuildUnionApplyListCell"]  = "app.scene.widget.component.UICompGuildUnionApplyListCell"
+ltMetaTable["UICompGuildUnionInfo"]           = "app.scene.widget.component.UICompGuildUnionInfo"
+
+--宠物
+ltMetaTable["UIWndPet"]                       = "app.scene.widget.window.UIWndPet"
+ltMetaTable["UICompPetItem"]                  = "app.scene.widget.component.UICompPetItem"
+ltMetaTable["UICompPetAttr"]                  = "app.scene.widget.component.UICompPetAttr"
+ltMetaTable["UICompPetTame"]                  = "app.scene.widget.component.UICompPetTame"
+ltMetaTable["UICompPetSkill"]                 = "app.scene.widget.component.UICompPetSkill"
+ltMetaTable["UICompPetSkin"]                  = "app.scene.widget.component.UICompPetSkin"
+ltMetaTable["UIWndPetFeed"]                   = "app.scene.widget.component.UIWndPetFeed"
+ltMetaTable["UICompPetFeedItem"]              = "app.scene.widget.component.UICompPetFeedItem"
+ltMetaTable["UICompPetDetailTips"]            = "app.scene.widget.component.UICompPetDetailTips"
+ltMetaTable["UICompPetSkinItem"]              = "app.scene.widget.component.UICompPetSkinItem"
+ltMetaTable["UIWndPetUseSkin"]                = "app.scene.widget.component.UIWndPetUseSkin"
+
+--奖励提示
+ltMetaTable["UICompRewardTips"] = "app.scene.widget.component.UICompRewardTips"
+
+-- Vip
+ltMetaTable["UIWndVip"]                       = "app.scene.widget.window.UIWndVip"
+--交易行
+ltMetaTable["UIWndTransactionMain"]           = "app.scene.widget.window.UIWndTransactionMain"
+ltMetaTable["UICompTransactionBuy"]           = "app.scene.widget.component.UICompTransactionBuy"
+ltMetaTable["UICompTransactionSell"]          = "app.scene.widget.component.UICompTransactionSell"
+ltMetaTable["UICompTransactionSellCell"]      = "app.scene.widget.component.UICompTransactionSellCell"
+ltMetaTable["UICompTransactionShow"]          = "app.scene.widget.component.UICompTransactionShow"
+ltMetaTable["UICompTransactionMenuCell"]      = "app.scene.widget.component.UICompTransactionMenuCell"
+ltMetaTable["UICompTransactionBuySimpleCell"] = "app.scene.widget.component.UICompTransactionBuySimpleCell"
+ltMetaTable["UICompTransactionBuyDetailCell"] = "app.scene.widget.component.UICompTransactionBuyDetailCell"
+ltMetaTable["UIWndTransactionBuyTips"]        = "app.scene.widget.window.UIWndTransactionBuyTips"
+ltMetaTable["UIWndTransactionBidTips"]        = "app.scene.widget.window.UIWndTransactionBidTips"
+ltMetaTable["UIWndTransactionDownTips"]       = "app.scene.widget.window.UIWndTransactionDownTips"
+ltMetaTable["UIWndTransactionUpTips"]         = "app.scene.widget.window.UIWndTransactionUpTips"
+ltMetaTable["UICompTransactionCompareCell"]   = "app.scene.widget.component.UICompTransactionCompareCell"
+ltMetaTable["UIWndTransactionRecord"]         = "app.scene.widget.window.UIWndTransactionRecord"
+ltMetaTable["UICompTransactionRecordCell"]    = "app.scene.widget.component.UICompTransactionRecordCell"
+
+-- 排行榜
+ltMetaTable["UIWndRank"]                      = "app.scene.widget.window.UIWndRank"
+ltMetaTable["UICompRankCell"]                 = "app.scene.widget.component.UICompRankCell"
+ltMetaTable["UICompRankInfoTips"] = "app.scene.widget.component.UICompRankInfoTips"
+
+-- 帮助
+ltMetaTable["UIWndHelp"]                      = "app.scene.widget.window.UIWndHelp"
+ltMetaTable["UICompHelpMenuCell"]             = "app.scene.widget.component.UICompHelpMenuCell"
+
+ltMetaTable["UIWndGuideStart"]                = "app.scene.widget.window.UIWndGuideStart"
+
+-- 成就
+ltMetaTable["UIWndAchievement"]               = "app.scene.widget.window.UIWndAchievement"
+ltMetaTable["UICompAchievementDescCell"]      = "app.scene.widget.component.UICompAchievementDescCell"
+
+-- 自动回收
+ltMetaTable["UIWndAutoRecycle"]               = "app.scene.widget.window.UIWndAutoRecycle"
+ltMetaTable["UICompAutoRecycleMenuCell"]      = "app.scene.widget.component.UICompAutoRecycleMenuCell"
+-- 我要变强
+ltMetaTable["UIWndStrong"]                    = "app.scene.widget.window.UIWndStrong"
+ltMetaTable["UICompStrongFilterCell"]         = "app.scene.widget.component.UICompStrongFilterCell"
+ltMetaTable["UICompStrongCell"]               = "app.scene.widget.component.UICompStrongCell"
+
+-- 每日特惠
+ltMetaTable["UIWndDailyGift"]                 = "app.scene.widget.window.UIWndDailyGift"
+ltMetaTable["UICompDailyGiftRewardCell"]      = "app.scene.widget.component.UICompDailyGiftRewardCell"
+-- 天天充值
+ltMetaTable["UICompDayDayChargeCell"]     = "app.scene.widget.component.UICompDayDayChargeCell"
+ltMetaTable["UICompDayDayChargeItemCell"] = "app.scene.widget.component.UICompDayDayChargeItemCell"
+
+-- 首充
+ltMetaTable["UIWndFirstRecharge"]             = "app.scene.widget.window.UIWndFirstRecharge"
+ltMetaTable["UICompActivityItemCell"]         = "app.scene.widget.component.UICompActivityItemCell"
+-- 七日活动
+ltMetaTable["UIWndSevenDay"]                  = "app.scene.widget.window.UIWndSevenDay"
+ltMetaTable["UICompSevenDayTaskCell"]         = "app.scene.widget.component.UICompSevenDayTaskCell"
+ltMetaTable["UICompSevenDayRewardCell"]       = "app.scene.widget.component.UICompSevenDayRewardCell"
+-- 菜单
+ltMetaTable["UIWndExit"]                      = "app.scene.widget.window.UIWndExit"
+-- 副本
+ltMetaTable["UIWndDungeon"]                   = "app.scene.widget.window.UIWndDungeon"
+ltMetaTable["UIWndMonthCardMap"]              = "app.scene.widget.window.UIWndMonthCardMap"
+
+-- 月卡
+ltMetaTable["UIWndMonthCard"] = "app.scene.widget.window.UIWndMonthCard"
+
+--精力系统
+ltMetaTable["UIWndEnergy"]                    = "app.scene.widget.window.UIWndEnergy"
+ltMetaTable["UICompEnergyCell"]               = "app.scene.widget.component.UICompEnergyCell"
+ltMetaTable["UIWndEnergyBuy"]                 = "app.scene.widget.window.UIWndEnergyBuy"
+
+-- 坐骑
+ltMetaTable["UIWndMountMain"]                 = "app.scene.widget.window.UIWndMountMain"
+ltMetaTable["UICompMount"]                    = "app.scene.widget.component.UICompMount"
+ltMetaTable["UICompMountItem"]                = "app.scene.widget.component.UICompMountItem"
+ltMetaTable["UICompMountNumbCell"]            = "app.scene.widget.component.UICompMountNumbCell"
+ltMetaTable["UICompAllAttrsTips"]             = "app.scene.widget.component.UICompAllAttrsTips"
+
+--boss精英
+ltMetaTable["UIWndLeader"] = "app.scene.widget.window.UIWndLeader"
+ltMetaTable["UICompLeaderBossItem"] = "app.scene.widget.component.UICompLeaderBossItem"
+ltMetaTable["UICompLeaderEliteItem"] = "app.scene.widget.component.UICompLeaderEliteItem"
+ltMetaTable["UICompLeaderDropItem"] = "app.scene.widget.component.UICompLeaderDropItem"
+
+-- 触发礼包
+ltMetaTable["UIWndTriggerGift"] = "app.scene.widget.window.UIWndTriggerGift"
+----------------------------- 天之炼狱----------------------------------------------
+
+---创建角色
+ltMetaTable["CompCreateRole"]                 = "app.scene.role.CompCreateRole"
+
+
+
+
+--- 主界面
+ltMetaTable["TLLayerManager"] = "app.scene.gameTL.TLLayerManager"
+
+ltMetaTable["GameLayer"] = "app.scene.gameTL.layers.GameLayer"
+ltMetaTable["GameLayerBase"] = "app.scene.gameTL.layers.GameLayerBase"
+ltMetaTable["GameLayerUI"] = "app.scene.gameTL.layers.GameLayerUI"
+
+ltMetaTable["ControlLayer"] = "app.scene.gameTL.layers.ControlLayer"
+ltMetaTable["MainUILayer"] = "app.scene.gameTL.layers.MainUILayer"
+ltMetaTable["TLWndLayer"] = "app.scene.gameTL.layers.WndLayer"
+ltMetaTable["TLTipsLayer"] = "app.scene.gameTL.layers.TipsLayer"
+ltMetaTable["TLSureLayer"] = "app.scene.gameTL.layers.SureLayer"
+ltMetaTable["TLNoticeLayer"] = "app.scene.gameTL.layers.NoticeLayer"
+ltMetaTable["TLTopLayer"] = "app.scene.gameTL.layers.TopLayer"
+ltMetaTable["TLEditLayer"] = "app.scene.gameTL.layers.EditLayer"
+ltMetaTable["TLGuideLayer"] = "app.scene.gameTL.layers.GuideLayer"
+ltMetaTable["TLTransitionLayer"] = "app.scene.gameTL.layers.TransitionLayer"
+ltMetaTable["TLMapGuideLayer"] = "app.scene.gameTL.layers.MapGuideLayer"
+
+
+ltMetaTable["MWeather"] = "app.scene.gameTL.MWeather"
+ltMetaTable["MapEffect"] = "app.scene.gameTL.MapEffect"
+ltMetaTable["GameTimer"] = "app.scene.gameTL.GameTimer"
+ltMetaTable["Creature"] = "app.game.actor.Creature"
+
+
+
+ltMetaTable["CompFunc"] = "app.scene.gameTL.comps.CompFunc"
+
+ltMetaTable["CompHP"] = "app.scene.gameTL.comps.CompHP"
+ltMetaTable["CompDestInfo"] = "app.scene.gameTL.comps.CompDestInfo"
+ltMetaTable["CompMenu"] = "app.scene.gameTL.comps.CompMenu"
+ltMetaTable["CompMiniMap"] = "app.scene.gameTL.comps.CompMiniMap"
+ltMetaTable["CompBullet"] = "app.scene.gameTL.comps.CompBullet"
+ltMetaTable["CompPromptSys"] = "app.scene.gameTL.comps.CompPromptSys"
+ltMetaTable["CompPromptSysItem"] = "app.scene.gameTL.comps.CompPromptSysItem"
+ltMetaTable["CompMainTimeIcon"] = "app.scene.gameTL.comps.CompMainTimeIcon"
+
+
+ltMetaTable["CompBuff"] = "app.scene.gameTL.comps.CompBuff"
+ltMetaTable["CompTask"] = "app.scene.gameTL.comps.CompTask"
+ltMetaTable["CompTeamCell"] = "app.scene.gameTL.comps.CompTeamCell"
+ltMetaTable["CompTaskCell"] = "app.scene.gameTL.comps.CompTaskCell"
+ltMetaTable["CompChat"] = "app.scene.gameTL.comps.CompChat"
+ltMetaTable["CompTarget"] = "app.scene.gameTL.comps.CompTarget"
+ltMetaTable["CompTargetCell"] = "app.scene.gameTL.comps.CompTargetCell"
+ltMetaTable["CompLeftTime"] = "app.scene.gameTL.comps.CompLeftTime"
+ltMetaTable["CompAutoEquip"] = "app.scene.gameTL.comps.CompAutoEquip"
+ltMetaTable["CompDurability"] = "app.scene.gameTL.comps.CompDurability"
+ltMetaTable["CompImprove"] = "app.scene.gameTL.comps.CompImprove"
+
+
+ltMetaTable["CompItemTips"]         = "app.scene.gameTL.comps.CompItemTips"
+ltMetaTable["CompPlayerTips"]       = "app.scene.gameTL.comps.CompPlayerTips"
+
+ltMetaTable["CompQuickItem"]        = "app.scene.gameTL.comps.CompQuickItem"
+ltMetaTable["CompQuickBar"]         = "app.scene.gameTL.comps.CompQuickBar"
+ltMetaTable["CompQuickBar2"]        = "app.scene.gameTL.comps.CompQuickBar2"
+ltMetaTable["CompBuffItem"]         = "app.scene.gameTL.comps.CompBuffItem"
+ltMetaTable["CompSkillEdit"]        = "app.scene.gameTL.comps.CompSkillEdit"
+ltMetaTable['CompSkillOperate']     = "app.scene.gameTL.comps.CompSkillOperate"
+ltMetaTable['CompSkillItem']        = "app.scene.gameTL.comps.CompSkillItem"
+ltMetaTable['SkillEditDefaultConf'] = "app.scene.gameTL.comps.SkillEditDefaultConf"
+ltMetaTable['CompSkillEditTips']    = "app.scene.gameTL.comps.CompSkillEditTips"
+ltMetaTable['CompSkillOperateItem'] = "app.scene.gameTL.comps.CompSkillOperateItem"
+ltMetaTable["CompExp"]              = "app.scene.gameTL.comps.CompExp"
+ltMetaTable['CompNoticeSys']        = "app.scene.gameTL.comps.CompNoticeSys"
+ltMetaTable['CompTrace']            = "app.scene.gameTL.comps.CompTrace"
+ltMetaTable["CompRevive"]           = "app.scene.gameTL.comps.CompRevive"
+ltMetaTable["CompReviveItem"]       = "app.scene.gameTL.comps.CompReviveItem"
+
+
+
+--创角
+ltMetaTable["RoleLayerTL"]        = "app.scene.role.RoleLayerTL"
+ltMetaTable["CompCreateRole"]     = "app.scene.role.CompCreateRole"
+ltMetaTable["CompSelectRole"]     = "app.scene.role.CompSelectRole"
+ltMetaTable["CompSelectRoleItem"] = "app.scene.role.CompSelectRoleItem"
+
+ltMetaTable["Attributes"]         = "app.scene.role.Attributes"
+ltMetaTable["RoleColor"]          = "app.scene.role.RoleColor"
+ltMetaTable["TipRoleLayer"]       = "app.scene.role.TipRoleLayer"
+ltMetaTable["MsgboxRoleLayer"]    = "app.scene.role.MsgboxRoleLayer"
+ltMetaTable["CompColorTiled"]     = "app.scene.role.CompColorTiled"
+ltMetaTable["VersionTool"]        = "app.scene.role.VersionTool"
+
+
+
+
+
+---功能
+ltMetaTable["InventoryGridManger"]  = "app.manager.InventoryGridManger"
+ltMetaTable["UIWndInventory"]       = "app.scene.widget.window.UIWndInventory"
+ltMetaTable["UICompExpandBagItem"]  = "app.scene.widget.component.UICompExpandBagItem"
+ltMetaTable["UICompInventoryTiled"] = "app.scene.widget.component.UICompInventoryTiled"
+ltMetaTable["UICompInventoryTab"]   = "app.scene.widget.component.UICompInventoryTab"
+ltMetaTable["UIWndTalkNpc"]         = "app.scene.widget.window.UIWndTalkNpc"
+ltMetaTable["UIWndNpcSkill"]        = "app.scene.widget.window.UIWndNpcSkill"
+ltMetaTable["UIWndNpcClsSkill"]     = "app.scene.widget.window.UIWndNpcClsSkill"
+ltMetaTable["UIWndNpcHolyBook"]     = "app.scene.widget.window.UIWndNpcHolyBook"
+ltMetaTable["UICompHolyBookCell"]   = "app.scene.widget.component.UICompHolyBookCell"
+
+
+ltMetaTable["UICompChangeSkin"]        = "app.scene.widget.component.UICompChangeSkin"
+ltMetaTable["UICompItem"]              = "app.scene.widget.component.UICompItem"
+ltMetaTable["UICompRoleEquipItem"]     = "app.scene.widget.component.UICompRoleEquipItem"
+ltMetaTable["UICompShowEquipTips"]     = "app.scene.widget.component.UICompShowEquipTips"
+ltMetaTable["UICompEquipTips"]         = "app.scene.widget.component.UICompEquipTips"
+ltMetaTable["UICompShowTextTips"]      = "app.scene.widget.component.UICompShowTextTips"
+ltMetaTable["UICompSkillItem"]         = "app.scene.widget.component.UICompSkillItem"
+ltMetaTable["UICompMessageBox"]        = "app.scene.widget.component.UICompMessageBox"
+ltMetaTable["UICompMessageBoxSmall"]   = "app.scene.widget.component.UICompMessageBoxSmall"
+ltMetaTable["UICompMessageBoxNum"]     = "app.scene.widget.component.UICompMessageBoxNum"
+ltMetaTable["UICompMessageBoxSell"]    = "app.scene.widget.component.UICompMessageBoxSell"
+ltMetaTable["UICompMessageBoxRemove"]  = "app.scene.widget.component.UICompMessageBoxRemove"
+ltMetaTable["UICompMessageBoxSure"]    = "app.scene.widget.component.UICompMessageBoxSure"
+ltMetaTable["UICompMessageBoxVoucher"] = "app.scene.widget.component.UICompMessageBoxVoucher"
+
+
+ltMetaTable["UICompShowSkillTips"]   = "app.scene.widget.component.UICompShowSkillTips"
+ltMetaTable["UICompSkillTips"]       = "app.scene.widget.component.UICompSkillTips"
+ltMetaTable["UICompMagicItem"]       = "app.scene.widget.component.UICompMagicItem"
+ltMetaTable["UICompTSkillItem"]      = "app.scene.widget.component.UICompTSkillItem"
+ltMetaTable["UICompSkillTips"]       = "app.scene.widget.component.UICompSkillTips"
+ltMetaTable["UICompNpcTalkItem"]     = "app.scene.widget.component.UICompNpcTalkItem"
+ltMetaTable["UICompAppearanceItem"]  = "app.scene.widget.component.UICompAppearanceItem"
+ltMetaTable["UICompNpcClsSkillItem"] = "app.scene.widget.component.UICompNpcClsSkillItem"
+
+
+---shader
+ltMetaTable["ShaderBaseEffect"]         = "app.shader.ShaderBaseEffect"
+ltMetaTable["ShaderColorReplaceEffect"] = "app.shader.ShaderColorReplaceEffect"
+ltMetaTable["ShaderCyanEffect"]         = "app.shader.ShaderCyanEffect"
+ltMetaTable["ShaderMulModelEffect"]     = "app.shader.ShaderMulModelEffect"
+ltMetaTable["MaskGLProgramState"]       = "app.shader.MaskGLProgramState"
+ltMetaTable["ShaderWeaponEffect"]       = "app.shader.ShaderWeaponEffect"
+ltMetaTable["ShaderBorderEmptyEffect"]  = "app.shader.ShaderBorderEmptyEffect"
+ltMetaTable["ShaderLightEffect"]        = "app.shader.ShaderLightEffect"
+ltMetaTable["ShaderHoleEffect"]         = "app.shader.ShaderHoleEffect"
+ltMetaTable["ShaderCasketEffect"]       = "app.shader.ShaderCasketEffect"
+
+
+
+
+--- shader vert fragment
+ltMetaTable["ShaderNormalVS"]                        = "app.shader.shaders.ShaderNormalVS"
+ltMetaTable["ShaderNormalFS"]                        = "app.shader.shaders.ShaderNormalFS"
+ltMetaTable["ShaderColorModelFS"]                    = "app.shader.shaders.ShaderColorModelFS"
+ltMetaTable["ShaderColorReplaceFS"]                  = "app.shader.shaders.ShaderColorReplaceFS"
+ltMetaTable["ShaderColorReplaceMulFS"]               = "app.shader.shaders.ShaderColorReplaceMulFS"
+ltMetaTable["ShaderHoleFS"]                          = "app.shader.shaders.ShaderHoleFS"
+ltMetaTable["ShaderBorderEmptyVS"]                   = "app.shader.shaders.ShaderBorderEmptyVS"
+ltMetaTable["ShaderBorderEmptyFS"]                   = "app.shader.shaders.ShaderBorderEmptyFS"
+ltMetaTable["ShaderLightFS"]                         = "app.shader.shaders.ShaderLightFS"
+ltMetaTable["ShaderHoleFS"]                          = "app.shader.shaders.ShaderHoleFS"
+ltMetaTable["ShaderCasketWipeOutFS"]                 = "app.shader.shaders.ShaderCasketWipeOutFS"
+ltMetaTable["ShaderBossFS"]                          = "app.shader.shaders.ShaderBossFS"
+ltMetaTable["ShaderBossVS"]                          = "app.shader.shaders.ShaderBossVS"
+ltMetaTable["ShaderSpriteFrameTextureMask_fragment"] = "app.shader.shaders.ShaderSpriteFrameTextureMask_fragment"
+
+
+ltMetaTable["AssetManager"]  = "app.updater.AssetManager"
+ltMetaTable["Updater"]       = "app.updater.Updater"
+ltMetaTable["UpdaterCache"]  = "app.updater.UpdaterCache"
+
+---changeskin
+ltMetaTable["ChangeSkin"]    = "app.scene.widget.changeSkin.ChangeSkin"
+ltMetaTable["InvertorySkin"] = "app.scene.widget.changeSkin.InvertorySkin"
+----------------------------- 天之炼狱----------------------------------------------

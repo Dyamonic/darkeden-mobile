@@ -1,0 +1,5175 @@
+{
+ "Map": [
+  {
+   "MapCode": "11",
+   "MapName": "Eslonian_Northeast",
+   "MapName_en": "eslania_NE"
+  },
+  {
+   "MapCode": "12",
+   "MapName": "Eslania Northwest",
+   "MapName_en": "eslania_NW"
+  },
+  {
+   "MapCode": "13",
+   "MapName": "Eslonian_Southeast",
+   "MapName_en": "eslania_SE"
+  },
+  {
+   "MapCode": "14",
+   "MapName": "Eslonian_Southwest",
+   "MapName_en": "eslania_SW"
+  },
+  {
+   "MapCode": "21",
+   "MapName": "Lin Baocheng_Northeast",
+   "MapName_en": "limbo_lair_NE"
+  },
+  {
+   "MapCode": "22",
+   "MapName": "Lin Baocheng_Northwest",
+   "MapName_en": "limbo_lair_NW"
+  },
+  {
+   "MapCode": "23",
+   "MapName": "Lin Baocheng_Southeast",
+   "MapName_en": "limbo_lair_SE"
+  },
+  {
+   "MapCode": "24",
+   "MapName": "Lin Baocheng_Southwest",
+   "MapName_en": "limbo_lair_SW"
+  },
+  {
+   "MapCode": "31",
+   "MapName": "Drobit_Northeast",
+   "MapName_en": "drobeta_NE"
+  },
+  {
+   "MapCode": "32",
+   "MapName": "Drobit_Northwest",
+   "MapName_en": "drobeta_NW"
+  },
+  {
+   "MapCode": "33",
+   "MapName": "Drobit_Southeast",
+   "MapName_en": "drobeta_SE"
+  },
+  {
+   "MapCode": "34",
+   "MapName": "Drobit_Southwest",
+   "MapName_en": "drobeta_SW"
+  },
+  {
+   "MapCode": "41",
+   "MapName": "Luodingshan_Northeast",
+   "MapName_en": "rodin_NE"
+  },
+  {
+   "MapCode": "42",
+   "MapName": "Luodingshan_Northwest",
+   "MapName_en": "rodin_NW"
+  },
+  {
+   "MapCode": "43",
+   "MapName": "Luodingshan_Southeast",
+   "MapName_en": "rodin_SE"
+  },
+  {
+   "MapCode": "44",
+   "MapName": "Luodingshan_Southwest",
+   "MapName_en": "rodin_SW"
+  },
+  {
+   "MapCode": "51",
+   "MapName": "Timor Lake_Northeast",
+   "MapName_en": "timore_NE"
+  },
+  {
+   "MapCode": "52",
+   "MapName": "Timor Lake_Northwest",
+   "MapName_en": "timore_NW"
+  },
+  {
+   "MapCode": "53",
+   "MapName": "Timor Lake_Southeast",
+   "MapName_en": "timore_SE"
+  },
+  {
+   "MapCode": "54",
+   "MapName": "Timor Lake_Southwest",
+   "MapName_en": "timore_SW"
+  },
+  {
+   "MapCode": "61",
+   "MapName": "Pelona_Northeast",
+   "MapName_en": "perona_NE"
+  },
+  {
+   "MapCode": "62",
+   "MapName": "Pelona_Northwest",
+   "MapName_en": "perona_NW"
+  },
+  {
+   "MapCode": "63",
+   "MapName": "Pelona_Southeast",
+   "MapName_en": "perona_SE"
+  },
+  {
+   "MapCode": "64",
+   "MapName": "Pelona_Southwest",
+   "MapName_en": "perona_SW"
+  },
+  {
+   "MapCode": "71",
+   "MapName": "Adam's Holy Land_East",
+   "MapName_en": "adam_new_e"
+  },
+  {
+   "MapCode": "72",
+   "MapName": "Adam Sanctuary - Central",
+   "MapName_en": "adam_new_c"
+  },
+  {
+   "MapCode": "73",
+   "MapName": "Adam's Holy Land_West",
+   "MapName_en": "adam_new_w"
+  },
+  {
+   "MapCode": "74",
+   "MapName": "Adam's Holy Land_North",
+   "MapName_en": "adam_new_c_n"
+  },
+  {
+   "MapCode": "75",
+   "MapName": "Adam's Holy Land_South",
+   "MapName_en": "adam_new_c_s"
+  },
+  {
+   "MapCode": "81",
+   "MapName": "Castaro_Northeast",
+   "MapName_en": "castalo_NE"
+  },
+  {
+   "MapCode": "91",
+   "MapName": "Blanc_Northeast",
+   "MapName_en": "vranco_NE"
+  },
+  {
+   "MapCode": "92",
+   "MapName": "Blanc_Northwest",
+   "MapName_en": "vranco_NW"
+  },
+  {
+   "MapCode": "93",
+   "MapName": "Blanc_Southeast",
+   "MapName_en": "vranco_SE"
+  },
+  {
+   "MapCode": "94",
+   "MapName": "Blanc_Southwest",
+   "MapName_en": "vranco_SW"
+  },
+  {
+   "MapCode": "1001",
+   "MapName": "underground sewer",
+   "MapName_en": "slayers_training"
+  },
+  {
+   "MapCode": "1002",
+   "MapName": "Eslonia Dungeon",
+   "MapName_en": "eslania_dungeon"
+  },
+  {
+   "MapCode": "1003",
+   "MapName": "Inside Linbaocheng",
+   "MapName_en": "vampire_village"
+  },
+  {
+   "MapCode": "1004",
+   "MapName": "Linbaocheng Dungeon",
+   "MapName_en": "limbo_dungeon"
+  },
+  {
+   "MapCode": "1005",
+   "MapName": "activity area",
+   "MapName_en": "drobeta_OX"
+  },
+  {
+   "MapCode": "1006",
+   "MapName": "event competition venue",
+   "MapName_en": "drobeta_stadium1"
+  },
+  {
+   "MapCode": "1007",
+   "MapName": "Inside Larsen Castle",
+   "MapName_en": "rasen_yard"
+  },
+  {
+   "MapCode": "1008",
+   "MapName": "Kali Grottoes",
+   "MapName_en": "kali_cave"
+  },
+  {
+   "MapCode": "1009",
+   "MapName": "Larsen Training Camp",
+   "MapName_en": "rasen_training"
+  },
+  {
+   "MapCode": "1010",
+   "MapName": "Pike Tunnel",
+   "MapName_en": "tunnel_peiac"
+  },
+  {
+   "MapCode": "1011",
+   "MapName": "Lost Tai'an basement level",
+   "MapName_en": "losttaiyan_b1f"
+  },
+  {
+   "MapCode": "1012",
+   "MapName": "Lost Tai'an underground second floor",
+   "MapName_en": "losttaiyan_b2f"
+  },
+  {
+   "MapCode": "1013",
+   "MapName": "Asirion Dungeon",
+   "MapName_en": "Asylion dungeon Low"
+  },
+  {
+   "MapCode": "1020",
+   "MapName": "Activity Competition Field 2",
+   "MapName_en": "drobeta_stadium2"
+  },
+  {
+   "MapCode": "1100",
+   "MapName": "Bathory Dungeon basement level",
+   "MapName_en": "bathory_dungeon_B1F"
+  },
+  {
+   "MapCode": "1101",
+   "MapName": "Bathory Dungeon underground second floor",
+   "MapName_en": "bathory_dungeon_B2F"
+  },
+  {
+   "MapCode": "1102",
+   "MapName": "The third underground floor of Bathory Dungeon",
+   "MapName_en": "bathory_dungeon_B3F"
+  },
+  {
+   "MapCode": "1103",
+   "MapName": "The fourth underground floor of Bathory Dungeon",
+   "MapName_en": "bathory_dungeon_B4F"
+  },
+  {
+   "MapCode": "1104",
+   "MapName": "Bathory Palace",
+   "MapName_en": "bathory_lair"
+  },
+  {
+   "MapCode": "1105",
+   "MapName": "Gurba Tunnel",
+   "MapName_en": "tunnel_ghorgova"
+  },
+  {
+   "MapCode": "1106",
+   "MapName": "Replica of Bathory Palace",
+   "MapName_en": "bathory_lair_clon"
+  },
+  {
+   "MapCode": "1111",
+   "MapName": "Lassen_Ground Floor",
+   "MapName_en": "castle_rasen_1_1"
+  },
+  {
+   "MapCode": "1112",
+   "MapName": "Lassen_Inner City 1st Floor",
+   "MapName_en": "castle_rasen_1_2"
+  },
+  {
+   "MapCode": "1113",
+   "MapName": "Lassen_Inner City 2nd Floor",
+   "MapName_en": "castle_rasen_2_2"
+  },
+  {
+   "MapCode": "1114",
+   "MapName": "Tepuzi Palace",
+   "MapName_en": "tepes_lair"
+  },
+  {
+   "MapCode": "1115",
+   "MapName": "Replica of Tepuzi Palace",
+   "MapName_en": "tepes_lair_clon"
+  },
+  {
+   "MapCode": "1122",
+   "MapName": "Temori Holy Land",
+   "MapName_en": "slayer_battlezone2"
+  },
+  {
+   "MapCode": "1123",
+   "MapName": "Hiram Holy Land",
+   "MapName_en": "bathory_battlezone"
+  },
+  {
+   "MapCode": "1126",
+   "MapName": "Basement 1 of Eisen Dungeon",
+   "MapName_en": "drobeta_dungeon_v1f"
+  },
+  {
+   "MapCode": "1124",
+   "MapName": "Second underground floor of Eisen Dungeon",
+   "MapName_en": "rasen_battlezone"
+  },
+  {
+   "MapCode": "1127",
+   "MapName": "The third underground floor of Eisen Dungeon",
+   "MapName_en": "icen_dungeon3f"
+  },
+  {
+   "MapCode": "1125",
+   "MapName": "The underground floor of Rom Dungeon",
+   "MapName_en": "drobeta_dungeon_s1f"
+  },
+  {
+   "MapCode": "1121",
+   "MapName": "The second underground floor of Rom Dungeon",
+   "MapName_en": "slayer_battlezone1"
+  },
+  {
+   "MapCode": "1128",
+   "MapName": "The third underground floor of Rom Dungeon",
+   "MapName_en": "laom_Dungeon3F"
+  },
+  {
+   "MapCode": "1129",
+   "MapName": "The fourth underground floor of Rom Dungeon",
+   "MapName_en": "laom_dungeon4f"
+  },
+  {
+   "MapCode": "1130",
+   "MapName": "The fifth underground floor of Rom Dungeon",
+   "MapName_en": "laom_dungeon5f"
+  },
+  {
+   "MapCode": "1131",
+   "MapName": "Karigao Dungeon 1st Floor",
+   "MapName_en": "caligo_dungeon1"
+  },
+  {
+   "MapCode": "1132",
+   "MapName": "Kali Gao Dungeon 2nd Floor",
+   "MapName_en": "caligo_dungeon2"
+  },
+  {
+   "MapCode": "1133",
+   "MapName": "Karigao Dungeon 3rd Floor",
+   "MapName_en": "caligo_dungeon3"
+  },
+  {
+   "MapCode": "1134",
+   "MapName": "Karigao Dungeon 4th floor",
+   "MapName_en": "caligo_dungeon4"
+  },
+  {
+   "MapCode": "1201",
+   "MapName": "Otaeus City",
+   "MapName_en": "castle_octavus"
+  },
+  {
+   "MapCode": "1202",
+   "MapName": "Terrace City",
+   "MapName_en": "castle_tertius"
+  },
+  {
+   "MapCode": "1203",
+   "MapName": "Septimus",
+   "MapName_en": "castle_septimus"
+  },
+  {
+   "MapCode": "1204",
+   "MapName": "Quotas City",
+   "MapName_en": "castle_quartus"
+  },
+  {
+   "MapCode": "1205",
+   "MapName": "Pentanus City",
+   "MapName_en": "castle_pentanus"
+  },
+  {
+   "MapCode": "1206",
+   "MapName": "Hexilius City",
+   "MapName_en": "castle_hexserius"
+  },
+  {
+   "MapCode": "1211",
+   "MapName": "The underground floor of Ortaeus Dungeon",
+   "MapName_en": "octavus_dungeon1f"
+  },
+  {
+   "MapCode": "1212",
+   "MapName": "The second underground floor of Ortaeus Dungeon",
+   "MapName_en": "octavus_dungeon2f"
+  },
+  {
+   "MapCode": "1221",
+   "MapName": "The underground floor of Tris Dungeon",
+   "MapName_en": "tertius_dungeon1f"
+  },
+  {
+   "MapCode": "1222",
+   "MapName": "The second underground floor of Tris Dungeon",
+   "MapName_en": "tertius_dungeon2f"
+  },
+  {
+   "MapCode": "1231",
+   "MapName": "The underground floor of Septimus Dungeon",
+   "MapName_en": "septimus_dungeon1f"
+  },
+  {
+   "MapCode": "1232",
+   "MapName": "Second underground floor of Septimus Dungeon",
+   "MapName_en": "septimus_dungeon2f"
+  },
+  {
+   "MapCode": "1241",
+   "MapName": "The underground floor of Quotas Dungeon",
+   "MapName_en": "quartus_dungeon1f"
+  },
+  {
+   "MapCode": "1242",
+   "MapName": "Second underground floor of Quotas Dungeon",
+   "MapName_en": "quartus_dungeon2f"
+  },
+  {
+   "MapCode": "1251",
+   "MapName": "Pentanus Dungeon basement level",
+   "MapName_en": "pentanus_dungeon1f"
+  },
+  {
+   "MapCode": "1252",
+   "MapName": "Pentanus dungeon underground second floor",
+   "MapName_en": "pentanus_dungeon2f"
+  },
+  {
+   "MapCode": "1261",
+   "MapName": "The underground floor of Hexilius Dungeon",
+   "MapName_en": "hexserius_dungeon1f"
+  },
+  {
+   "MapCode": "1262",
+   "MapName": "Second underground floor of Hexilius Dungeon",
+   "MapName_en": "hexserius_dungeon2f"
+  },
+  {
+   "MapCode": "1301",
+   "MapName": "Aote",
+   "MapName_en": "slayerpk"
+  },
+  {
+   "MapCode": "1302",
+   "MapName": "Alternian",
+   "MapName_en": "vampirepk"
+  },
+  {
+   "MapCode": "1303",
+   "MapName": "Barnato",
+   "MapName_en": "freepk"
+  },
+  {
+   "MapCode": "1311",
+   "MapName": "Demon Village",
+   "MapName_en": "ousters_village"
+  },
+  {
+   "MapCode": "1321",
+   "MapName": "The underground floor of Heinir Dungeon",
+   "MapName_en": "ousters_dungeon01"
+  },
+  {
+   "MapCode": "1322",
+   "MapName": "Second underground floor of Heinier Dungeon",
+   "MapName_en": "ousters_dungeon02"
+  },
+  {
+   "MapCode": "1323",
+   "MapName": "The third underground floor of Heinier Dungeon",
+   "MapName_en": "ousters_dungeon03"
+  },
+  {
+   "MapCode": "1324",
+   "MapName": "The fourth underground floor of Heinir Dungeon",
+   "MapName_en": "ousters_dungeon04"
+  },
+  {
+   "MapCode": "1401",
+   "MapName": "The first floor of the Lost Tower",
+   "MapName_en": "lusttower_1f"
+  },
+  {
+   "MapCode": "1402",
+   "MapName": "Lost Tower 2nd Floor",
+   "MapName_en": "lusttower_2f"
+  },
+  {
+   "MapCode": "1410",
+   "MapName": "Road to Illusion 1",
+   "MapName_en": "Gdr_illusion_01"
+  },
+  {
+   "MapCode": "1411",
+   "MapName": "Road to Illusion 2",
+   "MapName_en": "Gdr_illusion_02"
+  },
+  {
+   "MapCode": "1412",
+   "MapName": "Music Palace",
+   "MapName_en": "Gdr_lair_01"
+  },
+  {
+   "MapCode": "1413",
+   "MapName": "Redari Palace",
+   "MapName_en": "Gdr_lair_hard"
+  },
+  {
+   "MapCode": "1500",
+   "MapName": "siege area",
+   "MapName_en": "siege_warfare1"
+  },
+  {
+   "MapCode": "1501",
+   "MapName": "Ortaeus siege area",
+   "MapName_en": "siege_warfare2"
+  },
+  {
+   "MapCode": "1502",
+   "MapName": "Terris siege area",
+   "MapName_en": "siege_warfare3"
+  },
+  {
+   "MapCode": "1503",
+   "MapName": "Septimus Sieges Hell",
+   "MapName_en": "siege_warfare4"
+  },
+  {
+   "MapCode": "1504",
+   "MapName": "Quotas siege area",
+   "MapName_en": "siege_warfare5"
+  },
+  {
+   "MapCode": "1505",
+   "MapName": "Pontanus siege area",
+   "MapName_en": "siege_warfare6"
+  },
+  {
+   "MapCode": "1506",
+   "MapName": "Hexilius siege area",
+   "MapName_en": "siege_warfare7"
+  },
+  {
+   "MapCode": "1600",
+   "MapName": "The Road to Terror",
+   "MapName_en": "path_to_fears"
+  },
+  {
+   "MapCode": "1601",
+   "MapName": "IK Office",
+   "MapName_en": "ik_offic"
+  },
+  {
+   "MapCode": "1602",
+   "MapName": "IK laboratory",
+   "MapName_en": "ik_lab"
+  },
+  {
+   "MapCode": "1603",
+   "MapName": "IK laboratory underground first floor",
+   "MapName_en": "ik_lab_b1f"
+  },
+  {
+   "MapCode": "1604",
+   "MapName": "IK laboratory second floor underground",
+   "MapName_en": "ik_lab_b2f"
+  },
+  {
+   "MapCode": "1611",
+   "MapName": "1st floor of underground passage",
+   "MapName_en": "under_pass_1f"
+  },
+  {
+   "MapCode": "1612",
+   "MapName": "Second floor of underground passage",
+   "MapName_en": "under_pass_2f"
+  },
+  {
+   "MapCode": "1621",
+   "MapName": "Road to the Underworld",
+   "MapName_en": "castellum"
+  },
+  {
+   "MapCode": "1701",
+   "MapName": "Ancient Lair A1 Floor",
+   "MapName_en": "menegroth_1f_slayer"
+  },
+  {
+   "MapCode": "1702",
+   "MapName": "Floor A2 of the ancient lair",
+   "MapName_en": "menegroth_2f_slayer"
+  },
+  {
+   "MapCode": "1703",
+   "MapName": "Ancient Lair A3 Floor",
+   "MapName_en": "menegroth_3f_slayer"
+  },
+  {
+   "MapCode": "1704",
+   "MapName": "Ancient Lair A4 Floor",
+   "MapName_en": "menegroth_4f_slayer"
+  },
+  {
+   "MapCode": "1705",
+   "MapName": "Floor A5 of the ancient lair",
+   "MapName_en": "menegroth_5f_slayer"
+  },
+  {
+   "MapCode": "1706",
+   "MapName": "Ancient Lair A6 Floor",
+   "MapName_en": "menegroth_6f_slayer"
+  },
+  {
+   "MapCode": "1707",
+   "MapName": "Ancient Lair B1 Floor",
+   "MapName_en": "menegroth_1f_vampire"
+  },
+  {
+   "MapCode": "1708",
+   "MapName": "Ancient Lair B2 Floor",
+   "MapName_en": "menegroth_2f_vampire"
+  },
+  {
+   "MapCode": "1709",
+   "MapName": "Ancient Lair B3 Floor",
+   "MapName_en": "menegroth_3f_vampire"
+  },
+  {
+   "MapCode": "1710",
+   "MapName": "Ancient Lair B4 Floor",
+   "MapName_en": "menegroth_4f_vampire"
+  },
+  {
+   "MapCode": "1711",
+   "MapName": "Ancient Nest B5 Floor",
+   "MapName_en": "menegroth_5f_vampire"
+  },
+  {
+   "MapCode": "1712",
+   "MapName": "Ancient Nest B6 Floor",
+   "MapName_en": "menegroth_6f_vampire"
+  },
+  {
+   "MapCode": "1713",
+   "MapName": "Ancient Lair C1 Floor",
+   "MapName_en": "menegroth_1f_ousters"
+  },
+  {
+   "MapCode": "1714",
+   "MapName": "Ancient Lair C2 Floor",
+   "MapName_en": "menegroth_2f_ousters"
+  },
+  {
+   "MapCode": "1715",
+   "MapName": "Ancient Lair C3 Floor",
+   "MapName_en": "menegroth_3f_ousters"
+  },
+  {
+   "MapCode": "1716",
+   "MapName": "Ancient Lair C4 Floor",
+   "MapName_en": "menegroth_4f_ousters"
+  },
+  {
+   "MapCode": "1717",
+   "MapName": "Ancient Lair C5 Floor",
+   "MapName_en": "menegroth_5f_ousters"
+  },
+  {
+   "MapCode": "1718",
+   "MapName": "Ancient Lair C6 Floor",
+   "MapName_en": "menegroth_6f_ousters"
+  },
+  {
+   "MapCode": "2000",
+   "MapName": "Military Association Basement 1",
+   "MapName_en": "guild_army_B1"
+  },
+  {
+   "MapCode": "2001",
+   "MapName": "Military Guild Level 1",
+   "MapName_en": "guild_army_1F"
+  },
+  {
+   "MapCode": "2002",
+   "MapName": "Military Guild 2nd Floor",
+   "MapName_en": "guild_army_2F"
+  },
+  {
+   "MapCode": "2003",
+   "MapName": "Military Guild Third Floor",
+   "MapName_en": "guild_army_3F"
+  },
+  {
+   "MapCode": "2010",
+   "MapName": "Clergy Guild B1",
+   "MapName_en": "guild_cleric_B1"
+  },
+  {
+   "MapCode": "2011",
+   "MapName": "Priest Guild Level 1",
+   "MapName_en": "guild_cleric_1F"
+  },
+  {
+   "MapCode": "2012",
+   "MapName": "The second floor of the Priest Guild",
+   "MapName_en": "guild_cleric_2F"
+  },
+  {
+   "MapCode": "2013",
+   "MapName": "Priest Guild Third Floor",
+   "MapName_en": "guild_cleric_3F"
+  },
+  {
+   "MapCode": "2020",
+   "MapName": "Samurai Guild B1",
+   "MapName_en": "guild_knight_B1"
+  },
+  {
+   "MapCode": "2021",
+   "MapName": "Warrior Guild Level 1",
+   "MapName_en": "guild_knight_1F"
+  },
+  {
+   "MapCode": "2022",
+   "MapName": "Samurai Guild 2nd Floor",
+   "MapName_en": "guild_knight_2F"
+  },
+  {
+   "MapCode": "2023",
+   "MapName": "Samurai Guild third floor",
+   "MapName_en": "guild_knight_3F"
+  },
+  {
+   "MapCode": "2101",
+   "MapName": "Unreal Training Ground_North",
+   "MapName_en": "tutorial_N"
+  },
+  {
+   "MapCode": "2102",
+   "MapName": "Unreal Training Ground_South",
+   "MapName_en": "tutorial_S"
+  },
+  {
+   "MapCode": "4001",
+   "MapName": "Altar entrance",
+   "MapName_en": "gate_of_alter"
+  },
+  {
+   "MapCode": "4002",
+   "MapName": "Blood Altar",
+   "MapName_en": "alter_of_blood"
+  },
+  {
+   "MapCode": "4003",
+   "MapName": "Mirror Human of the Abyss",
+   "MapName_en": "gate_of_alter-S"
+  },
+  {
+   "MapCode": "4004",
+   "MapName": "Mirror Vampire of the Abyss",
+   "MapName_en": "gate_of_alter-V"
+  },
+  {
+   "MapCode": "4005",
+   "MapName": "Mirror Demon of the Abyss",
+   "MapName_en": "gate_of_alter-O"
+  },
+  {
+   "MapCode": "5000",
+   "MapName": "The first floor of Hell Garden",
+   "MapName_en": "hell_garden_1f"
+  },
+  {
+   "MapCode": "5001",
+   "MapName": "The first floor of the Blood Tower",
+   "MapName_en": "hell_garden_tower-1F-01"
+  },
+  {
+   "MapCode": "5002",
+   "MapName": "The first floor of the Tower of the Abyss",
+   "MapName_en": "hell_garden_tower-1F-02"
+  },
+  {
+   "MapCode": "5003",
+   "MapName": "The first floor of the Tower of Emmanuel",
+   "MapName_en": "hell_garden_tower-1F-03"
+  },
+  {
+   "MapCode": "5004",
+   "MapName": "The first floor of the Tower of Desire",
+   "MapName_en": "hell_garden_tower-1F-04"
+  },
+  {
+   "MapCode": "5010",
+   "MapName": "The second floor of Hell Garden",
+   "MapName_en": "hell_garden_2f"
+  },
+  {
+   "MapCode": "5011",
+   "MapName": "Second floor of Blood Tower",
+   "MapName_en": "hell_garden_tower-2F-01"
+  },
+  {
+   "MapCode": "5012",
+   "MapName": "Second floor of Tower of Abyss",
+   "MapName_en": "hell_garden_tower-2F-02"
+  },
+  {
+   "MapCode": "5013",
+   "MapName": "Second floor of Tower of Emmanuel",
+   "MapName_en": "hell_garden_tower-2F-03"
+  },
+  {
+   "MapCode": "5014",
+   "MapName": "The second floor of the Tower of Desire",
+   "MapName_en": "hell_garden_tower-2F-04"
+  },
+  {
+   "MapCode": "5020",
+   "MapName": "The third floor of Hell Garden",
+   "MapName_en": "hell_garden_3f"
+  },
+  {
+   "MapCode": "5021",
+   "MapName": "The third floor of the Blood Tower",
+   "MapName_en": "hell_garden_tower-3F-01"
+  },
+  {
+   "MapCode": "5022",
+   "MapName": "Tower of Abyss third floor",
+   "MapName_en": "hell_garden_tower-3F-02"
+  },
+  {
+   "MapCode": "5023",
+   "MapName": "The third floor of the Tower of Emmanuel",
+   "MapName_en": "hell_garden_tower-3F-03"
+  },
+  {
+   "MapCode": "5024",
+   "MapName": "The third floor of the Tower of Desire",
+   "MapName_en": "hell_garden_tower-3F-04"
+  },
+  {
+   "MapCode": "5030",
+   "MapName": "The fourth floor of Hell Garden",
+   "MapName_en": "hell_garden_4f"
+  },
+  {
+   "MapCode": "5031",
+   "MapName": "The fourth floor of the Blood Tower",
+   "MapName_en": "hell_garden_tower-4F-01"
+  },
+  {
+   "MapCode": "5032",
+   "MapName": "The fourth floor of the Tower of the Abyss",
+   "MapName_en": "hell_garden_tower-4F-02"
+  },
+  {
+   "MapCode": "5033",
+   "MapName": "The fourth floor of the Tower of Emmanuel",
+   "MapName_en": "hell_garden_tower-4F-03"
+  },
+  {
+   "MapCode": "5034",
+   "MapName": "The fourth floor of the Tower of Desire",
+   "MapName_en": "hell_garden_tower-4F-04"
+  },
+  {
+   "MapCode": "5040",
+   "MapName": "The fifth floor of Hell Garden",
+   "MapName_en": "hell_garden_5f"
+  },
+  {
+   "MapCode": "5041",
+   "MapName": "The fifth floor of the Blood Tower",
+   "MapName_en": "hell_garden_tower-5F-01"
+  },
+  {
+   "MapCode": "5042",
+   "MapName": "Tower of the Abyss, fifth floor",
+   "MapName_en": "hell_garden_tower-5F-02"
+  },
+  {
+   "MapCode": "5043",
+   "MapName": "The fifth floor of the Tower of Emmanuel",
+   "MapName_en": "hell_garden_tower-5F-03"
+  },
+  {
+   "MapCode": "5044",
+   "MapName": "The fifth floor of the Tower of Desire",
+   "MapName_en": "hell_garden_tower-5F-04"
+  }
+ ],
+ "NpcList": [
+  {
+   "NpcIndex": 10,
+   "NpcName": "BathoryFake"
+  },
+  {
+   "NpcIndex": 11,
+   "NpcName": "TepezFake"
+  },
+  {
+   "NpcIndex": 12,
+   "NpcName": "BathoryFake"
+  },
+  {
+   "NpcIndex": 13,
+   "NpcName": "TepezFake"
+  },
+  {
+   "NpcIndex": 101,
+   "NpcName": "Matt (guide)"
+  },
+  {
+   "NpcIndex": 102,
+   "NpcName": "Jack (communication)"
+  },
+  {
+   "NpcIndex": 103,
+   "NpcName": "Terry (job change)"
+  },
+  {
+   "NpcIndex": 104,
+   "NpcName": "Nanxi (supply)"
+  },
+  {
+   "NpcIndex": 105,
+   "NpcName": "Tana (career introduction)"
+  },
+  {
+   "NpcIndex": 106,
+   "NpcName": "Zach (skill)"
+  },
+  {
+   "NpcIndex": 107,
+   "NpcName": "Kaizer (knife, sword)"
+  },
+  {
+   "NpcIndex": 110,
+   "NpcName": "Christine (warehouse)"
+  },
+  {
+   "NpcIndex": 111,
+   "NpcName": "Robin (warehouse)"
+  },
+  {
+   "NpcIndex": 112,
+   "NpcName": "Jenson (gun)"
+  },
+  {
+   "NpcIndex": 113,
+   "NpcName": "Yuwa (knife)"
+  },
+  {
+   "NpcIndex": 114,
+   "NpcName": "Han (sword)"
+  },
+  {
+   "NpcIndex": 115,
+   "NpcName": "Rakomanov (treatment)"
+  },
+  {
+   "NpcIndex": 116,
+   "NpcName": "Haniva (blessing)"
+  },
+  {
+   "NpcIndex": 117,
+   "NpcName": "Friedlie (job transfer exchange)"
+  },
+  {
+   "NpcIndex": 118,
+   "NpcName": "Kalman (Holy Book)"
+  },
+  {
+   "NpcIndex": 119,
+   "NpcName": "Smarrovic\n(silver plated)"
+  },
+  {
+   "NpcIndex": 120,
+   "NpcName": "Argonos (teleport)"
+  },
+  {
+   "NpcIndex": 121,
+   "NpcName": "Johanna (supply)"
+  },
+  {
+   "NpcIndex": 122,
+   "NpcName": "Chris (warehouse)"
+  },
+  {
+   "NpcIndex": 123,
+   "NpcName": "Shandra (armor)"
+  },
+  {
+   "NpcIndex": 124,
+   "NpcName": "Golub (jewelry)"
+  },
+  {
+   "NpcIndex": 125,
+   "NpcName": "Sihara (gloves and boots)"
+  },
+  {
+   "NpcIndex": 126,
+   "NpcName": "Kenan (donation)"
+  },
+  {
+   "NpcIndex": 127,
+   "NpcName": "Kevin (warehouse)"
+  },
+  {
+   "NpcIndex": 128,
+   "NpcName": "David (teleport)"
+  },
+  {
+   "NpcIndex": 129,
+   "NpcName": "Salamander (supply)"
+  },
+  {
+   "NpcIndex": 130,
+   "NpcName": "Clive (jewelry)"
+  },
+  {
+   "NpcIndex": 131,
+   "NpcName": "Sonia (armor)"
+  },
+  {
+   "NpcIndex": 132,
+   "NpcName": "Krall (weapon)"
+  },
+  {
+   "NpcIndex": 133,
+   "NpcName": "Drake (gun)"
+  },
+  {
+   "NpcIndex": 134,
+   "NpcName": "Sutan (SMG)"
+  },
+  {
+   "NpcIndex": 135,
+   "NpcName": "Smith (donation)"
+  },
+  {
+   "NpcIndex": 136,
+   "NpcName": "Xinsen (supply)"
+  },
+  {
+   "NpcIndex": 137,
+   "NpcName": "Grifen (repair)"
+  },
+  {
+   "NpcIndex": 138,
+   "NpcName": "Richardson (groceries)"
+  },
+  {
+   "NpcIndex": 139,
+   "NpcName": "Nikola (equipment)"
+  },
+  {
+   "NpcIndex": 140,
+   "NpcName": "Yebukini (marriage)"
+  },
+  {
+   "NpcIndex": 141,
+   "NpcName": "Caine"
+  },
+  {
+   "NpcIndex": 142,
+   "NpcName": "Stoyanov (donation)"
+  },
+  {
+   "NpcIndex": 143,
+   "NpcName": "Shamor (Equipment)"
+  },
+  {
+   "NpcIndex": 144,
+   "NpcName": "Music Palace Messenger"
+  },
+  {
+   "NpcIndex": 145,
+   "NpcName": "Music Palace Messenger"
+  },
+  {
+   "NpcIndex": 154,
+   "NpcName": "Aislin (reset)"
+  },
+  {
+   "NpcIndex": 155,
+   "NpcName": "Ellen (Guild Battle)"
+  },
+  {
+   "NpcIndex": 156,
+   "NpcName": "Simon (Management)"
+  },
+  {
+   "NpcIndex": 157,
+   "NpcName": "Harold (repair)"
+  },
+  {
+   "NpcIndex": 158,
+   "NpcName": "Judith (supply)"
+  },
+  {
+   "NpcIndex": 159,
+   "NpcName": "Brenda (Management)"
+  },
+  {
+   "NpcIndex": 160,
+   "NpcName": "Crow (armor)"
+  },
+  {
+   "NpcIndex": 161,
+   "NpcName": "Hesbro (silver plated)"
+  },
+  {
+   "NpcIndex": 162,
+   "NpcName": "Denis (repair)"
+  },
+  {
+   "NpcIndex": 163,
+   "NpcName": "rare book (supply)"
+  },
+  {
+   "NpcIndex": 164,
+   "NpcName": "Supervisory Crystal Ball (Exchange)"
+  },
+  {
+   "NpcIndex": 201,
+   "NpcName": "Sola (Guide)"
+  },
+  {
+   "NpcIndex": 202,
+   "NpcName": "Li Te (donation)"
+  },
+  {
+   "NpcIndex": 203,
+   "NpcName": "Ravia (exchange)"
+  },
+  {
+   "NpcIndex": 205,
+   "NpcName": "Amata (warehouse)"
+  },
+  {
+   "NpcIndex": 206,
+   "NpcName": "Hao La (repair)"
+  },
+  {
+   "NpcIndex": 207,
+   "NpcName": "Aya (teleport)"
+  },
+  {
+   "NpcIndex": 209,
+   "NpcName": "Manes (Groceries)"
+  },
+  {
+   "NpcIndex": 210,
+   "NpcName": "Li Te (donation)"
+  },
+  {
+   "NpcIndex": 211,
+   "NpcName": "Haola (Holy Book)"
+  },
+  {
+   "NpcIndex": 217,
+   "NpcName": "Lowa (tax rate)"
+  },
+  {
+   "NpcIndex": 218,
+   "NpcName": "Rip (reset)"
+  },
+  {
+   "NpcIndex": 219,
+   "NpcName": "Nitrisha (guild battle)"
+  },
+  {
+   "NpcIndex": 220,
+   "NpcName": "Aigino (Management)"
+  },
+  {
+   "NpcIndex": 221,
+   "NpcName": "Eronia (repair)"
+  },
+  {
+   "NpcIndex": 222,
+   "NpcName": "Nassas (reset)"
+  },
+  {
+   "NpcIndex": 301,
+   "NpcName": "Ballery (armor)"
+  },
+  {
+   "NpcIndex": 302,
+   "NpcName": "Foley Colagas (skill)"
+  },
+  {
+   "NpcIndex": 303,
+   "NpcName": "Kakun (Guild)"
+  },
+  {
+   "NpcIndex": 304,
+   "NpcName": "Seth (jewelry)"
+  },
+  {
+   "NpcIndex": 305,
+   "NpcName": "Lebeka (exchange)"
+  },
+  {
+   "NpcIndex": 306,
+   "NpcName": "Kain (skill)"
+  },
+  {
+   "NpcIndex": 307,
+   "NpcName": "Aiman (Guild)"
+  },
+  {
+   "NpcIndex": 308,
+   "NpcName": "Priya (married)"
+  },
+  {
+   "NpcIndex": 309,
+   "NpcName": "Murphy (teleport)"
+  },
+  {
+   "NpcIndex": 311,
+   "NpcName": "Capatini (warehouse)"
+  },
+  {
+   "NpcIndex": 312,
+   "NpcName": "Grippis (warehouse)"
+  },
+  {
+   "NpcIndex": 313,
+   "NpcName": "Belst (transmission)"
+  },
+  {
+   "NpcIndex": 323,
+   "NpcName": "Beatrix (Management)"
+  },
+  {
+   "NpcIndex": 324,
+   "NpcName": "Hunter (city management)"
+  },
+  {
+   "NpcIndex": 325,
+   "NpcName": "Mary (Guild Battle)"
+  },
+  {
+   "NpcIndex": 326,
+   "NpcName": "Aimi (Guild Battle)"
+  },
+  {
+   "NpcIndex": 327,
+   "NpcName": "Morok (reset)"
+  },
+  {
+   "NpcIndex": 328,
+   "NpcName": "Baron (Tax)"
+  },
+  {
+   "NpcIndex": 329,
+   "NpcName": "Laliba (exchange)"
+  },
+  {
+   "NpcIndex": 330,
+   "NpcName": "Agnar (warehouse)"
+  },
+  {
+   "NpcIndex": 401,
+   "NpcName": "Ortaeus (offensive)"
+  },
+  {
+   "NpcIndex": 402,
+   "NpcName": "Ortaeus (Defense)"
+  },
+  {
+   "NpcIndex": 403,
+   "NpcName": "Septimus (offensive)"
+  },
+  {
+   "NpcIndex": 404,
+   "NpcName": "Septimus (Defense)"
+  },
+  {
+   "NpcIndex": 405,
+   "NpcName": "Sethris (offensive)"
+  },
+  {
+   "NpcIndex": 406,
+   "NpcName": "Setris(Defense)"
+  },
+  {
+   "NpcIndex": 407,
+   "NpcName": "Quotas (offensive)"
+  },
+  {
+   "NpcIndex": 408,
+   "NpcName": "Quotas (Defense)"
+  },
+  {
+   "NpcIndex": 409,
+   "NpcName": "Pentanus (offensive)"
+  },
+  {
+   "NpcIndex": 410,
+   "NpcName": "Pontanus(Defense)"
+  },
+  {
+   "NpcIndex": 411,
+   "NpcName": "Hexilius (offensive)"
+  },
+  {
+   "NpcIndex": 412,
+   "NpcName": "Hexilius(Defense)"
+  },
+  {
+   "NpcIndex": 413,
+   "NpcName": "Eternal"
+  },
+  {
+   "NpcIndex": 414,
+   "NpcName": "Apollo"
+  },
+  {
+   "NpcIndex": 415,
+   "NpcName": "Manason"
+  },
+  {
+   "NpcIndex": 416,
+   "NpcName": "Pisket"
+  },
+  {
+   "NpcIndex": 417,
+   "NpcName": "Palaros"
+  },
+  {
+   "NpcIndex": 418,
+   "NpcName": "Eric"
+  },
+  {
+   "NpcIndex": 501,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 502,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 503,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 504,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 505,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 506,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 507,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 508,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 509,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 510,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 511,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 512,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 513,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 514,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 515,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 516,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 517,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 518,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 519,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 520,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 521,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 522,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 523,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 524,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 525,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 526,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 527,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 528,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 529,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 530,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 531,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 532,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 533,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 534,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 535,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 536,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 537,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 538,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 539,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 540,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 541,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 542,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 543,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 544,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 545,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 546,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 547,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 548,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 549,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 550,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 551,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 552,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 553,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 554,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 555,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 556,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 557,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 558,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 559,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 560,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 561,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 562,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 563,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 564,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 565,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 566,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 567,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 568,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 569,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 570,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 571,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 572,
+   "NpcName": "The Corner of the Earth Spirit"
+  },
+  {
+   "NpcIndex": 601,
+   "NpcName": "Matt"
+  },
+  {
+   "NpcIndex": 602,
+   "NpcName": "Matt"
+  },
+  {
+   "NpcIndex": 603,
+   "NpcName": "Matt"
+  },
+  {
+   "NpcIndex": 604,
+   "NpcName": "Matt"
+  },
+  {
+   "NpcIndex": 605,
+   "NpcName": "Matt"
+  },
+  {
+   "NpcIndex": 611,
+   "NpcName": "Hao La"
+  },
+  {
+   "NpcIndex": 612,
+   "NpcName": "Hao La"
+  },
+  {
+   "NpcIndex": 613,
+   "NpcName": "Hao La"
+  },
+  {
+   "NpcIndex": 614,
+   "NpcName": "Hao La"
+  },
+  {
+   "NpcIndex": 615,
+   "NpcName": "Hao La"
+  },
+  {
+   "NpcIndex": 621,
+   "NpcName": "Ballery"
+  },
+  {
+   "NpcIndex": 622,
+   "NpcName": "Ballery"
+  },
+  {
+   "NpcIndex": 623,
+   "NpcName": "Ballery"
+  },
+  {
+   "NpcIndex": 624,
+   "NpcName": "Ballery"
+  },
+  {
+   "NpcIndex": 625,
+   "NpcName": "Ballery"
+  }
+ ],
+ "Item": [
+  {
+   "ItemIdx": 101001,
+   "Name": "Lei Check",
+   "ENName": "Lei Check"
+  },
+  {
+   "ItemIdx": 101002,
+   "Name": "Geld Check",
+   "ENName": "Geld Check"
+  },
+  {
+   "ItemIdx": 101003,
+   "Name": "Zard Check",
+   "ENName": "Zard Check"
+  },
+  {
+   "ItemIdx": 101004,
+   "Name": "Lei Check",
+   "ENName": "Lei Check"
+  },
+  {
+   "ItemIdx": 101005,
+   "Name": "Geld Check",
+   "ENName": "Geld Check"
+  },
+  {
+   "ItemIdx": 101006,
+   "Name": "Zard Check",
+   "ENName": "Zard Check"
+  },
+  {
+   "ItemIdx": 101007,
+   "Name": "Lei Check",
+   "ENName": "Lei Check"
+  },
+  {
+   "ItemIdx": 101008,
+   "Name": "Geld Check",
+   "ENName": "Geld Check"
+  },
+  {
+   "ItemIdx": 101009,
+   "Name": "Zard Check",
+   "ENName": "Zard Check"
+  },
+  {
+   "ItemIdx": 201001,
+   "Name": "Skull",
+   "ENName": "Skull"
+  },
+  {
+   "ItemIdx": 201002,
+   "Name": "Dirty Strider Head",
+   "ENName": "Dirty Strider Head"
+  },
+  {
+   "ItemIdx": 201003,
+   "Name": "Blood Warlock Head",
+   "ENName": "Blood Warlock Head"
+  },
+  {
+   "ItemIdx": 201004,
+   "Name": "Mutant Head",
+   "ENName": "Mutant Head"
+  },
+  {
+   "ItemIdx": 201005,
+   "Name": "Turning Soul Head",
+   "ENName": "Turning Soul Head"
+  },
+  {
+   "ItemIdx": 201006,
+   "Name": "Turning Dead Head",
+   "ENName": "Turning Dead Head"
+  },
+  {
+   "ItemIdx": 201007,
+   "Name": "Kid Head",
+   "ENName": "Kid Head"
+  },
+  {
+   "ItemIdx": 201008,
+   "Name": "Captain Head",
+   "ENName": "Captain Head"
+  },
+  {
+   "ItemIdx": 201009,
+   "Name": "Alkan Head",
+   "ENName": "Alkan Head"
+  },
+  {
+   "ItemIdx": 201010,
+   "Name": "Soldier Head",
+   "ENName": "Soldier Head"
+  },
+  {
+   "ItemIdx": 201011,
+   "Name": "Red Eye Head",
+   "ENName": "Red Eye Head"
+  },
+  {
+   "ItemIdx": 201012,
+   "Name": "Dead Body Head",
+   "ENName": "Dead Body Head"
+  },
+  {
+   "ItemIdx": 201013,
+   "Name": "Golden Skull",
+   "ENName": "Golden Skull"
+  },
+  {
+   "ItemIdx": 201014,
+   "Name": "Purple Skull",
+   "ENName": "Purple Skull"
+  },
+  {
+   "ItemIdx": 201015,
+   "Name": "Black Skull",
+   "ENName": "Black Skull"
+  },
+  {
+   "ItemIdx": 201016,
+   "Name": "Crystal Skull",
+   "ENName": "Crystal Skull"
+  },
+  {
+   "ItemIdx": 201017,
+   "Name": "Green Skull",
+   "ENName": "Green Skull"
+  },
+  {
+   "ItemIdx": 201018,
+   "Name": "Vandalizer Head",
+   "ENName": "Vandalizer Head"
+  },
+  {
+   "ItemIdx": 201019,
+   "Name": "Crimson Slaughter Head",
+   "ENName": "Crimson Slaughter Head"
+  },
+  {
+   "ItemIdx": 201020,
+   "Name": "Iron Teeth Head",
+   "ENName": "Iron Teeth Head"
+  },
+  {
+   "ItemIdx": 201021,
+   "Name": "Moderas Skull",
+   "ENName": "Moderas Skull"
+  },
+  {
+   "ItemIdx": 201022,
+   "Name": "Estroider Skull",
+   "ENName": "Estroider Skull"
+  },
+  {
+   "ItemIdx": 201023,
+   "Name": "Widows Skull",
+   "ENName": "Widows Skull"
+  },
+  {
+   "ItemIdx": 201024,
+   "Name": "Hoble Skull",
+   "ENName": "Hoble Skull"
+  },
+  {
+   "ItemIdx": 201025,
+   "Name": "Big Fang Skull",
+   "ENName": "Big Fang Skull"
+  },
+  {
+   "ItemIdx": 201026,
+   "Name": "Golemer Skull",
+   "ENName": "Golemer Skull"
+  },
+  {
+   "ItemIdx": 201027,
+   "Name": "Shadow Wing Skull",
+   "ENName": "Shadow Wing Skull"
+  },
+  {
+   "ItemIdx": 201028,
+   "Name": "Reaper Skull",
+   "ENName": "Reaper Skull"
+  },
+  {
+   "ItemIdx": 201029,
+   "Name": "Chaos Knight Skull",
+   "ENName": "Chaos Knight Skull"
+  },
+  {
+   "ItemIdx": 201030,
+   "Name": "Hell Wizard Skull",
+   "ENName": "Hell Wizard Skull"
+  },
+  {
+   "ItemIdx": 201031,
+   "Name": "Dark Screamer Skull",
+   "ENName": "Dark Screamer Skull"
+  },
+  {
+   "ItemIdx": 201032,
+   "Name": "Chaos Gurdian Skull",
+   "ENName": "Chaos Gurdian Skull"
+  },
+  {
+   "ItemIdx": 201033,
+   "Name": "Hell Gurdian Skull",
+   "ENName": "Hell Gurdian Skull"
+  },
+  {
+   "ItemIdx": 201034,
+   "Name": "Lord Darkness Skull",
+   "ENName": "Lord Darkness Skull"
+  },
+  {
+   "ItemIdx": 201035,
+   "Name": "Dark Guardian Skull",
+   "ENName": "Dark Guardian Skull"
+  },
+  {
+   "ItemIdx": 201036,
+   "Name": "Lord Chaos Skull",
+   "ENName": "Lord Chaos Skull"
+  },
+  {
+   "ItemIdx": 201037,
+   "Name": "Chaos Greed Head",
+   "ENName": "Chaos Greed Head"
+  },
+  {
+   "ItemIdx": 201038,
+   "Name": "Hell Fiend Skull",
+   "ENName": "Hell Fiend Skull"
+  },
+  {
+   "ItemIdx": 201039,
+   "Name": "Dark Haze Skull",
+   "ENName": "Dark Haze Skull"
+  },
+  {
+   "ItemIdx": 201040,
+   "Name": "Dun Wolfarch Head",
+   "ENName": "Dun Wolfarch Head"
+  },
+  {
+   "ItemIdx": 201041,
+   "Name": "Mum Rimmon Head",
+   "ENName": "Mum Rimmon Head"
+  },
+  {
+   "ItemIdx": 201042,
+   "Name": "Shaman Oaf Head",
+   "ENName": "Shaman Oaf Head"
+  },
+  {
+   "ItemIdx": 201043,
+   "Name": "Dark Berith Skull",
+   "ENName": "Dark Berith Skull"
+  },
+  {
+   "ItemIdx": 201044,
+   "Name": "Lich Jel Skull",
+   "ENName": "Lich Jel Skull"
+  },
+  {
+   "ItemIdx": 201045,
+   "Name": "Mount Crag Skull",
+   "ENName": "Mount Crag Skull"
+  },
+  {
+   "ItemIdx": 201046,
+   "Name": "Giant Os Skull",
+   "ENName": "Giant Os Skull"
+  },
+  {
+   "ItemIdx": 201047,
+   "Name": "Dim Gargoyle Skull",
+   "ENName": "Dim Gargoyle Skull"
+  },
+  {
+   "ItemIdx": 201048,
+   "Name": "Volva Medusa Skull",
+   "ENName": "Volva Medusa Skull"
+  },
+  {
+   "ItemIdx": 201049,
+   "Name": "Ash Balog Skull",
+   "ENName": "Ash Balog Skull"
+  },
+  {
+   "ItemIdx": 201050,
+   "Name": "Dark Wolf Skull",
+   "ENName": "Dark Wolf Skull"
+  },
+  {
+   "ItemIdx": 201051,
+   "Name": "Blood Wolf Skull",
+   "ENName": "Blood Wolf Skull"
+  },
+  {
+   "ItemIdx": 201052,
+   "Name": "Blunt Crag Skull",
+   "ENName": "Blunt Crag Skull"
+  },
+  {
+   "ItemIdx": 201053,
+   "Name": "Mutant Edger Skull",
+   "ENName": "Mutant Edger Skull"
+  },
+  {
+   "ItemIdx": 201054,
+   "Name": "Bone Guardian Skull",
+   "ENName": "Bone Guardian Skull"
+  },
+  {
+   "ItemIdx": 201055,
+   "Name": "Rum Guarder Skull",
+   "ENName": "Rum Guarder Skull"
+  },
+  {
+   "ItemIdx": 201056,
+   "Name": "Icy Ruffian Skull",
+   "ENName": "Icy Ruffian Skull"
+  },
+  {
+   "ItemIdx": 201057,
+   "Name": "Flieger Skull",
+   "ENName": "Flieger Skull"
+  },
+  {
+   "ItemIdx": 201058,
+   "Name": "Gefreiter Skull",
+   "ENName": "Gefreiter Skull"
+  },
+  {
+   "ItemIdx": 201059,
+   "Name": "Trasla Skull",
+   "ENName": "Trasla Skull"
+  },
+  {
+   "ItemIdx": 201060,
+   "Name": "Pusca Skull",
+   "ENName": "Pusca Skull"
+  },
+  {
+   "ItemIdx": 201061,
+   "Name": "Clad Omenesc Skull",
+   "ENName": "Clad Omenesc Skull"
+  },
+  {
+   "ItemIdx": 201062,
+   "Name": "Nod Copila Skull",
+   "ENName": "Nod Copila Skull"
+  },
+  {
+   "ItemIdx": 201063,
+   "Name": "Razor Skull",
+   "ENName": "Razor Skull"
+  },
+  {
+   "ItemIdx": 201064,
+   "Name": "Tug Leg Skull",
+   "ENName": "Tug Leg Skull"
+  },
+  {
+   "ItemIdx": 201065,
+   "Name": "Tug Legger Skull",
+   "ENName": "Tug Legger Skull"
+  },
+  {
+   "ItemIdx": 201066,
+   "Name": "Roi Cadavru Skull",
+   "ENName": "Roi Cadavru Skull"
+  },
+  {
+   "ItemIdx": 201067,
+   "Name": "Siamese Skull",
+   "ENName": "Siamese Skull"
+  },
+  {
+   "ItemIdx": 201068,
+   "Name": "Lunga Testa Skull",
+   "ENName": "Lunga Testa Skull"
+  },
+  {
+   "ItemIdx": 201069,
+   "Name": "Obersculze Skull",
+   "ENName": "Obersculze Skull"
+  },
+  {
+   "ItemIdx": 201070,
+   "Name": "Stummann Skull",
+   "ENName": "Stummann Skull"
+  },
+  {
+   "ItemIdx": 201071,
+   "Name": "Hauptmann Skull",
+   "ENName": "Hauptmann Skull"
+  },
+  {
+   "ItemIdx": 201072,
+   "Name": "Oberst Skull",
+   "ENName": "Oberst Skull"
+  },
+  {
+   "ItemIdx": 201073,
+   "Name": "Feldwebel Skull",
+   "ENName": "Feldwebel Skull"
+  },
+  {
+   "ItemIdx": 201074,
+   "Name": "Unterfeldwebel Skull",
+   "ENName": "Unterfeldwebel Skull"
+  },
+  {
+   "ItemIdx": 201075,
+   "Name": "Rakel Skull",
+   "ENName": "Rakel Skull"
+  },
+  {
+   "ItemIdx": 201076,
+   "Name": "Cerberus Skull",
+   "ENName": "Cerberus Skull"
+  },
+  {
+   "ItemIdx": 201077,
+   "Name": "Manticoret Skull",
+   "ENName": "Manticoret Skull"
+  },
+  {
+   "ItemIdx": 201078,
+   "Name": "Boglet_H Skull",
+   "ENName": "Boglet_H Skull"
+  },
+  {
+   "ItemIdx": 201079,
+   "Name": "Boglet_B Skull",
+   "ENName": "Boglet_B Skull"
+  },
+  {
+   "ItemIdx": 201080,
+   "Name": "Massacre Skull",
+   "ENName": "Massacre Skull"
+  },
+  {
+   "ItemIdx": 201081,
+   "Name": "Plumy Boar Skull",
+   "ENName": "Plumy Boar Skull"
+  },
+  {
+   "ItemIdx": 201082,
+   "Name": "Balberith Skull",
+   "ENName": "Balberith Skull"
+  },
+  {
+   "ItemIdx": 201083,
+   "Name": "Berith Skull",
+   "ENName": "Berith Skull"
+  },
+  {
+   "ItemIdx": 201084,
+   "Name": "Valkyrja Skull",
+   "ENName": "Valkyrja Skull"
+  },
+  {
+   "ItemIdx": 201085,
+   "Name": "Gomory Skull",
+   "ENName": "Gomory Skull"
+  },
+  {
+   "ItemIdx": 201086,
+   "Name": "Krsnik Skull",
+   "ENName": "Krsnik Skull"
+  },
+  {
+   "ItemIdx": 201087,
+   "Name": "Paimon Skull",
+   "ENName": "Paimon Skull"
+  },
+  {
+   "ItemIdx": 202001,
+   "Name": "The New Moon Card",
+   "ENName": "The New Moon Card"
+  },
+  {
+   "ItemIdx": 202002,
+   "Name": "The Netmarble Card",
+   "ENName": "The Netmarble Card"
+  },
+  {
+   "ItemIdx": 202003,
+   "Name": "Son Laurel Crown",
+   "ENName": "Son Laurel Crown"
+  },
+  {
+   "ItemIdx": 202004,
+   "Name": "Ticket",
+   "ENName": "Ticket"
+  },
+  {
+   "ItemIdx": 301001,
+   "Name": "Mini Healing Ampul",
+   "ENName": "Mini Healing Ampul"
+  },
+  {
+   "ItemIdx": 301002,
+   "Name": "Light Healing Ampul",
+   "ENName": "Light Healing Ampul"
+  },
+  {
+   "ItemIdx": 301003,
+   "Name": "Half Healing Ampul",
+   "ENName": "Half Healing Ampul"
+  },
+  {
+   "ItemIdx": 301004,
+   "Name": "Large Healing Ampul",
+   "ENName": "Large Healing Ampul"
+  },
+  {
+   "ItemIdx": 301005,
+   "Name": "Full Healing Ampul",
+   "ENName": "Full Healing Ampul"
+  },
+  {
+   "ItemIdx": 301006,
+   "Name": "Mini Mana Ampul",
+   "ENName": "Mini Mana Ampul"
+  },
+  {
+   "ItemIdx": 301007,
+   "Name": "Light Mana Ampul",
+   "ENName": "Light Mana Ampul"
+  },
+  {
+   "ItemIdx": 301008,
+   "Name": "Half Mana Ampul",
+   "ENName": "Half Mana Ampul"
+  },
+  {
+   "ItemIdx": 301009,
+   "Name": "Large Mana Ampul",
+   "ENName": "Large Mana Ampul"
+  },
+  {
+   "ItemIdx": 301010,
+   "Name": "Full Mana Ampul",
+   "ENName": "Full Mana Ampul"
+  },
+  {
+   "ItemIdx": 301011,
+   "Name": "Blue Candy",
+   "ENName": "Blue Candy"
+  },
+  {
+   "ItemIdx": 301012,
+   "Name": "White Rice Cake Soup",
+   "ENName": "White Rice Cake Soup"
+  },
+  {
+   "ItemIdx": 301013,
+   "Name": "Healing Bottle",
+   "ENName": "Healing Bottle"
+  },
+  {
+   "ItemIdx": 301014,
+   "Name": "Mana Bottle",
+   "ENName": "Mana Bottle"
+  },
+  {
+   "ItemIdx": 301015,
+   "Name": "Small Holy Potion",
+   "ENName": "Small Holy Potion"
+  },
+  {
+   "ItemIdx": 301016,
+   "Name": "Medium Holy Potion",
+   "ENName": "Medium Holy Potion"
+  },
+  {
+   "ItemIdx": 301017,
+   "Name": "Large Holy Potion",
+   "ENName": "Large Holy Potion"
+  },
+  {
+   "ItemIdx": 301018,
+   "Name": "Full Holy Potion",
+   "ENName": "Full Holy Potion"
+  },
+  {
+   "ItemIdx": 302001,
+   "Name": "Small Water Bottle",
+   "ENName": "Small Water Bottle"
+  },
+  {
+   "ItemIdx": 302002,
+   "Name": "Medium Water Bottle",
+   "ENName": "Medium Water Bottle"
+  },
+  {
+   "ItemIdx": 302003,
+   "Name": "Large Water Bottle",
+   "ENName": "Large Water Bottle"
+  },
+  {
+   "ItemIdx": 302004,
+   "Name": "Small Potion Bottle",
+   "ENName": "Small Potion Bottle"
+  },
+  {
+   "ItemIdx": 302005,
+   "Name": "Medium Potion Bottle",
+   "ENName": "Medium Potion Bottle"
+  },
+  {
+   "ItemIdx": 302006,
+   "Name": "Large Potion Bottle",
+   "ENName": "Large Potion Bottle"
+  },
+  {
+   "ItemIdx": 302007,
+   "Name": "Full Potion Bottle",
+   "ENName": "Full Potion Bottle"
+  },
+  {
+   "ItemIdx": 303001,
+   "Name": "Small Holy Water",
+   "ENName": "Small Holy Water"
+  },
+  {
+   "ItemIdx": 303002,
+   "Name": "Medium Holy Water",
+   "ENName": "Medium Holy Water"
+  },
+  {
+   "ItemIdx": 303003,
+   "Name": "Large Holy Water",
+   "ENName": "Large Holy Water"
+  },
+  {
+   "ItemIdx": 304001,
+   "Name": "Serum",
+   "ENName": "Serum"
+  },
+  {
+   "ItemIdx": 304002,
+   "Name": "Enriched Serum",
+   "ENName": "Enriched Serum"
+  },
+  {
+   "ItemIdx": 304003,
+   "Name": "Highly Enriched Serum",
+   "ENName": "Highly Enriched Serum"
+  },
+  {
+   "ItemIdx": 304004,
+   "Name": "Ultra Enriched Serum",
+   "ENName": "Ultra Enriched Serum"
+  },
+  {
+   "ItemIdx": 304005,
+   "Name": "Red Candy",
+   "ENName": "Red Candy"
+  },
+  {
+   "ItemIdx": 304006,
+   "Name": "Yellow Rice Cake Soup",
+   "ENName": "Yellow Rice Cake Soup"
+  },
+  {
+   "ItemIdx": 304007,
+   "Name": "Active Serum",
+   "ENName": "Active Serum"
+  },
+  {
+   "ItemIdx": 305001,
+   "Name": "Yellow Candy",
+   "ENName": "Yellow Candy"
+  },
+  {
+   "ItemIdx": 305002,
+   "Name": "White Rice Cake",
+   "ENName": "White Rice Cake"
+  },
+  {
+   "ItemIdx": 305003,
+   "Name": "Mugwort Rice Cake",
+   "ENName": "Mugwort Rice Cake"
+  },
+  {
+   "ItemIdx": 305004,
+   "Name": "Honey Rice Cake",
+   "ENName": "Honey Rice Cake"
+  },
+  {
+   "ItemIdx": 306001,
+   "Name": "Resurrection Scroll",
+   "ENName": "Resurrection Scroll"
+  },
+  {
+   "ItemIdx": 306002,
+   "Name": "Elixir Scroll",
+   "ENName": "Elixir Scroll"
+  },
+  {
+   "ItemIdx": 307001,
+   "Name": "Green Larva",
+   "ENName": "Green Larva"
+  },
+  {
+   "ItemIdx": 307002,
+   "Name": "Fresh Larva",
+   "ENName": "Fresh Larva"
+  },
+  {
+   "ItemIdx": 307003,
+   "Name": "Adequate Larva",
+   "ENName": "Adequate Larva"
+  },
+  {
+   "ItemIdx": 307004,
+   "Name": "Ample Larva",
+   "ENName": "Ample Larva"
+  },
+  {
+   "ItemIdx": 307005,
+   "Name": "Swell Larva",
+   "ENName": "Swell Larva"
+  },
+  {
+   "ItemIdx": 308001,
+   "Name": "Green Pupa",
+   "ENName": "Green Pupa"
+  },
+  {
+   "ItemIdx": 308002,
+   "Name": "Fresh Pupa",
+   "ENName": "Fresh Pupa"
+  },
+  {
+   "ItemIdx": 308003,
+   "Name": "Adequate Pupa",
+   "ENName": "Adequate Pupa"
+  },
+  {
+   "ItemIdx": 308004,
+   "Name": "Ample Pupa",
+   "ENName": "Ample Pupa"
+  },
+  {
+   "ItemIdx": 308005,
+   "Name": "Swell Pupa",
+   "ENName": "Swell Pupa"
+  },
+  {
+   "ItemIdx": 308006,
+   "Name": "Red pupae",
+   "ENName": "Red pupae"
+  },
+  {
+   "ItemIdx": 308007,
+   "Name": "Green Candy",
+   "ENName": "Green Candy"
+  },
+  {
+   "ItemIdx": 309001,
+   "Name": "Green Mei",
+   "ENName": "Green Mei"
+  },
+  {
+   "ItemIdx": 309002,
+   "Name": "Fresh Mei",
+   "ENName": "Fresh Mei"
+  },
+  {
+   "ItemIdx": 309003,
+   "Name": "Adequate Mei",
+   "ENName": "Adequate Mei"
+  },
+  {
+   "ItemIdx": 309004,
+   "Name": "Ample Mei",
+   "ENName": "Ample Mei"
+  },
+  {
+   "ItemIdx": 309005,
+   "Name": "Swell Mei",
+   "ENName": "Swell Mei"
+  },
+  {
+   "ItemIdx": 310001,
+   "Name": "Top Megaphone Green",
+   "ENName": "Top Megaphone Green"
+  },
+  {
+   "ItemIdx": 310002,
+   "Name": "Top Megaphone Blue",
+   "ENName": "Top Megaphone Blue"
+  },
+  {
+   "ItemIdx": 310003,
+   "Name": "Top Megaphone Yellow",
+   "ENName": "Top Megaphone Yellow"
+  },
+  {
+   "ItemIdx": 311001,
+   "Name": "L-grade Hourglass",
+   "ENName": "L-grade Hourglass"
+  },
+  {
+   "ItemIdx": 311002,
+   "Name": "M-grade Hourglass",
+   "ENName": "M-grade Hourglass"
+  },
+  {
+   "ItemIdx": 311003,
+   "Name": "S-grade Hourglass",
+   "ENName": "S-grade Hourglass"
+  },
+  {
+   "ItemIdx": 311004,
+   "Name": "3x Experience Hourglass",
+   "ENName": "3x Experience Hourglass"
+  },
+  {
+   "ItemIdx": 311005,
+   "Name": "7x Experience Hourglass",
+   "ENName": "7x Experience Hourglass"
+  },
+  {
+   "ItemIdx": 311006,
+   "Name": "Vitality Potion",
+   "ENName": "Vitality Potion"
+  },
+  {
+   "ItemIdx": 311007,
+   "Name": "Ability Potion",
+   "ENName": "Ability Potion"
+  },
+  {
+   "ItemIdx": 312001,
+   "Name": "Translator",
+   "ENName": "Translator"
+  },
+  {
+   "ItemIdx": 313001,
+   "Name": "Mini Meat",
+   "ENName": "Mini Meat"
+  },
+  {
+   "ItemIdx": 313002,
+   "Name": "Light Meat",
+   "ENName": "Light Meat"
+  },
+  {
+   "ItemIdx": 313003,
+   "Name": "Half Meat",
+   "ENName": "Half Meat"
+  },
+  {
+   "ItemIdx": 313004,
+   "Name": "Large Meat",
+   "ENName": "Large Meat"
+  },
+  {
+   "ItemIdx": 313005,
+   "Name": "Fodder",
+   "ENName": "Fodder"
+  },
+  {
+   "ItemIdx": 313006,
+   "Name": "Ultra Fodder",
+   "ENName": "Ultra Fodder"
+  },
+  {
+   "ItemIdx": 313007,
+   "Name": "Half Power Pack",
+   "ENName": "Half Power Pack"
+  },
+  {
+   "ItemIdx": 313008,
+   "Name": "Large Power Pack",
+   "ENName": "Large Power Pack"
+  },
+  {
+   "ItemIdx": 313009,
+   "Name": "Half Super Power Pack",
+   "ENName": "Half Super Power Pack"
+  },
+  {
+   "ItemIdx": 313010,
+   "Name": "Large Super Power Pack",
+   "ENName": "Large Super Power Pack"
+  },
+  {
+   "ItemIdx": 313011,
+   "Name": "Blood Pack",
+   "ENName": "Blood Pack"
+  },
+  {
+   "ItemIdx": 313012,
+   "Name": "Enriched Blood Pack",
+   "ENName": "Enriched Blood Pack"
+  },
+  {
+   "ItemIdx": 313013,
+   "Name": "Super Enriched Blood Pack",
+   "ENName": "Super Enriched Blood Pack"
+  },
+  {
+   "ItemIdx": 313014,
+   "Name": "Ultra Enriched Blood Pack",
+   "ENName": "Ultra Enriched Blood Pack"
+  },
+  {
+   "ItemIdx": 313015,
+   "Name": "Mini Dew",
+   "ENName": "Mini Dew"
+  },
+  {
+   "ItemIdx": 313016,
+   "Name": "Light Dew",
+   "ENName": "Light Dew"
+  },
+  {
+   "ItemIdx": 313017,
+   "Name": "Half Dew",
+   "ENName": "Half Dew"
+  },
+  {
+   "ItemIdx": 313018,
+   "Name": "Large Dew",
+   "ENName": "Large Dew"
+  },
+  {
+   "ItemIdx": 401001,
+   "Name": "SG Shell-16",
+   "ENName": "SG Shell-16"
+  },
+  {
+   "ItemIdx": 401002,
+   "Name": "SG Shell-32",
+   "ENName": "SG Shell-32"
+  },
+  {
+   "ItemIdx": 401003,
+   "Name": "AR Magazine-40",
+   "ENName": "AR Magazine-40"
+  },
+  {
+   "ItemIdx": 401004,
+   "Name": "AR Magazine-80",
+   "ENName": "AR Magazine-80"
+  },
+  {
+   "ItemIdx": 401005,
+   "Name": "SMG Magazine-80",
+   "ENName": "SMG Magazine-80"
+  },
+  {
+   "ItemIdx": 401006,
+   "Name": "SMG Magazine-160",
+   "ENName": "SMG Magazine-160"
+  },
+  {
+   "ItemIdx": 401007,
+   "Name": "SR Magazine-20",
+   "ENName": "SR Magazine-20"
+  },
+  {
+   "ItemIdx": 401008,
+   "Name": "SR Magazine-40",
+   "ENName": "SR Magazine-40"
+  },
+  {
+   "ItemIdx": 401009,
+   "Name": "Silver SG Shell-16",
+   "ENName": "Silver SG Shell-16"
+  },
+  {
+   "ItemIdx": 401010,
+   "Name": "Silver SG Shell-32",
+   "ENName": "Silver SG Shell-32"
+  },
+  {
+   "ItemIdx": 401011,
+   "Name": "Silver AR Magazine-40",
+   "ENName": "Silver AR Magazine-40"
+  },
+  {
+   "ItemIdx": 401012,
+   "Name": "Silver AR Magazine-80",
+   "ENName": "Silver AR Magazine-80"
+  },
+  {
+   "ItemIdx": 401013,
+   "Name": "Silver SMG Magazine-80",
+   "ENName": "Silver SMG Magazine-80"
+  },
+  {
+   "ItemIdx": 401014,
+   "Name": "Silver SMG Magazine-160",
+   "ENName": "Silver SMG Magazine-160"
+  },
+  {
+   "ItemIdx": 401015,
+   "Name": "Silver SR Magazine-20",
+   "ENName": "Silver SR Magazine-20"
+  },
+  {
+   "ItemIdx": 401016,
+   "Name": "Silver SR Magazine-40",
+   "ENName": "Silver SR Magazine-40"
+  },
+  {
+   "ItemIdx": 401017,
+   "Name": "SG Shell-250",
+   "ENName": "SG Shell-250"
+  },
+  {
+   "ItemIdx": 401018,
+   "Name": "AR Magazine-250",
+   "ENName": "AR Magazine-250"
+  },
+  {
+   "ItemIdx": 401019,
+   "Name": "SMG Magazine-250",
+   "ENName": "SMG Magazine-250"
+  },
+  {
+   "ItemIdx": 401020,
+   "Name": "SR Magazine-250",
+   "ENName": "SR Magazine-250"
+  },
+  {
+   "ItemIdx": 401021,
+   "Name": "Silver SG Shell-250",
+   "ENName": "Silver SG Shell-250"
+  },
+  {
+   "ItemIdx": 401022,
+   "Name": "Silver AR Magazine-250",
+   "ENName": "Silver AR Magazine-250"
+  },
+  {
+   "ItemIdx": 401023,
+   "Name": "Silver SMG Magazine-250",
+   "ENName": "Silver SMG Magazine-250"
+  },
+  {
+   "ItemIdx": 401024,
+   "Name": "Silver SR Magazine-250",
+   "ENName": "Silver SR Magazine-250"
+  },
+  {
+   "ItemIdx": 402001,
+   "Name": "Ankle Killer Material",
+   "ENName": "Ankle Killer Material"
+  },
+  {
+   "ItemIdx": 402002,
+   "Name": "Pomz Material",
+   "ENName": "Pomz Material"
+  },
+  {
+   "ItemIdx": 402003,
+   "Name": "AP-C1 Material",
+   "ENName": "AP-C1 Material"
+  },
+  {
+   "ItemIdx": 402004,
+   "Name": "Diamond Back Material",
+   "ENName": "Diamond Back Material"
+  },
+  {
+   "ItemIdx": 402005,
+   "Name": "Swift-EX Material",
+   "ENName": "Swift-EX Material"
+  },
+  {
+   "ItemIdx": 403001,
+   "Name": "Splinter",
+   "ENName": "Splinter"
+  },
+  {
+   "ItemIdx": 403002,
+   "Name": "Acer",
+   "ENName": "Acer"
+  },
+  {
+   "ItemIdx": 403003,
+   "Name": "Bulls",
+   "ENName": "Bulls"
+  },
+  {
+   "ItemIdx": 403004,
+   "Name": "Stun",
+   "ENName": "Stun"
+  },
+  {
+   "ItemIdx": 403005,
+   "Name": "Crossbow",
+   "ENName": "Crossbow"
+  },
+  {
+   "ItemIdx": 404001,
+   "Name": "Ankle Killer",
+   "ENName": "Ankle Killer"
+  },
+  {
+   "ItemIdx": 404002,
+   "Name": "Pomz",
+   "ENName": "Pomz"
+  },
+  {
+   "ItemIdx": 404003,
+   "Name": "AP-C1",
+   "ENName": "AP-C1"
+  },
+  {
+   "ItemIdx": 404004,
+   "Name": "Diamond Back",
+   "ENName": "Diamond Back"
+  },
+  {
+   "ItemIdx": 404005,
+   "Name": "Swift-EX",
+   "ENName": "Swift-EX"
+  },
+  {
+   "ItemIdx": 501001,
+   "Name": "Scorpion",
+   "ENName": "Scorpion"
+  },
+  {
+   "ItemIdx": 501002,
+   "Name": "B2-Monster",
+   "ENName": "B2-Monster"
+  },
+  {
+   "ItemIdx": 501003,
+   "Name": "D-Tomahawk",
+   "ENName": "D-Tomahawk"
+  },
+  {
+   "ItemIdx": 501004,
+   "Name": "Red Flame Sports Car",
+   "ENName": "Red Flame Sports Car"
+  },
+  {
+   "ItemIdx": 501005,
+   "Name": "UFO fighter jet",
+   "ENName": "UFO fighter jet"
+  },
+  {
+   "ItemIdx": 501006,
+   "Name": "Air Gaiter",
+   "ENName": "Air Gaiter"
+  },
+  {
+   "ItemIdx": 501007,
+   "Name": "Heli Injector",
+   "ENName": "Heli Injector"
+  },
+  {
+   "ItemIdx": 501008,
+   "Name": "Jeep",
+   "ENName": "Jeep"
+  },
+  {
+   "ItemIdx": 501009,
+   "Name": "Floating fighter",
+   "ENName": "Floating fighter"
+  },
+  {
+   "ItemIdx": 502001,
+   "Name": "Scorpion Key",
+   "ENName": "Scorpion Key"
+  },
+  {
+   "ItemIdx": 502002,
+   "Name": "B2-Monster Key",
+   "ENName": "B2-Monster Key"
+  },
+  {
+   "ItemIdx": 502003,
+   "Name": "D-Tomahawk Key",
+   "ENName": "D-Tomahawk Key"
+  },
+  {
+   "ItemIdx": 502004,
+   "Name": "Hell Bike Key",
+   "ENName": "Hell Bike Key"
+  },
+  {
+   "ItemIdx": 502005,
+   "Name": "Hover Vehicle Key",
+   "ENName": "Hover Vehicle Key"
+  },
+  {
+   "ItemIdx": 502006,
+   "Name": "Air Gaiter Key",
+   "ENName": "Air Gaiter Key"
+  },
+  {
+   "ItemIdx": 502007,
+   "Name": "Helicopter key",
+   "ENName": "Helicopter key"
+  },
+  {
+   "ItemIdx": 502008,
+   "Name": "Jeep Key",
+   "ENName": "Jeep Key"
+  },
+  {
+   "ItemIdx": 502009,
+   "Name": "Suspension fighter key",
+   "ENName": "Suspension fighter key"
+  },
+  {
+   "ItemIdx": 503001,
+   "Name": "Wolf Claw",
+   "ENName": "Wolf Claw"
+  },
+  {
+   "ItemIdx": 503002,
+   "Name": "Bat Wing",
+   "ENName": "Bat Wing"
+  },
+  {
+   "ItemIdx": 503003,
+   "Name": "Dark Bat Pendant",
+   "ENName": "Dark Bat Pendant"
+  },
+  {
+   "ItemIdx": 503004,
+   "Name": "Dark Angel Pendant",
+   "ENName": "Dark Angel Pendant"
+  },
+  {
+   "ItemIdx": 503005,
+   "Name": "Demon Sports Car",
+   "ENName": "Demon Sports Car"
+  },
+  {
+   "ItemIdx": 504001,
+   "Name": "Sylph Summon Gem",
+   "ENName": "Sylph Summon Gem"
+  },
+  {
+   "ItemIdx": 504002,
+   "Name": "Sylaphe Summon Gem",
+   "ENName": "Sylaphe Summon Gem"
+  },
+  {
+   "ItemIdx": 504003,
+   "Name": "Sylairon Summon Gem",
+   "ENName": "Sylairon Summon Gem"
+  },
+  {
+   "ItemIdx": 504004,
+   "Name": "Red Summon Gem",
+   "ENName": "Red Summon Gem"
+  },
+  {
+   "ItemIdx": 504005,
+   "Name": "Yellow Summon Gem",
+   "ENName": "Yellow Summon Gem"
+  },
+  {
+   "ItemIdx": 504006,
+   "Name": "Emerald Summon Gem",
+   "ENName": "Emerald Summon Gem"
+  },
+  {
+   "ItemIdx": 504007,
+   "Name": "Fairy pendant",
+   "ENName": "Fairy pendant"
+  },
+  {
+   "ItemIdx": 504008,
+   "Name": "Pegasus pendant",
+   "ENName": "Pegasus pendant"
+  },
+  {
+   "ItemIdx": 504009,
+   "Name": "Elf Sports Car",
+   "ENName": "Elf Sports Car"
+  },
+  {
+   "ItemIdx": 601001,
+   "Name": "VT-310",
+   "ENName": "VT-310"
+  },
+  {
+   "ItemIdx": 601002,
+   "Name": "VT-330",
+   "ENName": "VT-330"
+  },
+  {
+   "ItemIdx": 601003,
+   "Name": "VT-Supreme",
+   "ENName": "VT-Supreme"
+  },
+  {
+   "ItemIdx": 602001,
+   "Name": "Prime Compact Seal",
+   "ENName": "Prime Compact Seal"
+  },
+  {
+   "ItemIdx": 602002,
+   "Name": "Compact Seal（perona）",
+   "ENName": "Compact Seal（perona）"
+  },
+  {
+   "ItemIdx": 602003,
+   "Name": "Compact Seal（limbo）",
+   "ENName": "Compact Seal（limbo）"
+  },
+  {
+   "ItemIdx": 602004,
+   "Name": "Return Scroll",
+   "ENName": "Return Scroll"
+  },
+  {
+   "ItemIdx": 602005,
+   "Name": "Return Scroll",
+   "ENName": "Return Scroll"
+  },
+  {
+   "ItemIdx": 602006,
+   "Name": "Return Scroll",
+   "ENName": "Return Scroll"
+  },
+  {
+   "ItemIdx": 701001,
+   "Name": "Sapphire",
+   "ENName": "Sapphire"
+  },
+  {
+   "ItemIdx": 701002,
+   "Name": "Blue Drop",
+   "ENName": "Blue Drop"
+  },
+  {
+   "ItemIdx": 701003,
+   "Name": "Red Rice Cake Soup",
+   "ENName": "Red Rice Cake Soup"
+  },
+  {
+   "ItemIdx": 701004,
+   "Name": "Green Rice Cake Soup",
+   "ENName": "Green Rice Cake Soup"
+  },
+  {
+   "ItemIdx": 701005,
+   "Name": "Blue Rice Cake Soup",
+   "ENName": "Blue Rice Cake Soup"
+  },
+  {
+   "ItemIdx": 701006,
+   "Name": "Black Rice Cake Soup",
+   "ENName": "Black Rice Cake Soup"
+  },
+  {
+   "ItemIdx": 701007,
+   "Name": "Blue Bird",
+   "ENName": "Blue Bird"
+  },
+  {
+   "ItemIdx": 701008,
+   "Name": "Bluish Green Rice Cake Soup",
+   "ENName": "Bluish Green Rice Cake Soup"
+  },
+  {
+   "ItemIdx": 701009,
+   "Name": "Mugwort Rice Cake Soup",
+   "ENName": "Mugwort Rice Cake Soup"
+  },
+  {
+   "ItemIdx": 701010,
+   "Name": "Blue Drop 2",
+   "ENName": "Blue Drop 2"
+  },
+  {
+   "ItemIdx": 701011,
+   "Name": "Ancient water droplets",
+   "ENName": "Ancient water droplets"
+  },
+  {
+   "ItemIdx": 701012,
+   "Name": "Ancient essence",
+   "ENName": "Ancient essence"
+  },
+  {
+   "ItemIdx": 701013,
+   "Name": "Ring Set Strengthening Stone",
+   "ENName": "Ring Set Strengthening Stone"
+  },
+  {
+   "ItemIdx": 701014,
+   "Name": "Necklace set reinforced stone",
+   "ENName": "Necklace set reinforced stone"
+  },
+  {
+   "ItemIdx": 701015,
+   "Name": "Bracelet set reinforced stone",
+   "ENName": "Bracelet set reinforced stone"
+  },
+  {
+   "ItemIdx": 702001,
+   "Name": "Single attribute cleaning agent",
+   "ENName": "Single attribute cleaning agent"
+  },
+  {
+   "ItemIdx": 702002,
+   "Name": "Weapon Mixing Forge Type",
+   "ENName": "Weapon Mixing Forge Type"
+  },
+  {
+   "ItemIdx": 702003,
+   "Name": "Armor Mixing Forge Type",
+   "ENName": "Armor Mixing Forge Type"
+  },
+  {
+   "ItemIdx": 702004,
+   "Name": "Accessory Mixing Forge Type",
+   "ENName": "Accessory Mixing Forge Type"
+  },
+  {
+   "ItemIdx": 702005,
+   "Name": "Weapon Puritas Type",
+   "ENName": "Weapon Puritas Type"
+  },
+  {
+   "ItemIdx": 702006,
+   "Name": "Armor Puritas Type",
+   "ENName": "Armor Puritas Type"
+  },
+  {
+   "ItemIdx": 702007,
+   "Name": "Accessory Puritas Type",
+   "ENName": "Accessory Puritas Type"
+  },
+  {
+   "ItemIdx": 702008,
+   "Name": "Ring set Mixing Forge Type",
+   "ENName": "Ring set Mixing Forge Type"
+  },
+  {
+   "ItemIdx": 702009,
+   "Name": "Necklace Set Mixing Forge Type",
+   "ENName": "Necklace Set Mixing Forge Type"
+  },
+  {
+   "ItemIdx": 702010,
+   "Name": "Bracelet set Mixing Forge Type",
+   "ENName": "Bracelet set Mixing Forge Type"
+  },
+  {
+   "ItemIdx": 703001,
+   "Name": "Attribute transformation stone",
+   "ENName": "Attribute transformation stone"
+  },
+  {
+   "ItemIdx": 703002,
+   "Name": "Attribute coverage stone",
+   "ENName": "Attribute coverage stone"
+  },
+  {
+   "ItemIdx": 703003,
+   "Name": "Equipment Conversion Stone",
+   "ENName": "Equipment Conversion Stone"
+  },
+  {
+   "ItemIdx": 710001,
+   "Name": "Jewelry Set Random Stone",
+   "ENName": "Jewelry Set Random Stone"
+  },
+  {
+   "ItemIdx": 711001,
+   "Name": "Jewelry Set Lock Stone",
+   "ENName": "Jewelry Set Lock Stone"
+  },
+  {
+   "ItemIdx": 712001,
+   "Name": "Jewelry Set Synthesizer",
+   "ENName": "Jewelry Set Synthesizer"
+  },
+  {
+   "ItemIdx": 713001,
+   "Name": "Jewelry Set Core Amber +1",
+   "ENName": "Jewelry Set Core Amber +1"
+  },
+  {
+   "ItemIdx": 713002,
+   "Name": "Jewelry Set Core Amber +2",
+   "ENName": "Jewelry Set Core Amber +2"
+  },
+  {
+   "ItemIdx": 713003,
+   "Name": "Jewelry Set Core Amber +3",
+   "ENName": "Jewelry Set Core Amber +3"
+  },
+  {
+   "ItemIdx": 713004,
+   "Name": "Jewelry Set Core Amber +4",
+   "ENName": "Jewelry Set Core Amber +4"
+  },
+  {
+   "ItemIdx": 713005,
+   "Name": "Jewelry Set Core Amber +5",
+   "ENName": "Jewelry Set Core Amber +5"
+  },
+  {
+   "ItemIdx": 713006,
+   "Name": "Jewelry Set Core Amber +6",
+   "ENName": "Jewelry Set Core Amber +6"
+  },
+  {
+   "ItemIdx": 713007,
+   "Name": "Jewelry Set Core Amber +7",
+   "ENName": "Jewelry Set Core Amber +7"
+  },
+  {
+   "ItemIdx": 713008,
+   "Name": "Jewelry Set Core Amber +8",
+   "ENName": "Jewelry Set Core Amber +8"
+  },
+  {
+   "ItemIdx": 713009,
+   "Name": "Jewelry Set Core Amber +9",
+   "ENName": "Jewelry Set Core Amber +9"
+  },
+  {
+   "ItemIdx": 801001,
+   "Name": "Naming Pen",
+   "ENName": "Naming Pen"
+  },
+  {
+   "ItemIdx": 802001,
+   "Name": "Hair-Dye 1",
+   "ENName": "Hair-Dye 1"
+  },
+  {
+   "ItemIdx": 802002,
+   "Name": "Hair-Dye 4",
+   "ENName": "Hair-Dye 4"
+  },
+  {
+   "ItemIdx": 802003,
+   "Name": "Hair-Dye 5",
+   "ENName": "Hair-Dye 5"
+  },
+  {
+   "ItemIdx": 802004,
+   "Name": "Hair-Dye 8",
+   "ENName": "Hair-Dye 8"
+  },
+  {
+   "ItemIdx": 802005,
+   "Name": "Hair-Dye 9",
+   "ENName": "Hair-Dye 9"
+  },
+  {
+   "ItemIdx": 802006,
+   "Name": "Hair-Dye 12",
+   "ENName": "Hair-Dye 12"
+  },
+  {
+   "ItemIdx": 802007,
+   "Name": "Hair-Dye 13",
+   "ENName": "Hair-Dye 13"
+  },
+  {
+   "ItemIdx": 802008,
+   "Name": "Hair-Dye 15",
+   "ENName": "Hair-Dye 15"
+  },
+  {
+   "ItemIdx": 802009,
+   "Name": "Hair-Dye 16",
+   "ENName": "Hair-Dye 16"
+  },
+  {
+   "ItemIdx": 802010,
+   "Name": "Hair-Dye 24",
+   "ENName": "Hair-Dye 24"
+  },
+  {
+   "ItemIdx": 802011,
+   "Name": "Skin-Dye 1",
+   "ENName": "Skin-Dye 1"
+  },
+  {
+   "ItemIdx": 802012,
+   "Name": "Skin-Dye 2",
+   "ENName": "Skin-Dye 2"
+  },
+  {
+   "ItemIdx": 802013,
+   "Name": "Skin-Dye 9",
+   "ENName": "Skin-Dye 9"
+  },
+  {
+   "ItemIdx": 802014,
+   "Name": "Skin-Dye 13",
+   "ENName": "Skin-Dye 13"
+  },
+  {
+   "ItemIdx": 802015,
+   "Name": "Skin-Dye 17",
+   "ENName": "Skin-Dye 17"
+  },
+  {
+   "ItemIdx": 802016,
+   "Name": "Skin-Dye 18",
+   "ENName": "Skin-Dye 18"
+  },
+  {
+   "ItemIdx": 803001,
+   "Name": "SEX Conversion Potion",
+   "ENName": "SEX Conversion Potion"
+  },
+  {
+   "ItemIdx": 804001,
+   "Name": "Green Chameleon Potion",
+   "ENName": "Green Chameleon Potion"
+  },
+  {
+   "ItemIdx": 804002,
+   "Name": "Blue Chameleon Potion",
+   "ENName": "Blue Chameleon Potion"
+  },
+  {
+   "ItemIdx": 804003,
+   "Name": "Red Chameleon Potion",
+   "ENName": "Red Chameleon Potion"
+  },
+  {
+   "ItemIdx": 804004,
+   "Name": "Yellow Chameleon Potion",
+   "ENName": "Yellow Chameleon Potion"
+  },
+  {
+   "ItemIdx": 804005,
+   "Name": "White Chameleon Potion",
+   "ENName": "White Chameleon Potion"
+  },
+  {
+   "ItemIdx": 804006,
+   "Name": "Sky Blue Chameleon Potion",
+   "ENName": "Sky Blue Chameleon Potion"
+  },
+  {
+   "ItemIdx": 804007,
+   "Name": "Lilac Chameleon Potion",
+   "ENName": "Lilac Chameleon Potion"
+  },
+  {
+   "ItemIdx": 804008,
+   "Name": "Black Chameleon Potion",
+   "ENName": "Black Chameleon Potion"
+  },
+  {
+   "ItemIdx": 804009,
+   "Name": "Natural Chameleon Potion",
+   "ENName": "Natural Chameleon Potion"
+  },
+  {
+   "ItemIdx": 805001,
+   "Name": "Natual Color Paint",
+   "ENName": "Natual Color Paint"
+  },
+  {
+   "ItemIdx": 805002,
+   "Name": "Red Color Paint",
+   "ENName": "Red Color Paint"
+  },
+  {
+   "ItemIdx": 805003,
+   "Name": "Blue Color Paint",
+   "ENName": "Blue Color Paint"
+  },
+  {
+   "ItemIdx": 805004,
+   "Name": "Green Color Paint",
+   "ENName": "Green Color Paint"
+  },
+  {
+   "ItemIdx": 805005,
+   "Name": "Indigo Color Paint",
+   "ENName": "Indigo Color Paint"
+  },
+  {
+   "ItemIdx": 805006,
+   "Name": "Orange Color Paint",
+   "ENName": "Orange Color Paint"
+  },
+  {
+   "ItemIdx": 805007,
+   "Name": "Yellow Color Paint",
+   "ENName": "Yellow Color Paint"
+  },
+  {
+   "ItemIdx": 805008,
+   "Name": "White Color Paint",
+   "ENName": "White Color Paint"
+  },
+  {
+   "ItemIdx": 806001,
+   "Name": "Fear Aura Stone",
+   "ENName": "Fear Aura Stone"
+  },
+  {
+   "ItemIdx": 806002,
+   "Name": "Cruel Aura Stone",
+   "ENName": "Cruel Aura Stone"
+  },
+  {
+   "ItemIdx": 806003,
+   "Name": "Hope Aura Stone",
+   "ENName": "Hope Aura Stone"
+  },
+  {
+   "ItemIdx": 806004,
+   "Name": "Natural Aura Stone",
+   "ENName": "Natural Aura Stone"
+  },
+  {
+   "ItemIdx": 806005,
+   "Name": "Aura Stone",
+   "ENName": "Aura Stone"
+  },
+  {
+   "ItemIdx": 806006,
+   "Name": "Flame Stone",
+   "ENName": "Flame Stone"
+  },
+  {
+   "ItemIdx": 806007,
+   "Name": "Ghost Stone",
+   "ENName": "Ghost Stone"
+  },
+  {
+   "ItemIdx": 806008,
+   "Name": "Flame Stone",
+   "ENName": "Flame Stone"
+  },
+  {
+   "ItemIdx": 806009,
+   "Name": "Ghost Stone",
+   "ENName": "Ghost Stone"
+  },
+  {
+   "ItemIdx": 806010,
+   "Name": "Flame Stone",
+   "ENName": "Flame Stone"
+  },
+  {
+   "ItemIdx": 806011,
+   "Name": "Ghost Stone",
+   "ENName": "Ghost Stone"
+  },
+  {
+   "ItemIdx": 806012,
+   "Name": "Wave Stone",
+   "ENName": "Wave Stone"
+  },
+  {
+   "ItemIdx": 806013,
+   "Name": "Wave Stone",
+   "ENName": "Wave Stone"
+  },
+  {
+   "ItemIdx": 806014,
+   "Name": "Wave Stone",
+   "ENName": "Wave Stone"
+  },
+  {
+   "ItemIdx": 806015,
+   "Name": "Clouds Stone",
+   "ENName": "Clouds Stone"
+  },
+  {
+   "ItemIdx": 806016,
+   "Name": "Clouds Stone",
+   "ENName": "Clouds Stone"
+  },
+  {
+   "ItemIdx": 806017,
+   "Name": "Clouds Stone",
+   "ENName": "Clouds Stone"
+  },
+  {
+   "ItemIdx": 806018,
+   "Name": "FF Stone",
+   "ENName": "FF Stone"
+  },
+  {
+   "ItemIdx": 806019,
+   "Name": "shadow waves",
+   "ENName": "flourishing waves"
+  },
+  {
+   "ItemIdx": 806020,
+   "Name": "shadow waves",
+   "ENName": "Blue Fire waves"
+  },
+  {
+   "ItemIdx": 806021,
+   "Name": "shadow waves",
+   "ENName": "shadow waves"
+  },
+  {
+   "ItemIdx": 806022,
+   "Name": "blackfire waves",
+   "ENName": "blackfire waves"
+  },
+  {
+   "ItemIdx": 806023,
+   "Name": "Grey smoke waves",
+   "ENName": "Grey smoke waves"
+  },
+  {
+   "ItemIdx": 806024,
+   "Name": "flare waves",
+   "ENName": "flare waves"
+  },
+  {
+   "ItemIdx": 806025,
+   "Name": "wing waves",
+   "ENName": "wing waves"
+  },
+  {
+   "ItemIdx": 806026,
+   "Name": "Shining Glory Ring Stone",
+   "ENName": "Shining Glory Ring Stone"
+  },
+  {
+   "ItemIdx": 806027,
+   "Name": "Fire element halo stone",
+   "ENName": "Fire element halo stone"
+  },
+  {
+   "ItemIdx": 806028,
+   "Name": "Red glow Halo stone",
+   "ENName": "Red glow Halo stone"
+  },
+  {
+   "ItemIdx": 806029,
+   "Name": "Red Curse Seal Halo stone",
+   "ENName": "Red Curse Seal Halo stone"
+  },
+  {
+   "ItemIdx": 806030,
+   "Name": "Mantle vibration Halo stone",
+   "ENName": "Mantle vibration Halo stone"
+  },
+  {
+   "ItemIdx": 806031,
+   "Name": "White radiance Halo stone",
+   "ENName": "White radiance Halo stone"
+  },
+  {
+   "ItemIdx": 806032,
+   "Name": "Red radiance Halo stone",
+   "ENName": "Red radiance Halo stone"
+  },
+  {
+   "ItemIdx": 806033,
+   "Name": "white butterfly Halo stone",
+   "ENName": "white butterfly Halo stone"
+  },
+  {
+   "ItemIdx": 806034,
+   "Name": "red butterfly Halo stone",
+   "ENName": "red butterfly Halo stone"
+  },
+  {
+   "ItemIdx": 806035,
+   "Name": "White Altar Halo stone",
+   "ENName": "White Altar Halo stone"
+  },
+  {
+   "ItemIdx": 806036,
+   "Name": "Red Altar Halo stone",
+   "ENName": "Red Altar Halo stone"
+  },
+  {
+   "ItemIdx": 806037,
+   "Name": "Free White Smoke Halo stone",
+   "ENName": "Free White Smoke Halo stone"
+  },
+  {
+   "ItemIdx": 806038,
+   "Name": "Glamorous Halo stone",
+   "ENName": "Glamorous Halo stone"
+  },
+  {
+   "ItemIdx": 806039,
+   "Name": "White wings Halo stone",
+   "ENName": "White wings Halo stone"
+  },
+  {
+   "ItemIdx": 806040,
+   "Name": "Blue wings Halo stone",
+   "ENName": "Blue wings Halo stone"
+  },
+  {
+   "ItemIdx": 806041,
+   "Name": "White glare Halo stone",
+   "ENName": "White glare Halo stone"
+  },
+  {
+   "ItemIdx": 806042,
+   "Name": "Red light cluster Halo stone",
+   "ENName": "Red light cluster Halo stone"
+  },
+  {
+   "ItemIdx": 806043,
+   "Name": "Red Sword Shield Halo stone",
+   "ENName": "Red Sword Shield Halo stone"
+  },
+  {
+   "ItemIdx": 806044,
+   "Name": "Shining glory Halo stone",
+   "ENName": "Shining glory Halo stone"
+  },
+  {
+   "ItemIdx": 806045,
+   "Name": "Dream of the Moon Halo stone",
+   "ENName": "Dream of the Moon Halo stone"
+  },
+  {
+   "ItemIdx": 806046,
+   "Name": "White Glint Halo stone",
+   "ENName": "White Glint Halo stone"
+  },
+  {
+   "ItemIdx": 806047,
+   "Name": "Red surround Halo stone",
+   "ENName": "Red surround Halo stone"
+  },
+  {
+   "ItemIdx": 806048,
+   "Name": "peach blossom Flying Halo stone",
+   "ENName": "peach blossom Flying Halo stone"
+  },
+  {
+   "ItemIdx": 807001,
+   "Name": "Class Skill Clearing Liquid",
+   "ENName": "Class Skill Clearing Liquid"
+  },
+  {
+   "ItemIdx": 807002,
+   "Name": "Transfer Reset Liquid (Sword)",
+   "ENName": "Transfer Reset Liquid (Sword)"
+  },
+  {
+   "ItemIdx": 807003,
+   "Name": "Transfer Reset Liquid (Knife)",
+   "ENName": "Transfer Reset Liquid (Knife)"
+  },
+  {
+   "ItemIdx": 807004,
+   "Name": "Transfer Reset Liquid (Gun)",
+   "ENName": "Transfer Reset Liquid (Gun)"
+  },
+  {
+   "ItemIdx": 807005,
+   "Name": "Transfer Reset Solution (Doctor)",
+   "ENName": "Transfer Reset Solution (Doctor)"
+  },
+  {
+   "ItemIdx": 807006,
+   "Name": "Transfer Reset Liquid (Blessing)",
+   "ENName": "Transfer Reset Liquid (Blessing)"
+  },
+  {
+   "ItemIdx": 807007,
+   "Name": "Skill reset fluid（Vampire）",
+   "ENName": "Skill reset fluid（Vampire）"
+  },
+  {
+   "ItemIdx": 807008,
+   "Name": "Skill reset fluid（Ousters）",
+   "ENName": "Skill reset fluid（Ousters）"
+  },
+  {
+   "ItemIdx": 807009,
+   "Name": "Ancient Red Crystal of Oblivio",
+   "ENName": "Ancient Red Crystal of Oblivio"
+  },
+  {
+   "ItemIdx": 807010,
+   "Name": "Good and Evil Value Clearing Liquid",
+   "ENName": "Good and Evil Value Clearing Liquid"
+  },
+  {
+   "ItemIdx": 808001,
+   "Name": "Trans Item Kit",
+   "ENName": "Trans Item Kit"
+  },
+  {
+   "ItemIdx": 901001,
+   "Name": "Wolfdog Leash",
+   "ENName": "Wolfdog Leash"
+  },
+  {
+   "ItemIdx": 901002,
+   "Name": "Wolverine Leash",
+   "ENName": "Wolverine Leash"
+  },
+  {
+   "ItemIdx": 901003,
+   "Name": "Radio Controller",
+   "ENName": "Radio Controller"
+  },
+  {
+   "ItemIdx": 901004,
+   "Name": "Stirge Bag",
+   "ENName": "Stirge Bag"
+  },
+  {
+   "ItemIdx": 901005,
+   "Name": "Summon Pixie",
+   "ENName": "Summon Pixie"
+  },
+  {
+   "ItemIdx": 901006,
+   "Name": "Penguin Summoning Stone",
+   "ENName": "Penguin Summoning Stone"
+  },
+  {
+   "ItemIdx": 901007,
+   "Name": "Robot remote control",
+   "ENName": "Robot remote control"
+  },
+  {
+   "ItemIdx": 901008,
+   "Name": "Mutated bat leather bag",
+   "ENName": "Mutated bat leather bag"
+  },
+  {
+   "ItemIdx": 901009,
+   "Name": "Fire Elemental brand",
+   "ENName": "Fire Elemental brand"
+  },
+  {
+   "ItemIdx": 901010,
+   "Name": "Succubus ring",
+   "ENName": "Succubus ring"
+  },
+  {
+   "ItemIdx": 901011,
+   "Name": "Incubus ring",
+   "ENName": "Incubus ring"
+  },
+  {
+   "ItemIdx": 901012,
+   "Name": "Bitch Rabbit Summoning Stone",
+   "ENName": "Bitch Rabbit Summoning Stone"
+  },
+  {
+   "ItemIdx": 901013,
+   "Name": "Tabby Collar",
+   "ENName": "Tabby Collar"
+  },
+  {
+   "ItemIdx": 901014,
+   "Name": "Wealthy collar",
+   "ENName": "Wealthy collar"
+  },
+  {
+   "ItemIdx": 901015,
+   "Name": "Siaming Collar",
+   "ENName": "Siaming Collar"
+  },
+  {
+   "ItemIdx": 901016,
+   "Name": "Snatcher",
+   "ENName": "Snatcher"
+  },
+  {
+   "ItemIdx": 901017,
+   "Name": "Mutation snatcher",
+   "ENName": "Mutation snatcher"
+  },
+  {
+   "ItemIdx": 901018,
+   "Name": "Bulldog collar",
+   "ENName": "Bulldog collar"
+  },
+  {
+   "ItemIdx": 901019,
+   "Name": "Husky collar",
+   "ENName": "Husky collar"
+  },
+  {
+   "ItemIdx": 901020,
+   "Name": "Aquaserin Stone",
+   "ENName": "Aquaserin Stone"
+  },
+  {
+   "ItemIdx": 901021,
+   "Name": "XK2 Blackleon Controller",
+   "ENName": "XK2 Blackleon Controller"
+  },
+  {
+   "ItemIdx": 901022,
+   "Name": "Deer Summoning Stone",
+   "ENName": "Deer Summoning Stone"
+  },
+  {
+   "ItemIdx": 901023,
+   "Name": "Pet Pig Summoning Stone",
+   "ENName": "Pet Pig Summoning Stone"
+  },
+  {
+   "ItemIdx": 901024,
+   "Name": "Little Flying Dragon Summoning Stone",
+   "ENName": "Little Flying Dragon Summoning Stone"
+  },
+  {
+   "ItemIdx": 1001001,
+   "Name": "Pet Naming Pen",
+   "ENName": "Pet Naming Pen"
+  },
+  {
+   "ItemIdx": 1002001,
+   "Name": "Red Drop",
+   "ENName": "Red Drop"
+  },
+  {
+   "ItemIdx": 1002002,
+   "Name": "Vision Potion",
+   "ENName": "Vision Potion"
+  },
+  {
+   "ItemIdx": 1003001,
+   "Name": "Revival Set",
+   "ENName": "Revival Set"
+  },
+  {
+   "ItemIdx": 1003002,
+   "Name": "Premium Revival Set",
+   "ENName": "Premium Revival Set"
+  },
+  {
+   "ItemIdx": 1004001,
+   "Name": "Red Bird",
+   "ENName": "Red Bird"
+  },
+  {
+   "ItemIdx": 1004002,
+   "Name": "Red Bird 2",
+   "ENName": "Red Bird 2"
+  },
+  {
+   "ItemIdx": 1004003,
+   "Name": "Clear Pet CutHead Attribute",
+   "ENName": "Clear Pet CutHead Attribute"
+  },
+  {
+   "ItemIdx": 1004004,
+   "Name": "Red Bird",
+   "ENName": "Red Bird"
+  },
+  {
+   "ItemIdx": 1004005,
+   "Name": "Red Bird",
+   "ENName": "Red Bird"
+  },
+  {
+   "ItemIdx": 1004006,
+   "Name": "Red Bird",
+   "ENName": "Red Bird"
+  },
+  {
+   "ItemIdx": 1004007,
+   "Name": "Red Bird",
+   "ENName": "Red Bird"
+  },
+  {
+   "ItemIdx": 1004008,
+   "Name": "Red Bird",
+   "ENName": "Red Bird"
+  },
+  {
+   "ItemIdx": 1004009,
+   "Name": "Red Bird",
+   "ENName": "Red Bird"
+  },
+  {
+   "ItemIdx": 1004010,
+   "Name": "Red Bird",
+   "ENName": "Red Bird"
+  },
+  {
+   "ItemIdx": 1004011,
+   "Name": "Red Bird",
+   "ENName": "Red Bird"
+  },
+  {
+   "ItemIdx": 1004012,
+   "Name": "Red Bird",
+   "ENName": "Red Bird"
+  },
+  {
+   "ItemIdx": 1004013,
+   "Name": "Red Bird",
+   "ENName": "Red Bird"
+  },
+  {
+   "ItemIdx": 1004014,
+   "Name": "Red Bird",
+   "ENName": "Red Bird"
+  },
+  {
+   "ItemIdx": 1005001,
+   "Name": "Mutant Injection",
+   "ENName": "Mutant Injection"
+  },
+  {
+   "ItemIdx": 1005002,
+   "Name": "Mutant Injection2",
+   "ENName": "Mutant Injection2"
+  },
+  {
+   "ItemIdx": 1005003,
+   "Name": "Penguin Mutant Needle",
+   "ENName": "Penguin Mutant Needle"
+  },
+  {
+   "ItemIdx": 1005004,
+   "Name": "Robot Mutation Needle",
+   "ENName": "Robot Mutation Needle"
+  },
+  {
+   "ItemIdx": 1005005,
+   "Name": "Mutant Bat Mutant Needle",
+   "ENName": "Mutant Bat Mutant Needle"
+  },
+  {
+   "ItemIdx": 1005006,
+   "Name": "Fire Element Mutation Needle",
+   "ENName": "Fire Element Mutation Needle"
+  },
+  {
+   "ItemIdx": 1005007,
+   "Name": "Meimo Mutation Needle",
+   "ENName": "Meimo Mutation Needle"
+  },
+  {
+   "ItemIdx": 1005008,
+   "Name": "Demon Mutation Needle",
+   "ENName": "Demon Mutation Needle"
+  },
+  {
+   "ItemIdx": 1005009,
+   "Name": "Cheap Rabbit Mutant Needle",
+   "ENName": "Cheap Rabbit Mutant Needle"
+  },
+  {
+   "ItemIdx": 1005010,
+   "Name": "Plain Cat Mutant Needle",
+   "ENName": "Plain Cat Mutant Needle"
+  },
+  {
+   "ItemIdx": 1005011,
+   "Name": "Wealthy Cat Mutant Needle",
+   "ENName": "Wealthy Cat Mutant Needle"
+  },
+  {
+   "ItemIdx": 1005012,
+   "Name": "Fake Cat Mutant Needle",
+   "ENName": "Fake Cat Mutant Needle"
+  },
+  {
+   "ItemIdx": 1005013,
+   "Name": "Snatcher Mutant Needle",
+   "ENName": "Snatcher Mutant Needle"
+  },
+  {
+   "ItemIdx": 1005014,
+   "Name": "Mutation Sniper Mutation Needle",
+   "ENName": "Mutation Sniper Mutation Needle"
+  },
+  {
+   "ItemIdx": 1005015,
+   "Name": "Bulldog Mutant Needle",
+   "ENName": "Bulldog Mutant Needle"
+  },
+  {
+   "ItemIdx": 1005016,
+   "Name": "Husky variant needle",
+   "ENName": "Husky variant needle"
+  },
+  {
+   "ItemIdx": 1005017,
+   "Name": "Flower Fairy Mutant Needle",
+   "ENName": "Flower Fairy Mutant Needle"
+  },
+  {
+   "ItemIdx": 1005018,
+   "Name": "Skeleton Dragon Mutation Needle",
+   "ENName": "Skeleton Dragon Mutation Needle"
+  },
+  {
+   "ItemIdx": 1005019,
+   "Name": "Can transform dogs into MK2 tanks",
+   "ENName": "Can transform dogs into MK2 tanks"
+  },
+  {
+   "ItemIdx": 1005020,
+   "Name": "Elk Mutation Needle",
+   "ENName": "Elk Mutation Needle"
+  },
+  {
+   "ItemIdx": 1005021,
+   "Name": "Pet Pig Mutant Needle",
+   "ENName": "Pet Pig Mutant Needle"
+  },
+  {
+   "ItemIdx": 1005022,
+   "Name": "Little Flying Dragon Mutation Needle",
+   "ENName": "Little Flying Dragon Mutation Needle"
+  },
+  {
+   "ItemIdx": 1006003,
+   "Name": "State Skill Random Capsule",
+   "ENName": "State Skill Random Capsule"
+  },
+  {
+   "ItemIdx": 1006004,
+   "Name": "Race Skill Random Capsule",
+   "ENName": "Race Skill Random Capsule"
+  },
+  {
+   "ItemIdx": 1006005,
+   "Name": "Diet Capsule",
+   "ENName": "Diet Capsule"
+  },
+  {
+   "ItemIdx": 1007001,
+   "Name": "Pet Combination Device",
+   "ENName": "Pet Combination Device"
+  },
+  {
+   "ItemIdx": 1008001,
+   "Name": "Pet Reset Combination Potion",
+   "ENName": "Pet Reset Combination Potion"
+  },
+  {
+   "ItemIdx": 1101001,
+   "Name": "Scroll",
+   "ENName": "Scroll"
+  },
+  {
+   "ItemIdx": 1101002,
+   "Name": "Diskette",
+   "ENName": "Diskette"
+  },
+  {
+   "ItemIdx": 1101003,
+   "Name": "Zip Diskette",
+   "ENName": "Zip Diskette"
+  },
+  {
+   "ItemIdx": 1101004,
+   "Name": "\"CD\"",
+   "ENName": "\"CD\""
+  },
+  {
+   "ItemIdx": 1101005,
+   "Name": "Bamboo Piece",
+   "ENName": "Bamboo Piece"
+  },
+  {
+   "ItemIdx": 1101006,
+   "Name": "Oriental Book",
+   "ENName": "Oriental Book"
+  },
+  {
+   "ItemIdx": 1101007,
+   "Name": "Bible",
+   "ENName": "Bible"
+  },
+  {
+   "ItemIdx": 1101008,
+   "Name": "Ancient Book",
+   "ENName": "Ancient Book"
+  },
+  {
+   "ItemIdx": 1101009,
+   "Name": "File",
+   "ENName": "File"
+  },
+  {
+   "ItemIdx": 1101010,
+   "Name": "Top Secret Letter from EVE",
+   "ENName": "Top Secret Letter from EVE"
+  },
+  {
+   "ItemIdx": 1101011,
+   "Name": "Reply from Vampire",
+   "ENName": "Reply from Vampire"
+  },
+  {
+   "ItemIdx": 1101012,
+   "Name": "Top Secret Letter from Vampire",
+   "ENName": "Top Secret Letter from Vampire"
+  },
+  {
+   "ItemIdx": 1101013,
+   "Name": "Reply from EVE",
+   "ENName": "Reply from EVE"
+  },
+  {
+   "ItemIdx": 1101014,
+   "Name": "Labinia Voucher",
+   "ENName": "Labinia Voucher"
+  },
+  {
+   "ItemIdx": 1101015,
+   "Name": "Larba Letter",
+   "ENName": "Larba Letter"
+  },
+  {
+   "ItemIdx": 1102001,
+   "Name": "Bathory Beads",
+   "ENName": "Bathory Beads"
+  },
+  {
+   "ItemIdx": 1102002,
+   "Name": "Bathory Pendant",
+   "ENName": "Bathory Pendant"
+  },
+  {
+   "ItemIdx": 1102003,
+   "Name": "Tepez Beads",
+   "ENName": "Tepez Beads"
+  },
+  {
+   "ItemIdx": 1102004,
+   "Name": "Tepez Pendant",
+   "ENName": "Tepez Pendant"
+  },
+  {
+   "ItemIdx": 1102005,
+   "Name": "Gemstone",
+   "ENName": "Gemstone"
+  },
+  {
+   "ItemIdx": 1102006,
+   "Name": "The Full Moon Card",
+   "ENName": "The Full Moon Card"
+  },
+  {
+   "ItemIdx": 1102007,
+   "Name": "The Old Moon Card",
+   "ENName": "The Old Moon Card"
+  },
+  {
+   "ItemIdx": 1102008,
+   "Name": "The Red Lucky Bag",
+   "ENName": "The Red Lucky Bag"
+  },
+  {
+   "ItemIdx": 1102009,
+   "Name": "Gilles de Rais Beads",
+   "ENName": "Gilles de Rais Beads"
+  },
+  {
+   "ItemIdx": 1102010,
+   "Name": "Gilles de Rais Pendant",
+   "ENName": "Gilles de Rais Pendant"
+  },
+  {
+   "ItemIdx": 1102011,
+   "Name": "Key to the Ancient Tower",
+   "ENName": "Key to the Ancient Tower"
+  },
+  {
+   "ItemIdx": 1102012,
+   "Name": "Key Of Foresight",
+   "ENName": "Key Of Foresight"
+  },
+  {
+   "ItemIdx": 1102013,
+   "Name": "Key Of Mind Eye",
+   "ENName": "Key Of Mind Eye"
+  },
+  {
+   "ItemIdx": 1102014,
+   "Name": "Key Of Guard",
+   "ENName": "Key Of Guard"
+  },
+  {
+   "ItemIdx": 1102015,
+   "Name": "Key Of Silence",
+   "ENName": "Key Of Silence"
+  },
+  {
+   "ItemIdx": 1103001,
+   "Name": "Armega",
+   "ENName": "Armega"
+  },
+  {
+   "ItemIdx": 1103002,
+   "Name": "Mihole",
+   "ENName": "Mihole"
+  },
+  {
+   "ItemIdx": 1103003,
+   "Name": "Kiro",
+   "ENName": "Kiro"
+  },
+  {
+   "ItemIdx": 1103004,
+   "Name": "Ini",
+   "ENName": "Ini"
+  },
+  {
+   "ItemIdx": 1103005,
+   "Name": "Gregori",
+   "ENName": "Gregori"
+  },
+  {
+   "ItemIdx": 1103006,
+   "Name": "Concilia",
+   "ENName": "Concilia"
+  },
+  {
+   "ItemIdx": 1103007,
+   "Name": "Legios",
+   "ENName": "Legios"
+  },
+  {
+   "ItemIdx": 1103008,
+   "Name": "Hillel",
+   "ENName": "Hillel"
+  },
+  {
+   "ItemIdx": 1103009,
+   "Name": "Jave",
+   "ENName": "Jave"
+  },
+  {
+   "ItemIdx": 1103010,
+   "Name": "Nema",
+   "ENName": "Nema"
+  },
+  {
+   "ItemIdx": 1103011,
+   "Name": "Arosa",
+   "ENName": "Arosa"
+  },
+  {
+   "ItemIdx": 1103012,
+   "Name": "Chaspa",
+   "ENName": "Chaspa"
+  },
+  {
+   "ItemIdx": 1104001,
+   "Name": "Amber of Guard",
+   "ENName": "Amber of Guard"
+  },
+  {
+   "ItemIdx": 1104002,
+   "Name": "Amber of Curse",
+   "ENName": "Amber of Curse"
+  },
+  {
+   "ItemIdx": 1104003,
+   "Name": "Amber of Revenge",
+   "ENName": "Amber of Revenge"
+  },
+  {
+   "ItemIdx": 1104004,
+   "Name": "Amber of Immortality",
+   "ENName": "Amber of Immortality"
+  },
+  {
+   "ItemIdx": 1104005,
+   "Name": "Amber of Life",
+   "ENName": "Amber of Life"
+  },
+  {
+   "ItemIdx": 1104006,
+   "Name": "Amber of Light",
+   "ENName": "Amber of Light"
+  },
+  {
+   "ItemIdx": 1105001,
+   "Name": "Ancient Map",
+   "ENName": "Ancient Map"
+  },
+  {
+   "ItemIdx": 1105002,
+   "Name": "Yellow Zimott",
+   "ENName": "Yellow Zimott"
+  },
+  {
+   "ItemIdx": 1105003,
+   "Name": "Green Zimott",
+   "ENName": "Green Zimott"
+  },
+  {
+   "ItemIdx": 1105004,
+   "Name": "Blue Zimott",
+   "ENName": "Blue Zimott"
+  },
+  {
+   "ItemIdx": 1105005,
+   "Name": "Red Zimott",
+   "ENName": "Red Zimott"
+  },
+  {
+   "ItemIdx": 1105006,
+   "Name": "Black Zimott",
+   "ENName": "Black Zimott"
+  },
+  {
+   "ItemIdx": 1105007,
+   "Name": "Yellow Zircon",
+   "ENName": "Yellow Zircon"
+  },
+  {
+   "ItemIdx": 1105008,
+   "Name": "Green Zircon",
+   "ENName": "Green Zircon"
+  },
+  {
+   "ItemIdx": 1105009,
+   "Name": "Blue Zircon",
+   "ENName": "Blue Zircon"
+  },
+  {
+   "ItemIdx": 1105010,
+   "Name": "Red Zircon",
+   "ENName": "Red Zircon"
+  },
+  {
+   "ItemIdx": 1105011,
+   "Name": "Black Zircon",
+   "ENName": "Black Zircon"
+  },
+  {
+   "ItemIdx": 1105012,
+   "Name": "Refinium",
+   "ENName": "Refinium"
+  },
+  {
+   "ItemIdx": 1105013,
+   "Name": "Thurisaz Magic Pebble",
+   "ENName": "Thurisaz Magic Pebble"
+  },
+  {
+   "ItemIdx": 1105014,
+   "Name": "Gebo Magic Pebble",
+   "ENName": "Gebo Magic Pebble"
+  },
+  {
+   "ItemIdx": 1105015,
+   "Name": "Wunjo Magic Pebble",
+   "ENName": "Wunjo Magic Pebble"
+  },
+  {
+   "ItemIdx": 1105016,
+   "Name": "Jera Magic Pebble",
+   "ENName": "Jera Magic Pebble"
+  },
+  {
+   "ItemIdx": 1105017,
+   "Name": "Hagalaz Magic Pebble",
+   "ENName": "Hagalaz Magic Pebble"
+  },
+  {
+   "ItemIdx": 1105018,
+   "Name": "Flag",
+   "ENName": "Flag"
+  },
+  {
+   "ItemIdx": 1105019,
+   "Name": "Ticket to OldTower Zone",
+   "ENName": "Ticket to OldTower Zone"
+  },
+  {
+   "ItemIdx": 1105020,
+   "Name": "Pipe of the Blind",
+   "ENName": "Pipe of the Blind"
+  },
+  {
+   "ItemIdx": 1105021,
+   "Name": "Luck Charm",
+   "ENName": "Luck Charm"
+  },
+  {
+   "ItemIdx": 1105022,
+   "Name": "Life Spiral",
+   "ENName": "Life Spiral"
+  },
+  {
+   "ItemIdx": 1106001,
+   "Name": "Code table (incomplete)",
+   "ENName": "Code table (incomplete)"
+  },
+  {
+   "ItemIdx": 1106002,
+   "Name": "Code table (completed)",
+   "ENName": "Code table (completed)"
+  },
+  {
+   "ItemIdx": 1107001,
+   "Name": "M-03-01",
+   "ENName": "M-03-01"
+  },
+  {
+   "ItemIdx": 1107002,
+   "Name": "M-03-02",
+   "ENName": "M-03-02"
+  },
+  {
+   "ItemIdx": 1107003,
+   "Name": "M-03-03",
+   "ENName": "M-03-03"
+  },
+  {
+   "ItemIdx": 1107004,
+   "Name": "M-03-04",
+   "ENName": "M-03-04"
+  },
+  {
+   "ItemIdx": 1107005,
+   "Name": "M-03-05",
+   "ENName": "M-03-05"
+  },
+  {
+   "ItemIdx": 1107006,
+   "Name": "M-03-06",
+   "ENName": "M-03-06"
+  },
+  {
+   "ItemIdx": 1107007,
+   "Name": "M-03-07",
+   "ENName": "M-03-07"
+  },
+  {
+   "ItemIdx": 1107008,
+   "Name": "M-03-08",
+   "ENName": "M-03-08"
+  },
+  {
+   "ItemIdx": 1107009,
+   "Name": "M-03-09",
+   "ENName": "M-03-09"
+  },
+  {
+   "ItemIdx": 1107010,
+   "Name": "M-03-10",
+   "ENName": "M-03-10"
+  },
+  {
+   "ItemIdx": 1107011,
+   "Name": "M-03-11",
+   "ENName": "M-03-11"
+  },
+  {
+   "ItemIdx": 1107012,
+   "Name": "M-03-12",
+   "ENName": "M-03-12"
+  },
+  {
+   "ItemIdx": 1108001,
+   "Name": "Land Mine",
+   "ENName": "Land Mine"
+  },
+  {
+   "ItemIdx": 1108002,
+   "Name": "Pleasure Station",
+   "ENName": "Pleasure Station"
+  },
+  {
+   "ItemIdx": 1108003,
+   "Name": "Claymore Trap",
+   "ENName": "Claymore Trap"
+  },
+  {
+   "ItemIdx": 1108004,
+   "Name": "Auto Turret",
+   "ENName": "Auto Turret"
+  },
+  {
+   "ItemIdx": 1108005,
+   "Name": "Drum",
+   "ENName": "Drum"
+  },
+  {
+   "ItemIdx": 1108006,
+   "Name": "Tripod A",
+   "ENName": "Tripod A"
+  },
+  {
+   "ItemIdx": 1108007,
+   "Name": "Tripod B",
+   "ENName": "Tripod B"
+  },
+  {
+   "ItemIdx": 1108008,
+   "Name": "Tripod C",
+   "ENName": "Tripod C"
+  },
+  {
+   "ItemIdx": 1108009,
+   "Name": "Obstacle A",
+   "ENName": "Obstacle A"
+  },
+  {
+   "ItemIdx": 1108010,
+   "Name": "Obstacle B",
+   "ENName": "Obstacle B"
+  },
+  {
+   "ItemIdx": 1109001,
+   "Name": "Armega",
+   "ENName": "Armega"
+  },
+  {
+   "ItemIdx": 1109002,
+   "Name": "Mihole",
+   "ENName": "Mihole"
+  },
+  {
+   "ItemIdx": 1109003,
+   "Name": "Kiro",
+   "ENName": "Kiro"
+  },
+  {
+   "ItemIdx": 1109004,
+   "Name": "Ini",
+   "ENName": "Ini"
+  },
+  {
+   "ItemIdx": 1109005,
+   "Name": "Gregori",
+   "ENName": "Gregori"
+  },
+  {
+   "ItemIdx": 1109006,
+   "Name": "Concilia",
+   "ENName": "Concilia"
+  },
+  {
+   "ItemIdx": 1109007,
+   "Name": "Legios",
+   "ENName": "Legios"
+  },
+  {
+   "ItemIdx": 1109008,
+   "Name": "Hillel",
+   "ENName": "Hillel"
+  },
+  {
+   "ItemIdx": 1109009,
+   "Name": "Jave",
+   "ENName": "Jave"
+  },
+  {
+   "ItemIdx": 1109010,
+   "Name": "Nema",
+   "ENName": "Nema"
+  },
+  {
+   "ItemIdx": 1109011,
+   "Name": "Arosa",
+   "ENName": "Arosa"
+  },
+  {
+   "ItemIdx": 1109012,
+   "Name": "Chaspa",
+   "ENName": "Chaspa"
+  },
+  {
+   "ItemIdx": 1110001,
+   "Name": "Dragon Eye",
+   "ENName": "Dragon Eye"
+  },
+  {
+   "ItemIdx": 1115001,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115002,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115003,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115004,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115005,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115006,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115007,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115008,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115201,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115202,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115207,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115301,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115302,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115307,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115401,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115402,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115403,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115501,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115502,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115503,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115504,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115505,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115601,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115602,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115603,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115604,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115701,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115702,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115711,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115721,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115731,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115801,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115802,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115803,
+   "Name": "Zimott",
+   "ENName": "Zimott"
+  },
+  {
+   "ItemIdx": 1115901,
+   "Name": "Pet Upgrade Potion",
+   "ENName": "Pet Upgrade Potion"
+  },
+  {
+   "ItemIdx": 1201001,
+   "Name": "8×2 Pack",
+   "ENName": "8×2 Pack"
+  },
+  {
+   "ItemIdx": 1201002,
+   "Name": "8×4 Pack",
+   "ENName": "8×4 Pack"
+  },
+  {
+   "ItemIdx": 1201003,
+   "Name": "8×8 Pack",
+   "ENName": "8×8 Pack"
+  },
+  {
+   "ItemIdx": 1301001,
+   "Name": "Purple Gift Box",
+   "ENName": "Purple Gift Box"
+  },
+  {
+   "ItemIdx": 1301002,
+   "Name": "Red Gift Box",
+   "ENName": "Red Gift Box"
+  },
+  {
+   "ItemIdx": 1301003,
+   "Name": "Blue Gift Box",
+   "ENName": "Blue Gift Box"
+  },
+  {
+   "ItemIdx": 1301004,
+   "Name": "Yellow Gift Box",
+   "ENName": "Yellow Gift Box"
+  },
+  {
+   "ItemIdx": 1301005,
+   "Name": "Equip Gambling Box",
+   "ENName": "Equip Gambling Box"
+  },
+  {
+   "ItemIdx": 1301006,
+   "Name": "Gift Box",
+   "ENName": "Gift Box"
+  },
+  {
+   "ItemIdx": 1301008,
+   "Name": "Bathory Treasure Box",
+   "ENName": "Bathory Treasure Box"
+  },
+  {
+   "ItemIdx": 1301009,
+   "Name": "Tepez Treasure Box",
+   "ENName": "Tepez Treasure Box"
+  },
+  {
+   "ItemIdx": 1302001,
+   "Name": "Part Santa of Christmas Tree",
+   "ENName": "Part Santa of Christmas Tree"
+  },
+  {
+   "ItemIdx": 1302002,
+   "Name": "Part Rudolph of Christmas Tree",
+   "ENName": "Part Rudolph of Christmas Tree"
+  },
+  {
+   "ItemIdx": 1302003,
+   "Name": "Part Gift of Christmas Tree",
+   "ENName": "Part Gift of Christmas Tree"
+  },
+  {
+   "ItemIdx": 1302004,
+   "Name": "Part Party of Christmas Tree",
+   "ENName": "Part Party of Christmas Tree"
+  },
+  {
+   "ItemIdx": 1302005,
+   "Name": "Part Tree of Christmas Tree",
+   "ENName": "Part Tree of Christmas Tree"
+  },
+  {
+   "ItemIdx": 1302006,
+   "Name": "Part Card of Christmas Tree",
+   "ENName": "Part Card of Christmas Tree"
+  },
+  {
+   "ItemIdx": 1302007,
+   "Name": "Part Carol of Christmas Tree",
+   "ENName": "Part Carol of Christmas Tree"
+  },
+  {
+   "ItemIdx": 1302008,
+   "Name": "Part Seal of Christmas Tree",
+   "ENName": "Part Seal of Christmas Tree"
+  },
+  {
+   "ItemIdx": 1302009,
+   "Name": "Part Snow of Christmas Tree",
+   "ENName": "Part Snow of Christmas Tree"
+  },
+  {
+   "ItemIdx": 1302010,
+   "Name": "Part Sleigh of Christmas Tree",
+   "ENName": "Part Sleigh of Christmas Tree"
+  },
+  {
+   "ItemIdx": 1302011,
+   "Name": "Part Star of Christmas Tree",
+   "ENName": "Part Star of Christmas Tree"
+  },
+  {
+   "ItemIdx": 1302012,
+   "Name": "Part Angel of Christmas Tree",
+   "ENName": "Part Angel of Christmas Tree"
+  },
+  {
+   "ItemIdx": 1302013,
+   "Name": "Christmas Tree",
+   "ENName": "Christmas Tree"
+  },
+  {
+   "ItemIdx": 1302014,
+   "Name": "Part Q Ancient Document",
+   "ENName": "Part Q Ancient Document"
+  },
+  {
+   "ItemIdx": 1302015,
+   "Name": "Part A Ancient Document",
+   "ENName": "Part A Ancient Document"
+  },
+  {
+   "ItemIdx": 1302016,
+   "Name": "Part Z Ancient Document",
+   "ENName": "Part Z Ancient Document"
+  },
+  {
+   "ItemIdx": 1302017,
+   "Name": "Part W Ancient Document",
+   "ENName": "Part W Ancient Document"
+  },
+  {
+   "ItemIdx": 1302018,
+   "Name": "Part S Ancient Document",
+   "ENName": "Part S Ancient Document"
+  },
+  {
+   "ItemIdx": 1302019,
+   "Name": "Part X Ancient Document",
+   "ENName": "Part X Ancient Document"
+  },
+  {
+   "ItemIdx": 1302020,
+   "Name": "Part E Ancient Document",
+   "ENName": "Part E Ancient Document"
+  },
+  {
+   "ItemIdx": 1302021,
+   "Name": "Part D Ancient Document",
+   "ENName": "Part D Ancient Document"
+  },
+  {
+   "ItemIdx": 1302022,
+   "Name": "Part C Ancient Document",
+   "ENName": "Part C Ancient Document"
+  },
+  {
+   "ItemIdx": 1302023,
+   "Name": "Part R Ancient Document",
+   "ENName": "Part R Ancient Document"
+  },
+  {
+   "ItemIdx": 1302024,
+   "Name": "Part F Ancient Document",
+   "ENName": "Part F Ancient Document"
+  },
+  {
+   "ItemIdx": 1302025,
+   "Name": "Part V Ancient Document",
+   "ENName": "Part V Ancient Document"
+  },
+  {
+   "ItemIdx": 1302026,
+   "Name": "Ancient Document",
+   "ENName": "Ancient Document"
+  },
+  {
+   "ItemIdx": 1302027,
+   "Name": "Signpost",
+   "ENName": "Signpost"
+  },
+  {
+   "ItemIdx": 1302028,
+   "Name": "Part Of Clay Doll 1",
+   "ENName": "Part Of Clay Doll 1"
+  },
+  {
+   "ItemIdx": 1302029,
+   "Name": "Part Of Clay Doll 2",
+   "ENName": "Part Of Clay Doll 2"
+  },
+  {
+   "ItemIdx": 1302030,
+   "Name": "Part Of Clay Doll 3",
+   "ENName": "Part Of Clay Doll 3"
+  },
+  {
+   "ItemIdx": 1302031,
+   "Name": "Part Of Clay Doll 4",
+   "ENName": "Part Of Clay Doll 4"
+  },
+  {
+   "ItemIdx": 1302032,
+   "Name": "Part Of Clay Doll 5",
+   "ENName": "Part Of Clay Doll 5"
+  },
+  {
+   "ItemIdx": 1302033,
+   "Name": "Part Of Clay Doll 6",
+   "ENName": "Part Of Clay Doll 6"
+  },
+  {
+   "ItemIdx": 1302034,
+   "Name": "Part Of Clay Doll 7",
+   "ENName": "Part Of Clay Doll 7"
+  },
+  {
+   "ItemIdx": 1302035,
+   "Name": "Part Of Clay Doll 8",
+   "ENName": "Part Of Clay Doll 8"
+  },
+  {
+   "ItemIdx": 1302036,
+   "Name": "Part Of Clay Doll 9",
+   "ENName": "Part Of Clay Doll 9"
+  },
+  {
+   "ItemIdx": 1302037,
+   "Name": "Part Of Clay Doll 10",
+   "ENName": "Part Of Clay Doll 10"
+  },
+  {
+   "ItemIdx": 1302038,
+   "Name": "Part Of Clay Doll 11",
+   "ENName": "Part Of Clay Doll 11"
+  },
+  {
+   "ItemIdx": 1302039,
+   "Name": "Part Of Clay Doll 12",
+   "ENName": "Part Of Clay Doll 12"
+  },
+  {
+   "ItemIdx": 1302040,
+   "Name": "Clay Doll",
+   "ENName": "Clay Doll"
+  },
+  {
+   "ItemIdx": 1302041,
+   "Name": "Signpost",
+   "ENName": "Signpost"
+  },
+  {
+   "ItemIdx": 1302042,
+   "Name": "Signpost",
+   "ENName": "Signpost"
+  },
+  {
+   "ItemIdx": 1303001,
+   "Name": "Skyblue Wide Firecracker",
+   "ENName": "Skyblue Firecracker"
+  },
+  {
+   "ItemIdx": 1303002,
+   "Name": "Green Wide Firecracker",
+   "ENName": "Green Firecracker"
+  },
+  {
+   "ItemIdx": 1303003,
+   "Name": "Purple Wide Firecracker",
+   "ENName": "Purple Firecracker"
+  },
+  {
+   "ItemIdx": 1303004,
+   "Name": "Dragon Firecracker",
+   "ENName": "Dragon Firecracker"
+  },
+  {
+   "ItemIdx": 1303005,
+   "Name": "Orange Wide Firecracker",
+   "ENName": "Orange Firecracker"
+  },
+  {
+   "ItemIdx": 1303006,
+   "Name": "Skyblue Wide Firecracker",
+   "ENName": "Skyblue Wide Firecracker"
+  },
+  {
+   "ItemIdx": 1303007,
+   "Name": "Green Wide Firecracker",
+   "ENName": "Green Wide Firecracker"
+  },
+  {
+   "ItemIdx": 1303008,
+   "Name": "Purple Wide Firecracker",
+   "ENName": "Purple Wide Firecracker"
+  },
+  {
+   "ItemIdx": 1303009,
+   "Name": "Orange Wide Firecracker",
+   "ENName": "Orange Wide Firecracker"
+  },
+  {
+   "ItemIdx": 1303010,
+   "Name": "Skyblue Running Wide Firecracker",
+   "ENName": "Skyblue Running Wide Firecracker"
+  },
+  {
+   "ItemIdx": 1303011,
+   "Name": "Green Running Wide Firecracker",
+   "ENName": "Green Running Wide Firecracker"
+  },
+  {
+   "ItemIdx": 1303012,
+   "Name": "Purple Running Wide Firecracker",
+   "ENName": "Purple Running Wide Firecracker"
+  },
+  {
+   "ItemIdx": 1303013,
+   "Name": "Orange Running Wide Firecracker",
+   "ENName": "Orange Running Wide Firecracker"
+  },
+  {
+   "ItemIdx": 1303014,
+   "Name": "Storm Firecracker",
+   "ENName": "Storm Firecracker"
+  },
+  {
+   "ItemIdx": 1401001,
+   "Name": "Reputation",
+   "ENName": "Reputation"
+  },
+  {
+   "ItemIdx": 1402001,
+   "Name": "Activity Level",
+   "ENName": "Activity Level"
+  },
+  {
+   "ItemIdx": 1402002,
+   "Name": "Seven Day Activity Level",
+   "ENName": "Seven Day Activity Level"
+  },
+  {
+   "ItemIdx": 1403001,
+   "Name": "Gold",
+   "ENName": "Gold"
+  },
+  {
+   "ItemIdx": 1404001,
+   "Name": "Stamps",
+   "ENName": "Stamps"
+  },
+  {
+   "ItemIdx": 1404002,
+   "Name": "Voucher",
+   "ENName": "Voucher"
+  },
+  {
+   "ItemIdx": 1405001,
+   "Name": "BandStamps",
+   "ENName": "BandStamps"
+  },
+  {
+   "ItemIdx": 1406001,
+   "Name": "RaffleTicket",
+   "ENName": "RaffleTicket"
+  },
+  {
+   "ItemIdx": 1407001,
+   "Name": "Vitality",
+   "ENName": "Vitality"
+  },
+  {
+   "ItemIdx": 1701001,
+   "Name": "Ousters Gift Bag",
+   "ENName": "Slayer Gift Bag"
+  },
+  {
+   "ItemIdx": 1701002,
+   "Name": "Ousters Gift Bag",
+   "ENName": "Vampire Gift Bag"
+  },
+  {
+   "ItemIdx": 1701003,
+   "Name": "Ousters Gift Bag",
+   "ENName": "Ousters Gift Bag"
+  }
+ ]
+}

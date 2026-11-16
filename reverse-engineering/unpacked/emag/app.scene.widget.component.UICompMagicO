@@ -1,0 +1,150 @@
+---@class UICompMagicO 角色阶级技能界面
+local UICompMagicO = class("UICompMagicO", lt.UICompBase)
+
+local ItemModule = lt.ItemModule
+local Constant = lt.Constant
+local CommonFunc = lt.CommonFunc
+local CommonModule = lt.CommonModule
+local SkillModule = lt.SkillModule
+
+local magicOTitle = {
+    [1] = { name = "战斗技能" },
+    [2] = { name = "魔法技能" },
+}
+
+function UICompMagicO:ctor()
+    self:registerComponent("UICompMagicOTree","UICompMagicOTree2")
+    UICompMagicO.super.ctor(self)
+    self._btnIndex = nil
+    self._type = nil
+end
+
+function UICompMagicO:onClear()
+    self._btnIndex = nil
+    self._type = nil
+
+    self:unregisterAllComponent()
+    UICompMagicO.super.onClear(self)
+end
+
+function UICompMagicO:onEnter()
+    self._btnIndex = 1
+    -- 初始化技能系列
+    for i=1,2 do
+        local btn = self:getChild("btn" .. i)
+        btn:addClickListener(handler(self, function()
+            self:refreshCurInfo(i)
+            self._btnIndex = i
+        end))
+    end
+end
+
+function UICompMagicO:onExit()
+    for i=1,2 do
+        local btn = self:getChild("btn" .. i)
+        btn:removeClickListener()
+    end
+end
+
+function UICompMagicO:initUI()
+    self._btnIndex = 1
+    -- 初始化技能系列
+    for i=1,2 do
+        local btn = self:getChild("btn" .. i)
+        btn:getChild("nameSelect"):setText(magicOTitle[i].name)
+        btn:getChild("name"):setText(magicOTitle[i].name)
+
+        btn.index = i
+        local isRed = SkillModule:getRedPoint(2, i)
+        btn:getChild("reddot"):setVisible(isRed)
+    end
+    self._cleanNode = self:getChild("cleanNode")
+    self._lordLabel = self:getChild("lordValue")
+
+    self:refreshCurInfo(self._btnIndex)
+
+    local list = self:getChild("list1")
+    local target = list:getChildAt(0)
+    target:insertObjectToFactory(self)
+    local list = self:getChild("list2")
+    local target = list:getChildAt(0)
+    target:insertObjectToFactory(self)
+end
+
+function UICompMagicO:uptRedDotEvt()
+    for i = 1, 2 do
+        local isRed = SkillModule:getRedPoint(2, i)
+        local btn = self:getChild("btn"..i)
+        btn:getChild("reddot"):setVisible(isRed)
+    end
+end
+
+function UICompMagicO:refreshCurInfo(index)
+    if not index then
+        index = self._btnIndex
+    end
+    for j=1,2 do
+        local btn = self:getChild("btn" .. j)
+        local btnControl = btn:getController("visible")
+        if index == btn.index then
+            btnControl:setSelectedIndex(0)
+        else
+            btnControl:setSelectedIndex(1)
+        end
+    end
+
+    local list1 = self:getChild("list1")
+    list1:setVisible(index == CommonModule:GetNetCmdEnum("MAGIC_BATTLE_SKILL_TYPE_BATTLE_ENUM"))
+    local list2 = self:getChild("list2")
+    list2:setVisible(index == CommonModule:GetNetCmdEnum("MAGIC_BATTLE_SKILL_TYPE_MAGIC_ENUM"))
+
+    if index == 1 then
+        self:refreshFightSkill()
+    elseif index == 2 then
+        self:refreshMagicSkill()
+    end
+
+    -- 刷新技能点
+    local herodata = lt.GameModule:getHeroData()
+    local value = herodata:getSkillPoints()
+    local valueT = self:getChild("value")
+    valueT:setText(value)
+
+    self._cleanNode:setVisible(self._type == Constant.ENTER_TYPES.FORGET)
+
+    --刷新金币
+    local coinNum = ItemModule:getValueItem(Constant.ItemType.ITEM_TYPE_PROP, Constant.TYPE_VAULE_ITEM.COIN)
+    self._lordLabel:setText(CommonFunc:changeNumberShow(coinNum))
+
+    if self._btnIndex ~= index then
+        lt.WndLockManager:closeIgnoreRoleInfo()
+    end
+end
+
+function UICompMagicO:refreshFightSkill()
+    local list = self:getChild("list1")
+    local target = list:getChildAt(0)
+    local msgType = CommonModule:GetNetCmdEnum("MAGIC_BATTLE_SKILL_TYPE_BATTLE_ENUM")
+    target:setSkillType(msgType)
+    target:refreshAllNode()
+end
+
+function UICompMagicO:refreshMagicSkill()
+    local list = self:getChild("list2")
+    local target = list:getChildAt(0)
+    local msgType = CommonModule:GetNetCmdEnum("MAGIC_BATTLE_SKILL_TYPE_MAGIC_ENUM")
+    target:setSkillType(msgType)
+    target:refreshAllNode()
+end
+
+--设置类型
+function UICompMagicO:setType(type)
+    self._type = type
+    --设置技能树type
+    local target1 = self:getChild("list1"):getChildAt(0)
+    target1:setType(type)
+    local target2 = self:getChild("list2"):getChildAt(0)
+    target2:setType(type)
+end
+
+return UICompMagicO

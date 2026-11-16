@@ -1,0 +1,41 @@
+return [[
+
+#ifdef GL_ES
+    precision mediump float;
+#endif
+
+varying vec2 v_texCoord;
+uniform sampler2D u_texture;
+
+// 挖洞中心和半径的数组
+uniform vec2 u_holeCenters[3]; // 假设最多支持10个椭圆
+uniform vec2 u_holeRadii[3];    // 椭圆半径数组
+uniform int u_holeCount;          // 当前椭圆数量
+uniform vec2 u_spriteSize;
+uniform float u_opatity;          // 光圈以外的透明度（魔族透明度较高）
+
+void main()
+{
+    vec4 color = texture2D(u_texture, v_texCoord);
+
+    // 遍历所有椭圆
+    for (int i = 0; i < u_holeCount; i++) {
+        // 计算当前像素到挖洞中心的标准化坐标
+        vec2 normalizedCoord = (v_texCoord - u_holeCenters[i]) * u_spriteSize / min(u_spriteSize.x, u_spriteSize.y);
+        
+        // 使用椭圆方程判断是否在挖洞范围内
+        float ellipseEquation = (normalizedCoord.x * normalizedCoord.x) / (u_holeRadii[i].x * u_holeRadii[i].x) +
+                                (normalizedCoord.y * normalizedCoord.y) / (u_holeRadii[i].y * u_holeRadii[i].y);
+        
+        // 如果在挖洞范围内，计算透明度
+        if (ellipseEquation < 1.0) {
+            float opacity = smoothstep(0.0, 1.0, ellipseEquation); 
+            opacity = mix(0.0, u_opatity, opacity);
+            color = vec4(0.0, 0.0, 0.0, opacity);
+        }else{
+            color = vec4(color.rgb, color.a * u_opatity); 
+        }
+    }
+    gl_FragColor = color; 
+}
+]]

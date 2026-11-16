@@ -1,0 +1,26 @@
+local BuffMagicSeduction = class("BuffMagicSeduction", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+local ScheduleUtil  = lt.ScheduleUtil
+--[[
+    诱惑
+]]
+function BuffMagicSeduction:ctor(time, actor, skilllevel)    
+    BuffMagicSeduction.super.ctor(self, BuffEnum.EFFECT_CLASS_SEDUCTION, time, actor)
+    
+    -- 播放特效 1为目标对象
+    actor:playQueueEffect(SkillEnum.SKILL_MAGIC_SEDUCTION, 2)
+    ScheduleUtil:performWithDelayGlobal(function()
+        actor:playEffect(SkillEnum.SKILL_MAGIC_SEDUCTION, 2)
+    end, 0.5)
+
+    actor:setEffectZOrder(3, 2)
+end
+
+function BuffMagicSeduction:onClear()
+    self._actor:stopQueueEffect(SkillEnum.SKILL_MAGIC_SEDUCTION)
+    self._actor:setEffectZOrder(2, 3)
+    BuffMagicSeduction.super.onClear(self)
+end
+
+return BuffMagicSeduction

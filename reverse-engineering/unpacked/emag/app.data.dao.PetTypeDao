@@ -1,0 +1,14 @@
+
+local PetTypeDao = {}
+
+function PetTypeDao:queryAll()
+    local petTypeMap = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM PetType") do
+        local petTypeMeta = lt.PetTypeMeta.new(row)
+        petTypeMap[petTypeMeta:getId()] = petTypeMeta
+    end
+    return petTypeMap
+end
+
+return PetTypeDao

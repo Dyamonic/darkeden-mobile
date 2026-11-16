@@ -1,0 +1,216 @@
+---@通用提示框
+---@class UICompMessageBoxNum
+local UICompMessageBoxNum = class("UICompMessageBoxNum",lt.UICompBase)
+
+local NtfManager = lt.NtfManager
+
+UICompMessageBoxNum.ChangeSkinConf = {
+    ["MessageBox"] = {
+        ["bg"] = "bg_tytanchuang_02",
+        ["numbg"] = "bg_tytanchuang_05",
+    },
+    ["CommonTL"] = {
+        closeButton = {bg  = "sort"},
+        confirm = {bg  = "sort"},
+    } 
+}
+
+local messageBoxNumTips = {
+    StringTips1 = GReadText.KEY_INVENTORY_TIPS1,
+    StringTips2 = GReadText.KEY_INVENTORY_TIPS2,
+    StringTips3 = GReadText.KEY_INVENTORY_TIPS3,
+    StringTips4 = GReadText.KEY_INVENTORY_TIPS4,
+}
+
+function UICompMessageBoxNum:ctor()
+    UICompMessageBoxNum.super.ctor(self)
+    self._data = nil
+    self._curMaxNum = nil
+end
+
+function UICompMessageBoxNum:onClear()
+    self._data = nil
+    self._curMaxNum = nil
+    self._confirmBtn = nil
+    self._closeButton = nil
+    self._addBtn = nil
+    self._subBtn = nil
+    self._mulBtn = nil
+    self._divBtn = nil
+    UICompMessageBoxNum.super.onClear(self)
+end
+
+function UICompMessageBoxNum:onConstruct()
+    self:startSkin()
+    self._confirmBtn = self:getChild("confirm")
+    self._closeButton = self:getChild("closeButton")
+    self._addBtn = self:getChild("add")
+    self._subBtn = self:getChild("sub")
+    self._mulBtn = self:getChild("mul")
+    self._divBtn = self:getChild("div")
+end
+
+function UICompMessageBoxNum:onEnter()
+    UICompMessageBoxNum.super.onEnter(self)
+    self._confirmBtn:addClickListener(handler(self, self.onBtnClick))
+    self._closeButton:addClickListener(handler(self, self.onCloseBtnClick))
+    self._addBtn:addClickListener(handler(self, self.onAddClick))
+    self._subBtn:addClickListener(handler(self, self.onSubClick))
+    self._mulBtn:addClickListener(handler(self, self.onMulClick))
+    self._divBtn:addClickListener(handler(self, self.onDivClick))
+
+end
+function UICompMessageBoxNum:onExit()
+    self._confirmBtn:removeClickListener()
+    self._closeButton:removeClickListener()
+    self._addBtn:removeClickListener()
+    self._subBtn:removeClickListener()
+    self._mulBtn:removeClickListener()
+    self._divBtn:removeClickListener()
+    UICompMessageBoxNum.super.onExit(self)
+end
+
+function UICompMessageBoxNum:initUI()
+end
+
+-- function UIWndMessageBoxNum:onNumChanged()
+-- end
+
+function UICompMessageBoxNum:onAddClick()
+    local numInput = self:getChild("num")
+    local num = tonumber(numInput:getText())
+
+    num = num + 1
+    num = self:checkNum(num)
+    numInput:setText(num)
+    -- print("add", num)
+end
+
+function UICompMessageBoxNum:onSubClick()
+    local numInput = self:getChild("num")
+    local num = tonumber(numInput:getText())
+
+    num = num - 1
+    num = self:checkNum(num,true)
+    numInput:setText(num)
+    -- print("sub", num)
+end
+
+function UICompMessageBoxNum:onMulClick()
+    local numInput = self:getChild("num")
+    local num = tonumber(numInput:getText())
+
+    num = num * 10
+    num = self:checkNum(num)
+    numInput:setText(num)
+    -- print("mul", num)
+end
+
+function UICompMessageBoxNum:onDivClick()
+    local numInput = self:getChild("num")
+    local num = tonumber(numInput:getText())
+
+    num = math.floor(num / 10)
+    num = self:checkNum(num)
+    numInput:setText(num)
+    -- print("div", num)
+end
+
+function UICompMessageBoxNum:filterNumbers(inputStr)
+    local result = ""
+    for i = 1, #inputStr do
+        local char = inputStr:sub(i, i)
+        if char >= "0" and char <= "9" then
+            result = result .. char
+        end
+    end
+    return result
+end
+
+function UICompMessageBoxNum:onCloseBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_NUM)
+end
+
+function UICompMessageBoxNum:onBtnClick()
+    -- 过滤无效字符
+    local numInput = self:getChild("num")
+    local num = tonumber(numInput:getText())
+    if type(num) ~= "number" then
+        num = self:filterNumbers(numInput:getText())
+        numInput:setText(num)
+        lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_FLOAT_TIP,{content = messageBoxNumTips.StringTips4})
+        return
+    end
+
+    -- 检查数字区间,并且重置
+    local perNum = num
+    num = self:checkNumEx(num, true)
+    numInput:setText(num)
+    if num == 0 or (perNum ~= num) then
+        return
+    end
+
+    -- local confirmTipsFunc = self:getParam().confirmTipsFunc -- 做一些提示性的操作
+    -- if confirmTipsFunc then
+    --     if confirmTipsFunc(num) == false then
+    --         return
+    --     end
+    -- end
+    
+    local confirmCallback = self._data.confirmCallback
+    if confirmCallback then
+        confirmCallback(num)
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_NUM)
+end
+
+function UICompMessageBoxNum:refreshInfo(data)
+    self._data = data or {}
+    if self:getChild("desc") then
+        local content = self._data.content or ""
+        self:getChild("desc"):setText(content)
+    end
+
+    local param = self._data.param or {}
+    local num = self:getChild("num")
+    
+    self._curMaxNum = param.maxNum or 0
+    self._curMinNum = param.minNum or 0
+    local defaultNum = 0
+    if self._curMaxNum > 0 then
+        defaultNum = 1
+    end
+    num:setText(defaultNum)
+end
+
+function UICompMessageBoxNum:checkNum(value)
+    if value < self._curMinNum then
+        value = self._curMinNum
+    elseif value > self._curMaxNum then
+        value = self._curMaxNum
+    end
+
+    return value
+end
+
+function UICompMessageBoxNum:checkNumEx(value,showTips)
+    if value < 0 then
+        value = self._curMaxNum
+        if showTips then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = messageBoxNumTips.StringTips2})
+        end
+    elseif value > self._curMaxNum then
+        value = self._curMaxNum
+        if showTips then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = messageBoxNumTips.StringTips3})
+        end
+    elseif value == 0 then
+        if showTips then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = messageBoxNumTips.StringTips1})
+        end
+    end
+
+    return value
+end
+
+return UICompMessageBoxNum

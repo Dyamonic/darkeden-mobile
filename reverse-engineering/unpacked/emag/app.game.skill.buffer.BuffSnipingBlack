@@ -1,0 +1,17 @@
+local BuffSnipingBlack = class("BuffSnipingBlack", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+
+--[[
+    狙击黑化
+]]
+function BuffSnipingBlack:ctor(time, actor, skilllevel)    
+    BuffSnipingBlack.super.ctor(self, BuffEnum.EFFECT_CLASS_SNIPING_FADE_OUT, time, actor)
+    actor:snipingEffect()
+end
+
+function BuffSnipingBlack:onClear()
+    BuffSnipingBlack.super.onClear(self)
+end
+
+return BuffSnipingBlack

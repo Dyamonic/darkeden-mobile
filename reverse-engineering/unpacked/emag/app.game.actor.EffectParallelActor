@@ -1,0 +1,311 @@
+local EffectParallelActor = class("EffectParallelActor", function()
+    return display.newNode()
+end)
+local EffectActor = lt.EffectActor
+local SkillEnum = lt.SkillEnum
+local Constant = lt.Constant
+
+--[[
+    多个序列帧特效同时播放
+]]
+local CacheManager = lt.CacheManager
+EffectParallelActor._loopOrder = nil
+function EffectParallelActor:ctor(actor, skillId, direction)
+    self:setActor(actor)
+    self._skillId = skillId
+    self._direction = direction
+    self._effectActorTable = {}
+    self._loopOrder = -1
+    self._loopOrderAll = false
+    self._effectDirectionArr = {}
+    self._isTransformEllipse = false
+    self._ellipseTime = 0
+    self._isExitBuff = false
+end
+
+function EffectParallelActor:onClear()
+    self:removeAllActor()
+    -- self:removeAllChildren()
+    self:removeFromParent()
+    self._loopOrder = nil
+    self._loopOrderAll = false
+    self._effectDirectionArr = nil
+    self._isTransformEllipse = nil
+    self._ellipseTime = nil
+    self._isExitBuff = false
+    self._effectActorTable = nil
+end
+
+function EffectParallelActor:setActor(actor)
+    self._actor = actor
+end
+
+function EffectParallelActor:setPositionEx(x, y)
+    self:setPosition(x, y)
+end
+
+function EffectParallelActor:onUpdate()
+    self:onUpdateParallelEffect()
+
+    self:calculateEllipse()
+end
+
+-- function EffectParallelActor:onUpdateEffect()
+--     self:onUpdateParallelEffect()
+-- end
+
+function EffectParallelActor:onUpdateParallelEffect()
+    if self._isCloseEffect then
+        return
+    end
+
+    -- TODO 此处存在争议
+    -- 死亡：当前复活后仍然需要特效(仅限buff)，回城复活无需特效 ？
+    -- 死亡时隐藏特效 ？self._skillId isBuff skill
+    local isCloseEffect = lt.SkillModule:isCloseEffect(self._skillId, self._actor, self._effectName)
+    if isCloseEffect then
+        self:closeEffect()
+        if self:isBuffSkillEffect() then
+            for _, effectActor in pairs(self._effectActorTable) do
+                if effectActor then 
+                    effectActor:hideEffect()
+                end
+            end
+        else
+            for _, effectActor in pairs(self._effectActorTable) do
+                if effectActor then 
+                    effectActor:stopEffect()
+                end
+            end
+        end
+        -- return
+    end
+
+    if table.nums(self._effectActorTable) == 0 then
+        self._isCloseEffect = true
+    end
+
+    -- self:refreshEffectInfo() ---黑暗复仇者会随着人物移动方向而刷新动画的方向
+    for _, effectActor in pairs(self._effectActorTable) do
+        if effectActor then
+            effectActor:onUpdateEffect()
+        end
+    end
+end
+
+function EffectParallelActor:isCloseEffect()
+    return self._isCloseEffect
+end
+
+--[[
+    EffectEnum.EFFECTGENERATORID_ATTACH_CREATURE 效果生成器为7 队列播放
+    owner 作用对象：1：自己 2：怪物
+]]
+
+function EffectParallelActor:addEffectEName(skillId, eName)
+    local effectMetas = CacheManager:getSkillEffectBySkillIdAndEName(skillId, eName)
+    self:addEffect(skillId, effectMetas)
+end
+
+function EffectParallelActor:addEffectGenerator(skillId, generator, owner)
+    local effectMetas = CacheManager:getSkillEffectBySkillIdAndGenerator(skillId, generator, owner)
+    self:addEffect(skillId, effectMetas)
+end
+
+function EffectParallelActor:addEffectGeneratorByIndex(skillId, generator, owner, index)
+    local effectMetas = CacheManager:getSkillEffectBySkillIdAndGenerator(skillId, generator, owner)
+
+    local meta = effectMetas[1]
+    if index and effectMetas[index] then
+        meta = effectMetas[index]
+    end
+
+    self:addEffect(skillId, {meta})
+end
+
+-- 根据新表读取配置
+function EffectParallelActor:addEffectBySkillLevel(skillId,skillLevel,effectName)
+    local skillMeta = CacheManager:getSkillEffectByIdLv(skillId,skillLevel,effectName)
+    if not skillMeta then
+        yflog:Info("EffectParallelActor ==>>  SKill Config not found skillId = %s   skillLevel = %s", skillId, skillLevel)
+        return
+    end
+
+    local key = table.concat({"get" , effectName or "" , "Metas"})
+    local metas = {}
+    if type(skillMeta[key]) == "function" then
+        metas = skillMeta[key](skillMeta)
+    end
+
+    ---------------------------------------------------------------------------------------------
+    -- buff 并行处理
+    if self._isExitBuff then
+        local tempMeta = {}
+        for index,v in ipairs(metas) do
+            if v:getLoopCount() == -1 then
+                table.insert(tempMeta,v)
+                v:setOrder(#tempMeta)
+            end
+        end
+        metas = tempMeta
+    end
+    ---------------------------------------------------------------------------------------------
+
+    self._effectName = effectName
+    self:addEffect(skillId, metas)
+end
+
+function EffectParallelActor:addEffect(skillId, effectMetas)
+    -- if true then return end
+    if not effectMetas or #effectMetas == 0 then
+        yflog:Info("EffectParallelActor:addEffect the skill:%d has no skill effect meta", skillId)
+        return
+    end
+    table.sort(effectMetas, function (a, b)
+        return a:getOrder() < b:getOrder()
+    end)
+    self._effectMetas = effectMetas
+    for i, meta in ipairs(effectMetas) do
+        local orderId = meta:getOrder()
+        if type(meta["getLoopCount"]) == "function" and meta:getLoopCount() == -1 then
+            self:setLoopOrder(i)
+        end
+
+        local isLoop = false
+        if self._loopOrderAll or self._loopOrder ~= -1 and orderId == self._loopOrder  then
+            isLoop = true
+        end
+        if skillId == SkillEnum.SKILL_INSTALL_TRAP then
+           if self._loopOrderAll or self._loopOrder ~= -1 then
+                isLoop = true
+           end
+        end
+        local anchorPoint = nil
+
+        
+        local direction = self._effectDirectionArr[i] or self._direction
+        local effectActor = EffectActor.new(meta, direction, anchorPoint, isLoop)
+        self:addChild(effectActor)
+        local delayTime = meta:getDelayFrame() / 1000
+        effectActor:setDelayTime(delayTime)
+        effectActor:setRemoveCallback(handler(self, self.removeEffectActor), orderId)
+
+        self._effectActorTable[orderId] = effectActor
+    end
+end
+
+--人物 - 1点（同步节点）{n 东}
+function EffectParallelActor:stopParallelEffect()
+    -- print("EffectParallelActor:stopParallelEffect()")
+    if self._loopOrderAll or self._loopOrder ~= -1 then
+        if not self._effectActorTable then
+            yflog:Error("error effectInfo is nil ：%s",tostring(self._skillId))
+            self:endEffect()
+            return
+        end
+
+        -- 停止所有循环的，再让他播放完
+        for k, effectActor in pairs(self._effectActorTable) do
+            if effectActor and effectActor:getLoop() < 0 then
+                effectActor:setLoop(1)
+            end
+        end
+        self._loopOrderAll = false
+        self._loopOrder = -1
+    end
+end
+
+-- 循环的队列顺序
+function EffectParallelActor:setLoopOrder(order)
+    self._loopOrder = order
+end
+function EffectParallelActor:setLoopOrderAll(isLoop)
+    self._loopOrderAll = isLoop
+end
+
+
+function EffectParallelActor:closeEffect()
+    self._isCloseEffect = true
+end
+
+function EffectParallelActor:isBuffSkillEffect()
+    if SkillEnum.SKILL_MAGIC_DOOM == self._skillId then
+        return true
+    end
+
+    return false
+end
+
+function EffectParallelActor:getSkillId()
+    return self._skillId
+end
+
+
+function EffectParallelActor:getEffectActorClose()
+    for orderId, effectActor in pairs(self._effectActorTable) do
+        if effectActor then 
+            if effectActor then
+                if not  effectActor:getEffectActorClose() then
+                    return false
+                end
+            end
+        end
+    end
+    return true
+end
+
+function EffectParallelActor:setEffectDirection(effectDirectionArr)
+    self._effectDirectionArr = effectDirectionArr
+end
+
+function EffectParallelActor:setTransformEllipse(transformEllipse)
+    self._isTransformEllipse = transformEllipse
+end
+
+function EffectParallelActor:setEllipseDirSpeed(ellipseDirSpeed)
+    self._ellipseDirSpeed = ellipseDirSpeed
+end
+
+-- 特效椭圆旋转
+function EffectParallelActor:calculateEllipse()
+    if self._isTransformEllipse then
+        if not self._ellipseDirSpeed then
+            self._ellipseDirSpeed = 1
+        end
+
+        local function calculateEllipsePoint(a, b, t)
+            local x = a * math.cos(t)
+            local y = b * math.sin(t)
+            return x, y
+        end
+        local delta = lt.GameBoard:getDeltaTime()
+        self._ellipseTime = self._ellipseTime + delta * self._ellipseDirSpeed
+        local x, y = calculateEllipsePoint(self._isTransformEllipse[1] or 48, self._isTransformEllipse[2] or 24, self._ellipseTime)
+        self:setPositionEx(x, y)
+    end
+end
+
+function EffectParallelActor:setIsExitBuff(value)
+    self._isExitBuff = value
+end
+
+function EffectParallelActor:removeEffectActor(orderId)
+    if self._effectActorTable and self._effectActorTable[orderId] then
+        self._effectActorTable[orderId]:onClear()
+        self._effectActorTable[orderId] = nil
+    end
+
+    if table.nums(self._effectActorTable) == 0 then
+        self:closeEffect()
+    end
+end
+
+function EffectParallelActor:removeAllActor()
+    for _, effectActor in pairs(self._effectActorTable) do
+        if effectActor then
+            effectActor:onClear()
+        end
+    end
+end
+
+return EffectParallelActor

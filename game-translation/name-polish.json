@@ -1,0 +1,5525 @@
+[
+ {
+  "table": "Map",
+  "rowid": 1,
+  "column": "MapName",
+  "before": "Eslonian_Northeast",
+  "english": "Eslania Northeast"
+ },
+ {
+  "table": "Map",
+  "rowid": 3,
+  "column": "MapName",
+  "before": "Eslonian_Southeast",
+  "english": "Eslania Southeast"
+ },
+ {
+  "table": "Map",
+  "rowid": 4,
+  "column": "MapName",
+  "before": "Eslonian_Southwest",
+  "english": "Eslania Southwest"
+ },
+ {
+  "table": "Map",
+  "rowid": 5,
+  "column": "MapName",
+  "before": "Lin Baocheng_Northeast",
+  "english": "Limbo Lair Northeast"
+ },
+ {
+  "table": "Map",
+  "rowid": 6,
+  "column": "MapName",
+  "before": "Lin Baocheng_Northwest",
+  "english": "Limbo Lair Northwest"
+ },
+ {
+  "table": "Map",
+  "rowid": 7,
+  "column": "MapName",
+  "before": "Lin Baocheng_Southeast",
+  "english": "Limbo Lair Southeast"
+ },
+ {
+  "table": "Map",
+  "rowid": 8,
+  "column": "MapName",
+  "before": "Lin Baocheng_Southwest",
+  "english": "Limbo Lair Southwest"
+ },
+ {
+  "table": "Map",
+  "rowid": 9,
+  "column": "MapName",
+  "before": "Drobit_Northeast",
+  "english": "Drobeta Northeast"
+ },
+ {
+  "table": "Map",
+  "rowid": 10,
+  "column": "MapName",
+  "before": "Drobit_Northwest",
+  "english": "Drobeta Northwest"
+ },
+ {
+  "table": "Map",
+  "rowid": 11,
+  "column": "MapName",
+  "before": "Drobit_Southeast",
+  "english": "Drobeta Southeast"
+ },
+ {
+  "table": "Map",
+  "rowid": 12,
+  "column": "MapName",
+  "before": "Drobit_Southwest",
+  "english": "Drobeta Southwest"
+ },
+ {
+  "table": "Map",
+  "rowid": 13,
+  "column": "MapName",
+  "before": "Luodingshan_Northeast",
+  "english": "Rodin Northeast"
+ },
+ {
+  "table": "Map",
+  "rowid": 14,
+  "column": "MapName",
+  "before": "Luodingshan_Northwest",
+  "english": "Rodin Northwest"
+ },
+ {
+  "table": "Map",
+  "rowid": 15,
+  "column": "MapName",
+  "before": "Luodingshan_Southeast",
+  "english": "Rodin Southeast"
+ },
+ {
+  "table": "Map",
+  "rowid": 16,
+  "column": "MapName",
+  "before": "Luodingshan_Southwest",
+  "english": "Rodin Southwest"
+ },
+ {
+  "table": "Map",
+  "rowid": 17,
+  "column": "MapName",
+  "before": "Timor Lake_Northeast",
+  "english": "Timore Northeast"
+ },
+ {
+  "table": "Map",
+  "rowid": 18,
+  "column": "MapName",
+  "before": "Timor Lake_Northwest",
+  "english": "Timore Northwest"
+ },
+ {
+  "table": "Map",
+  "rowid": 19,
+  "column": "MapName",
+  "before": "Timor Lake_Southeast",
+  "english": "Timore Southeast"
+ },
+ {
+  "table": "Map",
+  "rowid": 20,
+  "column": "MapName",
+  "before": "Timor Lake_Southwest",
+  "english": "Timore Southwest"
+ },
+ {
+  "table": "Map",
+  "rowid": 21,
+  "column": "MapName",
+  "before": "Pelona_Northeast",
+  "english": "Perona Northeast"
+ },
+ {
+  "table": "Map",
+  "rowid": 22,
+  "column": "MapName",
+  "before": "Pelona_Northwest",
+  "english": "Perona Northwest"
+ },
+ {
+  "table": "Map",
+  "rowid": 23,
+  "column": "MapName",
+  "before": "Pelona_Southeast",
+  "english": "Perona Southeast"
+ },
+ {
+  "table": "Map",
+  "rowid": 24,
+  "column": "MapName",
+  "before": "Pelona_Southwest",
+  "english": "Perona Southwest"
+ },
+ {
+  "table": "Map",
+  "rowid": 25,
+  "column": "MapName",
+  "before": "Adam's Holy Land_East",
+  "english": "Adam New East"
+ },
+ {
+  "table": "Map",
+  "rowid": 26,
+  "column": "MapName",
+  "before": "Adam Sanctuary - Central",
+  "english": "Adam New C"
+ },
+ {
+  "table": "Map",
+  "rowid": 27,
+  "column": "MapName",
+  "before": "Adam's Holy Land_West",
+  "english": "Adam New West"
+ },
+ {
+  "table": "Map",
+  "rowid": 28,
+  "column": "MapName",
+  "before": "Adam's Holy Land_North",
+  "english": "Adam New C North"
+ },
+ {
+  "table": "Map",
+  "rowid": 29,
+  "column": "MapName",
+  "before": "Adam's Holy Land_South",
+  "english": "Adam New C South"
+ },
+ {
+  "table": "Map",
+  "rowid": 30,
+  "column": "MapName",
+  "before": "Castaro_Northeast",
+  "english": "Castalo Northeast"
+ },
+ {
+  "table": "Map",
+  "rowid": 31,
+  "column": "MapName",
+  "before": "Blanc_Northeast",
+  "english": "Vranco Northeast"
+ },
+ {
+  "table": "Map",
+  "rowid": 32,
+  "column": "MapName",
+  "before": "Blanc_Northwest",
+  "english": "Vranco Northwest"
+ },
+ {
+  "table": "Map",
+  "rowid": 33,
+  "column": "MapName",
+  "before": "Blanc_Southeast",
+  "english": "Vranco Southeast"
+ },
+ {
+  "table": "Map",
+  "rowid": 34,
+  "column": "MapName",
+  "before": "Blanc_Southwest",
+  "english": "Vranco Southwest"
+ },
+ {
+  "table": "Map",
+  "rowid": 35,
+  "column": "MapName",
+  "before": "underground sewer",
+  "english": "Slayers Training"
+ },
+ {
+  "table": "Map",
+  "rowid": 36,
+  "column": "MapName",
+  "before": "Eslonia Dungeon",
+  "english": "Eslania Dungeon"
+ },
+ {
+  "table": "Map",
+  "rowid": 37,
+  "column": "MapName",
+  "before": "Inside Linbaocheng",
+  "english": "Vampire Village"
+ },
+ {
+  "table": "Map",
+  "rowid": 38,
+  "column": "MapName",
+  "before": "Linbaocheng Dungeon",
+  "english": "Limbo Dungeon"
+ },
+ {
+  "table": "Map",
+  "rowid": 39,
+  "column": "MapName",
+  "before": "activity area",
+  "english": "Drobeta OX"
+ },
+ {
+  "table": "Map",
+  "rowid": 40,
+  "column": "MapName",
+  "before": "event competition venue",
+  "english": "Drobeta Stadium1"
+ },
+ {
+  "table": "Map",
+  "rowid": 41,
+  "column": "MapName",
+  "before": "Inside Larsen Castle",
+  "english": "Rasen Yard"
+ },
+ {
+  "table": "Map",
+  "rowid": 42,
+  "column": "MapName",
+  "before": "Kali Grottoes",
+  "english": "Kali Cave"
+ },
+ {
+  "table": "Map",
+  "rowid": 43,
+  "column": "MapName",
+  "before": "Larsen Training Camp",
+  "english": "Rasen Training"
+ },
+ {
+  "table": "Map",
+  "rowid": 44,
+  "column": "MapName",
+  "before": "Pike Tunnel",
+  "english": "Tunnel Peiac"
+ },
+ {
+  "table": "Map",
+  "rowid": 45,
+  "column": "MapName",
+  "before": "Lost Tai'an basement level",
+  "english": "Losttaiyan B1"
+ },
+ {
+  "table": "Map",
+  "rowid": 46,
+  "column": "MapName",
+  "before": "Lost Tai'an underground second floor",
+  "english": "Losttaiyan B2"
+ },
+ {
+  "table": "Map",
+  "rowid": 47,
+  "column": "MapName",
+  "before": "Asirion Dungeon",
+  "english": "Asylion Dungeon Low"
+ },
+ {
+  "table": "Map",
+  "rowid": 48,
+  "column": "MapName",
+  "before": "Activity Competition Field 2",
+  "english": "Drobeta Stadium2"
+ },
+ {
+  "table": "Map",
+  "rowid": 49,
+  "column": "MapName",
+  "before": "Bathory Dungeon basement level",
+  "english": "Bathory Dungeon B1"
+ },
+ {
+  "table": "Map",
+  "rowid": 50,
+  "column": "MapName",
+  "before": "Bathory Dungeon underground second floor",
+  "english": "Bathory Dungeon B2"
+ },
+ {
+  "table": "Map",
+  "rowid": 51,
+  "column": "MapName",
+  "before": "The third underground floor of Bathory Dungeon",
+  "english": "Bathory Dungeon B3"
+ },
+ {
+  "table": "Map",
+  "rowid": 52,
+  "column": "MapName",
+  "before": "The fourth underground floor of Bathory Dungeon",
+  "english": "Bathory Dungeon B4F"
+ },
+ {
+  "table": "Map",
+  "rowid": 53,
+  "column": "MapName",
+  "before": "Bathory Palace",
+  "english": "Bathory Lair"
+ },
+ {
+  "table": "Map",
+  "rowid": 54,
+  "column": "MapName",
+  "before": "Gurba Tunnel",
+  "english": "Tunnel Ghorgova"
+ },
+ {
+  "table": "Map",
+  "rowid": 55,
+  "column": "MapName",
+  "before": "Replica of Bathory Palace",
+  "english": "Bathory Lair Clon"
+ },
+ {
+  "table": "Map",
+  "rowid": 56,
+  "column": "MapName",
+  "before": "Lassen_Ground Floor",
+  "english": "Castle Rasen 1 1"
+ },
+ {
+  "table": "Map",
+  "rowid": 57,
+  "column": "MapName",
+  "before": "Lassen_Inner City 1st Floor",
+  "english": "Castle Rasen 1 2"
+ },
+ {
+  "table": "Map",
+  "rowid": 58,
+  "column": "MapName",
+  "before": "Lassen_Inner City 2nd Floor",
+  "english": "Castle Rasen 2 2"
+ },
+ {
+  "table": "Map",
+  "rowid": 59,
+  "column": "MapName",
+  "before": "Tepuzi Palace",
+  "english": "Tepes Lair"
+ },
+ {
+  "table": "Map",
+  "rowid": 60,
+  "column": "MapName",
+  "before": "Replica of Tepuzi Palace",
+  "english": "Tepes Lair Clon"
+ },
+ {
+  "table": "Map",
+  "rowid": 61,
+  "column": "MapName",
+  "before": "Temori Holy Land",
+  "english": "Slayer Battlezone2"
+ },
+ {
+  "table": "Map",
+  "rowid": 62,
+  "column": "MapName",
+  "before": "Hiram Holy Land",
+  "english": "Bathory Battlezone"
+ },
+ {
+  "table": "Map",
+  "rowid": 63,
+  "column": "MapName",
+  "before": "Basement 1 of Eisen Dungeon",
+  "english": "Drobeta Dungeon V1f"
+ },
+ {
+  "table": "Map",
+  "rowid": 64,
+  "column": "MapName",
+  "before": "Second underground floor of Eisen Dungeon",
+  "english": "Rasen Battlezone"
+ },
+ {
+  "table": "Map",
+  "rowid": 65,
+  "column": "MapName",
+  "before": "The third underground floor of Eisen Dungeon",
+  "english": "Icen Dungeon3f"
+ },
+ {
+  "table": "Map",
+  "rowid": 66,
+  "column": "MapName",
+  "before": "The underground floor of Rom Dungeon",
+  "english": "Drobeta Dungeon S1f"
+ },
+ {
+  "table": "Map",
+  "rowid": 67,
+  "column": "MapName",
+  "before": "The second underground floor of Rom Dungeon",
+  "english": "Slayer Battlezone1"
+ },
+ {
+  "table": "Map",
+  "rowid": 68,
+  "column": "MapName",
+  "before": "The third underground floor of Rom Dungeon",
+  "english": "Laom Dungeon3F"
+ },
+ {
+  "table": "Map",
+  "rowid": 69,
+  "column": "MapName",
+  "before": "The fourth underground floor of Rom Dungeon",
+  "english": "Laom Dungeon4f"
+ },
+ {
+  "table": "Map",
+  "rowid": 70,
+  "column": "MapName",
+  "before": "The fifth underground floor of Rom Dungeon",
+  "english": "Laom Dungeon5f"
+ },
+ {
+  "table": "Map",
+  "rowid": 71,
+  "column": "MapName",
+  "before": "Karigao Dungeon 1st Floor",
+  "english": "Caligo Dungeon1"
+ },
+ {
+  "table": "Map",
+  "rowid": 72,
+  "column": "MapName",
+  "before": "Kali Gao Dungeon 2nd Floor",
+  "english": "Caligo Dungeon2"
+ },
+ {
+  "table": "Map",
+  "rowid": 73,
+  "column": "MapName",
+  "before": "Karigao Dungeon 3rd Floor",
+  "english": "Caligo Dungeon3"
+ },
+ {
+  "table": "Map",
+  "rowid": 74,
+  "column": "MapName",
+  "before": "Karigao Dungeon 4th floor",
+  "english": "Caligo Dungeon4"
+ },
+ {
+  "table": "Map",
+  "rowid": 75,
+  "column": "MapName",
+  "before": "Otaeus City",
+  "english": "Castle Octavus"
+ },
+ {
+  "table": "Map",
+  "rowid": 76,
+  "column": "MapName",
+  "before": "Terrace City",
+  "english": "Castle Tertius"
+ },
+ {
+  "table": "Map",
+  "rowid": 77,
+  "column": "MapName",
+  "before": "Septimus",
+  "english": "Castle Septimus"
+ },
+ {
+  "table": "Map",
+  "rowid": 78,
+  "column": "MapName",
+  "before": "Quotas City",
+  "english": "Castle Quartus"
+ },
+ {
+  "table": "Map",
+  "rowid": 79,
+  "column": "MapName",
+  "before": "Pentanus City",
+  "english": "Castle Pentanus"
+ },
+ {
+  "table": "Map",
+  "rowid": 80,
+  "column": "MapName",
+  "before": "Hexilius City",
+  "english": "Castle Hexserius"
+ },
+ {
+  "table": "Map",
+  "rowid": 81,
+  "column": "MapName",
+  "before": "The underground floor of Ortaeus Dungeon",
+  "english": "Octavus Dungeon1f"
+ },
+ {
+  "table": "Map",
+  "rowid": 82,
+  "column": "MapName",
+  "before": "The second underground floor of Ortaeus Dungeon",
+  "english": "Octavus Dungeon2f"
+ },
+ {
+  "table": "Map",
+  "rowid": 83,
+  "column": "MapName",
+  "before": "The underground floor of Tris Dungeon",
+  "english": "Tertius Dungeon1f"
+ },
+ {
+  "table": "Map",
+  "rowid": 84,
+  "column": "MapName",
+  "before": "The second underground floor of Tris Dungeon",
+  "english": "Tertius Dungeon2f"
+ },
+ {
+  "table": "Map",
+  "rowid": 85,
+  "column": "MapName",
+  "before": "The underground floor of Septimus Dungeon",
+  "english": "Septimus Dungeon1f"
+ },
+ {
+  "table": "Map",
+  "rowid": 86,
+  "column": "MapName",
+  "before": "Second underground floor of Septimus Dungeon",
+  "english": "Septimus Dungeon2f"
+ },
+ {
+  "table": "Map",
+  "rowid": 87,
+  "column": "MapName",
+  "before": "The underground floor of Quotas Dungeon",
+  "english": "Quartus Dungeon1f"
+ },
+ {
+  "table": "Map",
+  "rowid": 88,
+  "column": "MapName",
+  "before": "Second underground floor of Quotas Dungeon",
+  "english": "Quartus Dungeon2f"
+ },
+ {
+  "table": "Map",
+  "rowid": 89,
+  "column": "MapName",
+  "before": "Pentanus Dungeon basement level",
+  "english": "Pentanus Dungeon1f"
+ },
+ {
+  "table": "Map",
+  "rowid": 90,
+  "column": "MapName",
+  "before": "Pentanus dungeon underground second floor",
+  "english": "Pentanus Dungeon2f"
+ },
+ {
+  "table": "Map",
+  "rowid": 91,
+  "column": "MapName",
+  "before": "The underground floor of Hexilius Dungeon",
+  "english": "Hexserius Dungeon1f"
+ },
+ {
+  "table": "Map",
+  "rowid": 92,
+  "column": "MapName",
+  "before": "Second underground floor of Hexilius Dungeon",
+  "english": "Hexserius Dungeon2f"
+ },
+ {
+  "table": "Map",
+  "rowid": 93,
+  "column": "MapName",
+  "before": "Aote",
+  "english": "Slayerpk"
+ },
+ {
+  "table": "Map",
+  "rowid": 94,
+  "column": "MapName",
+  "before": "Alternian",
+  "english": "Vampirepk"
+ },
+ {
+  "table": "Map",
+  "rowid": 95,
+  "column": "MapName",
+  "before": "Barnato",
+  "english": "Freepk"
+ },
+ {
+  "table": "Map",
+  "rowid": 97,
+  "column": "MapName",
+  "before": "The underground floor of Heinir Dungeon",
+  "english": "Ousters Dungeon01"
+ },
+ {
+  "table": "Map",
+  "rowid": 98,
+  "column": "MapName",
+  "before": "Second underground floor of Heinier Dungeon",
+  "english": "Ousters Dungeon02"
+ },
+ {
+  "table": "Map",
+  "rowid": 99,
+  "column": "MapName",
+  "before": "The third underground floor of Heinier Dungeon",
+  "english": "Ousters Dungeon03"
+ },
+ {
+  "table": "Map",
+  "rowid": 100,
+  "column": "MapName",
+  "before": "The fourth underground floor of Heinir Dungeon",
+  "english": "Ousters Dungeon04"
+ },
+ {
+  "table": "Map",
+  "rowid": 101,
+  "column": "MapName",
+  "before": "The first floor of the Lost Tower",
+  "english": "Lusttower 1F"
+ },
+ {
+  "table": "Map",
+  "rowid": 102,
+  "column": "MapName",
+  "before": "Lost Tower 2nd Floor",
+  "english": "Lusttower 2F"
+ },
+ {
+  "table": "Map",
+  "rowid": 103,
+  "column": "MapName",
+  "before": "Road to Illusion 1",
+  "english": "Gdr Illusion 01"
+ },
+ {
+  "table": "Map",
+  "rowid": 104,
+  "column": "MapName",
+  "before": "Road to Illusion 2",
+  "english": "Gdr Illusion 02"
+ },
+ {
+  "table": "Map",
+  "rowid": 105,
+  "column": "MapName",
+  "before": "Music Palace",
+  "english": "Gdr Lair 01"
+ },
+ {
+  "table": "Map",
+  "rowid": 106,
+  "column": "MapName",
+  "before": "Redari Palace",
+  "english": "Gdr Lair Hard"
+ },
+ {
+  "table": "Map",
+  "rowid": 107,
+  "column": "MapName",
+  "before": "siege area",
+  "english": "Siege Warfare1"
+ },
+ {
+  "table": "Map",
+  "rowid": 108,
+  "column": "MapName",
+  "before": "Ortaeus siege area",
+  "english": "Siege Warfare2"
+ },
+ {
+  "table": "Map",
+  "rowid": 109,
+  "column": "MapName",
+  "before": "Terris siege area",
+  "english": "Siege Warfare3"
+ },
+ {
+  "table": "Map",
+  "rowid": 110,
+  "column": "MapName",
+  "before": "Septimus Sieges Hell",
+  "english": "Siege Warfare4"
+ },
+ {
+  "table": "Map",
+  "rowid": 111,
+  "column": "MapName",
+  "before": "Quotas siege area",
+  "english": "Siege Warfare5"
+ },
+ {
+  "table": "Map",
+  "rowid": 112,
+  "column": "MapName",
+  "before": "Pontanus siege area",
+  "english": "Siege Warfare6"
+ },
+ {
+  "table": "Map",
+  "rowid": 113,
+  "column": "MapName",
+  "before": "Hexilius siege area",
+  "english": "Siege Warfare7"
+ },
+ {
+  "table": "Map",
+  "rowid": 114,
+  "column": "MapName",
+  "before": "The Road to Terror",
+  "english": "Path To Fears"
+ },
+ {
+  "table": "Map",
+  "rowid": 115,
+  "column": "MapName",
+  "before": "IK Office",
+  "english": "Ik Offic"
+ },
+ {
+  "table": "Map",
+  "rowid": 116,
+  "column": "MapName",
+  "before": "IK laboratory",
+  "english": "Ik Lab"
+ },
+ {
+  "table": "Map",
+  "rowid": 117,
+  "column": "MapName",
+  "before": "IK laboratory underground first floor",
+  "english": "Ik Lab B1"
+ },
+ {
+  "table": "Map",
+  "rowid": 118,
+  "column": "MapName",
+  "before": "IK laboratory second floor underground",
+  "english": "Ik Lab B2"
+ },
+ {
+  "table": "Map",
+  "rowid": 119,
+  "column": "MapName",
+  "before": "1st floor of underground passage",
+  "english": "Under Pass 1F"
+ },
+ {
+  "table": "Map",
+  "rowid": 120,
+  "column": "MapName",
+  "before": "Second floor of underground passage",
+  "english": "Under Pass 2F"
+ },
+ {
+  "table": "Map",
+  "rowid": 121,
+  "column": "MapName",
+  "before": "Road to the Underworld",
+  "english": "Castellum"
+ },
+ {
+  "table": "Map",
+  "rowid": 122,
+  "column": "MapName",
+  "before": "Ancient Lair A1 Floor",
+  "english": "Menegroth 1F Slayer"
+ },
+ {
+  "table": "Map",
+  "rowid": 123,
+  "column": "MapName",
+  "before": "Floor A2 of the ancient lair",
+  "english": "Menegroth 2F Slayer"
+ },
+ {
+  "table": "Map",
+  "rowid": 124,
+  "column": "MapName",
+  "before": "Ancient Lair A3 Floor",
+  "english": "Menegroth 3F Slayer"
+ },
+ {
+  "table": "Map",
+  "rowid": 125,
+  "column": "MapName",
+  "before": "Ancient Lair A4 Floor",
+  "english": "Menegroth 4f Slayer"
+ },
+ {
+  "table": "Map",
+  "rowid": 126,
+  "column": "MapName",
+  "before": "Floor A5 of the ancient lair",
+  "english": "Menegroth 5f Slayer"
+ },
+ {
+  "table": "Map",
+  "rowid": 127,
+  "column": "MapName",
+  "before": "Ancient Lair A6 Floor",
+  "english": "Menegroth 6f Slayer"
+ },
+ {
+  "table": "Map",
+  "rowid": 128,
+  "column": "MapName",
+  "before": "Ancient Lair B1 Floor",
+  "english": "Menegroth 1F Vampire"
+ },
+ {
+  "table": "Map",
+  "rowid": 129,
+  "column": "MapName",
+  "before": "Ancient Lair B2 Floor",
+  "english": "Menegroth 2F Vampire"
+ },
+ {
+  "table": "Map",
+  "rowid": 130,
+  "column": "MapName",
+  "before": "Ancient Lair B3 Floor",
+  "english": "Menegroth 3F Vampire"
+ },
+ {
+  "table": "Map",
+  "rowid": 131,
+  "column": "MapName",
+  "before": "Ancient Lair B4 Floor",
+  "english": "Menegroth 4f Vampire"
+ },
+ {
+  "table": "Map",
+  "rowid": 132,
+  "column": "MapName",
+  "before": "Ancient Nest B5 Floor",
+  "english": "Menegroth 5f Vampire"
+ },
+ {
+  "table": "Map",
+  "rowid": 133,
+  "column": "MapName",
+  "before": "Ancient Nest B6 Floor",
+  "english": "Menegroth 6f Vampire"
+ },
+ {
+  "table": "Map",
+  "rowid": 134,
+  "column": "MapName",
+  "before": "Ancient Lair C1 Floor",
+  "english": "Menegroth 1F Ousters"
+ },
+ {
+  "table": "Map",
+  "rowid": 135,
+  "column": "MapName",
+  "before": "Ancient Lair C2 Floor",
+  "english": "Menegroth 2F Ousters"
+ },
+ {
+  "table": "Map",
+  "rowid": 136,
+  "column": "MapName",
+  "before": "Ancient Lair C3 Floor",
+  "english": "Menegroth 3F Ousters"
+ },
+ {
+  "table": "Map",
+  "rowid": 137,
+  "column": "MapName",
+  "before": "Ancient Lair C4 Floor",
+  "english": "Menegroth 4f Ousters"
+ },
+ {
+  "table": "Map",
+  "rowid": 138,
+  "column": "MapName",
+  "before": "Ancient Lair C5 Floor",
+  "english": "Menegroth 5f Ousters"
+ },
+ {
+  "table": "Map",
+  "rowid": 139,
+  "column": "MapName",
+  "before": "Ancient Lair C6 Floor",
+  "english": "Menegroth 6f Ousters"
+ },
+ {
+  "table": "Map",
+  "rowid": 140,
+  "column": "MapName",
+  "before": "Military Association Basement 1",
+  "english": "Guild Army B1"
+ },
+ {
+  "table": "Map",
+  "rowid": 141,
+  "column": "MapName",
+  "before": "Military Guild Level 1",
+  "english": "Guild Army 1F"
+ },
+ {
+  "table": "Map",
+  "rowid": 142,
+  "column": "MapName",
+  "before": "Military Guild 2nd Floor",
+  "english": "Guild Army 2F"
+ },
+ {
+  "table": "Map",
+  "rowid": 143,
+  "column": "MapName",
+  "before": "Military Guild Third Floor",
+  "english": "Guild Army 3F"
+ },
+ {
+  "table": "Map",
+  "rowid": 144,
+  "column": "MapName",
+  "before": "Clergy Guild B1",
+  "english": "Guild Cleric B1"
+ },
+ {
+  "table": "Map",
+  "rowid": 145,
+  "column": "MapName",
+  "before": "Priest Guild Level 1",
+  "english": "Guild Cleric 1F"
+ },
+ {
+  "table": "Map",
+  "rowid": 146,
+  "column": "MapName",
+  "before": "The second floor of the Priest Guild",
+  "english": "Guild Cleric 2F"
+ },
+ {
+  "table": "Map",
+  "rowid": 147,
+  "column": "MapName",
+  "before": "Priest Guild Third Floor",
+  "english": "Guild Cleric 3F"
+ },
+ {
+  "table": "Map",
+  "rowid": 148,
+  "column": "MapName",
+  "before": "Samurai Guild B1",
+  "english": "Guild Knight B1"
+ },
+ {
+  "table": "Map",
+  "rowid": 149,
+  "column": "MapName",
+  "before": "Warrior Guild Level 1",
+  "english": "Guild Knight 1F"
+ },
+ {
+  "table": "Map",
+  "rowid": 150,
+  "column": "MapName",
+  "before": "Samurai Guild 2nd Floor",
+  "english": "Guild Knight 2F"
+ },
+ {
+  "table": "Map",
+  "rowid": 151,
+  "column": "MapName",
+  "before": "Samurai Guild third floor",
+  "english": "Guild Knight 3F"
+ },
+ {
+  "table": "Map",
+  "rowid": 152,
+  "column": "MapName",
+  "before": "Unreal Training Ground_North",
+  "english": "Tutorial North"
+ },
+ {
+  "table": "Map",
+  "rowid": 153,
+  "column": "MapName",
+  "before": "Unreal Training Ground_South",
+  "english": "Tutorial South"
+ },
+ {
+  "table": "Map",
+  "rowid": 154,
+  "column": "MapName",
+  "before": "Altar entrance",
+  "english": "Gate Of Alter"
+ },
+ {
+  "table": "Map",
+  "rowid": 155,
+  "column": "MapName",
+  "before": "Blood Altar",
+  "english": "Alter Of Blood"
+ },
+ {
+  "table": "Map",
+  "rowid": 156,
+  "column": "MapName",
+  "before": "Mirror Human of the Abyss",
+  "english": "Gate Of alter-S"
+ },
+ {
+  "table": "Map",
+  "rowid": 157,
+  "column": "MapName",
+  "before": "Mirror Vampire of the Abyss",
+  "english": "Gate Of alter-V"
+ },
+ {
+  "table": "Map",
+  "rowid": 158,
+  "column": "MapName",
+  "before": "Mirror Ousters of the Abyss",
+  "english": "Gate Of alter-O"
+ },
+ {
+  "table": "Map",
+  "rowid": 159,
+  "column": "MapName",
+  "before": "The first floor of Hell Garden",
+  "english": "Hell Garden 1F"
+ },
+ {
+  "table": "Map",
+  "rowid": 160,
+  "column": "MapName",
+  "before": "The first floor of the Blood Tower",
+  "english": "Hell Garden tower-1F-01"
+ },
+ {
+  "table": "Map",
+  "rowid": 161,
+  "column": "MapName",
+  "before": "The first floor of the Tower of the Abyss",
+  "english": "Hell Garden tower-1F-02"
+ },
+ {
+  "table": "Map",
+  "rowid": 162,
+  "column": "MapName",
+  "before": "The first floor of the Tower of Emmanuel",
+  "english": "Hell Garden tower-1F-03"
+ },
+ {
+  "table": "Map",
+  "rowid": 163,
+  "column": "MapName",
+  "before": "The first floor of the Tower of Desire",
+  "english": "Hell Garden tower-1F-04"
+ },
+ {
+  "table": "Map",
+  "rowid": 164,
+  "column": "MapName",
+  "before": "The second floor of Hell Garden",
+  "english": "Hell Garden 2F"
+ },
+ {
+  "table": "Map",
+  "rowid": 165,
+  "column": "MapName",
+  "before": "Second floor of Blood Tower",
+  "english": "Hell Garden tower-2F-01"
+ },
+ {
+  "table": "Map",
+  "rowid": 166,
+  "column": "MapName",
+  "before": "Second floor of Tower of Abyss",
+  "english": "Hell Garden tower-2F-02"
+ },
+ {
+  "table": "Map",
+  "rowid": 167,
+  "column": "MapName",
+  "before": "Second floor of Tower of Emmanuel",
+  "english": "Hell Garden tower-2F-03"
+ },
+ {
+  "table": "Map",
+  "rowid": 168,
+  "column": "MapName",
+  "before": "The second floor of the Tower of Desire",
+  "english": "Hell Garden tower-2F-04"
+ },
+ {
+  "table": "Map",
+  "rowid": 169,
+  "column": "MapName",
+  "before": "The third floor of Hell Garden",
+  "english": "Hell Garden 3F"
+ },
+ {
+  "table": "Map",
+  "rowid": 170,
+  "column": "MapName",
+  "before": "The third floor of the Blood Tower",
+  "english": "Hell Garden tower-3F-01"
+ },
+ {
+  "table": "Map",
+  "rowid": 171,
+  "column": "MapName",
+  "before": "Tower of Abyss third floor",
+  "english": "Hell Garden tower-3F-02"
+ },
+ {
+  "table": "Map",
+  "rowid": 172,
+  "column": "MapName",
+  "before": "The third floor of the Tower of Emmanuel",
+  "english": "Hell Garden tower-3F-03"
+ },
+ {
+  "table": "Map",
+  "rowid": 173,
+  "column": "MapName",
+  "before": "The third floor of the Tower of Desire",
+  "english": "Hell Garden tower-3F-04"
+ },
+ {
+  "table": "Map",
+  "rowid": 174,
+  "column": "MapName",
+  "before": "The fourth floor of Hell Garden",
+  "english": "Hell Garden 4f"
+ },
+ {
+  "table": "Map",
+  "rowid": 175,
+  "column": "MapName",
+  "before": "The fourth floor of the Blood Tower",
+  "english": "Hell Garden tower-4F-01"
+ },
+ {
+  "table": "Map",
+  "rowid": 176,
+  "column": "MapName",
+  "before": "The fourth floor of the Tower of the Abyss",
+  "english": "Hell Garden tower-4F-02"
+ },
+ {
+  "table": "Map",
+  "rowid": 177,
+  "column": "MapName",
+  "before": "The fourth floor of the Tower of Emmanuel",
+  "english": "Hell Garden tower-4F-03"
+ },
+ {
+  "table": "Map",
+  "rowid": 178,
+  "column": "MapName",
+  "before": "The fourth floor of the Tower of Desire",
+  "english": "Hell Garden tower-4F-04"
+ },
+ {
+  "table": "Map",
+  "rowid": 179,
+  "column": "MapName",
+  "before": "The fifth floor of Hell Garden",
+  "english": "Hell Garden 5f"
+ },
+ {
+  "table": "Map",
+  "rowid": 180,
+  "column": "MapName",
+  "before": "The fifth floor of the Blood Tower",
+  "english": "Hell Garden tower-5F-01"
+ },
+ {
+  "table": "Map",
+  "rowid": 181,
+  "column": "MapName",
+  "before": "Tower of the Abyss, fifth floor",
+  "english": "Hell Garden tower-5F-02"
+ },
+ {
+  "table": "Map",
+  "rowid": 182,
+  "column": "MapName",
+  "before": "The fifth floor of the Tower of Emmanuel",
+  "english": "Hell Garden tower-5F-03"
+ },
+ {
+  "table": "Map",
+  "rowid": 183,
+  "column": "MapName",
+  "before": "The fifth floor of the Tower of Desire",
+  "english": "Hell Garden tower-5F-04"
+ },
+ {
+  "table": "Item",
+  "rowid": 41,
+  "column": "Name",
+  "before": "Chaos Gurdian Skull",
+  "english": "Chaos Guardian Skull"
+ },
+ {
+  "table": "Item",
+  "rowid": 42,
+  "column": "Name",
+  "before": "Hell Gurdian Skull",
+  "english": "Hell Guardian Skull"
+ },
+ {
+  "table": "Item",
+  "rowid": 361,
+  "column": "Name",
+  "before": "shadow waves",
+  "english": "flourishing waves"
+ },
+ {
+  "table": "Item",
+  "rowid": 362,
+  "column": "Name",
+  "before": "shadow waves",
+  "english": "Blue Fire waves"
+ },
+ {
+  "table": "Item",
+  "rowid": 667,
+  "column": "Name",
+  "before": "Skyblue Wide Firecracker",
+  "english": "Skyblue Firecracker"
+ },
+ {
+  "table": "Item",
+  "rowid": 668,
+  "column": "Name",
+  "before": "Green Wide Firecracker",
+  "english": "Green Firecracker"
+ },
+ {
+  "table": "Item",
+  "rowid": 669,
+  "column": "Name",
+  "before": "Purple Wide Firecracker",
+  "english": "Purple Firecracker"
+ },
+ {
+  "table": "Item",
+  "rowid": 671,
+  "column": "Name",
+  "before": "Orange Wide Firecracker",
+  "english": "Orange Firecracker"
+ },
+ {
+  "table": "Item",
+  "rowid": 690,
+  "column": "Name",
+  "before": "Ousters Gift Bag",
+  "english": "Slayer Gift Bag"
+ },
+ {
+  "table": "Item",
+  "rowid": 691,
+  "column": "Name",
+  "before": "Ousters Gift Bag",
+  "english": "Vampire Gift Bag"
+ },
+ {
+  "table": "Equip",
+  "rowid": 68,
+  "column": "Name",
+  "before": "Big Fang",
+  "english": "Ripper"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 283,
+  "column": "Name",
+  "before": "Santa2",
+  "english": "Santa1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 285,
+  "column": "Name",
+  "before": "Rudolf2",
+  "english": "Rudolf1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 287,
+  "column": "Name",
+  "before": "NPC1",
+  "english": "Rudolf2"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 288,
+  "column": "Name",
+  "before": "NPC2",
+  "english": "Rudolf2"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 289,
+  "column": "Name",
+  "before": "NPC3",
+  "english": "Rudolf2"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 290,
+  "column": "Name",
+  "before": "NPC4",
+  "english": "Rudolf2"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 291,
+  "column": "Name",
+  "before": "NPC5",
+  "english": "Rudolf2"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 292,
+  "column": "Name",
+  "before": "NPC6",
+  "english": "Rudolf2"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 293,
+  "column": "Name",
+  "before": "NPC7",
+  "english": "Rudolf2"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 294,
+  "column": "Name",
+  "before": "NPC8",
+  "english": "Rudolf2"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 295,
+  "column": "Name",
+  "before": "NPC9",
+  "english": "Rudolf2"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 296,
+  "column": "Name",
+  "before": "Sweeper Safe",
+  "english": "Relic1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 297,
+  "column": "Name",
+  "before": "Sweeper Safe",
+  "english": "Relic1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 298,
+  "column": "Name",
+  "before": "Sweeper Safe",
+  "english": "Relic1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 299,
+  "column": "Name",
+  "before": "Sweeper Safe",
+  "english": "Relic1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 300,
+  "column": "Name",
+  "before": "Sweeper Safe",
+  "english": "Relic1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 301,
+  "column": "Name",
+  "before": "Sweeper Safe",
+  "english": "Relic1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 352,
+  "column": "Name",
+  "before": "BathoryFake",
+  "english": "BathoryFly"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 353,
+  "column": "Name",
+  "before": "BathoryFake",
+  "english": "Bathory"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 354,
+  "column": "Name",
+  "before": "TepezFake",
+  "english": "TepezCasket"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 355,
+  "column": "Name",
+  "before": "TepezFake",
+  "english": "Tepez"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 356,
+  "column": "Name",
+  "before": "BathoryFake",
+  "english": "Bathory"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 357,
+  "column": "Name",
+  "before": "TepezFake",
+  "english": "Tepez"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 382,
+  "column": "Name",
+  "before": "Chief Soldier2",
+  "english": "Chief Soldier1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 384,
+  "column": "Name",
+  "before": "Chief Dead Body3",
+  "english": "Chief Dead Body1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 385,
+  "column": "Name",
+  "before": "Chief Dead Body3",
+  "english": "Chief Dead Body2"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 386,
+  "column": "Name",
+  "before": "Chief Blood Warlock2",
+  "english": "Chief Blood Warlock1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 387,
+  "column": "Name",
+  "before": "Chief Kid2",
+  "english": "Chief Kid1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 388,
+  "column": "Name",
+  "before": "Chief Golemer2",
+  "english": "Chief Golemer1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 389,
+  "column": "Name",
+  "before": "Chief Dirty Strider2",
+  "english": "Chief Dirty Strider1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 390,
+  "column": "Name",
+  "before": "Chief Alcan2",
+  "english": "Chief Alcan1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 391,
+  "column": "Name",
+  "before": "Chief Chaos Guardian2",
+  "english": "Chief Chaos Guardian1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 392,
+  "column": "Name",
+  "before": "Chief Shadow Wing2",
+  "english": "Chief Shadow Wing1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 393,
+  "column": "Name",
+  "before": "Chief Mutant2",
+  "english": "Chief Mutant1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 394,
+  "column": "Name",
+  "before": "Chief Estroider2",
+  "english": "Chief Estroider1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 395,
+  "column": "Name",
+  "before": "Chief Moderas2",
+  "english": "Chief Moderas1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 396,
+  "column": "Name",
+  "before": "Chief Dark Screamer2",
+  "english": "Chief Dark Screamer1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 397,
+  "column": "Name",
+  "before": "Chief Chaos Knight3",
+  "english": "Chief Chaos Knight1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 398,
+  "column": "Name",
+  "before": "Chief Chaos Knight3",
+  "english": "Chief Chaos Knight2"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 399,
+  "column": "Name",
+  "before": "Chief Lord Darkness2",
+  "english": "Chief Lord Darkness1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 400,
+  "column": "Name",
+  "before": "Chief Hell Wizard2",
+  "english": "Chief Hell Wizard1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 401,
+  "column": "Name",
+  "before": "Chief Dark Guardian2",
+  "english": "Chief Dark Guardian1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 402,
+  "column": "Name",
+  "before": "Chief Load Chaos2",
+  "english": "Chief Lord Chaos1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 538,
+  "column": "Name",
+  "before": "QuestChaosGurdian",
+  "english": "QuestChaosGuardian"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 571,
+  "column": "Name",
+  "before": "Vampire Test Model 2",
+  "english": "Vampire Test Model 1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 620,
+  "column": "Name",
+  "before": "Oberschutze Range",
+  "english": "Oberschutze Melee"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 641,
+  "column": "Name",
+  "before": "Onibla3",
+  "english": "Onibla1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 642,
+  "column": "Name",
+  "before": "Onibla3",
+  "english": "Onibla2"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 671,
+  "column": "Name",
+  "before": "Hellgarden Hell Guardian",
+  "english": "Hellgarden Chaos Knight"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 681,
+  "column": "Name",
+  "before": "Hellgarden Oberschutze",
+  "english": "Hellgarden Lord Darkness"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 798,
+  "column": "Name",
+  "before": "XLR",
+  "english": "WhiteAstral"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 805,
+  "column": "Name",
+  "before": "Penguin Summoning Stone",
+  "english": "Stirge Bag"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 806,
+  "column": "Name",
+  "before": "Robot remote control",
+  "english": "Radio Controller"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 807,
+  "column": "Name",
+  "before": "Mutated bat leather bag",
+  "english": "Stirge Bag"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 816,
+  "column": "Name",
+  "before": "Penguin Summoning Stone",
+  "english": "Stirge Bag"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 817,
+  "column": "Name",
+  "before": "Robot remote control",
+  "english": "Radio Controller"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 818,
+  "column": "Name",
+  "before": "Mutated bat leather bag",
+  "english": "Stirge Bag"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 825,
+  "column": "Name",
+  "before": "Chief Golemer2",
+  "english": "Chief Golemer"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 826,
+  "column": "Name",
+  "before": "Chief Shadow Wing2",
+  "english": "Chief Shadow Wing"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 832,
+  "column": "Name",
+  "before": "Chief Chaos Knight3",
+  "english": "Chief Chaos Knight"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 834,
+  "column": "Name",
+  "before": "Chief Chaos Guardian2",
+  "english": "Chief Chaos Guardian"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 863,
+  "column": "Name",
+  "before": "Chief Estroider2",
+  "english": "Chief Estroider1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 868,
+  "column": "Name",
+  "before": "Chief Golemer2",
+  "english": "Chief Golemer1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 870,
+  "column": "Name",
+  "before": "Chief Chaos Guardian2",
+  "english": "Chief Chaos Guardian1"
+ },
+ {
+  "table": "MonsterInfo",
+  "rowid": 875,
+  "column": "Name",
+  "before": "Chief Load Chaos2",
+  "english": "Chief Lord Chaos1"
+ },
+ {
+  "table": "Item",
+  "rowid": 101,
+  "column": "Description",
+  "before": "Restore character HP +20 within a certain period of time",
+  "english": "Restores 20 HP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 102,
+  "column": "Description",
+  "before": "Restore character HP +50 within a certain period of time",
+  "english": "Restores 50 HP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 103,
+  "column": "Description",
+  "before": "Restore character HP +100 within a certain period of time",
+  "english": "Restores 100 HP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 104,
+  "column": "Description",
+  "before": "Restore character HP +200 within a certain period of time",
+  "english": "Restores 200 HP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 105,
+  "column": "Description",
+  "before": "Restore character HP +400 within a certain period of time",
+  "english": "Restores 400 HP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 106,
+  "column": "Description",
+  "before": "Restore character MP +15 within a certain period of time",
+  "english": "Restores 15 MP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 107,
+  "column": "Description",
+  "before": "Restore character MP +30 within a certain period of time",
+  "english": "Restores 30 MP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 108,
+  "column": "Description",
+  "before": "Restore character MP +65 within a certain period of time",
+  "english": "Restores 65 MP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 109,
+  "column": "Description",
+  "before": "Restore character MP +125 within a certain period of time",
+  "english": "Restores 125 MP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 110,
+  "column": "Description",
+  "before": "Restore character MP +250 within a certain period of time",
+  "english": "Restores 250 MP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 113,
+  "column": "Description",
+  "before": "Restore character HP +600 within a certain period of time",
+  "english": "Restores 600 HP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 114,
+  "column": "Description",
+  "before": "Restore character MP +500 within a certain period of time",
+  "english": "Restores 500 MP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 115,
+  "column": "Description",
+  "before": "Quickly restore character HP +50 within a certain period of time",
+  "english": "Restores 65 HP. Consumes one supply."
+ },
+ {
+  "table": "Item",
+  "rowid": 116,
+  "column": "Description",
+  "before": "Quickly restore character HP +100 within a certain period of time",
+  "english": "Restores 100 HP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 117,
+  "column": "Description",
+  "before": "Quickly restore character HP +200 within a certain period of time",
+  "english": "Restores 200 HP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 118,
+  "column": "Description",
+  "before": "Quickly restore character HP +400 within a certain period of time",
+  "english": "Restores 400 HP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 129,
+  "column": "Description",
+  "before": "Restore character HP +30 within a certain period of time",
+  "english": "Restores 65 HP. Consumes one supply."
+ },
+ {
+  "table": "Item",
+  "rowid": 130,
+  "column": "Description",
+  "before": "Restore character HP +75 within a certain period of time",
+  "english": "Restores 75 HP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 131,
+  "column": "Description",
+  "before": "Restore character HP +105 within a certain period of time",
+  "english": "Restores 105 HP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 132,
+  "column": "Description",
+  "before": "Restore character HP +150 within a certain period of time",
+  "english": "Restores 150 HP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 135,
+  "column": "Description",
+  "before": "Restore character HP +225 within a certain period of time",
+  "english": "Restores 225 HP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 140,
+  "column": "Description",
+  "before": "A prop that can be revived when you are about to die.",
+  "english": "Revives your character when defeated."
+ },
+ {
+  "table": "Item",
+  "rowid": 141,
+  "column": "Description",
+  "before": "It is a prop that can be revived with full blood when you are on the verge of death.",
+  "english": "Revives your character with full HP."
+ },
+ {
+  "table": "Item",
+  "rowid": 147,
+  "column": "Description",
+  "before": "Restore character HP +20 within a certain period of time",
+  "english": "Restores 65 HP. Consumes one supply."
+ },
+ {
+  "table": "Item",
+  "rowid": 148,
+  "column": "Description",
+  "before": "Restore character HP +40 within a certain period of time",
+  "english": "Restores 40 HP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 149,
+  "column": "Description",
+  "before": "Restore character HP +100 within a certain period of time",
+  "english": "Restores 100 HP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 150,
+  "column": "Description",
+  "before": "Restore character HP +200 within a certain period of time",
+  "english": "Restores 200 HP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 151,
+  "column": "Description",
+  "before": "Restore character HP +400 within a certain period of time",
+  "english": "Restores 400 HP over time."
+ },
+ {
+  "table": "Item",
+  "rowid": 152,
+  "column": "Description",
+  "before": "Restore character HP +600 within a certain period of time",
+  "english": "Restores 600 HP over time."
+ },
+ {
+  "table": "NpcList",
+  "rowid": 1,
+  "column": "NpcName",
+  "before": "BathoryFake",
+  "english": "Bathory"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 2,
+  "column": "NpcName",
+  "before": "TepezFake",
+  "english": "Tepez"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 3,
+  "column": "NpcName",
+  "before": "BathoryFake",
+  "english": "Bathory"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 4,
+  "column": "NpcName",
+  "before": "TepezFake",
+  "english": "Tepez"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 5,
+  "column": "NpcName",
+  "before": "Matt (guide)",
+  "english": "Matt (Guide)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 6,
+  "column": "NpcName",
+  "before": "Jack (communication)",
+  "english": "Jack (Comms)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 7,
+  "column": "NpcName",
+  "before": "Terry (job change)",
+  "english": "Terry (Class Trainer)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 8,
+  "column": "NpcName",
+  "before": "Nanxi (supply)",
+  "english": "Nanxi (Supplies)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 9,
+  "column": "NpcName",
+  "before": "Tana (career introduction)",
+  "english": "Tana (Class Guide)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 10,
+  "column": "NpcName",
+  "before": "Zach (skill)",
+  "english": "Zach (Skills)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 11,
+  "column": "NpcName",
+  "before": "Kaizer (knife, sword)",
+  "english": "Kaizer (Blades & Swords)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 12,
+  "column": "NpcName",
+  "before": "Christine (warehouse)",
+  "english": "Christine (Storage)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 13,
+  "column": "NpcName",
+  "before": "Robin (warehouse)",
+  "english": "Robin (Storage)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 14,
+  "column": "NpcName",
+  "before": "Jenson (gun)",
+  "english": "Jenson (Guns)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 15,
+  "column": "NpcName",
+  "before": "Yuwa (knife)",
+  "english": "Yuwa (Blades)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 16,
+  "column": "NpcName",
+  "before": "Han (sword)",
+  "english": "Han (Swords)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 17,
+  "column": "NpcName",
+  "before": "Rakomanov (treatment)",
+  "english": "Rakomanov (Healer)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 18,
+  "column": "NpcName",
+  "before": "Haniva (blessing)",
+  "english": "Haniva (Blessings)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 19,
+  "column": "NpcName",
+  "before": "Friedlie (job transfer exchange)",
+  "english": "Friedlie (Class Exchange)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 21,
+  "column": "NpcName",
+  "before": "Smarrovic\n(silver plated)",
+  "english": "Smarrovic (Silver Plating)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 22,
+  "column": "NpcName",
+  "before": "Argonos (teleport)",
+  "english": "Argonos (Travel)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 23,
+  "column": "NpcName",
+  "before": "Johanna (supply)",
+  "english": "Johanna (Supplies)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 24,
+  "column": "NpcName",
+  "before": "Chris (warehouse)",
+  "english": "Chris (Storage)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 25,
+  "column": "NpcName",
+  "before": "Shandra (armor)",
+  "english": "Shandra (Armor)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 26,
+  "column": "NpcName",
+  "before": "Golub (jewelry)",
+  "english": "Golub (Jewelry)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 27,
+  "column": "NpcName",
+  "before": "Sihara (gloves and boots)",
+  "english": "Sihara (Gloves & Boots)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 28,
+  "column": "NpcName",
+  "before": "Kenan (donation)",
+  "english": "Kenan (Donations)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 29,
+  "column": "NpcName",
+  "before": "Kevin (warehouse)",
+  "english": "Kevin (Storage)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 30,
+  "column": "NpcName",
+  "before": "David (teleport)",
+  "english": "David (Travel)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 31,
+  "column": "NpcName",
+  "before": "Salamander (supply)",
+  "english": "Salamander (Supplies)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 32,
+  "column": "NpcName",
+  "before": "Clive (jewelry)",
+  "english": "Clive (Jewelry)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 33,
+  "column": "NpcName",
+  "before": "Sonia (armor)",
+  "english": "Sonia (Armor)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 34,
+  "column": "NpcName",
+  "before": "Krall (weapon)",
+  "english": "Krall (Weapons)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 35,
+  "column": "NpcName",
+  "before": "Drake (gun)",
+  "english": "Drake (Guns)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 36,
+  "column": "NpcName",
+  "before": "Sutan (SMG)",
+  "english": "Sutan (Smg)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 37,
+  "column": "NpcName",
+  "before": "Smith (donation)",
+  "english": "Smith (Donations)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 38,
+  "column": "NpcName",
+  "before": "Xinsen (supply)",
+  "english": "Xinsen (Supplies)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 39,
+  "column": "NpcName",
+  "before": "Grifen (repair)",
+  "english": "Grifen (Repairs)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 40,
+  "column": "NpcName",
+  "before": "Richardson (groceries)",
+  "english": "Richardson (General Goods)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 41,
+  "column": "NpcName",
+  "before": "Nikola (equipment)",
+  "english": "Nikola (Equipment)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 42,
+  "column": "NpcName",
+  "before": "Yebukini (marriage)",
+  "english": "Yebukini (Marriage)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 44,
+  "column": "NpcName",
+  "before": "Stoyanov (donation)",
+  "english": "Stoyanov (Donations)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 48,
+  "column": "NpcName",
+  "before": "Aislin (reset)",
+  "english": "Aislin (Reset)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 50,
+  "column": "NpcName",
+  "before": "Simon (Management)",
+  "english": "Simon (Steward)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 51,
+  "column": "NpcName",
+  "before": "Harold (repair)",
+  "english": "Harold (Repairs)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 52,
+  "column": "NpcName",
+  "before": "Judith (supply)",
+  "english": "Judith (Supplies)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 53,
+  "column": "NpcName",
+  "before": "Brenda (Management)",
+  "english": "Brenda (Steward)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 54,
+  "column": "NpcName",
+  "before": "Crow (armor)",
+  "english": "Crow (Armor)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 55,
+  "column": "NpcName",
+  "before": "Hesbro (silver plated)",
+  "english": "Hesbro (Silver Plating)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 56,
+  "column": "NpcName",
+  "before": "Denis (repair)",
+  "english": "Denis (Repairs)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 57,
+  "column": "NpcName",
+  "before": "rare book (supply)",
+  "english": "rare book (Supplies)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 60,
+  "column": "NpcName",
+  "before": "Li Te (donation)",
+  "english": "Li Te (Donations)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 61,
+  "column": "NpcName",
+  "before": "Ravia (exchange)",
+  "english": "Ravia (Exchange)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 62,
+  "column": "NpcName",
+  "before": "Amata (warehouse)",
+  "english": "Amata (Storage)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 63,
+  "column": "NpcName",
+  "before": "Hao La (repair)",
+  "english": "Hao La (Repairs)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 64,
+  "column": "NpcName",
+  "before": "Aya (teleport)",
+  "english": "Aya (Travel)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 65,
+  "column": "NpcName",
+  "before": "Manes (Groceries)",
+  "english": "Manes (General Goods)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 66,
+  "column": "NpcName",
+  "before": "Li Te (donation)",
+  "english": "Li Te (Donations)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 67,
+  "column": "NpcName",
+  "before": "Haola (Holy Book)",
+  "english": "Hao La (Holy Book)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 68,
+  "column": "NpcName",
+  "before": "Lowa (tax rate)",
+  "english": "Lowa (Taxes)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 69,
+  "column": "NpcName",
+  "before": "Rip (reset)",
+  "english": "Rip (Reset)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 70,
+  "column": "NpcName",
+  "before": "Nitrisha (guild battle)",
+  "english": "Nitrisha (Guild Battle)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 71,
+  "column": "NpcName",
+  "before": "Aigino (Management)",
+  "english": "Aigino (Steward)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 72,
+  "column": "NpcName",
+  "before": "Eronia (repair)",
+  "english": "Eronia (Repairs)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 73,
+  "column": "NpcName",
+  "before": "Nassas (reset)",
+  "english": "Nassas (Reset)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 74,
+  "column": "NpcName",
+  "before": "Ballery (armor)",
+  "english": "Ballery (Armor)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 75,
+  "column": "NpcName",
+  "before": "Foley Colagas (skill)",
+  "english": "Foley Colagas (Skills)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 77,
+  "column": "NpcName",
+  "before": "Seth (jewelry)",
+  "english": "Seth (Jewelry)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 78,
+  "column": "NpcName",
+  "before": "Lebeka (exchange)",
+  "english": "Lebeka (Exchange)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 79,
+  "column": "NpcName",
+  "before": "Kain (skill)",
+  "english": "Kain (Skills)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 81,
+  "column": "NpcName",
+  "before": "Priya (married)",
+  "english": "Priya (Marriage)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 82,
+  "column": "NpcName",
+  "before": "Murphy (teleport)",
+  "english": "Murphy (Travel)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 83,
+  "column": "NpcName",
+  "before": "Capatini (warehouse)",
+  "english": "Capatini (Storage)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 84,
+  "column": "NpcName",
+  "before": "Grippis (warehouse)",
+  "english": "Grippis (Storage)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 85,
+  "column": "NpcName",
+  "before": "Belst (transmission)",
+  "english": "Belst (Travel)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 86,
+  "column": "NpcName",
+  "before": "Beatrix (Management)",
+  "english": "Beatrix (Steward)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 87,
+  "column": "NpcName",
+  "before": "Hunter (city management)",
+  "english": "Hunter (City Steward)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 90,
+  "column": "NpcName",
+  "before": "Morok (reset)",
+  "english": "Morok (Reset)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 91,
+  "column": "NpcName",
+  "before": "Baron (Tax)",
+  "english": "Baron (Taxes)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 92,
+  "column": "NpcName",
+  "before": "Laliba (exchange)",
+  "english": "Laliba (Exchange)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 93,
+  "column": "NpcName",
+  "before": "Agnar (warehouse)",
+  "english": "Agnar (Storage)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 94,
+  "column": "NpcName",
+  "before": "Ortaeus (offensive)",
+  "english": "Ortaeus (Attack)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 96,
+  "column": "NpcName",
+  "before": "Septimus (offensive)",
+  "english": "Septimus (Attack)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 98,
+  "column": "NpcName",
+  "before": "Sethris (offensive)",
+  "english": "Sethris (Attack)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 99,
+  "column": "NpcName",
+  "before": "Setris(Defense)",
+  "english": "Sethris (Defense)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 100,
+  "column": "NpcName",
+  "before": "Quotas (offensive)",
+  "english": "Quotas (Attack)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 102,
+  "column": "NpcName",
+  "before": "Pentanus (offensive)",
+  "english": "Pentanus (Attack)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 103,
+  "column": "NpcName",
+  "before": "Pontanus(Defense)",
+  "english": "Pentanus (Defense)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 104,
+  "column": "NpcName",
+  "before": "Hexilius (offensive)",
+  "english": "Hexilius (Attack)"
+ },
+ {
+  "table": "NpcList",
+  "rowid": 105,
+  "column": "NpcName",
+  "before": "Hexilius(Defense)",
+  "english": "Hexilius (Defense)"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 34,
+  "column": "MapName",
+  "before": "underground sewer",
+  "english": "Slayers Training"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 35,
+  "column": "MapName",
+  "before": "Eslonian Dungeon",
+  "english": "Eslania Dungeon"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 30,
+  "column": "MapName",
+  "before": "Linbaocheng Dungeon",
+  "english": "Limbo Dungeon"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 36,
+  "column": "MapName",
+  "before": "Kali Grottoes",
+  "english": "Kali Cave"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 38,
+  "column": "MapName",
+  "before": "Lost Tai'an B1",
+  "english": "Losttaiyan B1"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 1,
+  "column": "MapName",
+  "before": "Eslonian_Northeast",
+  "english": "Eslania Northeast"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 32,
+  "column": "MapName",
+  "before": "Gurba Tunnel",
+  "english": "Tunnel Ghorgova"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 37,
+  "column": "MapName",
+  "before": "Lassen_Inner City 1F",
+  "english": "Castle Rasen 1 2"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 42,
+  "column": "MapName",
+  "before": "Rom Dungeon B2",
+  "english": "Slayer Battlezone1"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 33,
+  "column": "MapName",
+  "before": "Hiram Holy Land",
+  "english": "Bathory Battlezone"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 40,
+  "column": "MapName",
+  "before": "Eisen Dungeon B2",
+  "english": "Rasen Battlezone"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 41,
+  "column": "MapName",
+  "before": "Rom Dungeon B1",
+  "english": "Drobeta Dungeon S1f"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 39,
+  "column": "MapName",
+  "before": "Essen Dungeon B1",
+  "english": "Drobeta Dungeon V1f"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 3,
+  "column": "MapName",
+  "before": "Eslonian_Southeast",
+  "english": "Eslania Southeast"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 44,
+  "column": "MapName",
+  "before": "Heinir Dungeon B2",
+  "english": "Ousters Dungeon02"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 45,
+  "column": "MapName",
+  "before": "Heinir Dungeon B3",
+  "english": "Ousters Dungeon03"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 4,
+  "column": "MapName",
+  "before": "Eslonian_Southwest",
+  "english": "Eslania Southwest"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 5,
+  "column": "MapName",
+  "before": "Lin Baocheng_Northeast",
+  "english": "Limbo Lair Northeast"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 6,
+  "column": "MapName",
+  "before": "Lin Baocheng_Northwest",
+  "english": "Limbo Lair Northwest"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 7,
+  "column": "MapName",
+  "before": "Lin Baocheng_Southeast",
+  "english": "Limbo Lair Southeast"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 8,
+  "column": "MapName",
+  "before": "Lin Baocheng_Southwest",
+  "english": "Limbo Lair Southwest"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 9,
+  "column": "MapName",
+  "before": "Drobit_Northeast",
+  "english": "Drobeta Northeast"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 10,
+  "column": "MapName",
+  "before": "Drobit_Northwest",
+  "english": "Drobeta Northwest"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 11,
+  "column": "MapName",
+  "before": "Drobit_Southeast",
+  "english": "Drobeta Southeast"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 12,
+  "column": "MapName",
+  "before": "Drobit_Southwest",
+  "english": "Drobeta Southwest"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 13,
+  "column": "MapName",
+  "before": "Luodingshan_Northeast",
+  "english": "Rodin Northeast"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 14,
+  "column": "MapName",
+  "before": "Luodingshan_Northwest",
+  "english": "Rodin Northwest"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 15,
+  "column": "MapName",
+  "before": "Luodingshan_Southeast",
+  "english": "Rodin Southeast"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 16,
+  "column": "MapName",
+  "before": "Luodingshan_Southwest",
+  "english": "Rodin Southwest"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 17,
+  "column": "MapName",
+  "before": "Timor Lake_Northeast",
+  "english": "Timore Northeast"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 18,
+  "column": "MapName",
+  "before": "Timor Lake_Northwest",
+  "english": "Timore Northwest"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 19,
+  "column": "MapName",
+  "before": "Timor Lake_Southeast",
+  "english": "Timore Southeast"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 20,
+  "column": "MapName",
+  "before": "Timor Lake_Southwest",
+  "english": "Timore Southwest"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 21,
+  "column": "MapName",
+  "before": "Pelona_Northeast",
+  "english": "Perona Northeast"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 22,
+  "column": "MapName",
+  "before": "Pelona_Northwest",
+  "english": "Perona Northwest"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 23,
+  "column": "MapName",
+  "before": "Pelona_Southeast",
+  "english": "Perona Southeast"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 24,
+  "column": "MapName",
+  "before": "Pelona_Southwest",
+  "english": "Perona Southwest"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 29,
+  "column": "MapName",
+  "before": "Castaro_Northeast",
+  "english": "Castalo Northeast"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 25,
+  "column": "MapName",
+  "before": "Blanc_Northeast",
+  "english": "Vranco Northeast"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 26,
+  "column": "MapName",
+  "before": "Blanc_Northwest",
+  "english": "Vranco Northwest"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 27,
+  "column": "MapName",
+  "before": "Blanc_Southeast",
+  "english": "Vranco Southeast"
+ },
+ {
+  "table": "MapTransferPoint",
+  "rowid": 28,
+  "column": "MapName",
+  "before": "Blanc_Southwest",
+  "english": "Vranco Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 2,
+  "column": "LandMarkName",
+  "before": "Luodingshan_Northwest",
+  "english": "Rodin Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 3,
+  "column": "LandMarkName",
+  "before": "Eslonian_Southeast",
+  "english": "Eslania Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 4,
+  "column": "LandMarkName",
+  "before": "Eslonia Dungeon 1",
+  "english": "Eslania Dungeon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 5,
+  "column": "LandMarkName",
+  "before": "Eslonia Dungeon 2",
+  "english": "Eslania Dungeon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 6,
+  "column": "LandMarkName",
+  "before": "Eslonia Dungeon 3",
+  "english": "Eslania Dungeon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 7,
+  "column": "LandMarkName",
+  "before": "Eslonia Dungeon 4",
+  "english": "Eslania Dungeon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 8,
+  "column": "LandMarkName",
+  "before": "Eslonia Dungeon 5",
+  "english": "Eslania Dungeon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 9,
+  "column": "LandMarkName",
+  "before": "Eslonia Dungeon 6",
+  "english": "Eslania Dungeon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 10,
+  "column": "LandMarkName",
+  "before": "Eslonian_Northeast",
+  "english": "Eslania Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 11,
+  "column": "LandMarkName",
+  "before": "Eslonian_Southwest",
+  "english": "Eslania Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 12,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Northeast",
+  "english": "Limbo Lair Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 13,
+  "column": "LandMarkName",
+  "before": "Priest Guild Level 1",
+  "english": "Guild Cleric 1F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 14,
+  "column": "LandMarkName",
+  "before": "Warrior Guild Level 1",
+  "english": "Guild Knight 1F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 15,
+  "column": "LandMarkName",
+  "before": "Military Guild Level 1",
+  "english": "Guild Army 1F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 16,
+  "column": "LandMarkName",
+  "before": "Unreal Training Ground_North",
+  "english": "Tutorial North"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 17,
+  "column": "LandMarkName",
+  "before": "Eslonian_Northeast",
+  "english": "Eslania Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 18,
+  "column": "LandMarkName",
+  "before": "Luodingshan_Southwest",
+  "english": "Rodin Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 19,
+  "column": "LandMarkName",
+  "before": "Drobit_Northeast",
+  "english": "Drobeta Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 20,
+  "column": "LandMarkName",
+  "before": "Eslonian_Southwest",
+  "english": "Eslania Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 22,
+  "column": "LandMarkName",
+  "before": "Eslonian_Southeast",
+  "english": "Eslania Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 23,
+  "column": "LandMarkName",
+  "before": "Drobit_Northwest",
+  "english": "Drobeta Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 24,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Southeast",
+  "english": "Limbo Lair Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 25,
+  "column": "LandMarkName",
+  "before": "Karigao Dungeon 1st Floor",
+  "english": "Caligo Dungeon1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 26,
+  "column": "LandMarkName",
+  "before": "Temori Holy Land",
+  "english": "Slayer Battlezone2"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 28,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Southeast",
+  "english": "Limbo Lair Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 29,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Northwest",
+  "english": "Limbo Lair Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 30,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Northeast",
+  "english": "Limbo Lair Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 31,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Southwest",
+  "english": "Limbo Lair Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 32,
+  "column": "LandMarkName",
+  "before": "Inside Linbaocheng",
+  "english": "Vampire Village"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 33,
+  "column": "LandMarkName",
+  "before": "Lost Tai'an basement level",
+  "english": "Losttaiyan B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 34,
+  "column": "LandMarkName",
+  "before": "Hiram Holy Land",
+  "english": "Bathory Battlezone"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 35,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Northeast",
+  "english": "Limbo Lair Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 36,
+  "column": "LandMarkName",
+  "before": "Eslonian_Southwest",
+  "english": "Eslania Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 37,
+  "column": "LandMarkName",
+  "before": "Castaro_Northeast",
+  "english": "Castalo Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 38,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Southwest",
+  "english": "Limbo Lair Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 39,
+  "column": "LandMarkName",
+  "before": "Inside Linbaocheng",
+  "english": "Vampire Village"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 40,
+  "column": "LandMarkName",
+  "before": "Linbaocheng Dungeon 1",
+  "english": "Limbo Dungeon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 41,
+  "column": "LandMarkName",
+  "before": "Linbaocheng Dungeon 2",
+  "english": "Limbo Dungeon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 42,
+  "column": "LandMarkName",
+  "before": "Linbaocheng Dungeon 3",
+  "english": "Limbo Dungeon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 43,
+  "column": "LandMarkName",
+  "before": "Linbaocheng Dungeon 4",
+  "english": "Limbo Dungeon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 44,
+  "column": "LandMarkName",
+  "before": "Linbaocheng Dungeon 5",
+  "english": "Limbo Dungeon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 45,
+  "column": "LandMarkName",
+  "before": "Linbaocheng Dungeon 6",
+  "english": "Limbo Dungeon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 46,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Northwest",
+  "english": "Limbo Lair Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 47,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Southeast",
+  "english": "Limbo Lair Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 48,
+  "column": "LandMarkName",
+  "before": "Inside Linbaocheng",
+  "english": "Vampire Village"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 49,
+  "column": "LandMarkName",
+  "before": "Eslonian_Southeast",
+  "english": "Eslania Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 50,
+  "column": "LandMarkName",
+  "before": "Blanc_Northwest",
+  "english": "Vranco Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 51,
+  "column": "LandMarkName",
+  "before": "Drobit_Southeast",
+  "english": "Drobeta Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 52,
+  "column": "LandMarkName",
+  "before": "Drobit_Northwest",
+  "english": "Drobeta Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 53,
+  "column": "LandMarkName",
+  "before": "The underground floor of Rom Dungeon",
+  "english": "Drobeta Dungeon S1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 54,
+  "column": "LandMarkName",
+  "before": "Eslonian_Southwest",
+  "english": "Eslania Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 55,
+  "column": "LandMarkName",
+  "before": "Drobit_Northeast",
+  "english": "Drobeta Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 56,
+  "column": "LandMarkName",
+  "before": "Drobit_Southwest",
+  "english": "Drobeta Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 57,
+  "column": "LandMarkName",
+  "before": "Castaro_Northeast",
+  "english": "Castalo Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 58,
+  "column": "LandMarkName",
+  "before": "Basement 1 of Eisen Dungeon",
+  "english": "Drobeta Dungeon V1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 59,
+  "column": "LandMarkName",
+  "before": "Drobit_Northeast",
+  "english": "Drobeta Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 60,
+  "column": "LandMarkName",
+  "before": "Blanc_Southwest",
+  "english": "Vranco Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 61,
+  "column": "LandMarkName",
+  "before": "Drobit_Southwest",
+  "english": "Drobeta Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 62,
+  "column": "LandMarkName",
+  "before": "Drobit_Northwest",
+  "english": "Drobeta Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 63,
+  "column": "LandMarkName",
+  "before": "Drobit_Southeast",
+  "english": "Drobeta Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 64,
+  "column": "LandMarkName",
+  "before": "Pelona_Northwest",
+  "english": "Perona Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 65,
+  "column": "LandMarkName",
+  "before": "Pelona_Northeast",
+  "english": "Perona Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 66,
+  "column": "LandMarkName",
+  "before": "Luodingshan_Southeast",
+  "english": "Rodin Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 67,
+  "column": "LandMarkName",
+  "before": "Luodingshan_Northwest",
+  "english": "Rodin Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 68,
+  "column": "LandMarkName",
+  "before": "Inside Larsen Castle",
+  "english": "Rasen Yard"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 69,
+  "column": "LandMarkName",
+  "before": "Lost Tai'an basement level",
+  "english": "Losttaiyan B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 70,
+  "column": "LandMarkName",
+  "before": "Luodingshan_Northeast",
+  "english": "Rodin Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 71,
+  "column": "LandMarkName",
+  "before": "Luodingshan_Southwest",
+  "english": "Rodin Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 72,
+  "column": "LandMarkName",
+  "before": "Eslonian_Northeast",
+  "english": "Eslania Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 73,
+  "column": "LandMarkName",
+  "before": "Replica of Bathory Palace",
+  "english": "Bathory Lair Clon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 74,
+  "column": "LandMarkName",
+  "before": "Luodingshan_Northeast",
+  "english": "Rodin Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 75,
+  "column": "LandMarkName",
+  "before": "Blanc_Northeast",
+  "english": "Vranco Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 76,
+  "column": "LandMarkName",
+  "before": "Luodingshan_Southwest",
+  "english": "Rodin Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 77,
+  "column": "LandMarkName",
+  "before": "Kali Grottoes",
+  "english": "Kali Cave"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 78,
+  "column": "LandMarkName",
+  "before": "Luodingshan_Northwest",
+  "english": "Rodin Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 79,
+  "column": "LandMarkName",
+  "before": "Luodingshan_Southeast",
+  "english": "Rodin Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 80,
+  "column": "LandMarkName",
+  "before": "Blanc_Northwest",
+  "english": "Vranco Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 81,
+  "column": "LandMarkName",
+  "before": "Eslonian_Southeast",
+  "english": "Eslania Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 82,
+  "column": "LandMarkName",
+  "before": "Timor Lake_Northwest",
+  "english": "Timore Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 83,
+  "column": "LandMarkName",
+  "before": "Timor Lake_Southeast",
+  "english": "Timore Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 84,
+  "column": "LandMarkName",
+  "before": "Pelona_Southwest",
+  "english": "Perona Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 85,
+  "column": "LandMarkName",
+  "before": "Pelona_Southeast",
+  "english": "Perona Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 86,
+  "column": "LandMarkName",
+  "before": "Timor Lake_Northeast",
+  "english": "Timore Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 87,
+  "column": "LandMarkName",
+  "before": "Timor Lake_Southwest",
+  "english": "Timore Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 88,
+  "column": "LandMarkName",
+  "before": "Replica of Tepuzi Palace",
+  "english": "Tepes Lair Clon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 89,
+  "column": "LandMarkName",
+  "before": "Timor Lake_Northeast",
+  "english": "Timore Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 90,
+  "column": "LandMarkName",
+  "before": "Timor Lake_Southwest",
+  "english": "Timore Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 91,
+  "column": "LandMarkName",
+  "before": "Adam Sanctuary - Central",
+  "english": "Adam New C"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 92,
+  "column": "LandMarkName",
+  "before": "The first floor of the Lost Tower",
+  "english": "Lusttower 1F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 93,
+  "column": "LandMarkName",
+  "before": "Adam's Holy Land_West",
+  "english": "Adam New West"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 94,
+  "column": "LandMarkName",
+  "before": "Adam's Holy Land_East",
+  "english": "Adam New East"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 95,
+  "column": "LandMarkName",
+  "before": "Timor Lake_Northwest",
+  "english": "Timore Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 96,
+  "column": "LandMarkName",
+  "before": "Timor Lake_Southeast",
+  "english": "Timore Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 97,
+  "column": "LandMarkName",
+  "before": "Drobit_Southwest",
+  "english": "Drobeta Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 98,
+  "column": "LandMarkName",
+  "before": "Pelona_Southeast",
+  "english": "Perona Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 99,
+  "column": "LandMarkName",
+  "before": "Pelona_Northwest",
+  "english": "Perona Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 100,
+  "column": "LandMarkName",
+  "before": "Lost Tai'an basement level",
+  "english": "Losttaiyan B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 101,
+  "column": "LandMarkName",
+  "before": "Asirion Dungeon",
+  "english": "Asylion Dungeon Low"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 102,
+  "column": "LandMarkName",
+  "before": "Drobit_Southwest",
+  "english": "Drobeta Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 103,
+  "column": "LandMarkName",
+  "before": "Pelona_Northeast",
+  "english": "Perona Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 104,
+  "column": "LandMarkName",
+  "before": "Pelona_Southwest",
+  "english": "Perona Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 105,
+  "column": "LandMarkName",
+  "before": "Pelona_Northeast",
+  "english": "Perona Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 106,
+  "column": "LandMarkName",
+  "before": "Timor Lake_Northwest",
+  "english": "Timore Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 107,
+  "column": "LandMarkName",
+  "before": "Pelona_Southwest",
+  "english": "Perona Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 108,
+  "column": "LandMarkName",
+  "before": "Asirion Dungeon",
+  "english": "Asylion Dungeon Low"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 109,
+  "column": "LandMarkName",
+  "before": "Pelona_Northwest",
+  "english": "Perona Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 110,
+  "column": "LandMarkName",
+  "before": "Pelona_Southeast",
+  "english": "Perona Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 111,
+  "column": "LandMarkName",
+  "before": "Timor Lake_Northwest",
+  "english": "Timore Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 112,
+  "column": "LandMarkName",
+  "before": "Asirion Dungeon",
+  "english": "Asylion Dungeon Low"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 113,
+  "column": "LandMarkName",
+  "before": "Timor Lake_Southeast",
+  "english": "Timore Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 114,
+  "column": "LandMarkName",
+  "before": "Adam Sanctuary - Central",
+  "english": "Adam New C"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 115,
+  "column": "LandMarkName",
+  "before": "Terrace City 1",
+  "english": "Castle Tertius"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 116,
+  "column": "LandMarkName",
+  "before": "Terrace City 2",
+  "english": "Castle Tertius"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 117,
+  "column": "LandMarkName",
+  "before": "Quotas City 1",
+  "english": "Castle Quartus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 118,
+  "column": "LandMarkName",
+  "before": "Quotas City 2",
+  "english": "Castle Quartus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 119,
+  "column": "LandMarkName",
+  "before": "Adam's Holy Land_North",
+  "english": "Adam New C North"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 120,
+  "column": "LandMarkName",
+  "before": "Adam's Holy Land_East",
+  "english": "Adam New East"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 121,
+  "column": "LandMarkName",
+  "before": "Adam's Holy Land_South",
+  "english": "Adam New C South"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 122,
+  "column": "LandMarkName",
+  "before": "Adam's Holy Land_West",
+  "english": "Adam New West"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 123,
+  "column": "LandMarkName",
+  "before": "Altar entrance",
+  "english": "Gate Of Alter"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 124,
+  "column": "LandMarkName",
+  "before": "Timor Lake_Southeast",
+  "english": "Timore Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 125,
+  "column": "LandMarkName",
+  "before": "Hexilius City",
+  "english": "Castle Hexserius"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 126,
+  "column": "LandMarkName",
+  "before": "Pentanus City",
+  "english": "Castle Pentanus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 127,
+  "column": "LandMarkName",
+  "before": "Adam Sanctuary - Central",
+  "english": "Adam New C"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 128,
+  "column": "LandMarkName",
+  "before": "Septimus 1",
+  "english": "Castle Septimus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 129,
+  "column": "LandMarkName",
+  "before": "Septimus 2",
+  "english": "Castle Septimus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 130,
+  "column": "LandMarkName",
+  "before": "Otaeus City 1",
+  "english": "Castle Octavus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 131,
+  "column": "LandMarkName",
+  "before": "Ortaeus City 2",
+  "english": "Castle Octavus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 132,
+  "column": "LandMarkName",
+  "before": "Timor Lake_Southeast",
+  "english": "Timore Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 133,
+  "column": "LandMarkName",
+  "before": "Adam Sanctuary - Central",
+  "english": "Adam New C"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 134,
+  "column": "LandMarkName",
+  "before": "Adam Sanctuary - Central",
+  "english": "Adam New C"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 135,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Southeast",
+  "english": "Limbo Lair Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 136,
+  "column": "LandMarkName",
+  "before": "Drobit_Northwest",
+  "english": "Drobeta Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 138,
+  "column": "LandMarkName",
+  "before": "Karigao Dungeon 1st Floor",
+  "english": "Caligo Dungeon1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 139,
+  "column": "LandMarkName",
+  "before": "Luodingshan_Southeast",
+  "english": "Rodin Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 140,
+  "column": "LandMarkName",
+  "before": "Blanc_Southeast",
+  "english": "Vranco Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 141,
+  "column": "LandMarkName",
+  "before": "Blanc_Northwest",
+  "english": "Vranco Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 142,
+  "column": "LandMarkName",
+  "before": "1st floor of underground passage",
+  "english": "Under Pass 1F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 143,
+  "column": "LandMarkName",
+  "before": "Luodingshan_Southwest",
+  "english": "Rodin Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 144,
+  "column": "LandMarkName",
+  "before": "Blanc_Northeast",
+  "english": "Vranco Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 145,
+  "column": "LandMarkName",
+  "before": "Blanc_Southwest",
+  "english": "Vranco Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 146,
+  "column": "LandMarkName",
+  "before": "Drobit_Northeast",
+  "english": "Drobeta Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 147,
+  "column": "LandMarkName",
+  "before": "The underground floor of Rom Dungeon",
+  "english": "Drobeta Dungeon S1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 148,
+  "column": "LandMarkName",
+  "before": "Blanc_Northeast",
+  "english": "Vranco Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 149,
+  "column": "LandMarkName",
+  "before": "Blanc_Southwest",
+  "english": "Vranco Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 150,
+  "column": "LandMarkName",
+  "before": "Blanc_Northwest",
+  "english": "Vranco Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 151,
+  "column": "LandMarkName",
+  "before": "Blanc_Southeast",
+  "english": "Vranco Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 152,
+  "column": "LandMarkName",
+  "before": "Drobit_Southeast",
+  "english": "Drobeta Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 153,
+  "column": "LandMarkName",
+  "before": "IK Office 1",
+  "english": "Ik Offic"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 154,
+  "column": "LandMarkName",
+  "before": "IK Office 2",
+  "english": "Ik Offic"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 159,
+  "column": "LandMarkName",
+  "before": "Pike Tunnel 1",
+  "english": "Tunnel Peiac"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 160,
+  "column": "LandMarkName",
+  "before": "Pike Tunnel 2",
+  "english": "Tunnel Peiac"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 161,
+  "column": "LandMarkName",
+  "before": "Samurai Guild B1",
+  "english": "Guild Knight B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 162,
+  "column": "LandMarkName",
+  "before": "Military Association Basement 1",
+  "english": "Guild Army B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 163,
+  "column": "LandMarkName",
+  "before": "Clergy Guild B1",
+  "english": "Guild Cleric B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 164,
+  "column": "LandMarkName",
+  "before": "Eslonian_Northeast 1",
+  "english": "Eslania Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 165,
+  "column": "LandMarkName",
+  "before": "Eslonian_Northeast 2",
+  "english": "Eslania Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 166,
+  "column": "LandMarkName",
+  "before": "Eslonian_Northeast 3",
+  "english": "Eslania Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 167,
+  "column": "LandMarkName",
+  "before": "Eslonian_Northeast 4",
+  "english": "Eslania Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 168,
+  "column": "LandMarkName",
+  "before": "Eslonian_Northeast 5",
+  "english": "Eslania Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 169,
+  "column": "LandMarkName",
+  "before": "Eslonian_Northeast 6",
+  "english": "Eslania Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 170,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Southwest",
+  "english": "Limbo Lair Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 171,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Southeast",
+  "english": "Limbo Lair Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 172,
+  "column": "LandMarkName",
+  "before": "Pelona_Northwest",
+  "english": "Perona Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 173,
+  "column": "LandMarkName",
+  "before": "Bathory Dungeon basement level",
+  "english": "Bathory Dungeon B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 174,
+  "column": "LandMarkName",
+  "before": "Bathory Dungeon basement level",
+  "english": "Bathory Dungeon B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 175,
+  "column": "LandMarkName",
+  "before": "Bathory Dungeon basement level",
+  "english": "Bathory Dungeon B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 176,
+  "column": "LandMarkName",
+  "before": "Gurba Tunnel 1",
+  "english": "Tunnel Ghorgova"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 177,
+  "column": "LandMarkName",
+  "before": "Gurba Tunnel 2",
+  "english": "Tunnel Ghorgova"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 178,
+  "column": "LandMarkName",
+  "before": "Gurba Tunnel 3",
+  "english": "Tunnel Ghorgova"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 179,
+  "column": "LandMarkName",
+  "before": "Gurba Tunnel 4",
+  "english": "Tunnel Ghorgova"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 180,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Northeast 1",
+  "english": "Limbo Lair Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 181,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Northeast 2",
+  "english": "Limbo Lair Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 182,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Northeast 3",
+  "english": "Limbo Lair Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 183,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Northeast 4",
+  "english": "Limbo Lair Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 184,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Northeast 5",
+  "english": "Limbo Lair Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 185,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Northeast 6",
+  "english": "Limbo Lair Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 186,
+  "column": "LandMarkName",
+  "before": "Pike Tunnel",
+  "english": "Tunnel Peiac"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 188,
+  "column": "LandMarkName",
+  "before": "Drobit_Northeast",
+  "english": "Drobeta Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 189,
+  "column": "LandMarkName",
+  "before": "Luodingshan_Northeast",
+  "english": "Rodin Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 190,
+  "column": "LandMarkName",
+  "before": "Larsen Training Camp 1",
+  "english": "Rasen Training"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 191,
+  "column": "LandMarkName",
+  "before": "Larsen Training Camp 2",
+  "english": "Rasen Training"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 192,
+  "column": "LandMarkName",
+  "before": "Larsen Training Camp 3",
+  "english": "Rasen Training"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 193,
+  "column": "LandMarkName",
+  "before": "Lassen_Ground Floor",
+  "english": "Castle Rasen 1 1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 194,
+  "column": "LandMarkName",
+  "before": "Luodingshan_Southeast",
+  "english": "Rodin Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 195,
+  "column": "LandMarkName",
+  "before": "Lassen_Ground Floor",
+  "english": "Castle Rasen 1 1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 196,
+  "column": "LandMarkName",
+  "before": "Lassen Castle interior 1",
+  "english": "Rasen Yard"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 197,
+  "column": "LandMarkName",
+  "before": "Lassen Castle Interior 2",
+  "english": "Rasen Yard"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 198,
+  "column": "LandMarkName",
+  "before": "Lassen Castle Interior 3",
+  "english": "Rasen Yard"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 199,
+  "column": "LandMarkName",
+  "before": "Linbaocheng Dungeon",
+  "english": "Limbo Dungeon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 200,
+  "column": "LandMarkName",
+  "before": "Underground waterway 1",
+  "english": "Slayers Training"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 201,
+  "column": "LandMarkName",
+  "before": "Underground waterway 2",
+  "english": "Slayers Training"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 202,
+  "column": "LandMarkName",
+  "before": "Lost Tai'an underground second floor",
+  "english": "Losttaiyan B2"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 203,
+  "column": "LandMarkName",
+  "before": "Pelona_Northeast",
+  "english": "Perona Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 204,
+  "column": "LandMarkName",
+  "before": "Lost Tai'an basement level",
+  "english": "Losttaiyan B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 205,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Northwest",
+  "english": "Limbo Lair Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 206,
+  "column": "LandMarkName",
+  "before": "Luodingshan_Northeast",
+  "english": "Rodin Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 207,
+  "column": "LandMarkName",
+  "before": "Pelona_Northeast",
+  "english": "Perona Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 208,
+  "column": "LandMarkName",
+  "before": "Pelona_Southwest",
+  "english": "Perona Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 209,
+  "column": "LandMarkName",
+  "before": "Pelona_Southeast",
+  "english": "Perona Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 210,
+  "column": "LandMarkName",
+  "before": "Drobit_Northeast",
+  "english": "Drobeta Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 211,
+  "column": "LandMarkName",
+  "before": "Bathory Dungeon Basement 2 Floor 1",
+  "english": "Bathory Dungeon B2"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 212,
+  "column": "LandMarkName",
+  "before": "Bathory Dungeon Basement 2 Floor 2",
+  "english": "Bathory Dungeon B2"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 213,
+  "column": "LandMarkName",
+  "before": "Bathory Dungeon Basement 2nd Floor 3",
+  "english": "Bathory Dungeon B2"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 214,
+  "column": "LandMarkName",
+  "before": "Linbaocheng interior 1",
+  "english": "Vampire Village"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 215,
+  "column": "LandMarkName",
+  "before": "Linbaocheng interior 2",
+  "english": "Vampire Village"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 216,
+  "column": "LandMarkName",
+  "before": "Linbaocheng interior 3",
+  "english": "Vampire Village"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 217,
+  "column": "LandMarkName",
+  "before": "Bathory Dungeon Basement 1",
+  "english": "Bathory Dungeon B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 218,
+  "column": "LandMarkName",
+  "before": "Bathory Dungeon Basement 2",
+  "english": "Bathory Dungeon B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 219,
+  "column": "LandMarkName",
+  "before": "Bathory Dungeon Basement 3",
+  "english": "Bathory Dungeon B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 220,
+  "column": "LandMarkName",
+  "before": "The third underground floor of Bathory Dungeon",
+  "english": "Bathory Dungeon B3"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 221,
+  "column": "LandMarkName",
+  "before": "Gurba Tunnel",
+  "english": "Tunnel Ghorgova"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 222,
+  "column": "LandMarkName",
+  "before": "Bathory Dungeon underground second floor",
+  "english": "Bathory Dungeon B2"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 223,
+  "column": "LandMarkName",
+  "before": "The fourth underground floor of Bathory Dungeon",
+  "english": "Bathory Dungeon B4F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 224,
+  "column": "LandMarkName",
+  "before": "The third underground floor of Bathory Dungeon",
+  "english": "Bathory Dungeon B3"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 225,
+  "column": "LandMarkName",
+  "before": "Bathory Palace",
+  "english": "Bathory Lair"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 226,
+  "column": "LandMarkName",
+  "before": "Hiram Holy Land",
+  "english": "Bathory Battlezone"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 227,
+  "column": "LandMarkName",
+  "before": "The fourth underground floor of Bathory Dungeon",
+  "english": "Bathory Dungeon B4F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 228,
+  "column": "LandMarkName",
+  "before": "Linbaocheng Dungeon 1",
+  "english": "Limbo Dungeon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 229,
+  "column": "LandMarkName",
+  "before": "Linbaocheng Dungeon 2",
+  "english": "Limbo Dungeon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 230,
+  "column": "LandMarkName",
+  "before": "Linbaocheng Dungeon 3",
+  "english": "Limbo Dungeon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 231,
+  "column": "LandMarkName",
+  "before": "Linbaocheng Dungeon 4",
+  "english": "Limbo Dungeon"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 232,
+  "column": "LandMarkName",
+  "before": "Bathory Dungeon underground second floor",
+  "english": "Bathory Dungeon B2"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 233,
+  "column": "LandMarkName",
+  "before": "The fourth underground floor of Bathory Dungeon",
+  "english": "Bathory Dungeon B4F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 234,
+  "column": "LandMarkName",
+  "before": "Lassen_Inner City 1st Floor",
+  "english": "Castle Rasen 1 2"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 235,
+  "column": "LandMarkName",
+  "before": "Kali Grottoes",
+  "english": "Kali Cave"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 236,
+  "column": "LandMarkName",
+  "before": "Inside Larsen Castle",
+  "english": "Rasen Yard"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 237,
+  "column": "LandMarkName",
+  "before": "Lassen_Ground Floor",
+  "english": "Castle Rasen 1 1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 238,
+  "column": "LandMarkName",
+  "before": "Lassen_Inner City 2nd Floor",
+  "english": "Castle Rasen 2 2"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 239,
+  "column": "LandMarkName",
+  "before": "Lassen_Inner City 1st Floor",
+  "english": "Castle Rasen 1 2"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 240,
+  "column": "LandMarkName",
+  "before": "Tepuzi Palace",
+  "english": "Tepes Lair"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 241,
+  "column": "LandMarkName",
+  "before": "Lassen_Inner City 2nd Floor",
+  "english": "Castle Rasen 2 2"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 242,
+  "column": "LandMarkName",
+  "before": "Lassen_Inner City 2nd Floor",
+  "english": "Castle Rasen 2 2"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 243,
+  "column": "LandMarkName",
+  "before": "Eslonian_Southwest",
+  "english": "Eslania Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 244,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Northwest",
+  "english": "Limbo Lair Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 245,
+  "column": "LandMarkName",
+  "before": "Drobit_Northwest",
+  "english": "Drobeta Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 246,
+  "column": "LandMarkName",
+  "before": "Second underground floor of Eisen Dungeon",
+  "english": "Rasen Battlezone"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 247,
+  "column": "LandMarkName",
+  "before": "Basement 1 of Eisen Dungeon",
+  "english": "Drobeta Dungeon V1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 248,
+  "column": "LandMarkName",
+  "before": "The third underground floor of Eisen Dungeon",
+  "english": "Icen Dungeon3f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 249,
+  "column": "LandMarkName",
+  "before": "Second underground floor of Eisen Dungeon",
+  "english": "Rasen Battlezone"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 250,
+  "column": "LandMarkName",
+  "before": "Drobit_Northwest",
+  "english": "Drobeta Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 251,
+  "column": "LandMarkName",
+  "before": "Drobit_Northeast",
+  "english": "Vranco Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 252,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon underground second floor 1",
+  "english": "Slayer Battlezone1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 253,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon underground second floor 2",
+  "english": "Slayer Battlezone1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 254,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon underground second floor 3",
+  "english": "Slayer Battlezone1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 255,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon Basement 1",
+  "english": "Drobeta Dungeon S1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 256,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon Basement 2",
+  "english": "Drobeta Dungeon S1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 257,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon Basement 3",
+  "english": "Drobeta Dungeon S1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 258,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon underground third floor 1",
+  "english": "Laom Dungeon3F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 259,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon underground third floor 2",
+  "english": "Laom Dungeon3F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 260,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon underground second floor 1",
+  "english": "Slayer Battlezone1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 261,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon underground second floor 2",
+  "english": "Slayer Battlezone1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 262,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon Basement 4 Floor 1",
+  "english": "Laom Dungeon4f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 263,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon Underground Level 2 2",
+  "english": "Laom Dungeon4f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 264,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon underground third floor 1",
+  "english": "Laom Dungeon3F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 265,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon underground third floor 2",
+  "english": "Laom Dungeon3F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 266,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon Basement 5 Level 1",
+  "english": "Laom Dungeon5f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 267,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon underground fifth floor 2",
+  "english": "Laom Dungeon5f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 268,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon Basement 4 Floor 1",
+  "english": "Laom Dungeon4f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 269,
+  "column": "LandMarkName",
+  "before": "Rom Dungeon Underground Level 2 2",
+  "english": "Laom Dungeon4f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 270,
+  "column": "LandMarkName",
+  "before": "Eslonian_Southwest",
+  "english": "Eslania Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 271,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Southeast",
+  "english": "Limbo Lair Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 272,
+  "column": "LandMarkName",
+  "before": "Castaro_Northeast",
+  "english": "Castalo Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 273,
+  "column": "LandMarkName",
+  "before": "Eslonian_Southwest",
+  "english": "Eslania Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 274,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Southeast",
+  "english": "Limbo Lair Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 275,
+  "column": "LandMarkName",
+  "before": "Castaro_Northeast",
+  "english": "Castalo Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 276,
+  "column": "LandMarkName",
+  "before": "Eslonian_Southwest",
+  "english": "Eslania Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 277,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Southeast",
+  "english": "Limbo Lair Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 278,
+  "column": "LandMarkName",
+  "before": "Castaro_Northeast",
+  "english": "Castalo Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 279,
+  "column": "LandMarkName",
+  "before": "Eslonian_Southwest",
+  "english": "Eslania Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 280,
+  "column": "LandMarkName",
+  "before": "Lin Baocheng_Southeast",
+  "english": "Limbo Lair Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 281,
+  "column": "LandMarkName",
+  "before": "Castaro_Northeast",
+  "english": "Castalo Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 282,
+  "column": "LandMarkName",
+  "before": "Adam's Holy Land_West 1",
+  "english": "Adam New West"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 283,
+  "column": "LandMarkName",
+  "before": "Adam's Holy Land_West 2",
+  "english": "Adam New West"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 284,
+  "column": "LandMarkName",
+  "before": "Ortaeus Dungeon Basement 1",
+  "english": "Octavus Dungeon1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 285,
+  "column": "LandMarkName",
+  "before": "Ortaeus Dungeon Basement 2",
+  "english": "Octavus Dungeon1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 286,
+  "column": "LandMarkName",
+  "before": "Adam's Holy Land_East 1",
+  "english": "Adam New East"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 287,
+  "column": "LandMarkName",
+  "before": "Adam's Holy Land_East 2",
+  "english": "Adam New East"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 288,
+  "column": "LandMarkName",
+  "before": "Terrace Dungeon Basement 1",
+  "english": "Tertius Dungeon1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 289,
+  "column": "LandMarkName",
+  "before": "Terrace Dungeon Basement 2",
+  "english": "Tertius Dungeon1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 290,
+  "column": "LandMarkName",
+  "before": "Adam's Holy Land_West 1",
+  "english": "Adam New West"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 291,
+  "column": "LandMarkName",
+  "before": "Adam's Holy Land_West 2",
+  "english": "Adam New West"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 292,
+  "column": "LandMarkName",
+  "before": "Septimus Dungeon Basement 1",
+  "english": "Septimus Dungeon1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 293,
+  "column": "LandMarkName",
+  "before": "Septimus Dungeon Basement 2",
+  "english": "Septimus Dungeon1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 294,
+  "column": "LandMarkName",
+  "before": "Adam's Holy Land_East 1",
+  "english": "Adam New East"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 295,
+  "column": "LandMarkName",
+  "before": "Adam's Holy Land_East 2",
+  "english": "Adam New East"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 296,
+  "column": "LandMarkName",
+  "before": "Quotas Dungeon Basement 1",
+  "english": "Quartus Dungeon1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 297,
+  "column": "LandMarkName",
+  "before": "Quotas Dungeon Basement 2",
+  "english": "Quartus Dungeon1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 298,
+  "column": "LandMarkName",
+  "before": "Adam Sanctuary - Central",
+  "english": "Adam New C"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 299,
+  "column": "LandMarkName",
+  "before": "Pentanus Dungeon Basement 1",
+  "english": "Pentanus Dungeon1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 300,
+  "column": "LandMarkName",
+  "before": "Pentanus Dungeon Basement 2",
+  "english": "Pentanus Dungeon1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 301,
+  "column": "LandMarkName",
+  "before": "Adam Sanctuary - Central",
+  "english": "Adam New C"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 302,
+  "column": "LandMarkName",
+  "before": "Hexilius Dungeon Basement 1",
+  "english": "Hexserius Dungeon1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 303,
+  "column": "LandMarkName",
+  "before": "Hexilius Dungeon Basement 2",
+  "english": "Hexserius Dungeon1f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 304,
+  "column": "LandMarkName",
+  "before": "Otaeus City 1",
+  "english": "Castle Octavus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 305,
+  "column": "LandMarkName",
+  "before": "Ortaeus City 2",
+  "english": "Castle Octavus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 306,
+  "column": "LandMarkName",
+  "before": "The second underground floor of Ortaeus Dungeon",
+  "english": "Octavus Dungeon2f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 307,
+  "column": "LandMarkName",
+  "before": "Otaeus City",
+  "english": "Castle Octavus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 308,
+  "column": "LandMarkName",
+  "before": "Terrace City 1",
+  "english": "Castle Tertius"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 309,
+  "column": "LandMarkName",
+  "before": "Terrace City 2",
+  "english": "Castle Tertius"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 310,
+  "column": "LandMarkName",
+  "before": "The second underground floor of Tris Dungeon",
+  "english": "Tertius Dungeon2f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 311,
+  "column": "LandMarkName",
+  "before": "Terrace City",
+  "english": "Castle Tertius"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 312,
+  "column": "LandMarkName",
+  "before": "Septimus 1",
+  "english": "Castle Septimus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 313,
+  "column": "LandMarkName",
+  "before": "Septimus 2",
+  "english": "Castle Septimus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 314,
+  "column": "LandMarkName",
+  "before": "Second underground floor of Septimus Dungeon",
+  "english": "Septimus Dungeon2f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 315,
+  "column": "LandMarkName",
+  "before": "Septimus",
+  "english": "Castle Septimus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 316,
+  "column": "LandMarkName",
+  "before": "Quotas City 1",
+  "english": "Castle Quartus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 317,
+  "column": "LandMarkName",
+  "before": "Quotas City 2",
+  "english": "Castle Quartus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 318,
+  "column": "LandMarkName",
+  "before": "Second underground floor of Quotas Dungeon",
+  "english": "Quartus Dungeon2f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 319,
+  "column": "LandMarkName",
+  "before": "Quotas City",
+  "english": "Castle Quartus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 320,
+  "column": "LandMarkName",
+  "before": "Pentanus City 1",
+  "english": "Castle Pentanus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 321,
+  "column": "LandMarkName",
+  "before": "Pentanus City 2",
+  "english": "Castle Pentanus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 322,
+  "column": "LandMarkName",
+  "before": "Pentanus dungeon underground second floor",
+  "english": "Pentanus Dungeon2f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 323,
+  "column": "LandMarkName",
+  "before": "Pentanus City",
+  "english": "Castle Pentanus"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 324,
+  "column": "LandMarkName",
+  "before": "Hexilius City 1",
+  "english": "Castle Hexserius"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 325,
+  "column": "LandMarkName",
+  "before": "Hexilius City 2",
+  "english": "Castle Hexserius"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 326,
+  "column": "LandMarkName",
+  "before": "Second underground floor of Hexilius Dungeon",
+  "english": "Hexserius Dungeon2f"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 327,
+  "column": "LandMarkName",
+  "before": "Hexilius City",
+  "english": "Castle Hexserius"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 331,
+  "column": "LandMarkName",
+  "before": "Castaro_Northeast",
+  "english": "Castalo Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 332,
+  "column": "LandMarkName",
+  "before": "The underground floor of Heinir Dungeon",
+  "english": "Ousters Dungeon01"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 334,
+  "column": "LandMarkName",
+  "before": "Second underground floor of Heinier Dungeon",
+  "english": "Ousters Dungeon02"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 335,
+  "column": "LandMarkName",
+  "before": "The underground floor of Heinir Dungeon",
+  "english": "Ousters Dungeon01"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 336,
+  "column": "LandMarkName",
+  "before": "The third underground floor of Heinier Dungeon",
+  "english": "Ousters Dungeon03"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 337,
+  "column": "LandMarkName",
+  "before": "Second underground floor of Heinier Dungeon",
+  "english": "Ousters Dungeon02"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 338,
+  "column": "LandMarkName",
+  "before": "The fourth underground floor of Heinir Dungeon",
+  "english": "Ousters Dungeon04"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 339,
+  "column": "LandMarkName",
+  "before": "The third underground floor of Heinier Dungeon",
+  "english": "Ousters Dungeon03"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 340,
+  "column": "LandMarkName",
+  "before": "Lost Tower 2nd Floor",
+  "english": "Lusttower 2F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 341,
+  "column": "LandMarkName",
+  "before": "Timor Lake_Southeast",
+  "english": "Timore Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 342,
+  "column": "LandMarkName",
+  "before": "Road to Illusion 1",
+  "english": "Gdr Illusion 01"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 343,
+  "column": "LandMarkName",
+  "before": "The first floor of the Lost Tower",
+  "english": "Lusttower 1F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 344,
+  "column": "LandMarkName",
+  "before": "Road to Illusion 2",
+  "english": "Gdr Illusion 02"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 345,
+  "column": "LandMarkName",
+  "before": "Road to Illusion 2",
+  "english": "Gdr Illusion 02"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 346,
+  "column": "LandMarkName",
+  "before": "Music Palace",
+  "english": "Gdr Lair 01"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 347,
+  "column": "LandMarkName",
+  "before": "Music Palace",
+  "english": "Gdr Lair 01"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 358,
+  "column": "LandMarkName",
+  "before": "Blanc_Southwest",
+  "english": "Vranco Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 359,
+  "column": "LandMarkName",
+  "before": "Blanc_Southwest",
+  "english": "Vranco Southwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 360,
+  "column": "LandMarkName",
+  "before": "IK laboratory",
+  "english": "Ik Lab"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 361,
+  "column": "LandMarkName",
+  "before": "IK Office",
+  "english": "Ik Offic"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 362,
+  "column": "LandMarkName",
+  "before": "IK laboratory underground first floor",
+  "english": "Ik Lab B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 363,
+  "column": "LandMarkName",
+  "before": "IK laboratory",
+  "english": "Ik Lab"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 364,
+  "column": "LandMarkName",
+  "before": "IK laboratory second floor underground",
+  "english": "Ik Lab B2"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 365,
+  "column": "LandMarkName",
+  "before": "IK laboratory underground first floor",
+  "english": "Ik Lab B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 366,
+  "column": "LandMarkName",
+  "before": "Blanc_Northeast",
+  "english": "Vranco Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 367,
+  "column": "LandMarkName",
+  "before": "Second floor of underground passage",
+  "english": "Under Pass 2F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 368,
+  "column": "LandMarkName",
+  "before": "1st floor of underground passage",
+  "english": "Under Pass 1F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 369,
+  "column": "LandMarkName",
+  "before": "Drobit_Northeast",
+  "english": "Drobeta Northeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 370,
+  "column": "LandMarkName",
+  "before": "Drobit_Southeast",
+  "english": "Drobeta Southeast"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 371,
+  "column": "LandMarkName",
+  "before": "Blanc_Northwest",
+  "english": "Vranco Northwest"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 390,
+  "column": "LandMarkName",
+  "before": "underground sewer",
+  "english": "Slayers Training"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 391,
+  "column": "LandMarkName",
+  "before": "Military Guild Level 1",
+  "english": "Guild Army 1F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 392,
+  "column": "LandMarkName",
+  "before": "Military Association Basement 1",
+  "english": "Guild Army B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 394,
+  "column": "LandMarkName",
+  "before": "Military Guild 2nd Floor",
+  "english": "Guild Army 2F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 395,
+  "column": "LandMarkName",
+  "before": "Military Guild Level 1",
+  "english": "Guild Army 1F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 396,
+  "column": "LandMarkName",
+  "before": "Military Guild Third Floor",
+  "english": "Guild Army 3F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 397,
+  "column": "LandMarkName",
+  "before": "Military Guild 2nd Floor",
+  "english": "Guild Army 2F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 399,
+  "column": "LandMarkName",
+  "before": "underground sewer",
+  "english": "Slayers Training"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 400,
+  "column": "LandMarkName",
+  "before": "Priest Guild Level 1",
+  "english": "Guild Cleric 1F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 401,
+  "column": "LandMarkName",
+  "before": "Clergy Guild B1",
+  "english": "Guild Cleric B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 403,
+  "column": "LandMarkName",
+  "before": "The second floor of the Priest Guild",
+  "english": "Guild Cleric 2F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 404,
+  "column": "LandMarkName",
+  "before": "Priest Guild Level 1",
+  "english": "Guild Cleric 1F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 405,
+  "column": "LandMarkName",
+  "before": "Priest Guild Third Floor",
+  "english": "Guild Cleric 3F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 406,
+  "column": "LandMarkName",
+  "before": "The second floor of the Priest Guild",
+  "english": "Guild Cleric 2F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 408,
+  "column": "LandMarkName",
+  "before": "underground sewer",
+  "english": "Slayers Training"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 409,
+  "column": "LandMarkName",
+  "before": "Warrior Guild Level 1",
+  "english": "Guild Knight 1F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 410,
+  "column": "LandMarkName",
+  "before": "Samurai Guild B1",
+  "english": "Guild Knight B1"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 412,
+  "column": "LandMarkName",
+  "before": "Samurai Guild 2nd Floor",
+  "english": "Guild Knight 2F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 413,
+  "column": "LandMarkName",
+  "before": "Warrior Guild Level 1",
+  "english": "Guild Knight 1F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 414,
+  "column": "LandMarkName",
+  "before": "Samurai Guild third floor",
+  "english": "Guild Knight 3F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 415,
+  "column": "LandMarkName",
+  "before": "Samurai Guild 2nd Floor",
+  "english": "Guild Knight 2F"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 418,
+  "column": "LandMarkName",
+  "before": "Unreal Training Ground_South",
+  "english": "Tutorial South"
+ },
+ {
+  "table": "MapTransfer",
+  "rowid": 419,
+  "column": "LandMarkName",
+  "before": "Unreal Training Ground_North",
+  "english": "Tutorial North"
+ }
+]

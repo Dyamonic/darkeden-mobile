@@ -1,0 +1,81 @@
+---@class UICompLeaderBossItem
+local UICompLeaderBossItem = class("UICompLeaderBossItem", lt.UIGButtonBase)
+
+local Constant = lt.Constant
+local CommonFunc = lt.CommonFunc
+local HolyFightModule = lt.HolyFightModule
+local TimeCounter = lt.TimeCounter
+local TimeCounterManager = lt.TimeCounterManager
+
+function UICompLeaderBossItem:ctor()
+    UICompLeaderBossItem.super.ctor(self)
+end
+   
+function UICompLeaderBossItem:onConstruct()
+    self._bgImg = self:getChild("img_bg")
+    self._dieImg = self:getChild("img_die")
+    self._nameLabel = self:getChild("label_name")
+    self._timeLabel = self:getChild("label_time")
+end
+
+function UICompLeaderBossItem:onClear()
+    self._bgImg = nil
+    self._dieImg = nil
+    self._nameLabel = nil
+    self._timeLabel = nil
+    self._info = nil
+end
+
+function UICompLeaderBossItem:onEnter()
+    
+end
+
+function UICompLeaderBossItem:onExit()
+    TimeCounterManager:stopTimeCounter(TimeCounterManager.TC.WORLD_BOSS_UPDATE.."_"..self.index)
+end
+
+function UICompLeaderBossItem:setObjInfo(info)
+    self._info = info
+    self._nameLabel:setText(info:getMonsterInfoDesc())
+    self._data = HolyFightModule:getWorldBossById(info:getId())
+    local killedTime = self._data and self._data.killedTime or 0
+    self._dieImg:setVisible(killedTime ~= 0)
+    local resUrl = string.format(_GURL.GetLeaderImg, info:getMonsterDisplayPortrait())
+    self._bgImg:setURL(resUrl)
+    --刷新倒计时
+    self:refreshCountDown()
+
+    TimeCounterManager:stopTimeCounter(TimeCounterManager.TC.WORLD_BOSS_UPDATE.."_"..self.index)
+    TimeCounterManager:startTimeCounter(TimeCounterManager.TC.WORLD_BOSS_UPDATE.."_"..self.index, {callback = function()
+        self:refreshCountDown()
+    end})
+end
+
+function UICompLeaderBossItem:refreshCountDown()
+    if self._data then
+        local killedTime = self._data.killedTime
+        if killedTime == 0 then
+            self._timeLabel:setText(GReadText.KEY_WORLDBOSS_TIPS4)
+            self._timeLabel:setColor(Constant.COLOR_GREEN)
+        else
+            local serverTime = TimeCounter:serverTime()
+            local refreshTime = self._info:getMonsterRefreshTime()
+            local lastTime = refreshTime - (serverTime - killedTime)
+            local day, hour, minute, second = CommonFunc:secondsToTime(lastTime)
+            if hour < 10 then hour = "0"..hour end
+            if minute < 10 then minute = "0"..minute end
+            if second < 10 then second = "0"..second end
+            self._timeLabel:setText(hour..":"..minute..":"..second)
+            self._timeLabel:setColor(Constant.COLOR_TEXT_RED)
+        end
+    else
+        self._timeLabel:setText(GReadText.KEY_WORLDBOSS_TIPS4)
+        self._timeLabel:setColor(Constant.COLOR_GREEN)
+    end
+end
+
+function UICompLeaderBossItem:getCfgId()
+    return self._info:getId()
+end
+
+return UICompLeaderBossItem

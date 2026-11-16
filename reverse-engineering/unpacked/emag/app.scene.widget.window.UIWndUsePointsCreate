@@ -1,0 +1,342 @@
+---@属性加点 创角使用
+---@class UIWndUsePointsCreate:UIWindowBase
+local UIWndUsePointsCreate = class("UIWndUsePointsCreate", lt.UIWindowBase)
+
+local NtfManager = lt.NtfManager
+local ScheduleManager = lt.ScheduleManager
+local ADD_SET_MAX = 20
+local ADD_SET_MID = 10
+local Constant = lt.Constant
+local BUTTON_LONG_PRESS_TIME = Constant.BUTTON_LONG_PRESS_TIME
+local BUTTON_CHECK_TIMES = Constant.BUTTON_CHECK_TIMES
+
+UIWndUsePointsCreate.ChangeSkinConf = {
+    ["MessageBox"] = {
+        ["attrbg"] = "bg_tytanchuang_04",
+        ["attr1"] = {
+            ["bg"] = "bg_tytanchuang_06",
+        },
+        ["attr2"] = {
+            ["bg"] = "bg_tytanchuang_06",
+        },
+        ["attr3"] = {
+            ["bg"] = "bg_tytanchuang_06",
+        },
+    },
+    ["CommonTL"] = {
+        confirm = {bg  = "sort"},
+        cancel = {bg  = "sort"},
+    } 
+}
+
+local usePointsTips = {
+    StringTips1 = GReadText.KEY_CREATE_ROLE_TIPS9,
+    StringTips2 = GReadText.KEY_CREATE_ROLE_TIPS10,
+    StringTips3 = GReadText.KEY_CREATE_ROLE_TIPS11,
+    StringTips4 = GReadText.KEY_CREATE_ROLE_TIPS12
+}
+
+
+function UIWndUsePointsCreate:ctor(param)
+    UIWndUsePointsCreate.super.ctor(self, param)
+    self._params = self:getParam().param
+    self._hasCancelBtn = self._params.hasCancelBtn
+    
+    if self._hasCancelBtn == nil then
+        self._hasCancelBtn = true
+    end
+    self._isOpenAddSche = false
+    self._isOpenSubSche = false
+    self._currentAddNum = 0
+    self._currentSubNum = 0
+    self._counter = 0
+end
+
+function UIWndUsePointsCreate:onInit()
+    UIWndUsePointsCreate.super.onInit(self, _GURL.UsePointsCreate)
+    self:setBringToFrontOnClick(false)
+    self._btnConfirm = self:getChild("confirm")
+    self._btnCancel = self:getChild("cancel")
+    self._btnCancel:setVisible(self._hasCancelBtn)
+end
+
+function UIWndUsePointsCreate:onShown()
+    UIWndUsePointsCreate.super.onShown(self)
+    self._params = self:getParam().param
+    self._attPointTable = {}
+    for k, info in pairs( self._params.attrList) do
+        self._attPointTable[k] = info.addValue
+    end
+    self._isHideBtns = self._params.needHideAddPointBtn
+
+    self._btnConfirm:addClickListener(handler(self, self.onBtnClick))
+    self._btnCancel:addClickListener(handler(self, self.onCancelBtnClick))
+    self:addBtnClick()
+    self:refreshInfo()
+    ScheduleManager:startTimeCounter(ScheduleManager.TC.USE_POINTS_CREATE_UPDATE, {callback = function()
+        self._counter = self._counter + 1
+        if self._counter >= BUTTON_CHECK_TIMES then
+            if self._isOpenAddSche then
+                self._currentAddNum =  self._currentAddNum + 1 
+                if self._currentAddNum > BUTTON_LONG_PRESS_TIME then
+                    self:addFunc()
+                end 
+            end
+
+            if self._isOpenSubSche then
+                self._currentSubNum =  self._currentSubNum + 1 
+                if self._currentSubNum > BUTTON_LONG_PRESS_TIME then
+                    self:subFunc()
+                end    
+            end
+            self._counter = 0
+        end
+    end })
+end
+
+function UIWndUsePointsCreate:onHide()
+    self._btnConfirm:removeClickListener()
+    self._btnCancel:removeClickListener()
+    ScheduleManager:stopTimeCounter(ScheduleManager.TC.USE_POINTS_CREATE_UPDATE)
+
+    self._attPointTable = nil
+    self:clearBtnClick()
+    UIWndUsePointsCreate.super.onHide(self)
+end
+
+
+function UIWndUsePointsCreate:onClear()
+    self._hasCancelBtn = nil
+    self._params = nil
+    self._attPointTable = nil
+    UIWndUsePointsCreate.super.onClear(self)
+end
+
+function UIWndUsePointsCreate:clearBtnClick()
+    -- 初始化按钮
+    for i=1,3 do
+        local attr = self:getChild("attr" .. i)
+
+        -------------------------------------------------------------
+        -- 点击长按增加点
+        attr:getChild("add"):removeClickListener()
+
+        -------------------------------------------------------------
+        -- 点击长按减少点
+        attr:getChild("sub"):removeClickListener()
+    end
+end
+
+function UIWndUsePointsCreate:addFunc(add)
+    if not self._curAddIndex then return end
+    if not self._attPointTable[self._curAddIndex] then
+        self._attPointTable[self._curAddIndex] = 0
+    end
+    local residuePoint = self:getResiduePoint()
+    if residuePoint <= 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = usePointsTips.StringTips2})
+        self._isOpenAddSche = false
+        return
+    end
+    local addNum = 1
+    if self._currentAddNum >= ADD_SET_MAX then
+        addNum = ADD_SET_MAX
+    elseif self._currentAddNum >= ADD_SET_MID then
+        addNum = ADD_SET_MID
+    end
+    if addNum > residuePoint then
+        addNum = residuePoint
+    end
+    self._attPointTable[self._curAddIndex] = self._attPointTable[self._curAddIndex] + addNum
+    
+    self:refreshInfo()
+end
+
+function UIWndUsePointsCreate:subFunc()
+    if not self._attPointTable[self._curAddIndex] then self._attPointTable[self._curAddIndex] = 0 end
+    if self._attPointTable[self._curAddIndex] <= 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = usePointsTips.StringTips1})
+        self._isOpenSubSche = false
+        return
+    end
+
+    local subNum = 1
+    if self._currentSubNum >= ADD_SET_MAX then
+        subNum = ADD_SET_MAX
+    elseif self._currentSubNum >= ADD_SET_MID then
+        subNum = ADD_SET_MID
+    end
+    if self._attPointTable[self._curAddIndex] - subNum < 0 then
+        subNum = self._attPointTable[self._curAddIndex]
+    end
+    self._attPointTable[self._curAddIndex] = self._attPointTable[self._curAddIndex] - subNum
+
+    self:refreshInfo()
+end
+
+function UIWndUsePointsCreate:addBtnClick()
+    
+    -- 初始化按钮
+    for i=1,3 do
+        local attr = self:getChild("attr" .. i)
+
+        -------------------------------------------------------------
+        -- 点击长按增加点
+        local add = attr:getChild("add")
+        add.curIndex = i
+
+        add:addEventListener(fgui.UIEventType.TouchBegin, handler(self, function()
+            self._curAddIndex = add.curIndex
+            self._isOpenAddSche = true
+        end))
+        add:addEventListener(fgui.UIEventType.TouchEnd, handler(self, function()
+            self._isOpenAddSche = false
+            if self._currentAddNum > BUTTON_LONG_PRESS_TIME then
+                self._currentAddNum = 0
+                return 
+            end
+            self._currentAddNum = 0    
+            self:addFunc(add)
+        end))
+
+        -------------------------------------------------------------
+        -- 点击长按减少点
+        local sub = attr:getChild("sub")
+        sub.curIndex = i
+  
+        sub:addEventListener(fgui.UIEventType.TouchBegin, handler(self, function()
+            self._curAddIndex =  sub.curIndex
+            self._isOpenSubSche = true
+        end))
+        sub:addEventListener(fgui.UIEventType.TouchEnd, handler(self, function()
+            self._isOpenSubSche = false
+            if self._currentSubNum > BUTTON_LONG_PRESS_TIME then
+                self._currentSubNum = 0
+                return 
+            end
+            self._currentSubNum = 0    
+            self:subFunc(sub)
+        end))
+    end
+    self:refreshInfo()
+end
+
+function UIWndUsePointsCreate:hideBtns()
+    local isEmpty = self:getResiduePoint() == 0
+    for i=1,3 do
+        local attr = self:getChild("attr" .. i)
+        local add = attr:getChild("add")
+        local sub = attr:getChild("sub")
+        add:setVisible(not isEmpty)
+        sub:setVisible(self._attPointTable[i] ~= nil and self._attPointTable[i] ~= 0)
+    end
+end
+
+function UIWndUsePointsCreate:getResiduePoint()
+    local param = self:getParam() or {}
+    local data = param.param or {}
+    local totalPoints = data.totalPoints or 0
+    local value = totalPoints
+    for k,v in pairs(self._attPointTable) do
+        value = value - v
+    end
+    return value
+end
+
+function UIWndUsePointsCreate:getAttPointTableNum()
+    local num = 0
+    for k,v in pairs(self._attPointTable) do
+        num = num + v
+    end
+
+    return num
+end
+
+function UIWndUsePointsCreate:refreshInfo()
+    if not self._attPointTable then
+        self._attPointTable = {}
+    end
+
+    if not self:getContentPane() then
+        return
+    end
+    if self._isHideBtns  then
+        self:hideBtns()
+    end
+
+    local param = self:getParam() or {}
+    local data = param.param or {}
+    local totalPoints = data.totalPoints or 0
+    local attrList = data.attrList or {}
+
+
+    local valueT = self:getChild("value")
+    local valueTStr = self:getResiduePoint()
+    -- for k,v in pairs(self._attPointTable) do
+    --     valueTStr = valueTStr - v
+    -- end
+    valueT:setText(valueTStr)
+
+    for i=1,3 do
+        local attr = attrList[i]
+        if attr then
+            local name = attr.name or ""
+            local originalValue = attr.originalValue or 0
+            
+            local attrNode = self:getChild("attr" .. i)
+            local add = attrNode:getChild("add")
+            add.index = i
+            local sub = attrNode:getChild("sub")
+            sub.index = i
+            local nameT = attrNode:getChild("name")
+            local valueT = attrNode:getChild("value")
+            nameT:setText(name)
+            local addValue = self._attPointTable[i] or 0
+            local str = "[color=#f1c992]" .. (originalValue + addValue) .. "[/color]" .. "(+" .. addValue .. ")"
+            if addValue == 0 then
+                str = originalValue
+            end
+            valueT:setText(str)
+        end
+    end
+end
+
+function UIWndUsePointsCreate:onBtnClick()
+    if self._params.needUseComplete and self:getResiduePoint() > 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = usePointsTips.StringTips3})
+        return 
+    end
+
+    if self._params.isCheckAddPoint == false and self:getAttPointTableNum() <= 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = usePointsTips.StringTips4})
+        return 
+    end
+
+    local confirmCallback = self:getParam().confirmCallback
+    if confirmCallback then
+        confirmCallback(self._attPointTable, self:getResiduePoint())
+    end
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndUsePointsCreate", close=true})
+end
+
+function UIWndUsePointsCreate:onCancelBtnClick()
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndUsePointsCreate", close=true})
+end
+
+function UIWndUsePointsCreate:onEnter()
+    self._params = self:getParam().param
+    self._attPointTable = {}
+    for k, info in pairs( self._params.attrList) do
+        self._attPointTable[k] = info.addValue
+    end
+    self._isHideBtns = self._params.needHideAddPointBtn
+    self:refreshInfo()
+end
+
+function UIWndUsePointsCreate:onExit()
+    ScheduleManager:stopTimeCounter(ScheduleManager.TC.USE_POINTS_CREATE_UPDATE)
+    self._attPointTable = nil
+    UIWndUsePointsCreate.super.onExit(self)
+end
+
+return UIWndUsePointsCreate

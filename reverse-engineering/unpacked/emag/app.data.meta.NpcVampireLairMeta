@@ -1,0 +1,44 @@
+local NpcVampireLairMeta = class("NpcVampireLairMeta")
+
+function NpcVampireLairMeta:ctor(row)
+    self:initWithRow(row)
+end
+
+function NpcVampireLairMeta:initWithRow(row)
+    self._dungeonId            = row.DungeonId
+    self._mapCode              = row.MapCode
+    self._mapName              = row.MapName
+    self._npcName              = row.NpcName
+    self._masterSummonSay      = row.MasterSummonSay
+    self._masterDeadSlayerSay  = row.MasterDeadSlayerSay
+    self._masterDeadVampireSay = row.MasterDeadVampireSay
+    self._masterNotDeadSay     = row.MasterNotDeadSay
+    self._triggerArea          = row.TriggerArea
+    self._startDelay           = row.StartDelay
+    if row.Reward == "" then
+        self._reward = nil
+    else
+        self._reward          = json.decode(row.Reward)
+    end
+end
+
+function NpcVampireLairMeta:getReward()
+    return self._reward
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function NpcVampireLairMeta:getDungeonId() return self._dungeonId end
+function NpcVampireLairMeta:getMapCode() return self._mapCode end
+function NpcVampireLairMeta:getMapName() return self._mapName end
+function NpcVampireLairMeta:getNpcName() return self._npcName end
+function NpcVampireLairMeta:getMasterSummonSay() return self._masterSummonSay end
+function NpcVampireLairMeta:getMasterDeadSlayerSay() return self._masterDeadSlayerSay end
+function NpcVampireLairMeta:getMasterDeadVampireSay() return self._masterDeadVampireSay end
+function NpcVampireLairMeta:getMasterNotDeadSay() return self._masterNotDeadSay end
+function NpcVampireLairMeta:getTriggerArea() return self._triggerArea end
+function NpcVampireLairMeta:getStartDelay() return self._startDelay end
+
+-- AUTO GENERATED GETTERS END
+return NpcVampireLairMeta

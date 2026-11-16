@@ -1,0 +1,349 @@
+-- @Date    : 2019-06-10 18:20:48
+-- @Author  : ZhaoCi
+-- @Desc	:
+local MailModule = {}
+
+local SocketApi     = lt.SocketApi
+local netcmd_pb     = lt.netcmd_pb
+local ServerCmdDef  = lt.ServerCmdDef
+local CommonModule  = lt.CommonModule
+local NtfManager    = lt.NtfManager
+local MailData      = lt.MailData
+local Constant      = lt.Constant
+local ClientCmdDef  = lt.ClientCmdDef
+
+MailModule._mailArray = {}
+MailModule.READ_STATE = {
+    UNREAD              = 0,        --未读
+    READ                = 1,        --已读
+}
+MailModule.DRAW_STATE = {
+    UNDRAW              = 0,        --未领取附件
+    DRAW                = 1,        --已领取
+}
+
+function MailModule:init()
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_NEW_MEAIL_NTF), handler(self, self.onNewMail), "MailModule:onNewMail")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_GET_MAIL_LIST_RESP), handler(self, self.onMailList), "MailModule:onMailList")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_GET_MAIL_INFO_RESP), handler(self, self.onMailInfo), "MailModule:onMailInfo")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_DELETE_MAIL_RESP), handler(self, self.onMailDelete), "MailModule:onMailDelete")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_EMAIL_ONE_CLICK_READ_RESP), handler(self, self.onMailAutoRead), "MailModule:onMailAutoRead")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_MAIL_UPDATE_NTF), handler(self, self.onMailUpdate), "MailModule:onMailUpdate")
+end
+
+function MailModule:clear()
+    SocketApi:removeProtoListenerByTag("MailModule:onNewMail")
+    SocketApi:removeProtoListenerByTag("MailModule:onMailUpdate")
+    SocketApi:removeProtoListenerByTag("MailModule:onMailDelete")
+    SocketApi:removeProtoListenerByTag("MailModule:onMailList")
+    SocketApi:removeProtoListenerByTag("MailModule:onMailInfo")
+    SocketApi:removeProtoListenerByTag("MailModule:onMailAutoRead")
+end
+
+function MailModule:onNewMail(event)
+    local proto = event.param
+    local data = MailData.new()
+    data:setRowID(proto.rowID)
+    data:setSender(proto.sender)
+    data:setTitle(proto.title)
+    data:setDate(proto.date)
+    data:setExpireDate(proto.expireDate)
+    data:setEmailType(proto.emailType)
+    data:setReadFlag(proto.readFlag)
+    data:setDrawFlag(proto.drawFlag)
+    data:autoOrder()
+
+    self._mailArray[#self._mailArray+1] = data
+    table.sort(self._mailArray, function(a, b)
+        if a:getOrder() ~= b:getOrder() then
+            return a:getOrder() < b:getOrder()
+        else
+            return a:getDate() > b:getDate()
+        end
+    end)
+    
+    NtfManager:dispatchNtf(NtfManager.NTF.NFT_SYSTEM_TIPS_CHANGE, {key = Constant.SYSTEMTIPS.MAIL, visible = true})
+    -- self:checkRedTips()
+    NtfManager:dispatchNtf(NtfManager.NTF.NET_MAIL_LIST)
+end
+
+function MailModule:onMailUpdate(event)
+    local proto = event.param
+    if proto.res >= 1 then
+        for _,v in ipairs(proto.mailId) do
+            local data = self:getMail(v.emailId)
+            if data then
+                data:setHaveRead()
+                data:setHaveDraw()
+                data:autoOrder()
+            end
+        end
+
+        NtfManager:dispatchNtf(NtfManager.NTF.NET_MAIL_LIST)
+        NtfManager:dispatchNtf(NtfManager.NTF.NET_MAIL_DRAW, { ids = proto.mailId })
+        self:checkRedTips()
+    end
+end
+
+function MailModule:onMailDelete(event)
+    local proto = event.param
+    if proto.res >= 1 then
+        for _,v in ipairs(proto.mailId) do
+            self:delMail(v.emailId)
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NET_MAIL_LIST)
+    end
+end
+
+function MailModule:onMailList(event)
+    self._mailArray = {}
+
+    local proto = event.param.emailList
+    for i,v in ipairs(proto) do
+        local data = MailData.new()
+        data:setRowID(v.rowID)
+        data:setSender(v.sender)
+        data:setTitle(v.title)
+        data:setDate(v.date)
+        data:setExpireDate(v.expireDate)
+        data:setEmailType(v.emailType)
+        data:setReadFlag(v.readFlag)
+        data:setDrawFlag(v.drawFlag)
+        data:autoOrder()
+
+        self._mailArray[#self._mailArray+1] = data
+    end
+
+    table.sort(self._mailArray, function(a, b)
+        if a:getOrder() ~= b:getOrder() then
+            return a:getOrder() < b:getOrder()
+        else
+            return a:getDate() > b:getDate()
+        end
+    end)
+
+    NtfManager:dispatchNtf(NtfManager.NTF.NET_MAIL_LIST)
+end
+
+function MailModule:onMailInfo(event)
+    local proto = event.param
+    local data = self:getMail(proto.rowID)
+    if data == nil then return end
+    data:setMailContent(proto.event)
+    data:setHaveRead()
+    data:autoOrder()
+
+    if proto.emailType > 2 then
+        local buffer
+        if proto.attachmentType == 0 then
+            buffer = netcmd_pb.EmaliItemList1()
+        else
+            buffer = netcmd_pb.EmaliItemList2()
+        end
+        local attachment = {}
+        if lt.PacketParser:parseBytesPacket(buffer, proto.emaliAttachInfo) then
+            attachment = {}
+            for _,v in ipairs(buffer.eItemList) do
+                local item = {}
+
+                if proto.attachmentType == 0 then
+                    item.itemType = v.itemType
+                    item.itemId = v.itemIdx
+                    item.itemNum = v.num
+                else
+                    local data = lt.ItemData.new(v.objID, v.objprops)
+                    item.itemType = data:getItemType()
+                    item.itemId = data:getItemId()
+                    item.itemNum = data:getNum()
+                    item.data = data
+                end
+
+                attachment[#attachment+1] = item
+            end
+
+
+            data:setMailAttachment(attachment)
+        end
+
+        --排序(装备，道具，金币)
+        table.sort(attachment, function(a, b)
+            return a.itemType > b.itemType
+        end)
+        data:setMailAttachment(attachment)
+    end
+
+    NtfManager:dispatchNtf(NtfManager.NTF.NET_MAIL_INFO, { data = data })
+    -- self:checkRedTips()
+end
+
+function MailModule:onMailAutoRead(event)
+    local proto = event.param
+    if proto.res >= 1 then
+        for _,v in ipairs(proto.mailId) do
+            local data = self:getMail(v.emailId)
+            data:setHaveRead()
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NET_MAIL_LIST)
+        self:checkRedTips()
+    end
+end
+
+function MailModule:reqMailList()
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_GET_MAIL_LIST_REQ))
+end
+
+function MailModule:reqMailInfo(id, emailType)
+    local msg = netcmd_pb.MeailInfoRequest()
+    msg.rowID = id
+    msg.emailType = emailType
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_GET_MAIL_INFO_REQ), msg)
+end
+
+function MailModule:reqDelMail(ids)
+    local msg = netcmd_pb.DeleteMailRes()
+    msg.mailId = {}
+
+    for _,v in ipairs(ids) do
+        local reqID = netcmd_pb.MailId()
+        reqID.emailId = v
+        msg.mailId[#msg.mailId+1] = reqID
+    end
+
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_DELETE_MAIL_REQ), msg)
+end
+
+function MailModule:reqDrawMail(ids)
+    local msg = netcmd_pb.ReceiveMailItem()
+    msg.mailId = {}
+
+    for _,v in ipairs(ids) do
+        local reqID = netcmd_pb.MailId()
+        reqID.emailId = v
+        msg.mailId[#msg.mailId+1] = reqID
+    end
+
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_RECEIVE_MAIL_ITEM_REQ), msg)
+end
+
+function MailModule:reqReadMail(ids)
+    local msg = netcmd_pb.OneClickRead()
+    msg.mailId = {}
+
+    for _,v in ipairs(ids) do
+        local reqID = netcmd_pb.MailId()
+        reqID.emailId = v
+        msg.mailId[#msg.mailId+1] = reqID
+    end
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_EMAIL_ONE_CLICK_READ_REQ), msg)
+end
+
+function MailModule:getListData()
+    return self._mailArray
+end
+
+function MailModule:getAutoDelMails()
+    local res = {}
+    for _,v in ipairs(self._mailArray) do
+        if (v:getEmailType() <= 2 and v:getReadFlag() == self.READ_STATE.READ) or (v:getEmailType() > 2 and v:getDrawFlag() == self.DRAW_STATE.DRAW) then
+            res[#res+1] = v:getRowID()
+        end
+    end
+    return res
+end
+
+function MailModule:getAutoDrawMails()
+    local res = {}
+    for _,v in ipairs(self._mailArray) do
+        if v:getEmailType() > 2 and v:getDrawFlag() == self.DRAW_STATE.UNDRAW then
+            res[#res+1] = v:getRowID()
+        end
+    end
+
+    return res
+end
+
+function MailModule:getAutoReadMails()
+    local res = {}
+    for _,v in ipairs(self._mailArray) do
+        if v:getReadFlag() == self.READ_STATE.READ then
+            res[#res+1] = v:getRowID()
+        end
+    end
+    return res
+end
+
+function MailModule:getAutoSpMails()
+    local res = {}
+    for _,v in ipairs(self._mailArray) do
+        if v:getReadFlag() == self.READ_STATE.READ and v:getEmailType() > 2 and v:getDrawFlag() == self.DRAW_STATE.UNDRAW then
+            res[#res+1] = v:getRowID()
+        end
+    end
+    return res
+end
+
+function MailModule:getMail(rowID)
+    for _,v in ipairs(self._mailArray) do
+        if v:getRowID() == rowID then
+            return v
+        end
+    end
+end
+
+function MailModule:delMail(rowID)
+    for i,v in ipairs(self._mailArray) do
+        if v:getRowID() == rowID then
+            table.remove(self._mailArray, i)
+            return
+        end
+    end
+end
+
+function MailModule:hasDrawMails()
+    for _,v in ipairs(self._mailArray) do
+        if v:getEmailType() > 2 and v:getDrawFlag() == self.DRAW_STATE.UNDRAW then
+            return true
+        end
+    end
+    return false
+end
+
+function MailModule:checkRedTips()
+    local b = false
+    for _,v in ipairs(self._mailArray) do
+        if v:getEmailType() > 2 then
+            if v:getDrawFlag() == self.DRAW_STATE.UNDRAW then
+                b = true
+                break
+            end
+        else
+            if v:getReadFlag() == self.READ_STATE.UNREAD then
+                b = true
+                break
+            end
+        end
+    end
+    self:setMailRedTips(b)
+end
+
+function MailModule:initRedTips()
+    lt.RedDotModule:createTipsNode("GameLayerUI_MailRedTips", "GameLayerUI_RelationRedTips")
+    self:checkRedTips()
+end
+
+function MailModule:setMailRedTips(bool)
+    lt.RedDotModule:setTipsStateByName("GameLayerUI_MailRedTips", bool)
+end
+
+function MailModule:getUnreadNum()
+    local num = 0
+    for _,v in ipairs(self._mailArray) do
+        if v:getReadFlag() == self.READ_STATE.UNREAD then
+            num = num + 1
+        end
+    end
+
+    return num
+end
+
+return MailModule

@@ -1,0 +1,3026 @@
+[
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_0",
+  "source": "确认",
+  "english": "OK",
+  "rect": [
+   238,
+   0,
+   49,
+   28
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_43",
+  "source": "不能参加",
+  "english": "Unavailable",
+  "rect": [
+   296,
+   2,
+   57,
+   26
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_45",
+  "source": "选择",
+  "english": "Select",
+  "rect": [
+   362,
+   0,
+   48,
+   28
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_46",
+  "source": "选择",
+  "english": "Select",
+  "rect": [
+   425,
+   0,
+   48,
+   29
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_4",
+  "source": "取消",
+  "english": "Cancel",
+  "rect": [
+   9,
+   25,
+   44,
+   26
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_40",
+  "source": "参加",
+  "english": "Join",
+  "rect": [
+   68,
+   24,
+   51,
+   29
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_42",
+  "source": "不能参加",
+  "english": "Unavailable",
+  "rect": [
+   126,
+   25,
+   56,
+   27
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_6",
+  "source": "关闭",
+  "english": "Close",
+  "rect": [
+   255,
+   32,
+   45,
+   26
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_7",
+  "source": "关闭",
+  "english": "Close",
+  "rect": [
+   318,
+   32,
+   46,
+   26
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_44",
+  "source": "选择",
+  "english": "Select",
+  "rect": [
+   377,
+   31,
+   50,
+   29
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_1",
+  "source": "确认",
+  "english": "OK",
+  "rect": [
+   441,
+   31,
+   50,
+   29
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_5",
+  "source": "取消",
+  "english": "Cancel",
+  "rect": [
+   134,
+   57,
+   45,
+   25
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_10",
+  "source": "帮助",
+  "english": "Help",
+  "rect": [
+   194,
+   62,
+   47,
+   28
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_41",
+  "source": "不能参加",
+  "english": "Unavailable",
+  "rect": [
+   250,
+   64,
+   57,
+   26
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_9",
+  "source": "帮助",
+  "english": "Help",
+  "rect": [
+   317,
+   63,
+   46,
+   26
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_8",
+  "source": "关闭",
+  "english": "Close",
+  "rect": [
+   382,
+   64,
+   44,
+   25
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_3",
+  "source": "取消",
+  "english": "Cancel",
+  "rect": [
+   442,
+   63,
+   44,
+   26
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_11",
+  "source": "帮助",
+  "english": "Help",
+  "rect": [
+   9,
+   87,
+   46,
+   27
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_39",
+  "source": "参加",
+  "english": "Join",
+  "rect": [
+   66,
+   86,
+   56,
+   29
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_0",
+  "source": "确认",
+  "english": "OK",
+  "rect": [
+   238,
+   0,
+   49,
+   28
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_43",
+  "source": "不能参加",
+  "english": "Unavailable",
+  "rect": [
+   296,
+   2,
+   57,
+   26
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_45",
+  "source": "选择",
+  "english": "Select",
+  "rect": [
+   362,
+   0,
+   48,
+   28
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_46",
+  "source": "选择",
+  "english": "Select",
+  "rect": [
+   425,
+   0,
+   48,
+   29
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_4",
+  "source": "取消",
+  "english": "Cancel",
+  "rect": [
+   9,
+   25,
+   44,
+   26
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_40",
+  "source": "参加",
+  "english": "Join",
+  "rect": [
+   68,
+   24,
+   51,
+   29
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_42",
+  "source": "不能参加",
+  "english": "Unavailable",
+  "rect": [
+   126,
+   25,
+   56,
+   27
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_6",
+  "source": "关闭",
+  "english": "Close",
+  "rect": [
+   255,
+   32,
+   45,
+   26
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_7",
+  "source": "关闭",
+  "english": "Close",
+  "rect": [
+   318,
+   32,
+   46,
+   26
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_44",
+  "source": "选择",
+  "english": "Select",
+  "rect": [
+   377,
+   31,
+   50,
+   29
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_1",
+  "source": "确认",
+  "english": "OK",
+  "rect": [
+   441,
+   31,
+   50,
+   29
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_5",
+  "source": "取消",
+  "english": "Cancel",
+  "rect": [
+   134,
+   57,
+   45,
+   25
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_10",
+  "source": "帮助",
+  "english": "Help",
+  "rect": [
+   194,
+   62,
+   47,
+   28
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_41",
+  "source": "不能参加",
+  "english": "Unavailable",
+  "rect": [
+   250,
+   64,
+   57,
+   26
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_9",
+  "source": "帮助",
+  "english": "Help",
+  "rect": [
+   317,
+   63,
+   46,
+   26
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_8",
+  "source": "关闭",
+  "english": "Close",
+  "rect": [
+   382,
+   64,
+   44,
+   25
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_3",
+  "source": "取消",
+  "english": "Cancel",
+  "rect": [
+   442,
+   63,
+   44,
+   26
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_11",
+  "source": "帮助",
+  "english": "Help",
+  "rect": [
+   9,
+   87,
+   46,
+   27
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_39",
+  "source": "参加",
+  "english": "Join",
+  "rect": [
+   66,
+   86,
+   56,
+   29
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Appearance_atlas0.png",
+  "sprite": "bg_ghxit_yijihuo",
+  "source": "已激活",
+  "english": "Active",
+  "rect": [
+   418,
+   1751,
+   49,
+   46
+  ]
+ },
+ {
+  "path": "res/launcherfgui/Login_atlas0.png",
+  "sprite": "bg_denglu_icon",
+  "source": "适龄提示",
+  "english": "Age Rating",
+  "rect": [
+   50,
+   818,
+   701,
+   222
+  ]
+ },
+ {
+  "path": "res/launcherfgui/Login_atlas0.png",
+  "sprite": "tiiile_denglu_zi",
+  "source": "一归来一",
+  "english": "One return one",
+  "rect": [
+   855,
+   1594,
+   167,
+   76
+  ]
+ },
+ {
+  "path": "res/launcherfgui/Login_atlas0.png",
+  "sprite": "tiiile_denglu_dian",
+  "source": "点击选服",
+  "english": "Select Server",
+  "rect": [
+   1925,
+   1964,
+   106,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Activity_atlas0.png",
+  "sprite": "title_sc_gl02",
+  "source": "归来谢礼",
+  "english": "Return thank you gift",
+  "rect": [
+   455,
+   1254,
+   269,
+   89
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Activity_atlas0.png",
+  "sprite": "title_sc_gl03",
+  "source": "归来豪礼",
+  "english": "Welcome Gifts",
+  "rect": [
+   456,
+   1368,
+   267,
+   86
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Activity_atlas0.png",
+  "sprite": "title_sc_yccz",
+  "source": "一次充值，畅享三日",
+  "english": "Recharge once and enjoy for three days",
+  "rect": [
+   734,
+   1369,
+   276,
+   37
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Activity_atlas0.png",
+  "sprite": "title_sc_gl01",
+  "source": "归来礼遇",
+  "english": "Welcome Rewards",
+  "rect": [
+   749,
+   1254,
+   266,
+   89
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Chat_atlas0.png",
+  "sprite": "bg_liaotian_tongzu1",
+  "source": "同族",
+  "english": "same family",
+  "rect": [
+   1128,
+   414,
+   46,
+   26
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Chat_atlas0.png",
+  "sprite": "bg_liaotian_quyu1",
+  "source": "区域",
+  "english": "area",
+  "rect": [
+   1990,
+   98,
+   46,
+   26
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Chat_atlas0.png",
+  "sprite": "bg_liaotian_hanghui1",
+  "source": "公会",
+  "english": "Guild",
+  "rect": [
+   1988,
+   285,
+   46,
+   26
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Chat_atlas0.png",
+  "sprite": "bg_liaotian_fujin1",
+  "source": "附近",
+  "english": "nearby",
+  "rect": [
+   1988,
+   313,
+   46,
+   26
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Chat_atlas0.png",
+  "sprite": "bg_liaotian_lianmeng1",
+  "source": "联盟",
+  "english": "Alliance",
+  "rect": [
+   468,
+   903,
+   46,
+   26
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Chat_atlas0.png",
+  "sprite": "bg_liaotian_xitong1",
+  "source": "系统",
+  "english": "System",
+  "rect": [
+   468,
+   996,
+   46,
+   26
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Chat_atlas0.png",
+  "sprite": "bg_liaotian_siliao",
+  "source": "私聊",
+  "english": "Private chat",
+  "rect": [
+   1890,
+   985,
+   46,
+   26
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/DailySpecialGiftBag_atlas0.png",
+  "sprite": "title_ttcz_czbdflbd",
+  "source": "充值不断福利不断",
+  "english": "Top Up for Rewards",
+  "rect": [
+   1062,
+   467,
+   395,
+   58
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/DailySpecialGiftBag_atlas0.png",
+  "sprite": "title_mrh_bt",
+  "source": "每日特惠",
+  "english": "Daily Deals",
+  "rect": [
+   1514,
+   467,
+   197,
+   62
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/CreateRole_atlas0.png",
+  "sprite": "bg_jsxzjm_yishuzi",
+  "source": "请选择一个角色",
+  "english": "Select Character",
+  "rect": [
+   1149,
+   689,
+   321,
+   29
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "BackGroundWithTitle",
+  "source": "天之炼狱控制台",
+  "english": "Heavenly Purgatory Console",
+  "rect": [
+   1,
+   13,
+   153,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "天之炼狱控制台",
+  "english": "Heavenly Purgatory Console",
+  "rect": [
+   2,
+   432,
+   151,
+   31
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "属性设置",
+  "english": "attribute settings",
+  "rect": [
+   26,
+   480,
+   86,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "道具清单",
+  "english": "prop list",
+  "rect": [
+   149,
+   478,
+   89,
+   35
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "装备清单",
+  "english": "equipment list",
+  "rect": [
+   274,
+   478,
+   89,
+   36
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图传送",
+  "english": "map transfer",
+  "rect": [
+   400,
+   478,
+   89,
+   35
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "怪物刷新",
+  "english": "monster refresh",
+  "rect": [
+   526,
+   478,
+   89,
+   36
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "暂未开发",
+  "english": "Not developed yet",
+  "rect": [
+   651,
+   479,
+   89,
+   35
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地上地图",
+  "english": "Ground map",
+  "rect": [
+   14,
+   524,
+   81,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地下副本",
+  "english": "underground copy",
+  "rect": [
+   14,
+   567,
+   80,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图名称",
+  "english": "map name",
+  "rect": [
+   158,
+   574,
+   82,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图名称",
+  "english": "map name",
+  "rect": [
+   318,
+   574,
+   81,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图名称",
+  "english": "map name",
+  "rect": [
+   475,
+   574,
+   81,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图名称",
+  "english": "map name",
+  "rect": [
+   631,
+   574,
+   81,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "外部副本",
+  "english": "external copy",
+  "rect": [
+   16,
+   612,
+   76,
+   29
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图传送",
+  "english": "map transfer",
+  "rect": [
+   15,
+   654,
+   78,
+   30
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图名称",
+  "english": "map name",
+  "rect": [
+   158,
+   656,
+   82,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图名称",
+  "english": "map name",
+  "rect": [
+   318,
+   656,
+   81,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图名称",
+  "english": "map name",
+  "rect": [
+   475,
+   656,
+   81,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图名称",
+  "english": "map name",
+  "rect": [
+   630,
+   656,
+   81,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "怪物刷新",
+  "english": "monster refresh",
+  "rect": [
+   16,
+   698,
+   78,
+   29
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "怪物刷新",
+  "english": "monster refresh",
+  "rect": [
+   17,
+   740,
+   75,
+   29
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图名称",
+  "english": "map name",
+  "rect": [
+   159,
+   739,
+   81,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图名称",
+  "english": "map name",
+  "rect": [
+   317,
+   736,
+   82,
+   36
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图名称",
+  "english": "map name",
+  "rect": [
+   473,
+   736,
+   83,
+   36
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图名称",
+  "english": "map name",
+  "rect": [
+   630,
+   736,
+   82,
+   36
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "怪物刷新",
+  "english": "monster refresh",
+  "rect": [
+   16,
+   782,
+   79,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图名称",
+  "english": "map name",
+  "rect": [
+   159,
+   820,
+   80,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图名称",
+  "english": "map name",
+  "rect": [
+   318,
+   820,
+   81,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图名称",
+  "english": "map name",
+  "rect": [
+   475,
+   820,
+   81,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Group 1336",
+  "source": "地图名称",
+  "english": "map name",
+  "rect": [
+   632,
+   820,
+   80,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "天之炼狱控制台",
+  "english": "Heavenly Purgatory Console",
+  "rect": [
+   773,
+   13,
+   151,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "属性设置",
+  "english": "attribute settings",
+  "rect": [
+   796,
+   61,
+   86,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "道具清单",
+  "english": "prop list",
+  "rect": [
+   922,
+   62,
+   86,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "装备清单",
+  "english": "equipment list",
+  "rect": [
+   1047,
+   61,
+   86,
+   33
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "地图传送",
+  "english": "map transfer",
+  "rect": [
+   1172,
+   61,
+   87,
+   33
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "怪物刷新",
+  "english": "monster refresh",
+  "rect": [
+   1298,
+   62,
+   87,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "暂未开发",
+  "english": "Not developed yet",
+  "rect": [
+   1423,
+   62,
+   86,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "基础属性",
+  "english": "Basic attributes",
+  "rect": [
+   787,
+   107,
+   78,
+   30
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "玩家货币",
+  "english": "player currency",
+  "rect": [
+   898,
+   111,
+   80,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "应用",
+  "english": "Application",
+  "rect": [
+   1445,
+   111,
+   47,
+   31
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "玩家属性",
+  "english": "player attributes",
+  "rect": [
+   787,
+   150,
+   77,
+   30
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "玩家等级",
+  "english": "player level",
+  "rect": [
+   899,
+   155,
+   79,
+   29
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "应用",
+  "english": "Application",
+  "rect": [
+   1445,
+   153,
+   47,
+   31
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "武器装备",
+  "english": "weapons and equipment",
+  "rect": [
+   787,
+   193,
+   76,
+   30
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "玩家转职等级",
+  "english": "player transfer level\nFor",
+  "rect": [
+   900,
+   197,
+   110,
+   29
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "应用",
+  "english": "Application",
+  "rect": [
+   1446,
+   195,
+   46,
+   31
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "地图传送",
+  "english": "map transfer",
+  "rect": [
+   785,
+   236,
+   78,
+   30
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "玩家属性点",
+  "english": "player attribute points",
+  "rect": [
+   899,
+   239,
+   95,
+   29
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "应用",
+  "english": "Application",
+  "rect": [
+   1446,
+   237,
+   46,
+   31
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "怪物刷新",
+  "english": "monster refresh",
+  "rect": [
+   788,
+   279,
+   77,
+   30
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "玩家力量值",
+  "english": "player strength value",
+  "rect": [
+   899,
+   281,
+   94,
+   29
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "应用",
+  "english": "Application",
+  "rect": [
+   1445,
+   279,
+   47,
+   31
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "怪物刷新",
+  "english": "monster refresh",
+  "rect": [
+   788,
+   321,
+   75,
+   30
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "玩家敏捷值",
+  "english": "player agility value",
+  "rect": [
+   899,
+   323,
+   95,
+   29
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "应用",
+  "english": "Application",
+  "rect": [
+   1446,
+   321,
+   46,
+   31
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "怪物刷新",
+  "english": "monster refresh",
+  "rect": [
+   788,
+   366,
+   77,
+   29
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "玩家智力值",
+  "english": "player intelligence value",
+  "rect": [
+   899,
+   365,
+   94,
+   29
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Prototype",
+  "source": "应用",
+  "english": "Application",
+  "rect": [
+   1445,
+   363,
+   47,
+   31
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/GM3_atlas0.png",
+  "sprite": "Function_Apply",
+  "source": "应用",
+  "english": "Application",
+  "rect": [
+   339,
+   904,
+   43,
+   28
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Guild_atlas0.png",
+  "sprite": "bg_gonghuixt_mengyou_02",
+  "source": "我的公会",
+  "english": "My guild",
+  "rect": [
+   578,
+   533,
+   91,
+   31
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Guild_atlas0.png",
+  "sprite": "btn_gonghuixt_02",
+  "source": "同盟援助",
+  "english": "Alliance Assistance",
+  "rect": [
+   572,
+   621,
+   97,
+   33
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Guild_atlas0.png",
+  "sprite": "btn_gonghuixt_01",
+  "source": "联系会长",
+  "english": "Contact the president",
+  "rect": [
+   572,
+   691,
+   75,
+   26
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Guild_atlas0.png",
+  "sprite": "bg_gonghuixt_mengyou_01",
+  "source": "联盟公会",
+  "english": "Alliance Guild",
+  "rect": [
+   1884,
+   1022,
+   91,
+   30
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Guild_atlas0.png",
+  "sprite": "file_40",
+  "source": "龍",
+  "english": "Dragon",
+  "rect": [
+   654,
+   1568,
+   40,
+   40
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/HolyFight_atlas0.png",
+  "sprite": "bg_gcz_plnjzsol",
+  "source": "佩罗娜激战",
+  "english": "Perona Fierce Battle",
+  "rect": [
+   693,
+   779,
+   186,
+   51
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/HolyFight_atlas0.png",
+  "sprite": "bg_gcz_yijisha",
+  "source": "已击杀",
+  "english": "has been killed",
+  "rect": [
+   480,
+   1866,
+   53,
+   53
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/HolyFight_atlas0.png",
+  "sprite": "bg_gcz_gcxx",
+  "source": "攻城信息",
+  "english": "Siege information",
+  "rect": [
+   125,
+   2005,
+   120,
+   33
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/HolyFight_atlas0.png",
+  "sprite": "bg_gcz_sszdzsol",
+  "source": "圣书争夺战",
+  "english": "Battle for the Holy Book",
+  "rect": [
+   828,
+   1956,
+   184,
+   50
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/HolyFight_atlas0.png",
+  "sprite": "bg_gcz_cbzdzsol",
+  "source": "城堡争夺战",
+  "english": "Battle for the Castle",
+  "rect": [
+   1036,
+   1952,
+   188,
+   56
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Main_atlas0.png",
+  "sprite": "icon_zxrw_01",
+  "source": "任务",
+  "english": "Quests",
+  "rect": [
+   30,
+   77,
+   59,
+   40
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Main_atlas0.png",
+  "sprite": "bth_zjm_qiehuananniu",
+  "source": "切换",
+  "english": "Switch",
+  "rect": [
+   310,
+   291,
+   38,
+   21
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Main_atlas0.png",
+  "sprite": "bth_zjm_qiehuananniu_s",
+  "source": "切换",
+  "english": "Switch",
+  "rect": [
+   201,
+   391,
+   50,
+   33
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Main_atlas0.png",
+  "sprite": "bth_zjm_qiehuananniu_o",
+  "source": "切换",
+  "english": "Switch",
+  "rect": [
+   254,
+   479,
+   48,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Main_atlas0.png",
+  "sprite": "icon_zjm_man",
+  "source": "满",
+  "english": "Full",
+  "rect": [
+   448,
+   504,
+   31,
+   31
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Main_atlas0.png",
+  "sprite": "bth_zjm_jinenganniu_v",
+  "source": "技能",
+  "english": "Skills",
+  "rect": [
+   80,
+   527,
+   56,
+   35
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Main_atlas0.png",
+  "sprite": "bth_zjm_qiehuananniu_v",
+  "source": "切换",
+  "english": "Switch",
+  "rect": [
+   200,
+   531,
+   50,
+   33
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Main_atlas0.png",
+  "sprite": "bth_zjm_jinenganniu_s",
+  "source": "技能",
+  "english": "Skills",
+  "rect": [
+   7,
+   560,
+   55,
+   35
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Main_atlas0.png",
+  "sprite": "bth_zjm_jinenganniu_o",
+  "source": "技能",
+  "english": "Skills",
+  "rect": [
+   6,
+   663,
+   56,
+   36
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Main_atlas0.png",
+  "sprite": "bth_zjm_qiehuan",
+  "source": "切换",
+  "english": "Switch",
+  "rect": [
+   0,
+   782,
+   62,
+   58
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Main_atlas0_1.png",
+  "sprite": "bg_zdzd_wenzi",
+  "source": "自动战斗中...",
+  "english": "Automatic battle...",
+  "rect": [
+   429,
+   1786,
+   142,
+   31
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/MonthCard_atlas0.png",
+  "sprite": "bg_monthcard_dikuang",
+  "source": "月",
+  "english": "Pass",
+  "rect": [
+   126,
+   96,
+   136,
+   170
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/MonthCard_atlas0.png",
+  "sprite": "title_monthcard_yktq",
+  "source": "月卡特权",
+  "english": "Monthly Pass",
+  "rect": [
+   0,
+   457,
+   178,
+   47
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/MiniMap_atlas0.png",
+  "sprite": "icon_sjditu_wenzi",
+  "source": "文",
+  "english": "Quest",
+  "rect": [
+   716,
+   717,
+   22,
+   22
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Mount_atlas0.png",
+  "sprite": "bg_cwzq_syz",
+  "source": "使用中",
+  "english": "Equipped",
+  "rect": [
+   1981,
+   161,
+   48,
+   49
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Mount_atlas0.png",
+  "sprite": "bg_cwzq_dqsx",
+  "source": "当前属性",
+  "english": "Current Stats",
+  "rect": [
+   1720,
+   1729,
+   80,
+   22
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Mount_atlas0.png",
+  "sprite": "tittle_zhuangbei_jiantou",
+  "source": "已满级",
+  "english": "Max Level",
+  "rect": [
+   1836,
+   1884,
+   86,
+   33
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Pet_atlas0.png",
+  "sprite": "bg_cwsx_siliao",
+  "source": "饲料",
+  "english": "feed",
+  "rect": [
+   1259,
+   873,
+   24,
+   49
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Pet_atlas0.png",
+  "sprite": "icon_cwxxjm_pifuanniu",
+  "source": "皮肤",
+  "english": "skin",
+  "rect": [
+   1213,
+   1035,
+   44,
+   28
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Pet_atlas0.png",
+  "sprite": "bg_cwsx_syz",
+  "source": "使用中",
+  "english": "Equipped",
+  "rect": [
+   1213,
+   1111,
+   42,
+   43
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Pet_atlas0.png",
+  "sprite": "bg_cwxxjm_shibai",
+  "source": "、驯养失败",
+  "english": ", domestication failed",
+  "rect": [
+   1791,
+   1238,
+   237,
+   73
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Pet_atlas0.png",
+  "sprite": "bg_cwxxjm_zhaohuan",
+  "source": "召",
+  "english": "Summon",
+  "rect": [
+   106,
+   1862,
+   24,
+   25
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Pet_atlas0.png",
+  "sprite": "tittle_zhuangbei_jiantou",
+  "source": "已满级",
+  "english": "Max Level",
+  "rect": [
+   324,
+   1901,
+   86,
+   33
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Pet_atlas0.png",
+  "sprite": "bg_cwxxjm_chengong",
+  "source": "驯养成功",
+  "english": "domesticated successfully",
+  "rect": [
+   232,
+   1951,
+   219,
+   61
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Pet_atlas0.png",
+  "sprite": "btn_cwsx_yiwang",
+  "source": "遗忘",
+  "english": "Forgotten",
+  "rect": [
+   2011,
+   1912,
+   35,
+   25
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/RewardTips_atlas0.png",
+  "sprite": "bg_hdwp_title",
+  "source": "获得物品",
+  "english": "Items Obtained",
+  "rect": [
+   0,
+   132,
+   149,
+   40
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Recharge_atlas0.png",
+  "sprite": "btn_sdiancz_chonzhi",
+  "source": "充值",
+  "english": "Top Up",
+  "rect": [
+   310,
+   1417,
+   79,
+   45
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Recharge_atlas0.png",
+  "sprite": "btn_sdiancz_tctips_03",
+  "source": "最大",
+  "english": "Max",
+  "rect": [
+   869,
+   1232,
+   59,
+   37
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Recharge_atlas0.png",
+  "sprite": "btn_sdiancz_goumaian",
+  "source": "购买",
+  "english": "Buy",
+  "rect": [
+   626,
+   1754,
+   78,
+   45
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Recharge_atlas0.png",
+  "sprite": "bg_sdiancz_xiao_01",
+  "source": "热",
+  "english": "Hot",
+  "rect": [
+   384,
+   1872,
+   42,
+   40
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Recharge_atlas0.png",
+  "sprite": "btn_sdiancz_goumaixiao",
+  "source": "购买",
+  "english": "Buy",
+  "rect": [
+   911,
+   1955,
+   67,
+   39
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Recharge_atlas0.png",
+  "sprite": "bg_sdiancz_biaoti",
+  "source": "商城",
+  "english": "Shop",
+  "rect": [
+   903,
+   1996,
+   80,
+   46
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Skill_atlas0.png",
+  "sprite": "trace_bg",
+  "source": "追踪ID",
+  "english": "Tracking ID",
+  "rect": [
+   11,
+   201,
+   53,
+   24
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Skill_atlas0.png",
+  "sprite": "ct2",
+  "source": "追踪取消",
+  "english": "Cancel",
+  "rect": [
+   344,
+   653,
+   69,
+   19
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Skill_atlas0.png",
+  "sprite": "jy1",
+  "source": "追踪开始",
+  "english": "Track",
+  "rect": [
+   489,
+   655,
+   70,
+   19
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Skill_atlas0.png",
+  "sprite": "dj1",
+  "source": "追踪开始",
+  "english": "Track",
+  "rect": [
+   169,
+   756,
+   70,
+   19
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Skill_atlas0.png",
+  "sprite": "ct1",
+  "source": "追踪开始",
+  "english": "Track",
+  "rect": [
+   250,
+   744,
+   69,
+   19
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Skill_atlas0.png",
+  "sprite": "dj2",
+  "source": "追踪取消",
+  "english": "Cancel",
+  "rect": [
+   403,
+   749,
+   71,
+   19
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Skill_atlas4.png",
+  "sprite": "tittle_lunpan_zi",
+  "source": "已装备",
+  "english": "Equipped",
+  "rect": [
+   0,
+   76,
+   58,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/SevenDays_atlas0.png",
+  "sprite": "title_qrqsl_qrqsl",
+  "source": "七日启示录",
+  "english": "Seven-Day Rewards",
+  "rect": [
+   1770,
+   191,
+   241,
+   50
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/SevenDays_atlas0.png",
+  "sprite": "icon_qrqsl_huoyuedu",
+  "source": "活跃度",
+  "english": "Activity",
+  "rect": [
+   1707,
+   257,
+   55,
+   26
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Task_atlas0.png",
+  "sprite": "bg_rcrw_huoyuedu",
+  "source": "活跃度",
+  "english": "Activity",
+  "rect": [
+   493,
+   979,
+   73,
+   27
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Strengthen_atlas0.png",
+  "sprite": "bg_zhuangbei_beixiaohao",
+  "source": "被消耗",
+  "english": "Consumed",
+  "rect": [
+   648,
+   553,
+   79,
+   34
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Strengthen_atlas0.png",
+  "sprite": "tittle_zhuangbei_jiantou",
+  "source": "已满级",
+  "english": "Max Level",
+  "rect": [
+   1500,
+   578,
+   86,
+   33
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Strengthen_atlas0.png",
+  "sprite": "bg_zhuangbei_yimanjie",
+  "source": "已满阶",
+  "english": "Max Rank",
+  "rect": [
+   1153,
+   953,
+   96,
+   41
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Strengthen_atlas0.png",
+  "sprite": "bg_zhuangbei_yimanji",
+  "source": "已满级",
+  "english": "Max Level",
+  "rect": [
+   802,
+   986,
+   94,
+   37
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Transaction_atlas0.png",
+  "sprite": "bg_pmg_ygq",
+  "source": "已过期",
+  "english": "Expired",
+  "rect": [
+   1133,
+   7,
+   77,
+   64
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Transaction_atlas0.png",
+  "sprite": "bg_pmh_qtsh",
+  "source": "青铜商会",
+  "english": "Bronze Chamber of Commerce",
+  "rect": [
+   920,
+   100,
+   101,
+   30
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Transaction_atlas0.png",
+  "sprite": "bg_pmg_gongshizhong",
+  "source": "公示中",
+  "english": "Listed",
+  "rect": [
+   1030,
+   72,
+   81,
+   69
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Transaction_atlas0.png",
+  "sprite": "bg_pmh_yijingjia",
+  "source": "已竞价",
+  "english": "Bid Placed",
+  "rect": [
+   935,
+   132,
+   68,
+   31
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Transaction_atlas0.png",
+  "sprite": "bg_pmh_yiguoqi",
+  "source": "已过期",
+  "english": "Expired",
+  "rect": [
+   1060,
+   147,
+   46,
+   48
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Transaction_atlas0.png",
+  "sprite": "btn_pmh_max_s",
+  "source": "最大",
+  "english": "Max",
+  "rect": [
+   341,
+   895,
+   52,
+   34
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Transaction_atlas0.png",
+  "sprite": "btn_pmh_max_o",
+  "source": "最大",
+  "english": "Max",
+  "rect": [
+   341,
+   931,
+   52,
+   34
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Transaction_atlas0.png",
+  "sprite": "btn_pmh_max_v",
+  "source": "最大",
+  "english": "Max",
+  "rect": [
+   341,
+   967,
+   52,
+   34
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_biaoti02",
+  "source": "交易记录",
+  "english": "transaction record",
+  "rect": [
+   1866,
+   118,
+   120,
+   33
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_biaoti03",
+  "source": "参考价格",
+  "english": "reference price",
+  "rect": [
+   1866,
+   153,
+   120,
+   34
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_biaoti07",
+  "source": "购买商品",
+  "english": "Purchase product",
+  "rect": [
+   1866,
+   189,
+   119,
+   33
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_biaoti05",
+  "source": "上架商品",
+  "english": "products on the shelves",
+  "rect": [
+   1866,
+   224,
+   119,
+   33
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_biaoti04",
+  "source": "下架商品",
+  "english": "removed product",
+  "rect": [
+   1866,
+   259,
+   119,
+   33
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_biaoti06",
+  "source": "竞价商品",
+  "english": "bidding product",
+  "rect": [
+   1866,
+   294,
+   118,
+   33
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_yiguoqi",
+  "source": "已过期",
+  "english": "Expired",
+  "rect": [
+   1986,
+   294,
+   46,
+   48
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_wenzi01",
+  "source": "确定购买",
+  "english": "Confirm purchase",
+  "rect": [
+   1867,
+   332,
+   111,
+   34
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_wenzi02",
+  "source": "确定竞价",
+  "english": "Confirm the bid",
+  "rect": [
+   1868,
+   371,
+   107,
+   34
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_wenzi05",
+  "source": "重新上架",
+  "english": "is back on the shelves",
+  "rect": [
+   1868,
+   411,
+   105,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_hjsh",
+  "source": "黄金商会",
+  "english": "Gold Chamber of Commerce",
+  "rect": [
+   1866,
+   447,
+   100,
+   30
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_zssh",
+  "source": "钻石商会",
+  "english": "Diamond Chamber of Commerce",
+  "rect": [
+   1866,
+   479,
+   100,
+   30
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_biaoti01",
+  "source": "交易行",
+  "english": "Trading House",
+  "rect": [
+   0,
+   1180,
+   90,
+   33
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_qtsh",
+  "source": "青铜商会",
+  "english": "Bronze Chamber of Commerce",
+  "rect": [
+   1905,
+   1014,
+   100,
+   30
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_rysh",
+  "source": "荣耀商会",
+  "english": "Glory Chamber of Commerce",
+  "rect": [
+   1905,
+   1046,
+   100,
+   30
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_bysh",
+  "source": "白银商会",
+  "english": "Silver Chamber of Commerce",
+  "rect": [
+   1905,
+   1078,
+   98,
+   30
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmg_gongshizhong",
+  "source": "公示中",
+  "english": "Listed",
+  "rect": [
+   1912,
+   1116,
+   81,
+   69
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian03_1",
+  "source": "惊喜",
+  "english": "surprise",
+  "rect": [
+   909,
+   11,
+   62,
+   38
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian03_1",
+  "source": "一临时",
+  "english": "a temporary",
+  "rect": [
+   786,
+   23,
+   58,
+   30
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian03_1",
+  "source": "首充回馈",
+  "english": "first charge feedback",
+  "rect": [
+   860,
+   40,
+   111,
+   36
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian01",
+  "source": "惊喜",
+  "english": "surprise",
+  "rect": [
+   890,
+   98,
+   56,
+   34
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian01",
+  "source": "临时",
+  "english": "temporary",
+  "rect": [
+   781,
+   108,
+   50,
+   27
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian01",
+  "source": "首充回馈",
+  "english": "first charge feedback",
+  "rect": [
+   848,
+   123,
+   97,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "bg_czhk_yuanhua",
+  "source": "一临时一",
+  "english": "One temporary one",
+  "rect": [
+   216,
+   120,
+   73,
+   37
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian02",
+  "source": "惊喜",
+  "english": "surprise",
+  "rect": [
+   890,
+   177,
+   56,
+   34
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian02",
+  "source": "临时",
+  "english": "temporary",
+  "rect": [
+   781,
+   187,
+   50,
+   27
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian02",
+  "source": "首充回馈",
+  "english": "first charge feedback",
+  "rect": [
+   848,
+   202,
+   97,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian03",
+  "source": "惊喜",
+  "english": "surprise",
+  "rect": [
+   890,
+   256,
+   56,
+   34
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian03",
+  "source": "临时",
+  "english": "temporary",
+  "rect": [
+   781,
+   266,
+   50,
+   27
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian03",
+  "source": "首充回馈",
+  "english": "first charge feedback",
+  "rect": [
+   848,
+   281,
+   97,
+   32
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "title_czhk_sjjxczhk",
+  "source": "4级惊喜充值回馈",
+  "english": "Level 4 surprise recharge feedback",
+  "rect": [
+   489,
+   551,
+   354,
+   58
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian01_1",
+  "source": "惊喜",
+  "english": "surprise",
+  "rect": [
+   149,
+   770,
+   62,
+   38
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian01_1",
+  "source": "一临时",
+  "english": "a temporary",
+  "rect": [
+   26,
+   782,
+   58,
+   30
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian01_1",
+  "source": "首充回馈",
+  "english": "first charge feedback",
+  "rect": [
+   100,
+   799,
+   111,
+   36
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian02_1",
+  "source": "惊喜",
+  "english": "surprise",
+  "rect": [
+   374,
+   770,
+   62,
+   38
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian02_1",
+  "source": "一临时",
+  "english": "a temporary",
+  "rect": [
+   251,
+   782,
+   58,
+   30
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/TriggerGift_atlas0.png",
+  "sprite": "btn_czhk_yeqian02_1",
+  "source": "首充回馈",
+  "english": "first charge feedback",
+  "rect": [
+   325,
+   799,
+   111,
+   36
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Vip_atlas0.png",
+  "sprite": "icon_vip_cangku",
+  "source": "仓库",
+  "english": "Warehouse",
+  "rect": [
+   1971,
+   46,
+   63,
+   39
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Vip_atlas0.png",
+  "sprite": "icon_vip_xiuli",
+  "source": "修理",
+  "english": "repair",
+  "rect": [
+   1972,
+   138,
+   61,
+   36
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Vip_atlas0.png",
+  "sprite": "icon_vip_chushou",
+  "source": "出售",
+  "english": "Sell",
+  "rect": [
+   1973,
+   227,
+   58,
+   37
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Vip_atlas0.png",
+  "sprite": "bg_vip_xinbiaoqian",
+  "source": "新！",
+  "english": "New!",
+  "rect": [
+   1963,
+   266,
+   51,
+   29
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Vip_atlas0.png",
+  "sprite": "bg_vip_viptequan",
+  "source": "VIP特权",
+  "english": "VIP privileges",
+  "rect": [
+   1620,
+   525,
+   110,
+   39
+  ]
+ },
+ {
+  "path": "win32/res/ui/art/hangup_label.png",
+  "sprite": "hangup_label",
+  "source": "自动挂机中...",
+  "english": "automatically hangs up...",
+  "rect": [
+   3,
+   5,
+   176,
+   42
+  ]
+ },
+ {
+  "path": "win32/res/ui/art/img_find_route.png",
+  "sprite": "img_find_route",
+  "source": "自动寻路中...",
+  "english": "Automatic path finding...",
+  "rect": [
+   4,
+   6,
+   173,
+   40
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Welfare_atlas0.png",
+  "sprite": "title_fl_qirisol",
+  "source": "每日签到每日豪礼享不停",
+  "english": "Sign in every day and enjoy daily luxury gifts",
+  "rect": [
+   33,
+   789,
+   530,
+   54
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Welfare_atlas0.png",
+  "sprite": "title_fl_djdbhlfs",
+  "source": "等级达标 豪礼放送！",
+  "english": "reaches the standard and gets generous gifts!",
+  "rect": [
+   34,
+   856,
+   412,
+   56
+  ]
+ },
+ {
+  "path": "win32/res/ui/guide/file_40.png",
+  "sprite": "file_40",
+  "source": "龍",
+  "english": "Dragon",
+  "rect": [
+   0,
+   0,
+   40,
+   40
+  ]
+ },
+ {
+  "path": "win32/res/ui/guide/file_71.png",
+  "sprite": "file_71",
+  "source": "龍",
+  "english": "Dragon",
+  "rect": [
+   0,
+   0,
+   40,
+   40
+  ]
+ },
+ {
+  "path": "win32/res/ui/init/btn_confirm_create.png",
+  "sprite": "btn_confirm_create",
+  "source": "确定",
+  "english": "OK",
+  "rect": [
+   24,
+   1,
+   60,
+   34
+  ]
+ },
+ {
+  "path": "win32/res/ui/init/btn_start_game.png",
+  "sprite": "btn_start_game",
+  "source": "进入游戏",
+  "english": "Enter the game",
+  "rect": [
+   51,
+   27,
+   129,
+   30
+  ]
+ },
+ {
+  "path": "res/launcher/Constituency_Btn_Notice.png",
+  "sprite": "Constituency_Btn_Notice",
+  "source": "游戏公告",
+  "english": "Game Announcement",
+  "rect": [
+   0,
+   38,
+   67,
+   23
+  ]
+ },
+ {
+  "path": "res/launcher/Constituency_Btn_Switch.png",
+  "sprite": "Constituency_Btn_Switch",
+  "source": "切换账号",
+  "english": "Switch account",
+  "rect": [
+   0,
+   39,
+   67,
+   22
+  ]
+ },
+ {
+  "path": "res/launcher/start_game.png",
+  "sprite": "start_game",
+  "source": "进入游戏",
+  "english": "Enter the game",
+  "rect": [
+   0,
+   0,
+   112,
+   21
+  ]
+ },
+ {
+  "path": "@android/res/drawable-hdpi/icon_content_end.png",
+  "sprite": "icon_content_end",
+  "source": "当前聊天会话已结束",
+  "english": "Chat session ended",
+  "rect": [
+   248,
+   0,
+   228,
+   24
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Skill_atlas0.png",
+  "sprite": "bg_jnlp_qiehuan01",
+  "source": "切换",
+  "english": "Switch",
+  "rect": [
+   633,
+   56,
+   49,
+   39
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Chat_atlas0.png",
+  "sprite": "bg_liaotian_shijie1",
+  "source": "世界",
+  "english": "World",
+  "rect": [
+   516,
+   903,
+   46,
+   26
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Chat_atlas0.png",
+  "sprite": "bg_liaotian_zudui1",
+  "source": "组队",
+  "english": "Party",
+  "rect": [
+   1176,
+   414,
+   46,
+   26
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Guild_atlas0.png",
+  "sprite": "file_78",
+  "source": "英雄",
+  "english": "Hero",
+  "rect": [
+   758,
+   1904,
+   40,
+   38
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Mount_atlas0.png",
+  "sprite": "bg_cwzq_xjsx",
+  "source": "下级属性",
+  "english": "Next Level Stats",
+  "rect": [
+   1924,
+   1884,
+   80,
+   22
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Recharge_atlas0.png",
+  "sprite": "bg_sdiancz_da_01",
+  "source": "首充两倍",
+  "english": "First Buy 2x",
+  "rect": [
+   624,
+   1934,
+   79,
+   76
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Skill_atlas0.png",
+  "sprite": "jy2",
+  "source": "追踪取消",
+  "english": "Cancel",
+  "rect": [
+   416,
+   655,
+   71,
+   19
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_yijingjia",
+  "source": "已竞价",
+  "english": "Bid Placed",
+  "rect": [
+   107,
+   1180,
+   69,
+   31
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_wenzi04",
+  "source": "下架",
+  "english": "Remove",
+  "rect": [
+   1969,
+   447,
+   61,
+   38
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_wenzi03",
+  "source": "确定",
+  "english": "OK",
+  "rect": [
+   1979,
+   369,
+   62,
+   38
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Trade_atlas0.png",
+  "sprite": "bg_pmh_zhengping",
+  "source": "珍品",
+  "english": "Rare",
+  "rect": [
+   1591,
+   940,
+   41,
+   42
+  ]
+ },
+ {
+  "path": "win32/res/fairygui/Transaction_atlas0.png",
+  "sprite": "bg_pmh_zhengping",
+  "source": "珍品",
+  "english": "Rare",
+  "rect": [
+   1118,
+   151,
+   41,
+   42
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_47",
+  "source": "更改",
+  "english": "Change",
+  "rect": [
+   191,
+   31,
+   54,
+   29
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_38",
+  "source": "参加",
+  "english": "Join",
+  "rect": [
+   129,
+   86,
+   55,
+   29
+  ]
+ },
+ {
+  "path": "res/tzly/Common_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_2",
+  "source": "确认",
+  "english": "OK",
+  "rect": [
+   195,
+   93,
+   48,
+   29
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_47",
+  "source": "更改",
+  "english": "Change",
+  "rect": [
+   191,
+   31,
+   54,
+   29
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_38",
+  "source": "参加",
+  "english": "Join",
+  "rect": [
+   129,
+   86,
+   55,
+   29
+  ]
+ },
+ {
+  "path": "res/tzly/CommonTL_atlas0.png",
+  "sprite": "assemblemessageboxbuttonslayer_2",
+  "source": "确认",
+  "english": "OK",
+  "rect": [
+   195,
+   93,
+   48,
+   29
+  ]
+ }
+]

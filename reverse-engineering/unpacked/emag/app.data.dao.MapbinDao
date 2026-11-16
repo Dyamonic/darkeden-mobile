@@ -1,0 +1,24 @@
+
+local MapbinDao = {}
+
+-- MapbinDao._tableName = {"object1","object2","object3","object4","object5","object6","object7","object8"}
+
+function MapbinDao:queryAll()
+    local binTable = {}
+    local tableName = lt.ObjectList or {}
+    for _,v in ipairs(tableName) do
+        binTable[v] = self:queryByTable(v)
+    end
+    return binTable
+end
+
+function MapbinDao:queryByTable(table)
+    local binTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM %s;", table)) do
+        binTable[row.FileName] = string.format(";%s;%s;", tostring(row.Pos), tostring(row.Size)) 
+    end
+    return binTable
+end
+
+return MapbinDao

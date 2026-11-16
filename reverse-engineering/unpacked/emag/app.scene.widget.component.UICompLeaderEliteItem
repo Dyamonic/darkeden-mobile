@@ -1,0 +1,92 @@
+---@class UICompLeaderEliteItem
+local UICompLeaderEliteItem = class("UICompLeaderEliteItem", lt.UIGButtonBase)
+
+local Constant = lt.Constant
+local CommonFunc = lt.CommonFunc
+local HolyFightModule = lt.HolyFightModule
+local TimeCounter = lt.TimeCounter
+local TimeCounterManager = lt.TimeCounterManager
+local MapModule = lt.MapModule
+local CacheManager = lt.CacheManager
+
+function UICompLeaderEliteItem:ctor()
+    UICompLeaderEliteItem.super.ctor(self)
+end
+   
+function UICompLeaderEliteItem:onConstruct()
+    self._nameLabel = self:getChild("label_name")
+    self._levelLabel = self:getChild("label_level")
+    self._posLabel = self:getChild("label_pos")
+    self._timeLabel = self:getChild("label_time")
+    self._gotoBtn = self:getChild("btn_goto")
+end
+
+function UICompLeaderEliteItem:onClear()
+    self._nameLabel = nil
+    self._levelLabel = nil
+    self._posLabel = nil
+    self._timeLabel = nil
+    self._gotoBtn = nil
+    self._info = nil
+end
+
+function UICompLeaderEliteItem:onEnter()
+    self._gotoBtn:addClickListener(handler(self, self.onGotoBtnClick))
+end
+
+function UICompLeaderEliteItem:onExit()
+    self._gotoBtn:removeClickListener()
+    TimeCounterManager:stopTimeCounter(TimeCounterManager.TC.WORLD_ELITE_UPDATE.."_"..self.index)
+end
+
+function UICompLeaderEliteItem:setObjInfo(info)
+    self._info = info
+    local monsterMeta = CacheManager:getMonsterInfoMeta(info:getMonsterId())
+    self._nameLabel:setText(info:getMonsterInfoDesc())
+    self._levelLabel:setText("Lv."..monsterMeta:getLevel())
+    local pos = info:getMonsterRefreshesCoordinates()
+    local mapName = info:getRefreshMapName()
+    self._posLabel:setText(mapName.."（"..pos[2]..","..pos[3].."）")
+    self._data = HolyFightModule:getWorldBossById(info:getId())
+    --刷新倒计时
+    self:refreshCountDown()
+
+    TimeCounterManager:stopTimeCounter(TimeCounterManager.TC.WORLD_ELITE_UPDATE.."_"..self.index)
+    TimeCounterManager:startTimeCounter(TimeCounterManager.TC.WORLD_ELITE_UPDATE.."_"..self.index, {callback = function()
+        self:refreshCountDown()
+    end})
+end
+
+function UICompLeaderEliteItem:onGotoBtnClick()
+    local transferCode = self._info:getTransferCode()
+    MapModule:onTransferByConfigReq(transferCode)
+end
+
+function UICompLeaderEliteItem:refreshCountDown()
+    if self._data then
+        local killedTime = self._data.killedTime
+        if killedTime == 0 then
+            self._timeLabel:setText(GReadText.KEY_WORLDBOSS_TIPS4)
+            self._timeLabel:setColor(Constant.COLOR_GREEN)
+        else
+            local serverTime = TimeCounter:serverTime()
+            local refreshTime = self._info:getMonsterRefreshTime()
+            local lastTime = refreshTime - (serverTime - killedTime)
+            local day, hour, minute, second = CommonFunc:secondsToTime(lastTime)
+            if hour < 10 then hour = "0"..hour end
+            if minute < 10 then minute = "0"..minute end
+            if second < 10 then second = "0"..second end
+            self._timeLabel:setText(hour..":"..minute..":"..second)
+            self._timeLabel:setColor(Constant.COLOR_TEXT_RED)
+        end
+    else
+        self._timeLabel:setText(GReadText.KEY_WORLDBOSS_TIPS4)
+        self._timeLabel:setColor(Constant.COLOR_GREEN)
+    end
+end
+
+function UICompLeaderEliteItem:getCfgId()
+    return self._info:getId()
+end
+
+return UICompLeaderEliteItem

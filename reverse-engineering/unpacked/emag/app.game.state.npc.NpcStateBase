@@ -1,0 +1,14 @@
+
+local NpcStateBase = class("NpcStateBase", lt.BaseState)
+
+NpcStateBase._npcAgent = nil
+
+function NpcStateBase:ctor(npcAgent)
+    self._npcAgent = npcAgent
+end
+
+function NpcStateBase:onClear()
+    self._npcAgent = nil
+end
+
+return NpcStateBase

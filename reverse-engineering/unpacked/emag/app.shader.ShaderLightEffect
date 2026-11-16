@@ -1,0 +1,100 @@
+
+-- 光照
+---@class ShaderLightEffect
+local ShaderLightEffect = class("ShaderLightEffect", lt.ShaderBaseEffect)
+local Constant = lt.Constant
+local OFFSET_GRID_WIDTH = 0.92 --格子特效偏移
+local OFFSET_GRID_HEIGHT = 1.82 
+
+function ShaderLightEffect:ctor(node, program)
+    ShaderLightEffect.super.ctor(self, node, program)
+end
+
+--- render
+---@param node cc.Node 需要修改的纹理节点
+---@param eyeWidth number 视野格子数 
+---@param opacity number 透明度 
+---@param lights array 光照术及其他亮光数组
+function ShaderLightEffect:render(node, param)
+    local eyeWidth = param.eyeWidth
+    local opacity = param.opacity
+    local centerY = 0.5
+    self._center = cc.p(0.5, centerY)
+    local lights = param.lights or {}
+ 
+    self.opacity = opacity or 1
+    local size = node:getContentSize()
+    self._size = cc.p(size.width * Constant.SIGHT_SCALE, size.height * Constant.SIGHT_SCALE)
+    self._baseHeightRatio = param.baseHeightRatio or 0.5--地下会变成偏正圆
+
+    self.radius = self:getRadius(eyeWidth)
+
+    self._holeCenters = {}
+    self._holeRadius = {}
+    self._holeCenters[#self._holeCenters + 1] = self._center
+    self._holeRadius[#self._holeRadius + 1] = self.radius
+
+    for _, lightInfo in pairs(lights) do
+        self._holeCenters[#self._holeCenters + 1] = lightInfo.center
+        self._holeRadius[#self._holeRadius + 1] = self:getRadius(lightInfo.eyeWidth)
+    end
+    self:setNodeShader()
+end
+
+
+function ShaderLightEffect:getRadius(eyeWidth)
+    self._eyeWidth = eyeWidth or 7
+    self._originEyeWidth = self._eyeWidth
+    local viewWidth = eyeWidth * 48 
+    local viewHeight = (eyeWidth + OFFSET_GRID_HEIGHT) * 48 * self._baseHeightRatio
+    return cc.p(viewWidth * OFFSET_GRID_WIDTH / self._size.x, viewHeight / self._size.x)
+end
+
+function ShaderLightEffect:setUniform(glState, time, node)
+    glState:setUniform("u_holeCenters", cc.bytearray.from_vec2v(self._holeCenters))
+    glState:setUniform("u_holeRadii",cc.bytearray.from_vec2v(self._holeRadius))
+    glState:setUniform("u_holeCount", cc.bytearray.from_int(#self._holeCenters))
+    glState:setUniform("u_spriteSize", cc.bytearray.from_vec2(self._size))
+    glState:setUniform("u_opatity",cc.bytearray.from_float(self.opacity))
+end
+
+function ShaderLightEffect:setScaleAction(scaleWidth)
+    self._scaleWidth = scaleWidth
+end
+
+function ShaderLightEffect:resetUniform(glState, time)
+    if self._scaleWidth and self._eyeWidth then
+        if self._scaleWidth - self._eyeWidth > 0 then
+            self._eyeWidth = self._eyeWidth + time * 0.5
+            if self._eyeWidth > self._scaleWidth then
+                -- 检查是否达到最大半径，停止更新
+                self._scaleWidth = nil
+                return 
+            end
+        else
+            self._eyeWidth = self._eyeWidth - time * 0.5
+            if self._eyeWidth < self._scaleWidth then
+                self._scaleWidth = nil
+                return 
+            end
+        end
+
+        local viewWidth = self._eyeWidth * 48 
+        local viewHeight = (self._eyeWidth + OFFSET_GRID_HEIGHT) * 48 * self._baseHeightRatio
+        local radius = cc.p(viewWidth * OFFSET_GRID_WIDTH/ self._size.x, viewHeight/ self._size.x)
+        glState:setUniform("u_holeRadius", cc.bytearray.from_vec2v(radius))
+    end
+end
+
+
+
+function ShaderLightEffect.needRefresh()
+    return true
+end
+
+function ShaderLightEffect:resetTime(time)
+    return time + 0.008
+end
+
+return ShaderLightEffect
+

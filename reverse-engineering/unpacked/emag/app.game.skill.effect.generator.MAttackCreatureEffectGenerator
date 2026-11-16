@@ -1,0 +1,105 @@
+-- MAttackCreatureEffectGenerator.lua
+
+local MAttackCreatureEffectGenerator = class("MAttackCreatureEffectGenerator", lt.MEffectGenerator)
+local SkillEnum = lt.SkillEnum
+local Constant = lt.Constant
+local MapUtil = lt.MapUtil
+
+function MAttackCreatureEffectGenerator:generate(egInfo)
+    -- local bltType = g_pEffectSpriteTypeTable[egInfo.effectSpriteType].BltType
+    -- local frameID = g_pEffectSpriteTypeTable[egInfo.effectSpriteType].FrameID
+
+    -- Creature coordinates
+    local cx, cy, cz, effectCount = 0, 0, 0, 0
+
+    -- Determine effect count based on action
+    -- if egInfo.nActionInfo == STEP_SKILL_KASAS_ARROW_2 or 
+    --    egInfo.nActionInfo == STEP_SKILL_BLAZE_BOLT_2 or
+    --    egInfo.nActionInfo == STEP_SKILL_EARTHS_TEETH_2 then
+    --     effectCount = 1
+    -- elseif egInfo.nActionInfo == STEP_SKILL_KASAS_ARROW_3 or 
+    --        egInfo.nActionInfo == STEP_SKILL_BLAZE_BOLT_3 or
+    --        egInfo.nActionInfo == STEP_SKILL_EARTHS_TEETH_3 then
+    --     effectCount = 2
+    -- end
+
+    -- Get target creature
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    local pCreature = worldAgent:getAgent(egInfo.creatureID)
+    if not pCreature then
+        return false
+    end
+
+    -- Get creature pixel coordinates
+    local pCreatureM, pCreatureN = pCreature:getMNExactly()
+    cx = MapUtil:MapToPixelX(pCreatureM)
+    cy = MapUtil:MapToPixelY(pCreatureN)
+    cz = 0
+
+    -- Create first effect
+    local pEffect = lt.BulletGuidanceEffect.new()
+    -- local maxFrame = g_pTopView:GetMaxEffectFrame(bltType, frameID)
+
+    -- pEffect:SetFrameID(frameID, maxFrame)
+    pEffect:setPixelPosition(egInfo.x0, egInfo.y0, egInfo.z0)
+    pEffect:setDirection(egInfo.direction)
+    pEffect:setStepPixel(egInfo.step)
+
+    pEffect:setTraceCreatureID(egInfo.creatureID)
+    pEffect:addEffectActor(egInfo.skillId)
+
+    -- local zorder = (nTarget  * 10000 + mTarget + 9999) * 10 + 1
+    lt.BulletManager:addBulletToMap(pEffect)
+    -- pEffect:setCount(egInfo.count)
+    -- pEffect:setPower(egInfo.power)
+
+    -- if g_pZone:AddEffect(pEffect) then
+    --     pEffect:SetLink(egInfo.nActionInfo, egInfo.pEffectTarget)
+
+    --     if effectCount == 0 then
+    --         return true
+    --     end
+    -- else
+    --     return false
+    -- end
+
+    -- Create additional effects if needed
+    if effectCount > 0 then
+        local z = -12
+        while effectCount > 0 do
+            local pEffect = lt.BulletGuidanceEffect.new()
+            -- pEffect:SetFrameID(frameID, maxFrame)
+
+            -- Position adjustment based on direction
+            if egInfo.direction == 2 or egInfo.direction == 6 then
+                pEffect:setPixelPosition(egInfo.x0 + z, egInfo.y0, egInfo.z0)
+            else
+                pEffect:setPixelPosition(egInfo.x0, egInfo.y0, egInfo.z0 - z)
+            end
+            
+            z = z + 24
+            pEffect:setDirection(egInfo.direction)
+            pEffect:setTraceCreatureID(egInfo.creatureID)
+            pEffect:setStepPixel(egInfo.step)
+            -- pEffect:setCount(egInfo.count, egInfo.linkCount)
+           
+            -- pEffect:SetPower(egInfo.power)
+
+            -- if g_pZone:AddEffect(pEffect) then
+            --     if egInfo.pEffectTarget ~= nil then
+            --         local pTarget = --[[ Create new MEffectTarget from egInfo.pEffectTarget ]]
+            --         pEffect:SetLink(egInfo.nActionInfo, pTarget)
+            --     end
+            -- else
+            --     return false
+            -- end
+            
+            effectCount = effectCount - 1
+        end
+        return true
+    end
+
+    return false
+end
+
+return MAttackCreatureEffectGenerator

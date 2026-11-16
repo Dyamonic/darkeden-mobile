@@ -1,0 +1,145 @@
+---@class CompPlayerTips 玩家tips
+local CompPlayerTips = class("CompPlayerTips", lt.UIGButtonBase)
+local Constant = lt.Constant
+local MIN_H = 120 - 12
+local MAX_H = 390 - 12
+local BTN_HEIHT = 45
+
+local CacheManager = lt.CacheManager
+local NtfManager   = lt.NtfManager
+local BtnType      = Constant.PlayerTipBtns
+local TeamModule   = lt.TeamModule
+local FriendModule = lt.FriendModule
+
+local BTN_GROUPS = {
+    [BtnType.ChangeCaptain]   = {name = GReadText.KEY_TEAM_HALL_TIPS7, type = BtnType.ChangeCaptain},
+    [BtnType.PrivateChat]   = {name = GReadText.KEY_CHAT_TIPS6, type = BtnType.PrivateChat},
+    [BtnType.FriendAdd]   = {name = GReadText.KEY_CHAT_TIPS7, type = BtnType.FriendAdd},
+}
+
+function CompPlayerTips:ctor()
+    CompPlayerTips.super.ctor(self)
+end 
+
+function CompPlayerTips:onConstruct()
+    self._btnTabList = self:getChild("tabList")
+    self._touchLayer = self:getChild("touch")
+
+    self._nameLabel = self:getChild("label_name")
+    self._levelLabel = self:getChild("label_level")
+    self._gradelvLabel = self:getChild("label_gradelv")
+    self._moralityLabel = self:getChild("label_morality")
+    self._guildLabel = self:getChild("label_guild")
+    self._guildLoader = self:getChild("loader_guild")
+    self._jobLoader = self:getChild("loader_job")
+    self._headIcon = self:getChild("head")
+end
+
+function CompPlayerTips:onEnter()
+    CompPlayerTips.super.onEnter(self)
+    self._touchLayer:addEventListener(fgui.UIEventType.TouchBegin, handler(self, self.onLayerClick))
+    self._btnTabList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickBtnHandler))
+end
+
+function CompPlayerTips:onExit()
+    self._touchLayer:removeEventListener(fgui.UIEventType.TouchBegin)
+    self._btnTabList:removeEventListener(fgui.UIEventType.ClickItem)
+    CompPlayerTips.super.onExit(self)
+end
+
+function CompPlayerTips:onLayerClick()
+    self:hideSelf()
+end
+
+function CompPlayerTips:clear()
+    self._btnTabList:removeChildrenToPool()
+end
+
+function CompPlayerTips:refreshTips(param)
+    self._playerInfo = param.playerInfo
+    self._isLeader = param.isLeader
+    self._isPrivateChat = param.isPrivateChat
+    self:setVisible(true)
+    self:clear()
+    self:btnGroupsShow()
+
+    --设置界面参数
+    self._nameLabel:setText(GReadText.KEY_TEAM_HALL_TIPS8..self._playerInfo.playerName)
+    local levelStr = self._playerInfo.level
+    local isAdvanve = self._playerInfo.advanceState
+    if isAdvanve == Constant.AdvState.Adv then
+        levelStr = string.format(GReadText.KET_EXP_TIPS5, self._playerInfo.advanceLv)
+    end
+    self._levelLabel:setText(GReadText.KEY_TEAM_HALL_TIPS9..levelStr)
+    self._gradelvLabel:setText(GReadText.KEY_TEAM_HALL_TIPS10..self._playerInfo.gradeLevel)
+    self._moralityLabel:setText(GReadText.KEY_TEAM_HALL_TIPS11..self._playerInfo.tendencies)
+    local guildName = self._playerInfo.guildName or ""
+    if guildName == "" then
+        guildName = GReadText.KEY_TEAM_HALL_TIPS49
+    end
+    self._guildLabel:setText(GReadText.KEY_TEAM_HALL_TIPS12..guildName)
+    local headUrl = TeamModule:getHeadUrl(self._playerInfo.race, self._playerInfo.sex, self._playerInfo.faceShape)
+    self._headIcon:setURL(headUrl)
+
+    self:setPivot(0.5, 0, true)
+    local size = cc.size(1136, 640)--tipslayer的size
+    local offset = display.width/2 - size.width/2 - 48*0.5--48是layer的宽度-实际宽度得出
+    self:setPosition(display.cx - offset, 130)
+    
+    -- 公会图标
+    self._guildLoader:setURL(string.format(_GURL.GetGuildIcon, self._playerInfo.guildIconId or ""))
+
+    -- 阶级图标
+    local race = self._playerInfo.race
+    local grade = self._playerInfo.gradeLevel
+    local rankData = CacheManager:getRoleRankByRaceAndLvl(race,grade)
+    if rankData then
+        self._jobLoader:setURL(string.format(_GURL.GetGradePath,rankData:getIconId()))
+    end
+end
+
+function CompPlayerTips:onClickBtnHandler(context)
+    local btn = context:getData()
+    local type = btn.btnType
+    self:hideSelf()
+    self:btnUseByType(type)
+end
+
+function CompPlayerTips:btnGroupsShow()
+    local btnsGroups = {}
+     --队长才能转让队长
+    if self._isLeader then
+        table.insert(btnsGroups, BTN_GROUPS[BtnType.ChangeCaptain])
+    end
+    if self._isPrivateChat then
+        table.insert(btnsGroups, BTN_GROUPS[BtnType.PrivateChat])
+    end
+    -- 申请好友
+    table.insert(btnsGroups, BTN_GROUPS[BtnType.FriendAdd])
+    --销毁按钮
+    for _, btnInfo in ipairs(btnsGroups) do
+        local btnNode = self._btnTabList:addItemFromPool()
+        btnNode:setTitle(btnInfo.name)
+        btnNode.btnType = btnInfo.type
+    end
+
+    local originalSize = self._btnTabList:getSize()
+    self._btnTabList:setSize(originalSize.width, BTN_HEIHT * #btnsGroups + #btnsGroups * 2)
+end
+
+function CompPlayerTips:btnUseByType(type)
+    if type == BtnType.ChangeCaptain then
+        TeamModule:sendTransferCaptain(self._playerInfo.playerId)
+    elseif type == BtnType.PrivateChat then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_CHAT_PRIVATE,{playername = self._playerInfo.playerName})
+    elseif type == BtnType.FriendAdd then
+        FriendModule:sendFriendApplyReq(self._playerInfo.playerId or "",self._playerInfo.playerName)
+    end
+end
+
+function CompPlayerTips:hideSelf()
+    self:setVisible(false)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_CLOSE_PLAYER_TIPS)
+end
+
+return CompPlayerTips

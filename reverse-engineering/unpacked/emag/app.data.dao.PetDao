@@ -1,0 +1,21 @@
+local PetDao = {}
+
+function PetDao:query(id)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM Pet WHERE Id=%d;", tonumber(id))) do
+    	local meta = lt.PetMeta.new(row)
+        return meta
+    end
+end
+
+function PetDao:queryAll()
+    local mapTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM Pet") do
+        local petMeta = lt.PetMeta.new(row)
+        mapTable[#mapTable+1] = petMeta
+    end
+    return mapTable
+end
+
+return PetDao

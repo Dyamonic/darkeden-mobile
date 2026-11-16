@@ -1,0 +1,111 @@
+local BulletNoDirEffect = class("BulletNoDirEffect", lt.BulletBase)
+
+local Constant = lt.Constant
+local GameBoard = lt.GameBoard
+local CacheManager = lt.CacheManager
+local EffectActor = lt.EffectActor
+
+BulletNoDirEffect._targetAgentId  = nil
+BulletNoDirEffect._effectActor = nil
+
+function BulletNoDirEffect:ctor(skillId,skillLevel, startPos, endPos)
+    BulletNoDirEffect.super.ctor(self, skillId)
+
+    self._endPos   = endPos
+    self._startPos = startPos
+    self:setPosition(self._startPos)
+    
+    local offsetX = -25
+    local offsetY = 15
+    self._effectNode = display.newNode()
+    self._effectNode:setPosition(offsetX, offsetY)
+    self:addChild(self._effectNode)
+
+    self._isEndEffect = false
+
+    self:addEffectActor(skillId,skillLevel)
+end
+
+function BulletNoDirEffect:onClear()
+    if self._effectActor then
+        self._effectActor:onClear()
+        self._effectActor = nil
+    end
+    
+    self:removeAllChildren()
+
+    self._isEndEffect = nil
+    self._effectNode = nil
+end
+
+function BulletNoDirEffect:addEffectActor(skillId,skillLevel)
+    local actionInfoMetas = CacheManager:getBulletMetas(skillId,skillLevel)
+    if skillId == lt.SkillEnum.SKILL_MAGNUM_SPEAR_M then
+        actionInfoMetas = CacheManager:getHitMetas(skillId,skillLevel)
+    end
+    if not actionInfoMetas or #actionInfoMetas < 1 then
+        return
+    end
+
+    local meta = actionInfoMetas[1]
+    self._effectActor = EffectActor.new(meta, nil, nil, true)
+    self._effectNode:addChild(self._effectActor)
+
+    self._actionInfoMeta = meta
+
+    self._isEndEffect = true
+end
+
+function BulletNoDirEffect:onUpdate()
+    self:onUpdateMove()
+    self:onUpdateEffect()
+end
+
+function BulletNoDirEffect:onUpdateMove()
+    local endX, endY = self._endPos.x, self._endPos.y
+    local endPos = cc.p(endX, endY)
+    local curX, curY = self:getPosition()
+
+    local speed = self._actionInfoMeta:getSpeed() or 600
+
+    local step = speed * GameBoard:getDeltaTime()
+    local directionV = cc.pSub(endPos, cc.p(curX, curY))
+    
+    if cc.pGetLength(directionV) < step then
+        -- 到达
+        self:setPosition(endPos)
+
+        self._waitingForClear = true
+    else
+        directionV = cc.pMul(cc.pNormalize(directionV), step)
+        self:setPosition(curX + directionV.x, curY + directionV.y)
+    end
+end
+
+function BulletNoDirEffect:onEnd(isLastGroupMember)
+    if isLastGroupMember then
+        if type(self._callback) == "function" then
+            self._callback()
+        end
+    end
+
+    self:onClear()
+end
+
+function BulletNoDirEffect:onUpdateEffect()
+    if not self._isEndEffect then
+		return
+	end
+
+    if not self._effectActor then 
+        return
+    end
+
+    self._effectActor:onUpdateEffect()
+end
+
+function BulletNoDirEffect:setEndCallBack(callback)
+    self._callback = callback
+end
+
+return BulletNoDirEffect

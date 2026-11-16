@@ -1,0 +1,21 @@
+local RelicSystemDao = {}
+
+function RelicSystemDao:query(rewardId)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM RelicSystem WHERE RewardId=%d;", tonumber(rewardId))) do
+    	local meta = lt.RelicSystemMeta.new(row)
+        return meta
+    end
+end
+
+function RelicSystemDao:queryAll()
+    local map = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM RelicSystem") do
+        local meta = lt.RelicSystemMeta.new(row)
+        map[meta:getRewardId()] = meta
+    end
+    return map
+end
+
+return RelicSystemDao

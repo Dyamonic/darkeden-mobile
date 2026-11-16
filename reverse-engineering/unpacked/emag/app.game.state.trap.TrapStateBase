@@ -1,0 +1,14 @@
+
+local TrapStateBase = class("TrapStateBase", lt.BaseState)
+
+TrapStateBase._trapAgent = nil
+
+function TrapStateBase:ctor(trapAgent)
+    self._trapAgent = trapAgent
+end
+
+function TrapStateBase:onClear()
+    self._trapAgent = nil
+end
+
+return TrapStateBase

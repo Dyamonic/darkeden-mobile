@@ -1,0 +1,10 @@
+# Python tools and optional emulator/OCR verification dependencies.
+requests==2.32.4
+xxtea==6.3.0
+lupa==2.8
+numpy==2.2.6
+Pillow==11.3.0
+opencv-python==4.12.0.88
+rapidocr==3.10.0
+onnxruntime==1.32.0
+frida==17.26.3

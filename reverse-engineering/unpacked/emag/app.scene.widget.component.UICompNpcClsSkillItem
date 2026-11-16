@@ -1,0 +1,142 @@
+---@class UICompNpcClsSkillItem 染色物品item
+---
+local UICompNpcClsSkillItem = class("UICompNpcClsSkillItem", lt.UICompBase, lt.UICompChangeSkin)
+
+local Constant = lt.Constant
+local ShaderBackendUtil = lt.ShaderBackendUtil
+
+UICompNpcClsSkillItem.ChangeSkinConf = {
+   ["RoleInfo"] = {
+        ["frame"] = "bg_jineng_zhuanzhi_01",
+   } 
+}
+
+function UICompNpcClsSkillItem:ctor()
+    UICompNpcClsSkillItem.super.ctor(self)
+    self._clsSkillCfg = nil
+    
+    -- UI
+    self._name     = nil
+    self._icon     = nil
+    self._frame    = nil
+    self._select   = nil
+    self._tips     = nil
+    self._desc     = nil
+    self._callback = nil
+end
+
+function UICompNpcClsSkillItem:onClear()
+    UICompNpcClsSkillItem.super.onClear(self)
+    self._clsSkillCfg = nil
+    self._name     = nil
+    self._icon     = nil
+    self._frame    = nil
+    self._select   = nil
+    self._tips     = nil
+    self._desc     = nil
+    self._callback = nil
+end
+
+function UICompNpcClsSkillItem:onEnter()
+    self:addClickListener(handler(self, self.clickFunc))
+end
+
+function UICompNpcClsSkillItem:onExit()
+    self:removeClickListener()
+end
+
+function UICompNpcClsSkillItem:onConstruct()
+    self:startSkin()
+end
+
+function UICompNpcClsSkillItem:initUI()
+    self._name   = self:getChild("name")
+    self._icon   = self:getChild("icon")
+    self._frame  = self:getChild("frame")
+    self._select = self:getChild("select")
+    self._tips   = self:getChild("tips")
+    self._desc   = self:getChild("desc")
+end
+
+-- 刷新学过阶级技能
+function UICompNpcClsSkillItem:setInfo(clsSkillCfg,callback)
+    self._clsSkillCfg = clsSkillCfg
+
+    if not self._clsSkillCfg then
+        self:setInfoEmpty()
+        return    
+    end
+
+    local iconPath = string.format(_GURL.GetImageSkill,self._clsSkillCfg:getSpriteID())
+    self._icon:setVisible(false)
+
+    self._cyanIcon = fgui.UIPackage:createObjectFromURL(iconPath)
+    self._cyanIcon:setScale(1.5,1.5)
+    self._cyanIcon:setPivot(0.5,0.5,true)
+    self._cyanIcon:setPosition(58,77)
+    self:addChild(self._cyanIcon)
+    self:setChildIndex(self._cyanIcon,0)
+    --[[
+        cocos4.0 FIXME:To be verified, shader change use.
+    ]] 
+    ShaderBackendUtil:makeCyanEffect(self._cyanIcon:displayObject())
+
+    local raceId = lt.GameModule:getHeroRace()
+    local classLevel = self._clsSkillCfg:getClassLevel()
+    local rankData = lt.CacheManager:getRoleRankByRaceAndLvl(raceId,classLevel)
+    self._name:setText(rankData:getName())
+
+    local isClean = lt.SkillModule:checkCleanedClassLevel(classLevel)
+    -- yflog:Info("---->>>>>>>>>>>>>>>>111:%s",isClean)
+    if isClean then
+        self._tips:setVisible(true)
+        self._desc:setVisible(true)
+        self._tips:setText(GReadText.KEY_NPC_CLS_SKILL_TIPS1)
+    else
+        self._tips:setVisible(false)
+        self._desc:setVisible(false)
+    end
+
+    self._callback = callback
+end
+
+-- 刷新没学过阶级技能
+function UICompNpcClsSkillItem:setInfoEmpty(classLevel,callback)
+    local raceId = lt.GameModule:getHeroRace()
+    local rankData = lt.CacheManager:getRoleRankByRaceAndLvl(raceId,classLevel)
+    self._name:setText(rankData:getName())
+
+    local imagePath = string.format(_GURL.GetNpcImage, "bg_jiejiqxi_diwen_03")
+    local heroData = lt.GameModule:getHeroData()
+    local grade = heroData:getGrade()
+    if grade < classLevel then
+        imagePath = string.format(_GURL.GetNpcImage, "bg_jiejiqxi_diwen_05")
+    end
+    self._icon:setURL(imagePath)
+    self._icon:setScale(1,1)
+    self._icon:setVisible(true)
+
+    self._tips:setVisible(true)
+    self._desc:setVisible(true)
+
+    local isClean = lt.SkillModule:checkCleanedClassLevel(classLevel)
+    if isClean then
+        self._desc:setText(GReadText.KEY_NPC_CLS_SKILL_TIPS1)
+    else
+        self._desc:setText(GReadText.KEY_NPC_CLS_SKILL_TIPS2)
+    end
+
+    self._callback = callback
+end
+
+function UICompNpcClsSkillItem:setSelect(value)
+    self._select:setVisible(value or false)
+end
+
+function UICompNpcClsSkillItem:clickFunc()
+    if self._callback then
+        self._callback()
+    end
+end
+
+return UICompNpcClsSkillItem

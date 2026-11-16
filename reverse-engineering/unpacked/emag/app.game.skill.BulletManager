@@ -1,0 +1,133 @@
+
+local BulletManager = {}
+--[[
+    子弹管理器
+]]
+BulletManager._bulletTable              = {}
+BulletManager._bulletGroupTable         = {}
+
+function BulletManager:onUpdate()
+    local removeTable = {}
+    for bulletId, bullet in pairs(self._bulletTable) do
+        if bullet.getWaitingForClear == nil or bullet:getWaitingForClear() then
+            removeTable[#removeTable + 1] = bulletId
+        else
+            bullet:onUpdate()
+        end
+    end
+    -- local count = table.nums(self._bulletTable)
+    -- if count > 0 then
+    --     print("當前子彈數量為"..count.."當前移除"..#removeTable)
+    -- end
+    for i = 1, #removeTable do
+        local bulletId = removeTable[i]
+        local bullet = self._bulletTable[bulletId]
+        local groupId = bullet:getBulletGroupId()
+        
+        local isLastGroupMember = self._bulletGroupTable[groupId] and table.nums(self._bulletGroupTable[groupId]) == 1
+        bullet:onEnd(isLastGroupMember)
+
+        -- 清除子弹管理类
+        self._bulletTable[bulletId] = nil
+
+        -- 清除子弹组员管理类
+        if self._bulletGroupTable[groupId] and table.nums(self._bulletGroupTable[groupId]) > 0 then
+            self._bulletGroupTable[groupId][bulletId] = nil
+
+            if table.nums(self._bulletGroupTable[groupId]) == 0 then
+                self._bulletGroupTable[groupId] = nil
+            end
+        end
+    end
+end
+
+function BulletManager:onClear()
+    for bulletId, bullet in pairs(self._bulletTable) do
+        bullet:onClear()
+        self._bulletTable[bulletId] = nil
+    end
+
+    self._bulletGroupTable = nil
+    self._bulletGroupCallbackTable = nil
+end
+
+function BulletManager:addBullet(bullet)
+    self._bulletTable[bullet:getBulletId()] = bullet
+    self:addGroupBullet(bullet)
+end
+
+-- 添加组类型子弹
+function BulletManager:addGroupBullet(bullet)
+    local groupId = bullet:getBulletGroupId()
+    local bulletId = bullet:getBulletId()
+
+    if not self._bulletGroupTable then
+        self._bulletGroupTable = {}
+    end
+
+    if not self._bulletGroupTable[groupId] then
+        self._bulletGroupTable[groupId] = {}
+    end
+
+    self._bulletGroupTable[groupId][bulletId] = bullet
+end
+
+function BulletManager:addBulletToMap(bullet, zOrder)
+    local mapActor = self:getMapActor()
+    if not mapActor then
+        yflog:Error("addBullet mapActor is nil")
+        return
+    end
+
+    mapActor:addChild(bullet, zOrder or 100000)
+    self:addBullet(bullet)
+end
+
+function BulletManager:removeBulletToMap(bullet)
+    local mapActor = self:getMapActor()
+    if not mapActor then
+        yflog:Error("addBullet mapActor is nil")
+        return
+    end
+
+end
+
+function BulletManager:addBulletToMapZOrder(bullet, zOrder)
+    local mapActor = self:getMapActor()
+    if not mapActor then
+        yflog:Error("addBullet mapActor is nil")
+        return
+    end
+
+    mapActor:addBattleEffect(bullet, zOrder or 100000)
+    self:addBullet(bullet)
+end
+
+function BulletManager:getMapActor()
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    if not worldAgent then
+        return nil
+    end
+
+    local mapAgent = worldAgent:getMapAgent()
+    if not mapAgent then
+        return nil
+    end
+
+    local mapActor = mapAgent:getMapActor()
+    if not mapActor then
+        return nil
+    end
+
+    return mapActor
+end
+
+function BulletManager:getBulletList()
+    return self._bulletTable
+end
+
+function BulletManager:getBulletById(bulletId)
+    return self._bulletTable[bulletId]
+end
+
+return BulletManager

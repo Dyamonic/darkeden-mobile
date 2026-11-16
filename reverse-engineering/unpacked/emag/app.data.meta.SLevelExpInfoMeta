@@ -1,0 +1,27 @@
+
+local SLevelExpInfoMeta = class("SLevelExpInfoMeta")
+
+
+function SLevelExpInfoMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function SLevelExpInfoMeta:initWithRow(row)
+    self._domainType = row.DomainType
+    self._level = row.Level
+    self._exp = row.Exp
+    self._levAccumExp = row.LEVAccumExp
+    self._needWeaponRank = row.NeedWeaponRank
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function SLevelExpInfoMeta:getDomainType() return self._domainType end
+function SLevelExpInfoMeta:getLevel() return self._level end
+function SLevelExpInfoMeta:getExp() return self._exp end
+function SLevelExpInfoMeta:getLevAccumExp() return self._levAccumExp end
+function SLevelExpInfoMeta:getNeedWeaponRank() return self._needWeaponRank end
+
+-- AUTO GENERATED GETTERS END
+return SLevelExpInfoMeta

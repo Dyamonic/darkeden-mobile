@@ -1,0 +1,143 @@
+---@class UICompSkillTips 角色装备栏
+---
+local UICompSkillTips = class("UICompSkillTips", lt.UICompBase)
+
+local Constant = lt.Constant
+local raceType = lt.Constant.RaceType
+local SkillModule = lt.SkillModule
+local GameModule = lt.GameModule
+
+function UICompSkillTips:ctor()
+    UICompSkillTips.super.ctor(self)
+end
+
+function UICompSkillTips:onClear()
+    UICompSkillTips.super.onClear(self)
+end
+
+function UICompSkillTips:onEnter()
+end
+
+function UICompSkillTips:onExit()
+end
+
+function UICompSkillTips:refreshTips(param)
+    if not param then
+        return
+    end
+    local skillInfo = param.skillInfo
+    local btnState = param.btnState
+
+    local itemName = skillInfo:getName()
+    local itemEnName = skillInfo:getEnName()
+    local contentList = self:getChild("contentList")
+    local content = contentList:getChildAt(0)
+    local nameT = content:getChild("name")
+    local detailT = content:getChild("detail")
+    local nameEnT = content:getChild("nameEn")
+    local nameClsDesc = content:getChild("nameClsDesc")
+    
+    -------------------------------------------------------------------
+    -- 阶级技能
+    if skillInfo and skillInfo.getRankId then
+        nameT:setText(itemEnName)
+        -- local enNameStr = "(" .. itemEnName .. ")"
+        nameEnT:setText("")
+        nameClsDesc:setText(itemName)
+
+        local contentStr = ""
+        if btnState == Constant.ClsSkillState.NotLearnable then
+            contentStr = "[color=#c6c3ff]" .. GReadText.KET_SKILL_TIPS3 .. "[/color]"
+        elseif btnState == Constant.ClsSkillState.Learnable then
+            contentStr = "[color=#c6c3ff]" .. GReadText.KET_SKILL_TIPS4 .. "[/color]"
+        elseif btnState == Constant.ClsSkillState.Learned then
+            contentStr = "[color=#c6c3ff]" .. GReadText.KET_SKILL_TIPS5 .. "[/color]"
+        elseif btnState == Constant.ClsSkillState.CurUnableToLearn then
+            contentStr = "[color=#c6c3ff]" .. GReadText.KET_SKILL_TIPS6 .. "[/color]"
+        end
+        
+        detailT:setText(contentStr)
+    else
+        nameClsDesc:setText("")
+    end
+
+    ---------------------------------------------------------------------
+    -- 等级技能，包括转职技能
+    if skillInfo and skillInfo.getSkillId then
+        nameT:setText(itemName)
+        local enNameStr = "(" .. itemEnName .. ")"
+        nameEnT:setText(enNameStr)
+        nameClsDesc:setText("")
+
+        local contentStr = ""
+        -- 需求等级
+        if skillInfo:getNeedLevel() > 0 then
+            contentStr = contentStr .. "[color=#c6c3ff]" .. GReadText.KET_SKILL_TIPS7 .. "[/color]" .. skillInfo:getNeedLevel()
+        end
+
+        -- 技能等级(鬼族没有技能等级)
+        if skillInfo:getSkillRace() ~= raceType.Vampire then
+            local skillLevel = SkillModule:getSkillLevel(skillInfo:getSkillId())
+            if type(skillLevel) == "number" and skillLevel > 0 then
+                contentStr = contentStr .. "\n" .. "[color=#c6c3ff]" .. GReadText.KET_SKILL_TIPS10 .. "[/color]" .. skillLevel
+            end
+        end
+        
+        -- 消耗魔法值
+        if skillInfo:getMana() > 0 then
+            local nameStr = GReadText.KET_SKILL_TIPS9
+            if skillInfo:getSkillRace() == raceType.Vampire then
+                nameStr = GReadText.KET_SKILL_TIPS8
+            end
+            contentStr = contentStr .. "\n" .. "[color=#c6c3ff]" .. nameStr .. "[/color]" .. skillInfo:getMana()
+        end
+        
+        -- 是否被动
+        if skillInfo:getPassiveSkill() == 1 then
+            contentStr = contentStr .. "\n" .. "[color=#c6c3ff]" .. GReadText.KET_SKILL_TIPS11 .. "[/color]"
+        else
+            -- 显示经验百分比
+            local subExp = skillInfo:getSubExp()
+            local skillId = skillInfo:getSkillId()
+            local heroRace = GameModule:getHeroRace()
+            if subExp > 0 and SkillModule:hasSkill(skillId) and heroRace == raceType.Slayer then
+                local perExp = subExp/100
+                local curSkillExp = SkillModule:getSkillExp(skillId)%perExp
+                local perCent = math.floor((curSkillExp/perExp)*100)
+                contentStr = contentStr .. "\n" .. "[color=#c6c3ff]" .. GReadText.KET_SKILL_TIPS15 .. "[/color]" .. perCent .."%"
+            end
+        end
+
+        -- 技能详情
+        if skillInfo:getSkillInfo() ~= "" then
+            contentStr = contentStr .. "[color=#ffffff]" .. "\n \n" .. skillInfo:getSkillInfo() .. "[/color]"
+        end
+        
+        -- 学习状态
+        if btnState == Constant.SkillState.NotLearnable then
+            contentStr = contentStr ..  "[color=#ff0000]\n" .. GReadText.KET_SKILL_TIPS3 .. "[/color]"
+        elseif btnState == Constant.SkillState.Learnable then
+            contentStr = contentStr .. "[color=#00ff00]\n" .. GReadText.KET_SKILL_TIPS4 .. "[/color]"
+        end
+        
+        detailT:setText(contentStr)
+    else
+        nameEnT:setText("")
+    end
+    
+    -- 设置数据后重构大小
+    local topHeight = 70
+    local detailTSize = detailT:getSize()
+    local curComSize = self:getSize()
+    local height = detailTSize.height + topHeight
+    local showHeight = height
+    if showHeight > 465 then
+        showHeight = 465
+    end
+    self:setSize(curComSize.width,showHeight+5)
+
+    contentList:setSize(curComSize.width,showHeight)
+    content:setSize(curComSize.width+10,height)
+end
+
+return UICompSkillTips

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:gravity="center_horizontal" android:orientation="vertical" android:id="@id/oauth_content_ctc" android:background="@color/cucc_white" android:fitsSystemWindows="true" android:layout_width="match_parent" android:layout_height="match_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <LinearLayout android:gravity="center" android:orientation="horizontal" android:id="@id/navigation_bar_ctc" android:layout_width="match_parent" android:layout_height="50.0dp">
+        <Button android:id="@id/oauth_back_ctc" android:background="@mipmap/cucc_left" android:layout_width="25.0dp" android:layout_height="25.0dp" android:layout_marginLeft="7.0dp" android:layout_marginStart="7.0dp" />
+        <TextView android:textSize="18.0sp" android:textColor="@color/cucc_black" android:gravity="center" android:id="@id/oauth_title_ctc" android:layout_width="0.0dp" android:layout_height="wrap_content" android:text="@string/cucc_oauth_title" android:layout_weight="1.0" />
+        <TextView android:gravity="start|center" android:layout_width="40.0dp" android:layout_height="40.0dp" />
+    </LinearLayout>
+    <TextView android:id="@id/navigation_bar_line_ctc" android:background="@color/cucc_gray" android:layout_width="match_parent" android:layout_height="1.0px" android:layout_marginTop="1.0px" />
+    <LinearLayout android:gravity="center_horizontal" android:orientation="vertical" android:layout_width="match_parent" android:layout_height="match_parent">
+        <TextView android:layout_width="match_parent" android:layout_height="0.0dp" android:layout_weight="0.8" />
+        <ImageView android:id="@id/oauth_logo_ctc" android:layout_width="80.0dp" android:layout_height="80.0dp" android:src="@mipmap/cucc_logo_ctc" />
+        <TextView android:id="@id/app_name_ctc" android:visibility="gone" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="10.0dp" />
+        <EditText android:enabled="false" android:textSize="18.0sp" android:textColor="@color/cucc_black" android:gravity="center" android:id="@id/oauth_mobile_et_ctc" android:background="@null" android:layout_width="288.0dp" android:layout_height="35.0dp" android:layout_marginTop="25.0dp" android:maxLength="11" android:inputType="number" android:textCursorDrawable="@drawable/cucc_oauth_cursor" />
+        <TextView android:textSize="12.0sp" android:id="@id/brand_ctc" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="5.0dp" android:layout_marginTop="20.0dp" android:text="@string/cucc_service_name_ctc" android:layout_marginStart="5.0dp" />
+        <Button android:textSize="18.0sp" android:textColor="@color/cucc_white" android:id="@id/oauth_login_ctc" android:background="@drawable/cucc_selector_button_ctc" android:layout_width="match_parent" android:layout_height="40.0dp" android:layout_marginTop="20.0dp" android:text="@string/cucc_oauth_login" android:layout_marginStart="30.0dp" android:layout_marginEnd="30.0dp" />
+        <TextView android:textColor="@color/cucc_blue_ctc" android:id="@id/other_login_ctc" android:padding="5.0dp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="100.0dp" android:layout_marginTop="20.0dp" android:text="@string/cucc_other_login" />
+        <RelativeLayout android:layout_width="match_parent" android:layout_height="0.0dp" android:layout_weight="2.0" />
+        <LinearLayout android:gravity="center" android:orientation="vertical" android:id="@id/protocol_ctc" android:paddingBottom="20.0dp" android:layout_width="match_parent" android:layout_height="wrap_content">
+            <LinearLayout android:gravity="center" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <CheckBox android:id="@id/is_agree_ctc" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                <TextView android:textSize="11.0sp" android:id="@id/login_before_text_ctc" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/cucc_hint_txt" />
+                <TextView android:textSize="12.0sp" android:textColor="@color/cucc_blue_ctc" android:id="@id/service_and_privacy_ctc" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/cucc_service_and_privacy_ctc" />
+            </LinearLayout>
+            <TextView android:textSize="11.0sp" android:id="@id/authorize_app_ctc" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

@@ -1,0 +1,37 @@
+local BuffLightness = class("BuffLightness", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+local Constant = lt.Constant
+
+
+--[[
+    终极照明术
+]]
+function BuffLightness:ctor(time, actor, skilllevel, source, buffId)    
+    BuffLightness.super.ctor(self, buffId, time, actor)
+    -- 被攻击播特效即可
+    self._skillId = SkillEnum.SKILL_LIGHTNESS
+    self._agent = actor:getAgent()
+    actor:playQueueEffectByLv(self._skillId, skilllevel, Constant.EFFECT.SELF)
+    if self._agent:hasBuffer(BuffEnum.EFFECT_CLASS_DARKNESS) then
+        actor:getAgent():delBuffer(BuffEnum.EFFECT_CLASS_DARKNESS)
+    end
+    if self._agent:hasBuffer(BuffEnum.EFFECT_CLASS_GRAY_DARKNESS) then
+        actor:getAgent():delBuffer(BuffEnum.EFFECT_CLASS_GRAY_DARKNESS)
+    end
+end
+
+function BuffLightness:onClear()
+    self._actor:stopQueueEffect(self._skillId)
+    
+    lt.ScheduleUtil:performWithDelayGlobal(function()
+        if self._agent then
+            local darknessId = self._agent:getHeroData():getDarkness()
+            self._agent:changeDarkness(darknessId)
+        end
+        BuffLightness.super.onClear(self)
+    end, lt.GameBoard:getDeltaTime())
+end
+
+
+return BuffLightness

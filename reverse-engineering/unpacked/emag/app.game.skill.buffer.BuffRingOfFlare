@@ -1,0 +1,23 @@
+local BuffRingOfFlare = class("BuffRingOfFlare", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+
+--[[
+    光耀之环
+]]
+function BuffRingOfFlare:ctor(time, actor, skilllevel)    
+    BuffRingOfFlare.super.ctor(self, BuffEnum.EFFECT_CLASS_RING_OF_FLARE, time, actor)
+    -- actor:playParallelEffect(SkillEnum.RING_OF_FLARE)
+    -- 播放特效 1为目标对象
+    local skillGrade = lt.SkillModule:getGradeBySkillLevel(skilllevel)
+    actor:playQueueEffect(SkillEnum.RING_OF_FLARE, 1, skillGrade)
+end
+
+function BuffRingOfFlare:onClear()
+    -- stop 播放
+    self._actor:stopQueueEffect(SkillEnum.RING_OF_FLARE)
+
+    BuffRingOfFlare.super.onClear(self)
+end
+
+return BuffRingOfFlare

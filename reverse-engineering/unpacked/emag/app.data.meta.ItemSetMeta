@@ -1,0 +1,76 @@
+
+local ItemSetMeta = class("ItemSetMeta")
+
+ItemSetMeta._itemtype        = nil
+ItemSetMeta._itemidx         = nil
+ItemSetMeta._name            = nil
+ItemSetMeta._option1         = nil
+ItemSetMeta._option2         = nil
+ItemSetMeta._option3         = nil
+ItemSetMeta._option4         = nil
+ItemSetMeta._sequence        = nil
+ItemSetMeta._category        = nil
+ 
+
+function ItemSetMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function ItemSetMeta:initWithRow(row)
+    self._itemtype       = row.ItemType
+    self._itemidx        = row.ItemIdx
+    self._name           = row.ItemName
+    self._option1        = row.Option1
+    self._option2        = row.Option2
+    self._option3        = row.Option3
+    self._option4        = row.Option4
+    self._sequence       = row.Sequence
+    self._category       = row.Category
+end
+
+-- Setter && Getter
+function ItemSetMeta:getTypes()
+    return self._itemtype
+end
+
+function ItemSetMeta:getItemId()
+    return self._itemidx
+end
+
+function ItemSetMeta:getName()
+    return self._name
+end
+
+function ItemSetMeta:getOption(index)
+    if index == 1 then
+        return self._option1
+    elseif index == 2 then
+        return self._option2
+    elseif index == 3 then
+        return self._option3
+    elseif index == 4 then
+        return self._option4
+    end
+end
+
+function ItemSetMeta:setOption(index,value)
+    if index == 1 then
+        self._option1 = value
+    elseif index == 2 then
+        self._option2 = value
+    elseif index == 3 then
+        self._option3 = value
+    elseif index == 4 then
+        self._option4 = value
+    end
+end
+
+function ItemSetMeta:getCategroy()
+    return self._category
+end
+
+function ItemSetMeta:getSort()
+    return self._sequence
+end
+
+return ItemSetMeta

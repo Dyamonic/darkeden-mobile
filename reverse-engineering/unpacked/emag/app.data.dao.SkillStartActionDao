@@ -1,0 +1,16 @@
+
+local SkillStartActionDao = {}
+
+function SkillStartActionDao:queryAll()
+    local skillMap = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM StartAction;") do
+    	local skillMeta = lt.SkillStartActionMeta.new(row)
+        skillMap[skillMeta:getSkillId()] = skillMeta
+    end
+    return skillMap
+end
+
+
+
+return SkillStartActionDao

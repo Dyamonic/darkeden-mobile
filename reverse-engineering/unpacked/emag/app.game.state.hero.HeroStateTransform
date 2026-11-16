@@ -1,0 +1,95 @@
+--- 变身动作中：冒烟中 与 怪物公用一个状态机
+local HeroStateTransform = class("HeroStateTransform", lt.HeroStateBase)
+local Constant = lt.Constant
+local SkillEnum = lt.SkillEnum
+local CacheManager = lt.CacheManager
+local TimeTrigger = lt.TimeTrigger
+local BULLET_OFFSET_X = -25
+local BULLET_OFFSET_Y = 15
+local SMOKE_TIME = 0.8
+local TRANSFORM_STATE = Constant.TRANSFORM_STATE
+function HeroStateTransform:ctor(heroAgent, bufferId, isExist, state ,srcId)
+    yflog:Info("HeroStateTransform:ctor  bufferId:%s, isExist:%s, state:%s ,srcId:%s",bufferId, isExist, state,srcId)
+    HeroStateTransform.super.ctor(self, heroAgent)
+    self._bufferId = bufferId
+    self._isExist = isExist
+    self._state = state
+    self._srcId = srcId
+end
+
+function HeroStateTransform:playSmoke()
+    local actorX, actorY = self._heroAgent:getPosition()
+    local skillId = SkillEnum.TRANSFORM_TO_BAT
+    local actorM, atorN = self._heroAgent:getMNExactly()
+    local reX, reY = actorX + BULLET_OFFSET_X, actorY + BULLET_OFFSET_Y
+    local metas = CacheManager:getBuffMetas(skillId)
+    local direction = self._heroAgent:getDirection()
+    local bullet = lt.BullectScreenEffect.new(skillId, direction, cc.p(reX, reY))
+    bullet:addEffect(skillId, metas[1])
+    local zorder = (atorN  * 10000 + actorM + 9999) * 10 * 1 + 100
+    lt.BulletManager:addBulletToMapZOrder(bullet, zorder)
+end
+
+function HeroStateTransform:onClear()
+                                    
+    HeroStateTransform.super.onClear(self)
+end
+
+function HeroStateTransform:onEnter()
+    if not self._isExist then
+        self:playSmoke()
+    end
+    self._timeTriggerSmoke = TimeTrigger.new(SMOKE_TIME)
+    local transformId = SkillEnum.TRANSFORM.NONE
+    if self._state == TRANSFORM_STATE.APPEAR then
+        if self._bufferId == lt.BuffEnum.EFFECT_CLASS_TRANSFORM_TO_BAT then
+            transformId = SkillEnum.TRANSFORM_BATS[self._srcId]
+        else
+            transformId = lt.BuffEnum.TRANSFORM_BUFFS[self._bufferId]
+        end 
+    end
+    self._heroAgent:setTransformId(transformId)
+    self._heroAgent:playAction(Constant.ROLE_ACTION_IDLE)
+end
+
+function HeroStateTransform:onExit()
+end
+
+function HeroStateTransform:onUpdate()
+    if self._timeTriggerSmoke:tick() then
+        if self._heroAgent:isHeroAgent() then
+            
+            if self._heroAgent:getIsOutOfGame() then
+                self._heroAgent:changeState(lt.HeroStateDie.new(self._heroAgent))
+                return
+            else
+                self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+            end
+        else
+            if self._heroAgent:getIsOutOfGame() then
+                self._heroAgent:changeState(lt.MonsterStateDie.new(self._heroAgent))
+                return
+            else
+                self._heroAgent:changeState(lt.MonsterStateIdle.new(self._heroAgent))
+            end
+        end
+        local heroData = self._heroAgent:getHeroData()
+        if heroData and self._state == TRANSFORM_STATE.DISAPPEAR then
+            heroData:setMoveSpeed(0) 
+        end
+    end
+end
+
+function HeroStateTransform:onMessage()
+    -- 变身中不接受任何消息
+end
+
+function HeroStateTransform:getStateId()
+    return lt.Constant.HERO_STATE_TRANSFROM
+end
+
+function HeroStateTransform:getStateName()
+    return "HeroStateTransform"
+end
+
+return HeroStateTransform

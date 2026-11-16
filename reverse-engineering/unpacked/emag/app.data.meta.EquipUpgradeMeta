@@ -1,0 +1,134 @@
+
+local EquipUpgradeMeta = class("EquipUpgradeMeta")
+
+local CommonFunc = lt.CommonFunc
+
+function EquipUpgradeMeta:ctor(row)
+    self._id            = row.Id
+    self._rank          = row.Rank
+    self._level         = row.Level
+    self._isAdvanced    = row.IsAdvanced
+    self._itemCost      = CommonFunc:analysisJsonToTable(row.ConsumeItem, true)
+    self._lordCost      = CommonFunc:analysisJsonToTable(row.Cost, true)
+    self._upgradeRate   = row.SuccessRate
+    self._durability    = row.Durability
+    self._defense       = row.Protection
+    self._minDamage     = row.MinDamage
+    self._maxDamage     = row.MaxDamage
+    self._dodge         = row.Defence
+    self._criticalHit   = row.CriticalHit
+    self._silverMax     = row.SilverMax
+    self._str           = row.STR
+    self._dex           = row.DEX
+    self._int           = row.INT
+    self._pdam          = row.PDAM
+    self._ppro          = row.PPRO
+    self._mdam          = row.MDAM
+    self._mpmo          = row.MPRO
+    self._attr          = row.ATTR
+    self._dbtm          = row.DBTM
+    self._dbtp          = row.DBTP
+    self._luck          = row.Luck
+end
+
+function EquipUpgradeMeta:getId()
+    return self._id
+end
+
+function EquipUpgradeMeta:getRank()
+	return self._rank
+end
+
+function EquipUpgradeMeta:getLevel()
+    return self._level
+end
+
+function EquipUpgradeMeta:getIsAdvanced()
+	return self._isAdvanced
+end
+
+function EquipUpgradeMeta:getItemCost()
+	return self._itemCost
+end
+
+function EquipUpgradeMeta:getLordCost()
+	return self._lordCost
+end
+
+function EquipUpgradeMeta:getUpgradeRate()
+    return self._upgradeRate
+end
+
+function EquipUpgradeMeta:getDurability()
+	return self._durability
+end
+
+function EquipUpgradeMeta:getDefense()
+	return self._defense
+end
+
+function EquipUpgradeMeta:getMinDamage()
+	return self._minDamage
+end
+
+function EquipUpgradeMeta:getMaxDamage()
+    return self._maxDamage
+end
+
+function EquipUpgradeMeta:getDodge()
+	return self._dodge
+end
+
+function EquipUpgradeMeta:getCriticalHit()
+	return self._criticalHit
+end
+
+function EquipUpgradeMeta:getSilverMax()
+	return self._silverMax
+end
+
+function EquipUpgradeMeta:getStr()
+    return self._str
+end
+
+function EquipUpgradeMeta:getDex()
+    return self._dex
+end
+
+function EquipUpgradeMeta:getInt()
+    return self._int
+end
+
+function EquipUpgradeMeta:getPdam()
+    return self._pdam
+end
+
+function EquipUpgradeMeta:getPpro()
+    return self._ppro
+end
+
+function EquipUpgradeMeta:getMdam()
+    return self._mdam
+end
+
+function EquipUpgradeMeta:getMpmo()
+    return self._mpmo
+end
+
+function EquipUpgradeMeta:getAttr()
+    return self._attr
+end
+
+function EquipUpgradeMeta:getDbtm()
+    return self._dbtm
+end
+
+function EquipUpgradeMeta:getDbtp()
+    return self._dbtp
+end
+
+function EquipUpgradeMeta:getLuck()
+    return self._luck
+end
+
+return EquipUpgradeMeta

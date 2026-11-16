@@ -1,0 +1,40 @@
+local ActionActorShield = class("ActionActorShield", lt.ActionActor)
+
+local CacheManager = lt.CacheManager
+local NtfManager = lt.NtfManager
+
+function ActionActorShield:ctor(modelName, actionId, direction, loop, isShadow)
+    ActionActorShield.super.ctor(self, modelName, actionId, direction, loop, isShadow)
+end
+
+function ActionActorShield:loadActionData()
+    ActionActorShield.super.loadActionData(self)
+end
+
+function ActionActorShield:loadAtlas(modelName)
+    local ntfMessage = string.format( "%s_%s",NtfManager.NTF.SPRITE_FRAME_LOADED_ACTOR,modelName)
+    for i=1, self._atlasSum do
+        local dataFilename = ""
+        local imageFilename = ""
+
+        dataFilename = string.format("tlmodel/shield/%s_%d.plist", modelName, i)
+        imageFilename = string.format("tlmodel/shield/%s_%d.pvr.ccz", modelName, i)
+
+        if lt.ActionManager:loadAtlas(dataFilename, imageFilename, ntfMessage) then
+            -- 取缓存的图集
+            self:loadAtlasStep()
+        else
+            self._waitSpriteFrameTable[dataFilename] = true
+        end
+
+        self._spriteInfoArray[#self._spriteInfoArray + 1] = {dataFilename = dataFilename, imageFilename = imageFilename}
+    end
+
+    -- 等待加载完成后的监听
+    if next(self._waitSpriteFrameTable) ~= nil then
+        NtfManager:addNtfListener(ntfMessage, handler(self, self.spriteFrameLoadedNtf), self._tag)
+    end
+end
+
+
+return ActionActorShield

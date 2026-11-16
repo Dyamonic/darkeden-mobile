@@ -1,0 +1,176 @@
+---@class UICompShowDestInfoTips 头像交互按钮 本tips
+---
+local UICompShowDestInfoTips = class("UICompShowDestInfoTips", lt.UIGButtonBase)
+
+local Constant               = lt.Constant
+local NtfManager             = lt.NtfManager
+local BtnType                = Constant.PlayerTipBtns
+local TeamModule             = lt.TeamModule
+local FriendModule           = lt.FriendModule
+local RaceSkinRes            = Constant.RaceSkinRes
+local GameModule             = lt.GameModule
+local GuildModule            = lt.GuildModule
+
+local BTN_HEIHT              = 52
+local BTN_GROUPS             = {
+    [BtnType.ChangeCaptain] = { name = GReadText.KEY_TEAM_HALL_TIPS7, type = BtnType.ChangeCaptain },
+    [BtnType.PrivateChat]   = { name = GReadText.KEY_CHAT_TIPS6, type = BtnType.PrivateChat },
+    [BtnType.FriendAdd]     = { name = GReadText.KEY_CHAT_TIPS7, type = BtnType.FriendAdd },
+    [BtnType.GuildApply]    = { name = GReadText.KEY_GUILD_TIPS1, type = BtnType.GuildApply },
+    [BtnType.GuildInvite]   = { name = GReadText.KEY_GUILD_TIPS2, type = BtnType.GuildInvite },
+    [BtnType.CheckPlayer]   = { name = GReadText.KEY_GUILD_TIPS3, type = BtnType.CheckPlayer },
+    [BtnType.InviteInTeam]  = { name = GReadText.KEY_TEAM_HALL_TIPS31, type = BtnType.InviteInTeam },
+    [BtnType.ApplyInTeam]   = { name = GReadText.KEY_TEAM_HALL_TIPS32, type = BtnType.ApplyInTeam },
+}
+
+function UICompShowDestInfoTips:ctor()
+    UICompShowDestInfoTips.super.ctor(self)
+    self:makeFullScreen()
+    self._touchLayer = nil
+    self._btnsGroups = {}
+end
+
+function UICompShowDestInfoTips:onClear()
+    self._touchLayer = nil
+    self._btnsGroups = {}
+    UICompShowDestInfoTips.super.onClear(self)
+end
+
+function UICompShowDestInfoTips:onEnter()
+    UICompShowDestInfoTips.super.onEnter(self)
+    self._btnTabList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickBtnHandler))
+    self._touchLayer:addEventListener(fgui.UIEventType.TouchBegin, handler(self, self.onLayerClick))
+end
+
+function UICompShowDestInfoTips:onExit()
+    self._btnTabList:removeEventListener(fgui.UIEventType.ClickItem)
+    self._touchLayer:removeEventListener(fgui.UIEventType.TouchBegin)
+    UICompShowDestInfoTips.super.onExit(self)
+end
+
+function UICompShowDestInfoTips:onConstruct()
+    self._btnTabList = self:getChild("tabList")
+    self._btnTabList:setItemRenderer(handler(self, self.renderTabItem))
+    self._bg = self:getChild("bg")
+    self._touchLayer = self:getChild("touch")
+end
+
+function UICompShowDestInfoTips:onLayerClick()
+    self:hideSelf()
+end
+
+function UICompShowDestInfoTips:hideSelf()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_DESTINFOTIPS)
+end
+
+function UICompShowDestInfoTips:refreshTips(param)
+    -- 传入数据
+    self._roleData = param.roleData
+
+    self:btnGroupsShow()
+end
+
+function UICompShowDestInfoTips:btnGroupsShow()
+    self._btnsGroups = {}
+    -- 私聊
+    table.insert(self._btnsGroups, BTN_GROUPS[BtnType.PrivateChat])
+
+    local targetRace = self._roleData:getRace()
+    local heroData = GameModule:getHeroData()
+    local myRace = heroData:getRace()
+    if targetRace == myRace then
+        -- 查看信息
+        table.insert(self._btnsGroups, BTN_GROUPS[BtnType.CheckPlayer])
+        -- 申请好友
+        local openFriend,tips = lt.FunctionToggleModule:checkOpen(lt.FunctionToggleModule.FunctionHelpId.Friend)
+        if openFriend then
+            table.insert(self._btnsGroups, BTN_GROUPS[BtnType.FriendAdd])
+        end
+        local openTeam,tips = lt.FunctionToggleModule:checkOpen(lt.FunctionToggleModule.FunctionHelpId.Team)
+        if openTeam then
+            local teamId = self._roleData:getTeamId()
+            if teamId == 0 then
+                -- 邀请组队
+                table.insert(self._btnsGroups, BTN_GROUPS[BtnType.InviteInTeam])
+            else
+                -- 申请入队
+                if heroData:getTeamId() == 0 then
+                    table.insert(self._btnsGroups, BTN_GROUPS[BtnType.ApplyInTeam])
+                end
+            end
+        end
+    end
+    local openGuild,tips = lt.FunctionToggleModule:checkOpen(lt.FunctionToggleModule.FunctionHelpId.Guild)
+    if openGuild then
+        local myGuildId = heroData:getGuildId()
+        local targetGuildID = self._roleData:getGuildId()
+        local myHasGuild = (myGuildId ~= 0 and myGuildId ~= "0")
+        local targetHasGuild = (targetGuildID ~= 0 and targetGuildID ~= "0")
+        if (not myHasGuild and targetHasGuild) and (targetRace == myRace) then -- 申请入会
+            table.insert(self._btnsGroups, BTN_GROUPS[BtnType.GuildApply])
+        end
+        local myGuildDuty = tonumber(heroData:getGuildDuty())
+        -- 邀请入会
+        if (myHasGuild and not targetHasGuild) and (myGuildDuty == Constant.GuildDuty.Master or myGuildDuty == Constant.GuildDuty.ViceMaster) then
+            table.insert(self._btnsGroups, BTN_GROUPS[BtnType.GuildInvite])
+        end
+    end
+
+    -- 这种会散一下
+    -- for _, btnInfo in ipairs(self._btnsGroups) do
+    --     local btnNode = self._btnTabList:addItemFromPool()
+    --     btnNode:setTitle(btnInfo.name)
+    --     btnNode:setIcon((string.format(_GURL.GetImageDestInfoTipsIcon, RaceSkinRes[GameModule:getHeroRace()])))
+    --     btnNode.btnType = btnInfo.type
+    -- end
+    self._btnTabList:setNumItems(#self._btnsGroups)
+    local originalSize = self._btnTabList:getSize()
+    self._btnTabList:setSize(originalSize.width, BTN_HEIHT * #self._btnsGroups + #self._btnsGroups * 2)
+    self._bg:setSize(self._bg:getSize().width, BTN_HEIHT * #self._btnsGroups + #self._btnsGroups * 2 + 2)
+end
+
+function UICompShowDestInfoTips:renderTabItem(index, obj)
+    local btnInfo = self._btnsGroups[index + 1]
+    obj:setTitle(btnInfo.name)
+    obj:setIcon((string.format(_GURL.GetImageDestInfoTipsIcon, RaceSkinRes[GameModule:getHeroRace()])))
+    obj.btnType = btnInfo.type
+end
+
+function UICompShowDestInfoTips:onClickBtnHandler(context)
+    local btn = context:getData()
+    local type = btn.btnType
+    self:btnUseByType(type)
+
+    self:hideSelf()
+end
+
+function UICompShowDestInfoTips:btnUseByType(type)
+    if not self._roleData then
+        return
+    end
+    if type == BtnType.ChangeCaptain then
+        TeamModule:sendTransferCaptain(self._roleData:getPlayerId())
+    elseif type == BtnType.PrivateChat then
+        lt.ChatModule:openChatUI(self._roleData:getName())
+    elseif type == BtnType.FriendAdd then
+        FriendModule:sendFriendApplyReq(self._roleData:getPlayerId(), self._roleData:getName())
+    elseif type == BtnType.GuildApply then
+        GuildModule:sendGuildApplyReq(self._roleData:getGuildId())
+    elseif type == BtnType.GuildInvite then
+        GuildModule:sendGuildInviteSendReq(self._roleData:getPlayerId())
+    elseif type == BtnType.CheckPlayer then
+        lt.RankModule:onQueryPlayerReq(self._roleData:getPlayerId())
+    elseif type == BtnType.InviteInTeam then
+        local heroData = GameModule:getHeroData()
+        --自己没队伍先创建队伍
+        if heroData:getTeamId() == 0 then
+            TeamModule:fastCreateTeam(self._roleData:getPlayerId())
+        else
+            TeamModule:sendInviteTeam(self._roleData:getPlayerId())
+        end
+    elseif type == BtnType.ApplyInTeam then
+        TeamModule:sendApplyInTeam(self._roleData:getTeamId())
+    end
+end
+
+return UICompShowDestInfoTips

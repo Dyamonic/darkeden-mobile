@@ -1,0 +1,144 @@
+
+local AudioManager = {}
+
+local ccEngine = cc
+
+function AudioManager:init()
+	self._audioVolume = 1
+	self._musicVolume = 1
+	self._battleSoundTable = {}
+	self._musicName = ""
+
+	self._suffix = "mp3"
+	-- if device.platform == "android" then
+	-- 	self._suffix = "wav"
+	-- end
+
+	self:reloadSet()
+end
+
+function AudioManager:clear()
+	self._battleSoundTable = nil
+end
+
+function AudioManager:onUpdate()
+    local delta = lt.GameBoard:getDeltaTime()
+	self:onUpdateBattleSound(delta)
+end
+
+function AudioManager:onUpdateBattleSound(delta)
+	if not self._battleSoundTable then
+		return
+	end
+
+	for sound,v in pairs(self._battleSoundTable) do
+		v = v - delta
+		if v <= 0 then
+			self._battleSoundTable[sound] = nil
+		else
+			self._battleSoundTable[sound] = v
+		end
+	end
+end
+
+function AudioManager:reloadConfig()
+	--音乐
+	local editTable = lt.AutoFightManager:getEditConfByIndex(lt.Constant.SETTINGS_TYPES.MUSIC_SOUND)
+	if editTable then
+		local musicEnabled = editTable.switch == 1
+		self._musicVolume = musicEnabled and editTable.value/100 or 0
+	end
+	--音效
+	editTable = lt.AutoFightManager:getEditConfByIndex(lt.Constant.SETTINGS_TYPES.EFFECT_SOUND)
+	if editTable then
+		local soundEnabled = editTable.switch == 1
+		self._audioVolume = soundEnabled and editTable.value/100 or 0
+		fgui.GRoot:getInstance():setSoundVolumeScale(self._audioVolume)
+	end
+	self:reloadSet()
+end
+
+function AudioManager:reloadSet()
+	if self._musicHandle then
+		ccEngine.AudioEngine:setVolume(self._musicHandle, self._musicVolume)
+	end
+end
+
+function AudioManager:playMusic(music, loop)
+	if not music then
+		return
+	end
+
+	if loop == nil then
+		loop = true
+	end
+
+	local musicName = string.format("%s%s.mp3", "audio/music/", tostring(music))
+	self:_playMusic(musicName, loop)
+end
+
+function AudioManager:_playMusic(musicName, loop)
+	yflog:Info("musicName", musicName)
+	self._musicHandle = ccEngine.AudioEngine:play2d(musicName, loop, self._musicVolume)
+
+end
+
+function AudioManager:stopMusic(isReleaseData)
+	if self._musicHandle then
+		ccEngine.AudioEngine:stop(self._musicHandle)
+		self._musicHandle = nil
+	end
+
+end
+
+function AudioManager:playBattleSound(sound, loop)
+	if not self._battleSoundTable or self._battleSoundTable[sound] then
+		return nil
+	end
+	self._battleSoundTable[sound] = 0.3
+
+	return self:playSound(sound, loop)
+end
+
+function AudioManager:playSound(sound, loop)
+	if sound == nil then
+		return
+	end
+
+	if loop == nil then
+		loop = false
+	end
+	
+	local soundName = string.format("%s%s.%s", "audio/sound/", sound, self._suffix)
+	return self:_playSound(soundName, loop)
+end
+
+function AudioManager:_playSound(soundName, loop)
+	if self._audioVolume and self._audioVolume <= 0 then
+		return
+	end
+
+	return ccEngine.AudioEngine:play2d(soundName, loop, self._audioVolume)
+end
+
+function AudioManager:stopSound(handle)
+	if not handle then
+		return
+	end
+
+	ccEngine.AudioEngine:stop(handle)
+end
+
+-- 随机播放一个音乐
+function AudioManager:randomPlayMusic()
+	local musiclist = {"Adam_Normal", "chaos", "Dominator_of_darkness", "Oblivion", "Rest", "Ruin", "Silence_of_Battlefield", "Underworld"}
+	local randomIdx = math.random(1, #musiclist)
+	--做个判断如果随机的音乐和上一个播放的音乐一样，不重新播放
+	if self._musicName ~= musiclist[randomIdx] then
+		self:stopMusic(true)
+		self:playMusic(musiclist[randomIdx])
+		self._musicName = musiclist[randomIdx]
+	end
+end
+
+return AudioManager

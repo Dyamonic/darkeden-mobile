@@ -1,0 +1,75 @@
+local PetMeta = class("PetMeta")
+
+function PetMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function PetMeta:initWithRow(row)
+    self._id            = row.Id
+    self._petName       = row.PetName
+    self._itemId        = row.ItemId
+    self._photo         = row.Photo
+    self._di            = row.Di
+    self._jindu         = row.Jindu
+    self._monsterId     = row.MonsterId
+    self._time          = row.Time
+    self._creatureType1 = row.CreatureType1
+    self._creatureType2 = row.CreatureType2
+    self._creatureType3 = row.CreatureType3
+    self._creatureType4 = row.CreatureType4
+    self._creatureType5 = row.CreatureType5
+    self._feed          = json.decode(row.Feed)
+    self._way           = row.Way
+    self._feedSpecial   = json.decode(row.Special)
+    self._pick          = row.Pick
+    
+    if self._monsterId then
+        local monsterMeta = lt.CacheManager:getMonsterInfoMeta(self._monsterId)
+        if monsterMeta then
+            self._modelId = monsterMeta:getModelId()
+        end
+    end
+
+    self._modleDir = row.ModleDir
+end
+
+function PetMeta:getFinalModelId(stage)
+    if not stage then
+        return self._modelId
+    end
+
+    local functionName = "getCreatureType" .. stage
+    if self[functionName] then
+        local stageModelId = self[functionName](self)
+        if stageModelId > 0 then
+            return stageModelId
+        end
+    end
+    
+    return self._modelId
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function PetMeta:getId() return self._id end
+function PetMeta:getPetName() return self._petName end
+function PetMeta:getItemId() return self._itemId end
+function PetMeta:getPhoto() return self._photo end
+function PetMeta:getDi() return self._di end
+function PetMeta:getJindu() return self._jindu end
+function PetMeta:getMonsterId() return self._monsterId end
+function PetMeta:getTime() return self._time end
+function PetMeta:getCreatureType1() return self._creatureType1 end
+function PetMeta:getCreatureType2() return self._creatureType2 end
+function PetMeta:getCreatureType3() return self._creatureType3 end
+function PetMeta:getCreatureType4() return self._creatureType4 end
+function PetMeta:getCreatureType5() return self._creatureType5 end
+function PetMeta:getFeed() return self._feed end
+function PetMeta:getWay() return self._way end
+function PetMeta:getFeedSpecial() return self._feedSpecial end
+function PetMeta:getPick() return self._pick end
+function PetMeta:getModleDir() return self._modleDir end
+
+-- AUTO GENERATED GETTERS END
+return PetMeta

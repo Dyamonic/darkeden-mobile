@@ -1,0 +1,183 @@
+
+local ActionBaseActor = class("ActionBaseActor", function()
+    return display.newNode()
+end)
+local Constant = lt.Constant
+local TimeTrigger = lt.TimeTrigger
+
+ActionBaseActor._direction      = nil
+ActionBaseActor._actionId       = nil
+ActionBaseActor._actionInfo     = nil
+
+
+ActionBaseActor._timeTrigger    = nil
+ActionBaseActor._nextFrameIndex = nil
+ActionBaseActor._initFrame = false
+ActionBaseActor._loopCount      = nil
+
+
+function ActionBaseActor:ctor(direction)
+    self._direction = direction
+    self._actionId  = Constant.ACTION_MAX
+
+    self._timeTrigger = TimeTrigger.new()
+    self._nextFrameIndex = 1
+    self._initFrame = false
+    self._loopCount = 0
+end
+
+function ActionBaseActor:onClear()
+    self:removeSelf()
+
+    self._actionId = nil
+    self._actionInfo = nil
+
+    self._direction = nil
+    self._timeTrigger = nil
+end
+
+function ActionBaseActor:initActionInfo()
+end
+
+function ActionBaseActor:onUpdate()
+end
+
+function ActionBaseActor:onUpdateAction()
+    if not self._actionInfo or not self._actionInfo:getLoop() then
+        return
+    end
+
+    local frameCount = self._actionInfo:getSpriteFrameCount()
+    local loop = self._actionInfo:getLoop()
+
+    if loop ~= -1 and (self._loopCount >= loop or self._nextFrameIndex > frameCount) then
+        -- 非站立动作 && 如跑步或者attack动作每循环一次就要重新发起动作执行 startAction()
+        return
+    end
+
+    if self._timeTrigger:tick() then
+        self:gotoNextFrame()
+
+        if self._nextFrameIndex > self._actionInfo:getSpriteFrameCount() then
+            self._nextFrameIndex = 1
+
+            self._loopCount = self._loopCount + 1
+        end
+    end
+end
+
+function ActionBaseActor:setDirection(direction)
+    if direction == self._direction then
+        return
+    end
+    self:_setDirection(direction)
+end
+
+function ActionBaseActor:_setDirection(direction)
+	self._direction = direction
+    self:startAction()
+end
+
+function ActionBaseActor:playAction(actionId)
+    self._actionId = actionId
+    self:startAction()
+end
+
+function ActionBaseActor:startAction()
+	-- 创建ActionInfo
+    self:initActionInfo()
+
+    -- 设置控制参数
+    if not self._actionInfo then return end
+
+    self:resetActionStep()
+    self._loopCount = 0
+    self._nextFrameIndex = 1
+
+    self:gotoNextFrame()
+end
+
+function ActionBaseActor:resetActionStep()
+    self._timeTrigger:reset(self._actionInfo:getStep())
+end
+
+function ActionBaseActor:lastActionStep()
+    self._nextFrameIndex = self._actionInfo:getSpriteFrameCount() - 1
+    self:gotoNextFrame()
+end
+
+function ActionBaseActor:gotoNextFrame()
+    if self._actionPause and self._initFrame then
+        return
+    end
+
+    self._initFrame = true
+    self:updateFrame(true)
+
+    self._nextFrameIndex = self._nextFrameIndex + 1
+end
+
+function ActionBaseActor:updateFrame(update)
+end
+
+-- Setter && Getter
+function ActionBaseActor:getDirection()
+    return self._direction or Constant.DIRECTION_DOWN
+end
+
+
+function ActionBaseActor:CreateSprite(anchorX, anchorY, zorder, node)
+    local sp = display.newSprite()
+    sp:setAnchorPoint(anchorX, anchorY)
+    if not node then
+        self:addChild(sp, zorder)
+        return sp
+    end
+
+    node:addChild(sp, zorder)
+    return sp
+end
+
+--[[
+    天炼换算偏移值坐标
+    天炼坐标系     手游坐标系
+   ├──────────     │ 
+   │      x        │y
+   │y              │     x
+   │               ├──────────
+
+    newX = x + offsetX + width/2
+    newY = x + offsetY + height/2
+]]
+function ActionBaseActor:conversionOffsetPoint(point, offset, size)
+    local conX, conY
+    conX = point.x + offset.x + size.width/2
+    conY = point.y - offset.y - size.height/2
+    return cc.p(conX, conY)
+end
+
+function ActionBaseActor:getActionId()
+    return self._actionId
+end
+
+function ActionBaseActor:getActionInfo()
+    return self._actionInfo
+end
+
+function ActionBaseActor:setActionPause(acionPause)
+    self._actionPause = acionPause
+end
+
+function ActionBaseActor:getActionPause()
+    return self._actionPause
+end
+
+function ActionBaseActor:getNextFrameIndex()
+    return self._nextFrameIndex
+end
+
+function ActionBaseActor:setNextFrameIndex(nextFrameIndex)
+    self._nextFrameIndex = nextFrameIndex
+end
+
+return ActionBaseActor

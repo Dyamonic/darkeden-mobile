@@ -1,0 +1,27 @@
+
+local EquipEnchantingMeta = class("EquipEnchantingMeta")
+
+function EquipEnchantingMeta:ctor(row)
+    self._id            = row.IdxId
+    self._maxlevel      = row.MaxLevel
+    self._level         = row.Level
+    self._rate          = row.SuccessRate
+end
+
+function EquipEnchantingMeta:getId()
+    return self._id
+end
+
+function EquipEnchantingMeta:getMaxLevel()
+    return self._maxlevel
+end
+
+function EquipEnchantingMeta:getLevel()
+    return self._level
+end
+
+function EquipEnchantingMeta:getRate()
+	return self._rate
+end
+
+return EquipEnchantingMeta

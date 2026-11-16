@@ -1,0 +1,17 @@
+
+local NameLastDao = {}
+
+function NameLastDao:queryAll()
+    local nameLastTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM GenerateLastName;") do
+    	if not nameLastTable[row.Type] then
+    		nameLastTable[row.Type] = {}
+    	end
+        table.insert(nameLastTable[row.Type], row.LastName)
+    end
+
+    return nameLastTable
+end
+
+return NameLastDao

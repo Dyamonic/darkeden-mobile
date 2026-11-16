@@ -1,0 +1,50 @@
+local ReadTextManager = {}
+
+GReadTextMetaTable = {}
+GReadText = {}
+setmetatable(GReadText, GReadTextMetaTable)
+
+GReadTextMetaTable.__index = function(table, name)
+    table[name] = ReadTextManager:getClientTextByKey(name)
+    return table[name]
+end
+
+ReadTextManager._clientText = nil
+ReadTextManager._errorMessage = nil
+
+function ReadTextManager:init()
+    self:initClientText()
+    self:initErrorMsg()
+end
+
+function ReadTextManager:clear()
+    self._clientText = nil
+    self._errorMessage = nil
+end
+
+-----------------------------------------------------------------------------
+--- ClientText
+function ReadTextManager:initClientText()
+    self._clientText = lt.ClientTextDao:queryAll() or {}
+end
+
+function ReadTextManager:getClientTextByKey(key)
+    local readText = ReadTextManager:getClientText()
+    return readText[key or "empty"] or key
+end
+
+function ReadTextManager:getClientText()
+    return self._clientText or {}
+end
+
+-----------------------------------------------------------------------------
+--- ErrorMessage
+function ReadTextManager:initErrorMsg()
+    self._errorMessage = lt.ErrorMessageDao:queryAll() or {}
+end
+
+function ReadTextManager:getErrorMsgByCode(code)
+    return self._errorMessage[code or "empty"] or ("unknown error" .. code or "")
+end
+
+return ReadTextManager

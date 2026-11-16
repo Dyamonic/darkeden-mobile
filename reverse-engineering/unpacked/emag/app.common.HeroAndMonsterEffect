@@ -1,0 +1,249 @@
+local HeroAndMonsterEffect = {}
+local SkillEnum           = lt.SkillEnum
+local Constant            = lt.Constant
+local CacheManager        = lt.CacheManager
+local EffectQueueActor    = lt.EffectQueueActor
+local EffectParallelActor = lt.EffectParallelActor
+local EffectEnum = lt.EffectEnum
+
+-- 角色和怪物公用共用部分
+
+---------------------------------------------------------------------
+-- 并行特效
+function HeroAndMonsterEffect:playParallelEffectByLv(actor,skillId, skillLevel, effectName, fromObjId)
+    if not actor then
+        return
+    end
+
+    local queueEffectNode = actor:getQueueEffectNode()
+    if not queueEffectNode then
+        return
+    end
+    local effectParabolaActor = EffectParallelActor.new(actor, skillId, actor:getDirection())
+    queueEffectNode:addChild(effectParabolaActor)
+    
+    local zorder = EffectEnum.EFFECT_ZORDER[skillId] or EffectEnum.DEFAULT_ZORDER
+    queueEffectNode:setLocalZOrder(zorder)
+
+    local agent = actor:getAgent()
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    local fromAgent =  worldAgent:getAgent(fromObjId)
+    local isGunNormal = skillId == SkillEnum.NORMAL_RANGE and (agent and agent.getWeaponType and (Constant.IsGun[agent:getWeaponType() or -1] or false))
+    local isSlayerMeleeNormal = skillId == SkillEnum.NORMAL_RANGE and (fromAgent and fromAgent.getWeaponType and (Constant.IsSlayerMelee[fromAgent:getWeaponType() or -1] or false))
+
+    actor:addParabEffectActor(effectParabolaActor)
+    
+    if skillId == SkillEnum.SKILL_SWORD_WAVE then
+        local checkDirection = function (direction)
+            if direction < Constant.DIRECTION_LEFT then
+                return Constant.DIRECTION_LEFT_UP
+            end
+
+            if direction > Constant.DIRECTION_LEFT_UP then
+                return Constant.DIRECTION_LEFT
+            end
+
+            return direction
+        end
+        local direction1 = checkDirection(actor:getDirection() + 1)
+        local direction2 = checkDirection(actor:getDirection() - 1)
+        local direction3 = actor:getDirection()
+
+        local directionArr = { direction1, direction2, direction3}
+        effectParabolaActor:setEffectDirection(directionArr)
+    elseif skillId == SkillEnum.SKILL_CURE_CRITICAL_WOUNDS then
+        if effectName == Constant.EFFECT.SELF then
+            effectParabolaActor:setEllipseDirSpeed(-3.14)
+            effectParabolaActor:setTransformEllipse({120,60})
+        end
+    elseif skillId == SkillEnum.SKILL_SHINE_SWORD then
+        if effectName == Constant.EFFECT.PROCESS then
+            local progressMetas = CacheManager:getProcessMetas(skillId,skillLevel)
+            effectParabolaActor:addEffect(skillId, {progressMetas[2]})
+            return
+        end
+    elseif isSlayerMeleeNormal then
+        if effectName == Constant.EFFECT.HIT then
+            local hitMetas = CacheManager:getHitMetas(SkillEnum.SKILL_SINGLE_BLOW,skillLevel)
+            if #hitMetas > 0 then
+                local tempMeta = hitMetas[math.random(1, #hitMetas)]
+                effectParabolaActor:addEffect(skillId, {tempMeta})
+            end
+        end
+        return 
+    elseif SkillEnum.GUN_SHOT_SKILL_ID_TABLE[skillId] or isGunNormal then
+        -- 枪械 weaponType   SR 5     SG 2     AR 4     SMG 3
+        -- 枪械 特效表index   SR 1     SG 2     AR 3     SMG 4
+        if effectName == Constant.EFFECT.ACTION then
+            local indexOffset = 0
+            if actor:getRoleData() and actor:getRoleData():getSex() > 0 then
+                indexOffset = 4
+            end
+            local weaponTypeToIndex = {
+                [5] = 1,
+                [2] = 2,
+                [4] = 3,
+                [3] = 4
+            }
+            local actionMetas = CacheManager:getActionMetas(skillId,skillLevel)
+            if skillId == SkillEnum.SKILL_PLASMA_ROCKET_LAUNCHER or skillId == SkillEnum.SKILL_XRL_MISSILE then
+                -- NOTHING
+            elseif skillId == SkillEnum.SKILL_TURRET_FIRE then -- 炮塔火力
+                effectParabolaActor:addEffect(skillId, actionMetas)
+            else    
+                if actor:getAgent() and actionMetas then
+                    local weaponType = actor:getAgent():getWeaponType()
+                    local index = (weaponTypeToIndex[weaponType] or 1) + indexOffset
+                    local data = {actionMetas[index]}
+                    if #data > 0 then
+                        effectParabolaActor:addEffect(skillId, data)
+                    end
+
+                    return
+                end
+            end
+        elseif effectName == Constant.EFFECT.PROCESS then
+            if skillId == SkillEnum.SKILL_VIOLENT_PHANTOM then
+                effectParabolaActor:addEffectBySkillLevel(skillId, skillLevel, effectName)
+            end
+            return
+        elseif effectName == Constant.EFFECT.HIT then
+            if skillId == SkillEnum.SKILL_QUICK_FIRE or skillId == SkillEnum.SKILL_TRIDENT then
+                local hitMetas = CacheManager:getHitMetas(skillId,skillLevel)
+                local tempMetas = {}
+                for i=1,2 do
+                    local random = math.random(1,#hitMetas)
+                    table.insert(tempMetas, hitMetas[random])
+                end
+                effectParabolaActor:addEffect(skillId, tempMetas)
+                
+                return
+            elseif skillId == SkillEnum.SKILL_MOLE_SHOT 
+            or skillId == SkillEnum.SKILL_BULLET_OF_LIGHT
+            or skillId == SkillEnum.SKILL_MULTI_SHOT
+            or skillId == SkillEnum.SKILL_DOUBLE_SHOT
+            or skillId == SkillEnum.SKILL_TRIPLE_SHOT 
+            or skillId == SkillEnum.NORMAL_RANGE    
+            or isGunNormal
+            then
+                
+                local weaponTypeToIndex = {
+                    [5] = { id = 1, spriteId = {0, 6} }, --SR
+                    [3] = { id = 2, spriteId = {7, 13}},
+                    [4] = { id = 2, spriteId = {7, 13}},
+                    [2] = { id = 3, spriteId = {14, 20}}, --SG
+                }
+
+                local hitMetas = CacheManager:getHitMetas(skillId,skillLevel)
+                if fromAgent and hitMetas then
+                    --因为怪物没有武器类型，默认给个类型5
+                    local weaponType = 5
+                    if fromAgent:isHeroAgent() then
+                        weaponType = fromAgent:getWeaponType()
+                    end
+                    local randomInfo = weaponTypeToIndex[weaponType]
+                    local tempMeta = clone(hitMetas[randomInfo.id])
+                    local spriteId = randomInfo.spriteId
+                    -- 根据模型高度做处理
+                    local randomSprite = spriteId[1]
+                    if agent and agent:getRect().height > 100 then
+                        randomSprite = randomSprite + math.random(0 ,6)
+                    else
+                        randomSprite = randomSprite + math.random(1 ,6)
+                    end
+                    tempMeta:setEffectId(randomSprite)
+                    effectParabolaActor:addEffect(skillId, {tempMeta})
+                    return
+                end
+            elseif skillId == SkillEnum.SKILL_GUN_SHOT_GUIDANCE then
+                local hitMetas = CacheManager:getHitMetas(skillId,skillLevel)
+                local tempMeta = clone(hitMetas[1])
+                local spriteId = tempMeta:getSpriteId()
+                tempMeta:setEffectId(math.random(spriteId, spriteId + 6))
+                effectParabolaActor:addEffect(skillId, {tempMeta})
+            elseif skillId == SkillEnum.SKILL_JABBING_VEIN then
+                local hitMetas = CacheManager:getHitMetas(skillId,skillLevel)
+                effectParabolaActor:addEffect(skillId, hitMetas)
+            end
+        end
+    end
+
+    local agent = actor:getAgent()
+    -- 并行buff 标志
+    local buffer = CacheManager:getBuffBySkillId(skillId)
+    if buffer and agent and effectName == Constant.EFFECT.SELF then
+        local bufferId = buffer:getBuffId()
+        if bufferId and agent:getBufferIsExit(bufferId) then
+            effectParabolaActor:setIsExitBuff(true)
+        end
+    end
+
+    effectParabolaActor:addEffectBySkillLevel(skillId, skillLevel, effectName)
+end
+
+---------------------------------------------------------------------
+-- 串行
+function HeroAndMonsterEffect:playQueueEffectByLv(actor, skillId, skillLevel, effectName)
+    if not actor then
+        return
+    end
+
+    local effectQueueActor = EffectQueueActor.new(actor, skillId, actor:getDirection() or 0)
+    actor:getQueueEffectNode():addChild(effectQueueActor)
+
+    table.insert(actor:getQueueEffectActorArr(), effectQueueActor)
+    local agent = actor:getAgent()
+    -- 串行buff 标志
+    local buffer = CacheManager:getBuffBySkillId(skillId)
+    if buffer and agent and effectName == Constant.EFFECT.SELF then
+        local bufferId = buffer:getBuffId()
+        if bufferId and agent:getBufferIsExit(bufferId) then
+            effectQueueActor:setIsExitBuff(true)
+        end
+    end
+
+    effectQueueActor:addEffectBySkillLevel(skillId, skillLevel, effectName)
+end
+
+---------------------------------------------------------------------
+-- 旋转改变层级特效
+function HeroAndMonsterEffect:playRotateEffect(actor, metas, skillId,offTransform)
+    if not actor then
+        return
+    end
+
+    if not metas or table.nums(metas) < 1 then
+        yflog:InfoLine(" HeroActor playRotateEffect metas is empty")
+        return
+    end
+    offTransform = offTransform or 0
+    local offsetX, offsetY = -25, 15
+	for i, meta in ipairs(metas) do
+		local effectActor = lt.EffectActor.new(meta, actor:getDirection(),  nil, meta:getLoopCount() == -1)
+        effectActor:setPosition(offsetX, offsetY+offTransform)
+		actor:addChild(effectActor)
+		
+        if skillId == SkillEnum.SKILL_SPIRIT_GUARD then
+            effectActor:setEllipseDirSpeed(-3.5)
+            effectActor:setEllipseTime(2*3.14/#metas*i, i)
+            effectActor:setTransformEllipse({48,24})
+        elseif skillId == Constant.ROLEEFFECT[1] or skillId == Constant.ROLEEFFECT[2] or skillId == Constant.ROLEEFFECT[3] then
+            effectActor:setEffectInfoZorder(1)
+        elseif skillId == SkillEnum.SKILL_JABBING_VEIN then
+            if i%2 == 0 then
+                effectActor:setEffectInfoZorder(1)
+            end
+        elseif skillId == SkillEnum.SKILL_PIERCING then -- 烈焰指
+            if i%2 == 1 then
+                effectActor:setEffectInfoZorder(1)
+            end
+        end
+        -- local rotateEffectActorArr = actor:getRotateEffectActorArr()
+		-- table.insert(rotateEffectActorArr, effectActor)
+
+        actor:addRotateEffect(effectActor)
+	end
+end
+
+
+return HeroAndMonsterEffect

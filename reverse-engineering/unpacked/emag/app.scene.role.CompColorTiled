@@ -1,0 +1,40 @@
+---@class CompColorTiled 颜色块
+local CompColorTiled = class("CompColorTiled", lt.UIGButtonBase, lt.UICompChangeSkin)
+local Constant = lt.Constant
+local CHANGE_TYPE = Constant.CHANGE_TYPE
+
+function CompColorTiled:ctor()
+    CompColorTiled.super.ctor(self)
+end
+   
+function CompColorTiled:onConstruct()
+    self._graph = self:getChild("color")
+end
+
+function CompColorTiled:onClear()
+    self._graph = nil
+    CompColorTiled.super.onClear(self)
+end
+
+function CompColorTiled:onEnter()
+    self:addClickListener(handler(self, self.onClick))
+end
+function CompColorTiled:onExit()
+    self:removeClickListener()
+end
+
+function CompColorTiled:setFromWnd(wnd)
+    self._fromWnd = wnd
+end
+
+function CompColorTiled:onClick()
+    self._fromWnd:changeHairOrSkinColor(self._colorType, self._index)
+end
+
+function CompColorTiled:setColorTiledInfo(colorInfo)
+    self._colorType = colorInfo.type
+    self._index = colorInfo.index
+    self._graph:setColor(colorInfo.color)
+end
+
+return CompColorTiled

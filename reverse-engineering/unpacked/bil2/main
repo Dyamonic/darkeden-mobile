@@ -1,0 +1,18 @@
+
+package.path = package.path .. ";./app/thirdparty/protobuf/?.lua"
+
+cc.FileUtils:getInstance():setPopupNotify(false)
+
+require "config"
+require "cocos.init"
+
+local function main()
+    require("app.Game"):create():run()
+end
+
+local status, msg = xpcall(main, __G__TRACKBACK__)
+if not status then
+    print(msg)
+end
+
+

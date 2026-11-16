@@ -1,0 +1,90 @@
+
+local UnionPurviewData = class("UnionPurviewData")
+
+local Constant = lt.Constant
+local StringManager = lt.StringManager
+
+UnionPurviewData._job        = nil  -- 
+
+
+function UnionPurviewData:ctor(perUnionPurviewData)
+    assert(perUnionPurviewData ~= nil, "perUnionPurviewData is nil !")
+
+    self:initUnionPurviewData(perUnionPurviewData)
+end
+
+function UnionPurviewData:initUnionPurviewData(perUnionPurviewData)
+    self._job = perUnionPurviewData.duty
+    self._jobChange = perUnionPurviewData.customizeDuty
+    self._setJob = perUnionPurviewData.commission
+    self._setNotice = perUnionPurviewData.editNotify
+    self._applyAtk = perUnionPurviewData.applyShaCheng
+    self._unionApply = perUnionPurviewData.agreeJoin
+    self._unionExit = perUnionPurviewData.removeMember
+    self._warstate = perUnionPurviewData.guildWar
+    -- self:dump()
+end
+
+function UnionPurviewData:getJob()
+    return self._job
+end
+
+function UnionPurviewData:setPurviewState(state)
+    if state == 1 then
+        self._jobChange = self:getJobChange() and 0 or 1
+    elseif state == 2 then
+        self._setJob = self:getSetJob() and 0 or 1
+    elseif state == 3 then
+        self._setNotice = self:getSetNotice() and 0 or 1  
+    elseif state == 4 then
+        self._applyAtk = self:getApplyAtk() and 0 or 1  
+    elseif state == 5 then
+        self._unionApply = self:getUnionApply() and 0 or 1  
+    elseif state == 6 then
+        self._unionExit = self:getUnionExit() and 0 or 1  
+    elseif state == 7 then
+        self._warstate = self:getWarState() and 0 or 1 
+    end
+end
+
+function UnionPurviewData:getJobChange()
+    return self._jobChange == 1 and true or false
+end
+
+function UnionPurviewData:getSetJob()
+    return self._setJob == 1 and true or false
+end
+
+function UnionPurviewData:getSetNotice()
+    return self._setNotice == 1 and true or false
+end
+
+function UnionPurviewData:getApplyAtk()
+    return self._applyAtk == 1 and true or false
+end
+
+function UnionPurviewData:getUnionApply()
+    return self._unionApply == 1 and true or false
+end
+
+function UnionPurviewData:getUnionExit()
+    return self._unionExit == 1 and true or false 
+end
+
+function UnionPurviewData:getWarState()
+    return self._warstate == 1 and true or false 
+end
+
+function UnionPurviewData:dump()
+    lt.LogUtil:debug(">>>>>>>>>>>>>>>>>>>> UnionPurviewData >>>>>>>>>>>>>>>>>>>>")
+    lt.LogUtil:debug("self._jobChange = "..tostring(self._jobChange))
+    lt.LogUtil:debug("self._setJob = "..tostring(self._setJob))
+    lt.LogUtil:debug("self._setNotice = "..tostring(self._setNotice))
+    lt.LogUtil:debug("self._applyAtk = "..tostring(self._applyAtk))
+    lt.LogUtil:debug("self._job = "..tostring(self._job))
+    lt.LogUtil:debug("self._unionApply = "..tostring(self._unionApply))
+    lt.LogUtil:debug("self._unionExit = "..tostring(self._unionExit))
+    lt.LogUtil:debug("<<<<<<<<<<<<<<<<<<<< UnionPurviewData <<<<<<<<<<<<<<<<<<<<")
+end
+
+return UnionPurviewData

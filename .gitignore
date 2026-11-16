@@ -1,0 +1,23 @@
+# Generated build products and machine-specific state.
+**/build/
+**/.gradle/
+**/.idea/
+**/__pycache__/
+**/*.pyc
+**/local.properties
+*.log
+.DS_Store
+Thumbs.db
+
+# User credentials and signing material are never part of the repository.
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.key
+
+# Curated build base and latest installable APK are kept in artifacts/.
+# Intermediate and duplicate APKs under app/build remain ignored above.

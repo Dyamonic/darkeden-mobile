@@ -1,0 +1,16 @@
+.class public synthetic Lkotlinx/serialization/json/internal/ComposerForUnsignedNumbers-$$ExternalSynthetic1;
+.super Ljava/lang/Object;
+
+
+# direct methods
+.method public static synthetic m0(J)Ljava/lang/String;
+    .locals 1
+
+    const/16 v0, 0xa
+
+    invoke-static {p0, p1, v0}, Lkotlinx/serialization/json/internal/ComposerForUnsignedNumbers-$$ExternalSynthetic3;->m0(JI)Ljava/lang/String;
+
+    move-result-object p0
+
+    return-object p0
+.end method

@@ -1,0 +1,164 @@
+------------------------------------------------------------------------
+-- MMultipleFallingEffectGenerator.cpp
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+-- Global
+------------------------------------------------------------------------
+--MMultipleFallingEffectGenerator	g_StopZoneEffectGenerator;
+
+------------------------------------------------------------------------
+-- Generate
+------------------------------------------------------------------------
+local MMultipleFallingEffectGenerator = class("MMultipleFallingEffectGenerator", lt.MEffectGenerator)
+local SkillEnum = lt.SkillEnum
+local Constant = lt.Constant
+local CacheManager = lt.CacheManager
+local MapUtil = lt.MapUtil
+local SkillModule = lt.SkillModule
+
+local NUM = {
+	[SkillEnum.SKILL_POWER_OF_LAND] = 0,
+	[SkillEnum.SKILL_SPIT_STREAM] = 6,
+	[SkillEnum.SKILL_SLAYER_BLADE_CUT_STORM] = 6,
+}
+
+local TILE_X = Constant.TILE_X	
+local TILE_Y= Constant.TILE_Y 
+local TILE_X_HALF= Constant.TILE_X_HALF 
+local TILE_Y_HALF= Constant.TILE_Y_HALF 
+
+-- 生成函数
+function MMultipleFallingEffectGenerator:generate(egInfo)
+    -- local bltType = g_pEffectSpriteTypeTable[egInfo.effectSpriteType].BltType
+    -- local frameID = g_pEffectSpriteTypeTable[egInfo.effectSpriteType].FrameID
+    
+    -- local maxFrame = g_pTopView:GetMaxEffectFrame(bltType, frameID)
+    
+    local bOK = false
+    
+    local pEffect
+    local x, y, z
+    local ez1 = egInfo.z1 - TILE_Y
+    local zt = ez1  -- 下方掉落物的坐标
+    
+    local pEffectTarget2
+    
+    -- 效果创建
+    local numEffectPhase = 4
+    
+    local baseZ = 350
+    
+    local randY = 50
+    local randX = TILE_X
+    local numEffect = 4
+    local skillId = egInfo.skillId
+    if skillId == SkillEnum.SKILL_ACID_STORM or skillId == SkillEnum.SKILL_POISON_STORM then
+        if SkillModule:checkPassiveSkillLearned(SkillEnum.SKILL_ACID_STORM_PRO) then
+            randY = 100
+            randX = TILE_X * 2
+            numEffectPhase = 6
+        end
+    elseif skillId == SkillEnum.SKILL_ICE_HAIL then
+        randY = 24 * 2
+        randX = TILE_X * 2
+        numEffectPhase = 13
+    elseif skillId == SkillEnum.SKILL_WIDE_ICE_HAIL then
+        randY = 24 * 4
+        randX = TILE_X * 4
+        numEffectPhase = 25
+    end
+    
+    local ex = {}
+    local ey = {}
+    local ez = {}
+    
+    local dropCount = egInfo.count
+    local phaseUpper = 150  -- 一个阶段向上调整的坐标
+    local dropCountInc = phaseUpper / egInfo.step
+    
+    -- 创建 numEffectPhase * numEffect 个效果
+    for i = 1, numEffectPhase do
+        local n = 1
+        
+        ex[n] = egInfo.x0 - math.random(randX) - TILE_X_HALF
+        ey[n] = egInfo.y0 - math.random(randY)
+        ez[n] = baseZ + math.random(50)
+        
+        n = n + 1
+        ex[n] = egInfo.x0 - math.random(randX) - TILE_X_HALF
+        ey[n] = egInfo.y0 + math.random(randY)
+        ez[n] = baseZ + math.random(50)
+        
+        n = n + 1
+        ex[n] = egInfo.x0 + math.random(randX) + TILE_X_HALF
+        ey[n] = egInfo.y0 - math.random(randY)
+        ez[n] = baseZ + math.random(50)
+        
+        n = n + 1
+        ex[n] = egInfo.x0 + math.random(randX) + TILE_X_HALF
+        ey[n] = egInfo.y0 + math.random(randY)
+        ez[n] = baseZ + math.random(50)
+        
+        baseZ = baseZ + phaseUpper
+        dropCount = dropCount + dropCountInc
+        
+        for j = 1, numEffect do
+            x = ex[j]
+            y = ey[j]
+            z = ez[j]
+            --由直接创建修改为异步
+    		-- pEffect = lt.BulletLinear.new(skillId)
+            lt.BulletSystem:requestBullet({
+                    skillId = skillId, 
+                    direction = egInfo.direction, 
+                    srcPixelPosition = {x = x, y = y, z = egInfo.z0 + z},
+                    targetPixelPosition = {x = x, y = y, z = zt, step = egInfo.step},
+                    lastBullet = true,
+                    callback = egInfo.callback,
+                }
+            )
+        
+            
+            -- pEffect:setPixelPosition(x, y, egInfo.z0 + z)
+            
+            -- pEffect:setDirection(egInfo.direction)
+            
+            -- pEffect:setTarget(x, y, zt, egInfo.step)
+            
+			-- pEffect:setEndCallBack(egInfo.callback)
+
+
+    		-- lt.BulletManager:addBulletToMap(pEffect)
+            
+            -- 威力
+            -- pEffect:setPower(egInfo.power)
+            
+            -- 添加到Zone
+            -- if g_pZone:AddEffect(pEffect) then
+            --     if not bOK then
+            --         pEffect:SetLink(egInfo.nActionInfo, egInfo.pEffectTarget)
+            --         bOK = true
+            --     else
+            --         -- 下一个效果创建信息
+            --         if egInfo.pEffectTarget == nil then
+            --             pEffect:SetLink(egInfo.nActionInfo, nil)
+            --         else
+            --             pEffectTarget2 = MEffectTarget.new(egInfo.pEffectTarget)
+            --             pEffect:SetLink(egInfo.nActionInfo, pEffectTarget2)
+            --             pEffectTarget2:Set(x, y, zt, egInfo.creatureID)
+            --         end
+            --     end
+            -- end
+        end
+    end
+    
+    return bOK
+end
+
+function MMultipleFallingEffectGenerator:callback()
+
+
+end
+
+
+return MMultipleFallingEffectGenerator

@@ -1,0 +1,38 @@
+
+local GameScene = class("GameScene", lt.BaseScene)
+function GameScene:ctor()
+    GameScene.super.ctor(self)
+    -- 模块初始化
+    lt.ConnectManager:moduleTLInit()
+    lt.ConnectManager:logicManagerInit()
+end
+
+function GameScene:getLayerManager()
+    return self._tlLayerManager
+end
+
+function GameScene:onClear()
+    yflog:Info("GameScene:onClear")
+    lt.GameFGUI:onClear()
+    if self._tlLayerManager then
+        self._tlLayerManager:onClear()
+        self._tlLayerManager = nil
+    end
+    GameScene.super.onClear(self)
+    
+    collectgarbage("collect")
+end
+
+function GameScene:onEnter()
+    yflog:Info("GameScene:onEnter")
+    lt.GameFGUI.new()
+    self._tlLayerManager = lt.TLLayerManager.new(self._groot)
+end
+
+function GameScene:onExit()
+    yflog:Info("GameScene:onExit")
+    cc.Director:getInstance():getTextureCache():removeUnusedTextures()
+    self:removeFromParent()
+end
+
+return GameScene

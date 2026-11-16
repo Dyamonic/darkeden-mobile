@@ -1,0 +1,8 @@
+
+local StarterFix = {}
+
+function StarterFix:fixCheckStarterUpdate(response)
+	-- dump(response, "response")
+end
+
+return StarterFix

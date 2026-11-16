@@ -1,0 +1,191 @@
+---@class CompLeftTime -- 副本倒计时
+local CompLeftTime = class("CompLeftTime", lt.UIGButtonBase)
+
+local NtfManager   = lt.NtfManager
+local CommonModule = lt.CommonModule
+local ScheduleUtil = lt.ScheduleUtil
+local MapModule    = lt.MapModule
+local TimeCounter  = lt.TimeCounter
+local CommonFunc   = lt.CommonFunc
+local CacheManager = lt.CacheManager
+local TimeCounterManager = lt.TimeCounterManager
+
+function CompLeftTime:ctor(view)
+    CompLeftTime.super.ctor(self)
+    self._view = view
+    self._isOpenDungon = false
+    self._isOpenLeftTime = false
+end
+
+function CompLeftTime:onConstruct()
+    self:initUI()
+end
+
+function CompLeftTime:onEnter()
+    CompLeftTime.super.onEnter(self)
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_VAMPIRELAIR_INFO, handler(self, self.onVampireLairInfo),
+        "CompLeftTime:onVampireLairInfo")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_DUNGEON_TIME, handler(self, self.onDungeonTime),
+        "CompLeftTime:onDungeonTime")
+    NtfManager:addNtfListener(lt.NtfManager.NTF.NTF_DUNGEON_FAIL, handler(self, self.onDungeonFailed),
+        "CompLeftTime:onDungeonFailed")
+
+    TimeCounterManager:startTimeCounter(TimeCounterManager.TC.SCRIPT_BATTLE_UPDATE, {callback = function()
+        self:onUpdate()
+    end })
+
+end
+
+function CompLeftTime:onExit()
+    NtfManager:removeNtfListenerByTag("CompLeftTime:onVampireLairInfo")
+    NtfManager:removeNtfListenerByTag("CompLeftTime:onDungeonTime")
+    NtfManager:removeNtfListenerByTag("CompLeftTime:onDungeonFailed")
+
+    TimeCounterManager:stopTimeCounter(TimeCounterManager.TC.SCRIPT_BATTLE_UPDATE)
+    
+    self._lblTime:setVisible(false)
+    CompLeftTime.super.onExit(self)
+end
+
+function CompLeftTime:onUpdate()
+    if self._isOpenLeftTime then
+        self:refreshTimer()
+    end
+
+    if self._isOpenDungon then
+        self:refreshDungeonTimer()
+    end
+end
+
+function CompLeftTime:onClear()
+    self._view    = nil
+    self._lblTime = nil
+end
+
+function CompLeftTime:initUI()
+    self._lblTime = self:getChild("lblTime")
+    self._lblTime:setText("")
+end
+
+function CompLeftTime:hideLeftTime()
+    self._lblTime:setVisible(false)
+end
+
+function CompLeftTime:refreshTimer()
+    local pcVampireLairInfo = MapModule:getNpcVampireLairInfo()
+    if not pcVampireLairInfo then
+        self:hideLeftTime()
+        self._isOpenLeftTime = false
+        return
+    end
+    local myMapMeta = lt.AgentManager:getWorldAgent():getMapAgent():getMapMeta()
+    local mymapcode = myMapMeta:getMapCode()
+    local npcMap = CacheManager:getNpcVampireLairTable()
+
+    -- 自己跳出来了 倒计时不显示了
+    local vampireState = pcVampireLairInfo.vampireState
+    if not npcMap[mymapcode] then
+        -- 停止
+        self:hideLeftTime()
+        self._isOpenLeftTime = false
+        return
+    end
+
+    local serverTime = TimeCounter:serverTime()
+    local nextSateStamp = pcVampireLairInfo.nextSateStamp
+    local lastTime = nextSateStamp - serverTime
+    if lastTime < 0 then
+        return
+    end
+    local curtime = lt.CommonFunc:secondsToTime2(lastTime)
+    local str = ""
+    if vampireState == CommonModule:GetNetCmdEnum("NPCVAMPIRELAIRSTATE_NPCVAMPIRELAIRSTATE_PREPARATION_ENUM") then
+        str = string.format(GReadText.KEY_COPYTIME_TIPS1,curtime)
+    elseif vampireState == CommonModule:GetNetCmdEnum("NPCVAMPIRELAIRSTATE_NPCVAMPIRELAIRSTATE_PLAYTIME_ENUM") then
+        str = string.format(GReadText.KEY_COPYTIME_TIPS2,curtime)
+    elseif vampireState == CommonModule:GetNetCmdEnum("NPCVAMPIRELAIRSTATE_NPCVAMPIRELAIRSTATE_ENDCOUNTDOWN_ENUM") then
+        str = string.format(GReadText.KEY_COPYTIME_TIPS3,curtime)
+    elseif vampireState == CommonModule:GetNetCmdEnum("NPCVAMPIRELAIRSTATE_NPCVAMPIRELAIRSTATE_ENDFIREBALLTIME_ENUM") then
+        str = ""
+    else
+        str = curtime
+    end
+    self._lblTime:setText(str)
+end
+
+function CompLeftTime:refreshDungeonTimer()
+    local time = MapModule:getProtectTime()
+    if time <= 0 then
+        self:hideLeftTime()
+        self._isOpenDungon = false
+        return
+    end
+    local serverTime = TimeCounter:serverTime()
+    local lastTime = time - serverTime
+    if lastTime <= 0 then
+        self:hideLeftTime()
+        self._isOpenDungon = false
+        return
+    end
+    local curtime = CommonFunc:secondsToTime2(lastTime)
+    self._lblTime:setText(GReadText.KEY_DUNGEON_TIPS1 .. curtime)
+end
+
+function CompLeftTime:onDungeonTime(event)
+    self._lblTime:setVisible(true)
+    self._isOpenDungon = true
+end
+
+function CompLeftTime:onDungeonFailed(event)
+    self:hideLeftTime()
+end
+
+function CompLeftTime:onVampireLairInfo(event)
+    self._lblTime:setVisible(true)
+    self._isOpenLeftTime = true
+    self:checkNpcHide()
+end
+
+function CompLeftTime:checkNpcHide()
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    local pcVampireLairInfo = MapModule:getNpcVampireLairInfo()
+    local myMapMeta = lt.AgentManager:getWorldAgent():getMapAgent():getMapMeta()
+    local mymapcode = myMapMeta:getMapCode()
+    local npcMap = CacheManager:getNpcVampireLairTable()
+    local npcName = ""
+    if npcMap[mymapcode] then
+        npcName = npcMap[mymapcode]:getNpcName()
+    else
+        if pcVampireLairInfo then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_EVENTFLAG_SHAKE_SCREEN,
+                { eventDelay = 0, parameter3 = 3, eventType = lt.Constant.SHARK_SCREEN_TYPE.EVENTID_METEOR_SHAKE })
+        end
+        return
+    end
+
+    if pcVampireLairInfo then
+        local vampireState = pcVampireLairInfo.vampireState
+        if vampireState == CommonModule:GetNetCmdEnum("NPCVAMPIRELAIRSTATE_NPCVAMPIRELAIRSTATE_PLAYTIME_ENUM") then
+            local agent = worldAgent:getNpcAgentByNpcName(npcName)
+            if agent then
+                agent:setNpcVisible(true)
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_NPC_SHOW_IN_MINI, { npcName = npcName, show = true })
+            end
+            local npclist = worldAgent:getNpcPositionList(mymapcode)
+            local npcMeta = npclist[npcName]
+            local waveCount = pcVampireLairInfo.waveCount
+            if npcMeta then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_DUNGEON_MONSTER_CHANGE,
+                    { m = npcMeta.npcX, n = npcMeta.npcY, state = 1, waveCount = waveCount })
+            end
+        else
+            local agent = worldAgent:getNpcAgentByNpcName(npcName)
+            if agent then
+                agent:setNpcVisible(false)
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_NPC_SHOW_IN_MINI, { npcName = npcName, show = false })
+            end
+        end
+    end
+end
+
+return CompLeftTime

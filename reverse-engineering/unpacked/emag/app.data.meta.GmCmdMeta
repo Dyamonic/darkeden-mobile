@@ -1,0 +1,51 @@
+
+local GmCmdMeta = class("GmCmdMeta")
+
+function GmCmdMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function GmCmdMeta:initWithRow(row)
+    self._idxId = row.IdxId
+    self._type = row.Type
+    self._typeName = row.TypeName
+    self._class = row.Class
+    self._className = row.ClassName
+    self._name = row.Name
+    self._value = row.Value
+    self._defult = row.Defult
+end
+
+function GmCmdMeta:getIdxId()
+    return self._idxId
+end
+
+function GmCmdMeta:getType()
+    return self._type
+end
+
+function GmCmdMeta:getTypeName()
+    return self._typeName
+end
+
+function GmCmdMeta:getClass()
+    return self._class
+end
+
+function GmCmdMeta:getClassName()
+    return self._className
+end
+
+function GmCmdMeta:getName()
+    return self._name
+end
+
+function GmCmdMeta:getValue()
+    return self._value
+end
+
+function GmCmdMeta:getDefult()
+    return self._defult
+end
+
+return GmCmdMeta

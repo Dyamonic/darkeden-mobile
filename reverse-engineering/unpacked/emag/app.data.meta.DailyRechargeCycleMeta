@@ -1,0 +1,18 @@
+-- 天天充值周期
+local DailyRechargeCycleMeta = class("DailyRechargeCycleMeta")
+
+function DailyRechargeCycleMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function DailyRechargeCycleMeta:initWithRow(row)
+    self._cycleId       = row.CycleId        -- 周期id
+    self._rewardStoreId = row.RewardStoreID  -- 奖励id
+    self._lastingDays   = row.LastingDays    -- 持续天数
+end
+
+function DailyRechargeCycleMeta:getCycleId() return self._cycleId end
+function DailyRechargeCycleMeta:getRewardStoreId() return self._rewardStoreId end
+function DailyRechargeCycleMeta:getLastingDays() return self._lastingDays end
+
+return DailyRechargeCycleMeta

@@ -1,0 +1,628 @@
+---@class CompTask 主界面-左上角(任务/组队/目标)
+local CompTask = class("CompTask", lt.UICompBase)
+
+local NtfManager = lt.NtfManager
+local TeamModule = lt.TeamModule
+local TaskModule = lt.TaskModule
+local CacheManager = lt.CacheManager
+local Constant = lt.Constant
+local GameModule = lt.GameModule
+local AgentManager = lt.AgentManager
+local GuildModule = lt.GuildModule
+local GuideModule = lt.GuideModule
+local CommonFunc = lt.CommonFunc
+local AutoFightManager = lt.AutoFightManager
+
+local ControllerType = {
+    Task = 0,
+    Team = 1,
+    Target = 2,
+}
+
+function CompTask:ctor(view)
+    self:registerComponent("CompTeamCell", "CompTaskCell", "CompTargetCell")
+    CompTask.super.ctor(self)
+    self._view = view
+    self:initUI()
+end
+
+function CompTask:onClear()
+    self:unregisterAllComponent()
+
+    self._noteamNode = nil
+    self._teamNode = nil
+    self._createTeamBtn = nil
+    self._fastTeamBtn = nil
+    self._switchController = nil
+    self._groupBtn = nil
+    self._exitBtn = nil
+    self._taskNode = nil
+    self._taskList = nil
+    self._ownCampBtn = nil
+    self._emenyCampBtn = nil
+    self._targetList = nil
+    self._btnTask = nil
+    self._btnTarget = nil
+
+    self._targetIdx = nil
+    self._selectObjId = nil
+    self._itemEvent = nil
+
+    if self._memberList then
+        self._memberList:removeItemRenderer()
+        self._memberList = nil
+    end
+
+    if self._taskList then
+        self._taskList:removeItemRenderer()
+        self._taskList = nil
+    end
+
+    if self._targetList then
+        self._targetList:removeItemRenderer()
+        self._targetList = nil
+    end
+
+    self._view = nil
+
+    CompTask.super.onClear(self)
+end
+
+function CompTask:initUI()
+    --组队
+    self._noteamNode = self._view:getChild("node_noteam")
+    self._teamNode = self._view:getChild("node_team")
+    self._createTeamBtn = self._view:getChild("btn_createteam")
+    self._fastTeamBtn = self._view:getChild("btn_fastteam")
+    self._memberList = self._view:getChild("ListGroup")
+    self._memberList:setItemRenderer(handler(self, self.renderMemberItem))
+    self._switchController = self._view:getController("switch")
+    self._groupBtn = self._view:getChild("btnGroup")
+    self._exitBtn = self._view:getChild("btn_exit")
+
+    --任务
+    self._taskNode = self._view:getChild("node_task")
+    self._taskList = self._view:getChild("ListTask"):getChild("ListTask")
+    self._taskList:setVirtual()
+    self._taskList:setItemRenderer(handler(self, self.renderTaskItem))
+
+    --目标选择
+    self._ownCampBtn = self._view:getChild("btn_ownCamp")
+    self._emenyCampBtn = self._view:getChild("btn_emenyCamp")
+    self._targetList = self._view:getChild("list_target")
+    self._targetList:setItemRenderer(handler(self, self.renderTargetItem))
+    self._targetIdx = 1
+    self._selectObjId = nil
+
+    self._btnTask = self._view:getChild("btnTask")
+    self._btnTarget = self._view:getChild("btnTarget")
+    self._btnTask.fiterType = 0
+    self._groupBtn.fiterType = 1
+    self._btnTarget.fiterType = 2
+end
+
+function CompTask:onEnter()
+
+    -- 监听计时器
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_GAME_TIME_UPDATE, handler(self, self.timeUpdate), "CompTask:timeUpdate")
+    self:addAllListener()
+    self:refreshFastCountDown()
+end
+
+function CompTask:onExit()
+    NtfManager:removeNtfListenerByTag("CompTask:timeUpdate")
+    self:removeAllListener()
+end
+
+function CompTask:addAllListener()
+    self._btnTask:addClickListener(handler(self, self.onChangeClickPackItem))
+    self._groupBtn:addClickListener(handler(self, self.onChangeClickPackItem))
+    self._btnTarget:addClickListener(handler(self, self.onChangeClickPackItem))
+    self._createTeamBtn:addClickListener(handler(self, self.onCreateTeamClick))
+    self._fastTeamBtn:addClickListener(handler(self, self.onFastTeamClick))
+    self._exitBtn:addClickListener(handler(self, self.onExitTeamClick))
+    self._taskList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+    self._ownCampBtn:addClickListener(handler(self, self.onOwnCampClick))
+    self._emenyCampBtn:addClickListener(handler(self, self.onEmenyCampClick))
+
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_TEAM_MY, handler(self, self.refreshTeamView), "CompTask:refreshTeamView")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_FAST_JOIN_TEAM, handler(self, self.refreshFastCountDown), "CompTask:refreshFastCountDown")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CHANGE_SETTINGS, handler(self, self.changeSettings), "CompTask:changeSettings")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_TASK_MY, handler(self, self.refreshTaskView), "CompTask:refreshTaskView")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_TASK_TOP_EVENT, handler(self, self.topTaskView), "CompTask:topTaskView")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT, handler(self, self.refreshTaskView), "CompTask:NTF_UPDATE_ITEM_EVENT")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_TARGET, handler(self, self.refreshTarget), "CompTask:refreshTarget")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_SELECT_TARGET, handler(self, self.selectTarget), "CompTask:selectTarget")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_SELECT_HP, handler(self, self.updateSelectHp), "CompTask:updateSelectHp")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_SELECT_TARGET_DiSAPPEAR, handler(self, self.unSelectTarget), "CompTask:unSelectTarget")
+end
+
+function CompTask:removeAllListener()
+    self._btnTask:removeClickListener()
+    self._groupBtn:removeClickListener()
+    self._btnTarget:removeClickListener()
+    self._createTeamBtn:removeClickListener()
+    self._fastTeamBtn:removeClickListener()
+    self._exitBtn:removeClickListener()
+    self._taskList:removeEventListener(fgui.UIEventType.ClickItem)
+    self._ownCampBtn:removeClickListener()
+    self._emenyCampBtn:removeClickListener()
+
+    NtfManager:removeNtfListenerByTag("CompTask:refreshTeamView")
+    NtfManager:removeNtfListenerByTag("CompTask:refreshFastCountDown")
+    NtfManager:removeNtfListenerByTag("CompTask:changeSettings")
+    NtfManager:removeNtfListenerByTag("CompTask:refreshTaskView")
+    NtfManager:removeNtfListenerByTag("CompTask:topTaskView")
+    NtfManager:removeNtfListenerByTag("CompTask:NTF_UPDATE_ITEM_EVENT")
+    NtfManager:removeNtfListenerByTag("CompTask:refreshTarget")
+    NtfManager:removeNtfListenerByTag("CompTask:selectTarget")
+    NtfManager:removeNtfListenerByTag("CompTask:updateSelectHp")
+    NtfManager:removeNtfListenerByTag("CompTask:unSelectTarget")
+end
+
+function CompTask:timeUpdate()
+    -- 快速组队倒计时
+    self:refreshFastCountDown()
+
+    if self._switchController:getSelectedIndex() ~= ControllerType.Task then
+        return
+    end
+    if self._taskList then
+        --虚拟列表取子对象列表
+        local objArr = self._taskList:getChildren()
+        for _,item in ipairs(objArr) do
+            if item.timeUpdate then
+                item:timeUpdate()
+            end
+        end
+        -- local itemNums = self._taskList:getNumItems()
+        -- if itemNums == 0 then
+        --     return
+        -- end
+
+        -- for i = 1, itemNums do
+        --     local item = self._taskList:getChildAt(i-1)
+        --     if item then
+        --         item:timeUpdate()
+        --     end
+        -- end
+    end
+end
+
+function CompTask:onChangeClickPackItem(context)
+    if context then
+        local sender = context:getSender()
+        if sender.fiterType == 1 then
+            local open,tips = lt.FunctionToggleModule:checkOpen(lt.FunctionToggleModule.FunctionHelpId.TeamSubBar) 
+            if not open then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = tips})
+                self._switchController:setSelectedIndex(0)
+                return
+            end
+        elseif sender.fiterType == 2 then
+            local open,tips = lt.FunctionToggleModule:checkOpen(lt.FunctionToggleModule.FunctionHelpId.TargetSubBar) 
+            if not open then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = tips})
+                self._switchController:setSelectedIndex(0)
+                return
+            end
+        end
+        self._switchController:setSelectedIndex(sender.fiterType)
+        if sender.fiterType == ControllerType.Task then
+            self:refreshTaskView()
+        elseif sender.fiterType == ControllerType.Team then
+            self:refreshTeamView()
+        elseif sender.fiterType == ControllerType.Target then
+            self:refreshTarget()
+        end
+    end
+end
+
+function CompTask:refreshTeamView()
+    if self._switchController:getSelectedIndex() ~= ControllerType.Team then
+        return
+    end
+    self._noteamNode:setVisible(TeamModule:getTeamId() == 0)
+    self._teamNode:setVisible(TeamModule:getTeamId() ~= 0)
+    local myTeamData = TeamModule:getMyTeam()
+    if myTeamData then
+        local memberList = myTeamData.memberInfoArray or {}
+        self._memberList:setNumItems(#memberList)
+    else
+        self._memberList:setNumItems(0)
+    end
+    self:refreshFastCountDown()
+end
+
+function CompTask:renderMemberItem(index, obj)
+    local myTeamData = TeamModule:getMyTeam()
+    local playerInfo = myTeamData.memberInfoArray[index + 1]
+    obj:setInfo(playerInfo)
+    obj:insertObjectToFactory(self)
+end
+
+function CompTask:onCreateTeamClick()
+    TeamModule:fastCreateTeam()
+end
+
+function CompTask:onFastTeamClick()
+    TeamModule:sendFastJoinInTeam()
+end
+
+function CompTask:onExitTeamClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {type = 2, content = GReadText.KEY_TEAM_HALL_TIPS19, confirmCallback = function()
+        TeamModule:sendExitTeam()
+    end})
+end
+
+function CompTask:changeSelectedIdx(idx)
+    self._switchController:setSelectedIndex(idx)
+end
+
+--开始快速组队倒计时
+--刷新按钮(快速组队)倒计时
+function CompTask:refreshFastCountDown()
+    if self._switchController:getSelectedIndex() ~= ControllerType.Team then
+        return
+    end
+    if self._fastTeamCdFinish then
+        if TeamModule:getFastJoinInCdTime() >= 0 then
+            
+        else
+            return
+        end
+    end
+
+
+    local cd = TeamModule:getFastJoinInCdTime()
+    self._fastTeamBtn:setText(cd <= 0 and GReadText.KEY_TEAM_HALL_TIPS27 or cd.."s")
+    self._fastTeamBtn:setGrayed(cd > 0)
+
+    if cd <= 0 then
+        self._fastTeamCdFinish = true
+    end
+end
+
+--------------------任务----------------------
+function CompTask:refreshTaskView(event)
+    if self._switchController:getSelectedIndex() ~= ControllerType.Task then
+        return
+    end
+    if event then
+        local param = event.param
+        if param then
+            local typeTab = param.taskTypes
+            if typeTab[Constant.TASK_TYPES.TRUNK] or typeTab[Constant.TASK_TYPES.BRANCH] or typeTab[Constant.TASK_TYPES.ADVANCE]
+                or typeTab[Constant.TASK_TYPES.SYSTEM] or typeTab[Constant.TASK_TYPES.BRANCH2] then
+                    
+            else
+                return--于此无关的不要刷新
+            end
+        elseif event and event.name == "NTF_UPDATE_ITEM_EVENT" then
+            if not self._itemEvent then
+                return --没有道具检索类的任务就无需刷新这个事件
+            end
+        end
+    end
+    
+    self._taskArray = {}
+    local mainTask = TaskModule:getMainTask()
+    table.insert(self._taskArray, mainTask)
+    local advanceTask = TaskModule:getAdvanceTask()
+    table.insert(self._taskArray, advanceTask)
+    local tasklist = TaskModule:getTaskList(Constant.TASK_TYPES.BRANCH)
+    local taskSort = TaskModule:getSortTask()
+    table.sort(tasklist, function(a, b)
+        -- 优先按是否完成排序（未完成的排在前面）
+        if a.taskState ~= b.taskState then
+            return a.taskState == Constant.TASK_STATE.FINISH
+        else
+            -- 如果状态相同，再按任务ID升序排序
+            if taskSort[a.taskId] and taskSort[b.taskId] then
+                return taskSort[a.taskId] > taskSort[b.taskId]
+            elseif taskSort[a.taskId] then
+                return true
+            elseif taskSort[b.taskId] then
+                return false
+            end
+            return a.taskId < b.taskId
+        end
+    end)
+    for i = 1, #tasklist do
+        table.insert(self._taskArray, tasklist[i])
+    end
+    self._taskList:setNumItems(#self._taskArray)
+    -- 点击穿透
+    if #self._taskArray >= 3 then
+        self._taskList:setSize(261, 270)
+    else
+        local height = 0
+        local childs = self._taskList:getChildren()
+        for i = 1, #childs do
+            height = height + childs[i]:getSize().height + 1
+        end
+        self._taskList:setSize(261, height)
+    end
+    
+    self._itemEvent = TaskModule:haveItemSearchTask(self._taskArray)
+    --显示怪物npc箭头
+    local worldAgent = AgentManager:getWorldAgent()
+    worldAgent:findMissionMonster()
+end
+
+--任务列表置顶
+function CompTask:topTaskView()
+    if self._switchController:getSelectedIndex() ~= ControllerType.Task then
+        return
+    end
+    if self._taskList and self._taskArray and #self._taskArray > 0 then
+        self._taskList:scrollToView(0)
+    end
+end
+
+function CompTask:renderTaskItem(index, obj)
+    local taskInfo = self._taskArray[index + 1]
+    obj.index = index
+    obj:setInfo(taskInfo)
+    obj:insertObjectToFactory(self)
+end
+
+--设置改变
+function CompTask:changeSettings(params)
+    local param = params.param
+    if param.index == Constant.SETTINGS_TYPES.TEAM_OPACITY then
+        self:changeTeamSettings()
+    elseif param.index == Constant.SETTINGS_TYPES.TASK_OPACITY then
+        self:changeTaskSettings()
+    elseif param.index == Constant.SETTINGS_TYPES.WINDOW_OPACITY then
+        self:changeTeamSettings()
+        self:changeTaskSettings()
+    end
+end
+
+function CompTask:changeTeamSettings()
+    local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.TEAM_OPACITY)
+    local isBGOpacity = editTable.switch == 1
+    local childs = self._memberList:getChildren()
+    local editTableW = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.WINDOW_OPACITY)
+    for i = 1, #childs do
+        childs[i]:getChild("bg"):setAlpha(isBGOpacity and editTableW.value/100 or 1)
+    end
+end
+
+function CompTask:changeTaskSettings()
+    local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.TASK_OPACITY)
+    local isBGOpacity = editTable.switch == 1
+    local childs = self._taskList:getChildren()
+    local editTableW = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.WINDOW_OPACITY)
+    for i = 1, #childs do
+        childs[i]:getChild("n0"):setAlpha(isBGOpacity and editTableW.value/100 or 1)
+    end
+end
+
+function CompTask:onClickItem(context)
+    local data = context:getData()
+    local index = data.index + 1
+    self:onClickTask(index)
+end
+
+function CompTask:onClickTask(index)
+    local taskData = self._taskArray[index]
+    if not taskData then
+        return
+    end
+    local missionId = taskData.taskId
+    local state = taskData.taskState
+    if state == Constant.TASK_STATE.FINISH then
+        --领取奖励
+        TaskModule:sendTaskReward(missionId)
+        local childIndex = self._taskList:itemIndexToChildIndex(index-1)
+        local newContext = self._taskList:getChildAt(childIndex)
+        newContext:playReceiveAnim()
+    elseif state == Constant.TASK_STATE.START then
+        local meta = CacheManager:getMissionMeta(missionId)
+        --是否达成条件
+        local taskData = TaskModule:getTaskById(missionId)
+        local isComplete = TaskModule:checkTaskComplete(taskData)
+        if isComplete then
+            --完成任务
+            TaskModule:sendTaskCommit(meta:getAcceptanceNPCID(), missionId)
+        else
+            --前往
+            local race = GameModule:getHeroRace()
+            if meta:getMissionId() == Constant["ADVANCE_TASK"..race].COLUMN then
+                lt.MapModule:sendMirrorOfAbyss()
+            else
+                local transferPoint = meta:getTransferPoint()
+                if transferPoint ~= nil then
+                    TaskModule:sendTaskJumpUp(missionId)
+                else
+                    local functionId = meta:getFunctionId()
+                    if functionId ~= nil then
+                        GameModule:gotoSystemFunc(functionId)
+                    end
+                end
+            end
+        end
+    end
+end
+
+--------------------目标----------------------
+function CompTask:onOwnCampClick()
+    self._targetIdx = 1
+    self:refreshTarget()
+end
+
+function CompTask:onEmenyCampClick()
+    self._targetIdx = 2
+    self:refreshTarget()
+end
+
+function CompTask:refreshTarget()
+    if self._switchController:getSelectedIndex() ~= ControllerType.Target then
+        return
+    end
+    self._targets = {}
+    local worldAgent = AgentManager:getWorldAgent()
+    local selfHeroData = GameModule:getHeroData()
+    local idx = selfHeroData and selfHeroData:getAttackMode() or 1
+    local targetList = worldAgent:getAroundPlayer()
+    local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.SHOW_PLAYERS)
+    local max = editTable.value
+    if max > 20 then max = 20 end
+    for i = 1, #targetList do
+        if i > max then break end
+        local heroData = targetList[i]:getHeroData()
+        if not heroData then
+            return
+        end
+        local isRed = GameModule:checkNameColorChange(heroData)
+        if not isRed then
+            isRed = heroData:getNameColor() == Constant.COLOR_OX_TENDENCY_4
+        end
+        if idx == Constant.TARGET_TYPE.RACE then
+            if (not isRed and heroData:getRace() == selfHeroData:getRace() and self._targetIdx == 1)
+            or ((isRed or heroData:getRace() ~= selfHeroData:getRace()) and self._targetIdx == 2) then
+                table.insert(self._targets, targetList[i])
+            end
+        elseif idx == Constant.TARGET_TYPE.TEAM then
+            local myTeamData = TeamModule:getMyTeam()
+            if myTeamData then
+                local memberList = myTeamData.memberInfoArray or {}
+                local isTeam = false
+                for j = 1, #memberList do
+                    if memberList[j].playerId == heroData:getPlayerId() then
+                        isTeam = true
+                        break
+                    end
+                end
+                if (not isRed and isTeam and self._targetIdx == 1) or ((not isTeam or isRed) and self._targetIdx == 2) then
+                    table.insert(self._targets, targetList[i])
+                end
+            end
+        elseif idx == Constant.TARGET_TYPE.GUILD then
+            local guildlist = GuildModule:getGuildMember()
+            local isGuild = false
+            for j = 1, #guildlist do
+                if guildlist[j].playerId == heroData:getPlayerId() then
+                    isGuild = true
+                    break
+                end
+            end
+            if (not isRed and isGuild and self._targetIdx == 1) or ((not isGuild or isRed) and self._targetIdx == 2) then
+                table.insert(self._targets, targetList[i])
+            end
+        elseif idx == Constant.TARGET_TYPE.ALL then
+            if self._targetIdx == 2 then
+                table.insert(self._targets, targetList[i])
+            end
+        end
+    end
+    if self._targetIdx == 1 then
+        --己方添加自己
+        local selfAgent = worldAgent:getHeroAgent()
+        table.insert(self._targets, 1, selfAgent)
+        --己方添加理性的柱子
+        local column = worldAgent:getColumn()
+        if column then
+            table.insert(self._targets, {})
+            table.insert(self._targets, column)
+        end
+    elseif self._targetIdx == 2 then
+        --敌方添加boss
+        local bossList = worldAgent:getAroundBoss()
+        for i = 1, #bossList do
+            table.insert(self._targets, 1, {})
+            table.insert(self._targets, 1, bossList[i])
+        end
+    end
+    self._targetList:setNumItems(#self._targets)
+    -- 点击穿透
+    local index = math.ceil(#self._targets/2)
+    if index >= 6 then
+        self._targetList:setSize(263,273)
+    else
+        self._targetList:setSize(263,index*(42 + 4))
+    end
+end
+
+function CompTask:selectTarget(event)
+    if self._switchController:getSelectedIndex() ~= ControllerType.Target then
+        return
+    end
+    local param = event.param
+    local agent = param.agent
+    local childs = self._targetList:getChildren()
+    for i = 1, #childs do
+        if childs[i]._agent then
+            local heroData = childs[i]._agent:getHeroData()
+            if heroData then
+                local objId = heroData:getObjId()
+                if objId == self._selectObjId then
+                    childs[i]:setSelected(false)
+                end
+            end
+        end
+    end
+    if agent == nil then
+        self._selectObjId = nil
+        return
+    end
+    local targetObjId = agent:getHeroData():getObjId()
+    self._selectObjId = targetObjId
+    for i = 1, #childs do
+        if childs[i]._agent then
+            local heroData = childs[i]._agent:getHeroData()
+            if heroData then
+                local objId = heroData:getObjId()
+                if objId == self._selectObjId then
+                    childs[i]:setSelected(true)
+                end
+            end
+        end
+    end
+end
+
+function CompTask:updateSelectHp(event)
+    if self._switchController:getSelectedIndex() ~= ControllerType.Target then
+        return
+    end
+    local param = event.param
+    local objId = param.objId
+    local childs = self._targetList:getChildren()
+    for i = 1, #childs do
+        childs[i]:updateHp(objId)
+    end
+end
+
+function CompTask:unSelectTarget(event)
+    if self._switchController:getSelectedIndex() ~= ControllerType.Target then
+        return
+    end
+    local param = event.param
+    local desObjId = param.objId
+    if desObjId ~= self._selectObjId then
+        return
+    end
+    self._selectObjId = nil
+    local childs = self._targetList:getChildren()
+    for i = 1, #childs do
+        if childs[i]._agent and childs[i]._agent:getHeroData() then
+            local objId = childs[i]._agent:getHeroData():getObjId()
+            if objId == desObjId then
+                childs[i]:setSelected(false)
+            end
+        end
+    end
+end
+
+function CompTask:renderTargetItem(index, obj)
+    local agent = self._targets[index + 1]
+    obj:setInfo(agent)
+    if agent._heroData then
+        obj:setSelected(agent:getHeroData():getObjId() == self._selectObjId)
+    end
+    obj:insertObjectToFactory(self)
+end
+
+return CompTask

@@ -1,0 +1,218 @@
+
+local RedDotModule = {}
+
+local CommonModule = lt.CommonModule
+local SocketApi = lt.SocketApi
+local ServerCmdDef = lt.ServerCmdDef
+local Constant = lt.Constant
+local NtfManager = lt.NtfManager
+
+RedDotModule._schedulerID = nil
+RedDotModule._tipsRoot    = {}
+RedDotModule._initOver    = false
+
+function RedDotModule:init()
+    self._tipsRoot = {}
+    -- SocketApi:addProtoListener(ServerCmdDef.RED_DOT_NOTICE, handler(self, self.onRedDotNotice), "GameModule:onRedDotNotice")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_APPLY_TEAM_LIST_NTF), handler(self, self.onApplyTeamListNtf), "RedDotModule:onApplyTeamListNtf")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_GUILD_HAS_APPLY_NTF), handler(self, self.onGuildApplyNtf), "RedDotModule:onGuildApplyNtf")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_MONTH_CARD, handler(self, self.onMonthCardNtf), "RedDotModule:onMonthCardNtf")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_MONEY_EVENT, handler(self, self.updateMoney),"RedDotModule:updateMoney")
+end
+
+function RedDotModule:clear()
+    -- SocketApi:removeProtoListenerByTag("RedDotModule:onRedDotNotice")
+    SocketApi:removeProtoListenerByTag("RedDotModule:onApplyTeamListNtf")
+    SocketApi:removeProtoListenerByTag("RedDotModule:onGuildApplyNtf")
+    NtfManager:removeNtfListenerByTag("RedDotModule:onMonthCardNtf")
+    NtfManager:removeNtfListenerByTag("RedDotModule:updateMoney")
+    self._tipsRoot = nil
+    self._schedulerID = nil
+    self._initOver = nil
+end
+
+function RedDotModule:onRedDotNotice(systemType)
+    if systemType == Constant.SYSTEM_TYPES.TEAM then     --组队
+        lt.TeamModule:setTeamApplyRedTips(true)
+    elseif systemType == Constant.SYSTEM_TYPES.ROLE then --角色
+        lt.SkillModule:initRedTips()
+    elseif systemType == Constant.SYSTEM_TYPES.PET then  --宠物
+        lt.PetModule:initRedTips()
+    end
+end
+
+function RedDotModule:updateMoney()
+    lt.PetModule:initRedTips()
+end
+
+function RedDotModule:initRedTips()
+    if self._initOver then return end
+    self._initOver = true
+    lt.TeamModule:initRedTips()    --组队
+    lt.SkillModule:initRedTips()   --角色
+end
+
+-- 获取红点状态
+function RedDotModule:getTipsStateByName(name)
+    local node = self._tipsRoot[name]
+    if node then
+        return node.state or false
+    end
+    return false
+end
+
+function RedDotModule:setTipsStateByName(name, state, isNotNeedDispatch, parentName)
+    local node = self._tipsRoot[name]
+    if not node then
+        self:createTipsNode(name, parentName)
+        node = self._tipsRoot[name]
+    end
+    if node then
+        -- if state == node.state then
+        --     return
+        -- end
+        node.state = state
+        if node.parentName then
+            local parentNode = self._tipsRoot[node.parentName]
+            local isSame, parentState = self:_checkNodeState(parentNode)
+            if isSame then
+                if not isNotNeedDispatch then
+                    self:_dispatchTipsChange(node.parentName)
+                end
+            else
+                return self:setTipsStateByName(node.parentName, parentState, isNotNeedDispatch)
+            end
+        else
+            if not isNotNeedDispatch then
+                self:_dispatchTipsChange(name)
+            end
+        end
+    end
+end
+
+function RedDotModule:relationChildNode(name, parentName)
+    if parentName then
+        local parentNode = self._tipsRoot[parentName]
+        if parentNode then
+            if not parentNode.children then
+                parentNode.children = {}
+            end
+            parentNode.children[name] = self._tipsRoot[name]
+        end
+    end
+end
+
+function RedDotModule:createTipsNode(name, parentName)
+    local temp = {}
+    temp.state = false
+    if parentName then
+        local parentNode = self._tipsRoot[parentName]
+        if parentNode then
+            if not parentNode.children then
+                parentNode.children = {}
+            end
+            temp.parentName = parentName
+            parentNode.children[name] = temp
+        end
+    end
+    self._tipsRoot[name] = temp
+end
+
+function RedDotModule:removeNodeByName(name, isNotNeedDispatch)
+    local node = self._tipsRoot[name]
+    if node and node.parentName then
+        local parentNode = self._tipsRoot[node.parentName]
+        if parentNode and parentNode.children then
+            parentNode.children[name] = nil
+        end
+        self._tipsRoot[name] = nil
+        if node.state then
+            local isSame, parentState = self:_checkNodeState(parentNode)
+            if isSame then
+                if not isNotNeedDispatch then
+                    self:_dispatchTipsChange()
+                end
+            else
+                return self:setTipsStateByName(node.parentName, parentState, isNotNeedDispatch)
+            end
+        end
+    else
+        self._tipsRoot[name] = nil
+    end
+end
+
+function RedDotModule:_dispatchTipsChange(name)
+    -- lt.LogUtil:debugTable("name = "..tostring(name))
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_RED_DOT_EVENT,{name = name})
+
+    -- if not self._schedulerID then
+    --     self._schedulerID = lt.ScheduleUtil:performWithDelayGlobal(function ()
+    --         lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_RED_DOT_ALWAYS_EVENT,{name = name})
+    --         self._schedulerID = nil
+    --     end, 0)
+    -- end
+end
+
+function RedDotModule:_checkNodeState(node, t)
+    if node and node.children then
+        local oldState = node.state
+        local newState = false
+        for _, v in pairs(node.children) do
+            if v.state == true then
+                newState = true
+            end
+        end
+        return oldState == newState, newState
+    end
+    return true
+end
+
+--当天首次上线外部红点显示
+--param1:Constant.FIRST_RECORD的参数
+function RedDotModule:isFirstEnter(key)
+    local record = cc.UserDefault:getInstance():getStringForKey(key,"0")
+    if record and record ~= "0" then
+        local curServerTime = lt.TimeCounter:serverTime()
+        local str = lt.TimeCounter:fmt2TimeText(curServerTime)
+        if str == record then
+            return false
+        else
+            return true
+        end
+    else
+        return true
+    end
+end
+
+function RedDotModule:setRedRecord(key)
+    local curServerTime = lt.TimeCounter:serverTime()
+    local str = lt.TimeCounter:fmt2TimeText(curServerTime)
+    cc.UserDefault:getInstance():setStringForKey(key,str)
+    cc.UserDefault:getInstance():flush()
+end
+
+function RedDotModule:onApplyTeamListNtf()
+    self:onRedDotNotice(Constant.SYSTEM_TYPES.TEAM)
+end
+
+function RedDotModule:onGuildApplyNtf()
+    self:onRedDotNotice(Constant.SYSTEM_TYPES.GUILD)
+end
+
+function RedDotModule:onMonthCardNtf()
+    local isReward = lt.RechargeModule:getMonthCardRewardTime()
+    lt.RechargeModule:setRechargeRedTips(Constant.ACTIVITY_RED_TYPE.MONTHCARD, not isReward)
+end
+
+---------------------------------------------------------------
+-- 宠物小红点
+function RedDotModule:checkPetAllRed()
+    local isShowRedDot = lt.RedDotModule:getTipsStateByName("PetModule_checkPetUp")
+    if not isShowRedDot then
+        isShowRedDot = lt.RedDotModule:getTipsStateByName("PetModule_checkPetFunction")
+    end
+    return isShowRedDot
+end
+---------------------------------------------------------------
+
+return RedDotModule

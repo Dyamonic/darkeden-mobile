@@ -1,0 +1,16 @@
+local GmCmdDao = {}
+
+function GmCmdDao:queryAll()
+    local gmCmdTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM GMCommand") do
+        local mapMeta = lt.GmCmdMeta.new(row)
+        if not gmCmdTable[mapMeta:getType()] then
+            gmCmdTable[mapMeta:getType()] = {}
+        end
+        table.insert(gmCmdTable[mapMeta:getType()], mapMeta)
+    end
+    return gmCmdTable
+end
+
+return GmCmdDao

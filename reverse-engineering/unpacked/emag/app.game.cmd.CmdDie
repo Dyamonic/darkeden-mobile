@@ -1,0 +1,35 @@
+
+local CmdDie = class("CmdDie", lt.CmdBase)
+
+CmdDie._m         = nil
+CmdDie._n         = nil
+CmdDie._direction = nil
+CmdDie._killerObjId  = nil
+
+function CmdDie:ctor(m, n, direction, killerObjId)
+    CmdDie.super.ctor(self, lt.Constant.CmdId.CMD_DIE)
+
+    self._m           = m
+    self._n           = n
+    self._direction   = direction
+    self._killerObjId = killerObjId
+end
+
+-- Setter && Getter
+function CmdDie:getM()
+    return self._m
+end
+
+function CmdDie:getN()
+    return self._n
+end
+
+function CmdDie:getDirection()
+    return self._direction
+end
+
+function CmdDie:getKillerObjId()
+    return self._killerObjId
+end
+
+return CmdDie

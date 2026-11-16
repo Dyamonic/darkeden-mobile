@@ -1,0 +1,21 @@
+local LevelGiftDao = {}
+
+function LevelGiftDao:query(lv)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM LevelGift WHERE NeedLv=%d;", tonumber(lv))) do
+    	local meta = lt.LevelGiftMeta.new(row)
+        return meta
+    end
+end
+
+function LevelGiftDao:queryAll()
+    local mapTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM LevelGift") do
+        local meta = lt.LevelGiftMeta.new(row)
+        mapTable[#mapTable+1] = meta
+    end
+    return mapTable
+end
+
+return LevelGiftDao

@@ -1,0 +1,10 @@
+
+local updateStr = {
+	SYSTEM_TIPS	= "系统提示",
+	COMMIT 		= "确认",
+	CANCEL 		= "取消",
+	UPDATE_MSG	= "当前更新%s,是否更新?",
+	UPDATE_FIAL	= "更新失败,是否重新下载?",
+}
+
+return updateStr

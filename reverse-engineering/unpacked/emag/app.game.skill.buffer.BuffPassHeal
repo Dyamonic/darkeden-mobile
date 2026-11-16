@@ -1,0 +1,61 @@
+local BuffPassHeal = class("BuffPassHeal", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+local ScheduleUtil  = lt.ScheduleUtil
+local CacheManager = lt.CacheManager
+local Constant = lt.Constant
+
+--[[
+    传递治疗
+]]
+function BuffPassHeal:ctor(time, actor, skilllevel, source, buffId)    
+    BuffPassHeal.super.ctor(self, buffId, time, actor)
+    -- 被攻击播特效即可
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    local fromObjId = source.srcId
+    self._fromAgent =  worldAgent:getAgent(fromObjId)
+    self._targetAgent = actor:getAgent()
+    self._skillId = SkillEnum.SKILL_PASSING_HEAL
+
+    self:passMoveEffect()
+end
+
+function BuffPassHeal:onClear()
+    self._actor:stopParallelEffect(self._skillId)
+    BuffPassHeal.super.onClear(self)
+end
+
+function BuffPassHeal:passMoveEffect()
+    local sX, sY = self._fromAgent:getPosition()
+    local tX, tY = self._targetAgent:getPosition()
+    local egInfo = {
+        skillId = self._skillId,
+        x0 = sX,
+        y0 = sY,
+        z0 = 5,
+        x1 = tX,
+        y1 = tY,
+        z1 = 5,
+        direction = self._fromAgent:getDirection(),
+    }
+    local processMetas = CacheManager:getProcessMetas(self._skillId, 0)
+    local stepsConf = {25, 24, 20}
+    for index, meta in pairs(processMetas) do
+        egInfo.step = stepsConf[index]
+        egInfo.meta = meta
+        if index == 1 then
+            egInfo.callback = function()
+                local hitMetas = CacheManager:getHitMetas(self._skillId, 0)
+                if self._actor then
+                    self._actor:playParallelEffectSpecial(self._skillId, hitMetas)
+                end
+            end
+        else
+            egInfo.callback = nil
+        end
+        lt.MAttackZoneEffectGenerator:generate(egInfo)
+    end
+end
+
+
+return BuffPassHeal

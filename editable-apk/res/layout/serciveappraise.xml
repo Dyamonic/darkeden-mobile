@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:orientation="vertical" android:background="#eeeeee" android:layout_width="match_parent" android:layout_height="match_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <RelativeLayout android:orientation="horizontal" android:background="@drawable/bg_title" android:layout_width="match_parent" android:layout_height="80.0dp">
+        <Button android:id="@id/btn_back" android:background="@drawable/btn_back" android:layout_width="35.0dp" android:layout_height="35.0dp" android:layout_marginLeft="10.0dp" android:layout_marginTop="40.0dp" />
+        <TextView android:textSize="18.0sp" android:textColor="#010101" android:gravity="center" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="45.0dp" android:text="@string/title_serviceappraise" android:layout_centerHorizontal="true" />
+    </RelativeLayout>
+    <ScrollView android:layout_width="match_parent" android:layout_height="wrap_content">
+        <LinearLayout android:orientation="vertical" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginLeft="10.0dp" android:layout_marginTop="10.0dp" android:layout_marginRight="10.0dp">
+            <TextView android:textSize="18.0sp" android:textColor="#010101" android:gravity="center" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/service_1" android:layout_centerHorizontal="true" />
+            <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <RadioGroup android:orientation="horizontal" android:id="@id/radioGroup" android:padding="3.0dp" android:layout_width="match_parent" android:layout_height="100.0dp" android:layout_alignParentBottom="true">
+                    <RadioButton android:textSize="15.0sp" android:textColor="@drawable/selector_radiobutton_text" android:gravity="center" android:id="@id/radio_1" android:background="@android:color/transparent" android:layout_width="0.0dp" android:layout_height="match_parent" android:button="@null" android:text="@string/pj1" android:drawableTop="@drawable/selector_tab_unsatisfactory" android:layout_weight="1.0" />
+                    <RadioButton android:textSize="15.0sp" android:textColor="@drawable/selector_radiobutton_text" android:gravity="center" android:id="@id/radio_2" android:background="@android:color/transparent" android:paddingLeft="0.0dp" android:layout_width="0.0dp" android:layout_height="match_parent" android:button="@null" android:text="@string/pj2" android:drawableTop="@drawable/selector_tab_kind" android:layout_weight="1.0" />
+                    <RadioButton android:textSize="15.0sp" android:textColor="@drawable/selector_radiobutton_text" android:gravity="center" android:id="@id/radio_3" android:background="@android:color/transparent" android:paddingLeft="0.0dp" android:layout_width="0.0dp" android:layout_height="match_parent" android:button="@null" android:text="@string/pj3" android:drawableTop="@drawable/selector_tab_staisfied" android:layout_weight="1.0" />
+                </RadioGroup>
+            </LinearLayout>
+            <LinearLayout android:gravity="center_vertical" android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <TextView android:textSize="18.0sp" android:textColor="#010101" android:gravity="center" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/service_2" android:layout_centerHorizontal="true" />
+                <RadioGroup android:orientation="horizontal" android:id="@id/rg2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="10.0dp">
+                    <RadioButton android:textColor="#010101" android:id="@id/rb_yes" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/yes" />
+                    <RadioButton android:textColor="#010101" android:id="@id/rb_no" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/no" />
+                </RadioGroup>
+            </LinearLayout>
+            <TextView android:textSize="18.0sp" android:textColor="#010101" android:gravity="center" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="20.0dp" android:text="@string/service_3" android:layout_centerHorizontal="true" />
+            <EditText android:textSize="13.0sp" android:textColor="@color/black" android:gravity="top" android:id="@id/et_content" android:background="@drawable/servicebacketshape" android:padding="15.0dp" android:layout_width="match_parent" android:layout_height="200.0dp" android:layout_marginTop="10.0dp" android:hint="@string/inputhit" android:maxLength="200" />
+            <Button android:enabled="false" android:textColor="@android:color/white" android:id="@id/btn_commit" android:background="@drawable/login_selector" android:layout_width="match_parent" android:layout_height="45.0dp" android:layout_marginTop="40.0dp" android:text="@string/commit" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

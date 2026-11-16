@@ -1,0 +1,23 @@
+-- @Date    : 2020-04-30 17:32:56
+-- @Author  : ZhaoCi
+-- @Desc    :
+local RuneModule  = {}
+
+RuneModule.RecycleMode = {
+    Upgrade = 1,            --升级材料 
+    LuckyDraw = 2,          --抽奖
+}
+
+function RuneModule:init()
+    
+end
+
+function RuneModule:setFilterJob(job)
+    self._filterJob = job
+end
+
+function RuneModule:getFilterJob()
+    return self._filterJob or lt.GameModule:getHeroData():getJob()
+end
+
+return RuneModule

@@ -1,0 +1,13 @@
+local ChatDao = {}
+
+function ChatDao:queryAll()
+    local mapTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM Chat") do
+        local meta = lt.ChatMeta.new(row)
+        mapTable[meta:getChatType()] = meta
+    end
+    return mapTable
+end
+
+return ChatDao

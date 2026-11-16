@@ -1,0 +1,824 @@
+
+require("pack")
+local pack=string.pack
+
+local CliGgProto = {}
+
+CliGgProto._DecodePkgArray = {}
+CliGgProto._netdata = lt.NetData.new()
+
+CliGgProto.ROLENAME_MAX_LEN = 32
+CliGgProto.ROLE_MAX_NUM_ALL = 10
+CliGgProto.PROTO_SUCCESS = 1
+CliGgProto.PROTO_FAILURE = 0
+CliGgProto.TIME_STRING_LEN = 20
+CliGgProto.PLAYERID_STRING_LEN = 21
+CliGgProto.PTID_LEN = 64
+CliGgProto.PASSWORD_LEN = 33
+CliGgProto.ACCOUNT_LEN = 33
+CliGgProto.LOGIN_MY = 1
+CliGgProto.LOGIN_AP = 2
+CliGgProto.INVITECODE_LEN = 12
+
+
+----------------------------------------------------
+CliGgProto.CLIGGPROTO_MSGID_OFFSET = 19
+CliGgProto.CLIGGPROTO_MSGID_RANGE  = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 19
+
+CliGgProto.MessageID =
+{
+	CLI_GG_Login_REQ              = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 1,
+	GG_CLI_Login_ACK              = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 2, 
+
+	CLI_GG_SelectRole_REQ         = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 3, 
+	GG_CLI_SelectRole_ACK         = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 4, 
+
+	CLI_GG_CreateRole_REQ         = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 5, 
+	GG_CLI_CreateRole_ACK         = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 6, 
+
+	CLI_GG_DelRole_REQ            = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 7, 
+	GG_CLI_DelRole_ACK            = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 8, 
+
+	CLI_GG_ReselRole_REQ          = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 9, 
+	GG_CLI_ReselRole_ACK          = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 10, 
+
+	CLI_GG_UnDelRole_REQ          = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 11, 
+	GG_CLI_UnDelRole_ACK          = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 12, 
+
+	GG_CLI_KickOff_NTF            = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 13, 
+	CLI_GG_Logout_NTF             = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 14, 
+	GG_CLI_WaitQue_NTF            = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 15, 
+
+	CLI_GG_GS_MSG             	  = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 16, 
+	GS_GG_CLI_MSG                 = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 17, 
+
+	CLI_GG_VerifyUserName_REQ     = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 18,  --37
+    GG_CLI_VerifyUserName_ACK     = CliGgProto.CLIGGPROTO_MSGID_OFFSET + 19,  --38
+}
+
+----------------------------------------------------------
+
+function CliGgProto:init()
+
+	self._DecodePkgArray[CliGgProto.MessageID.GG_CLI_Login_ACK]=CliGgProto.PKG_GG_CLI_Login_ACK
+	self._DecodePkgArray[CliGgProto.MessageID.GG_CLI_SelectRole_ACK]=CliGgProto.PKG_GG_CLI_SelectRole_ACK
+	self._DecodePkgArray[CliGgProto.MessageID.GG_CLI_CreateRole_ACK]=CliGgProto.PKG_GG_CLI_CreateRole_ACK
+	self._DecodePkgArray[CliGgProto.MessageID.GG_CLI_DelRole_ACK]=CliGgProto.PKG_GG_CLI_DelRole_ACK
+	self._DecodePkgArray[CliGgProto.MessageID.GG_CLI_ReselRole_ACK]=CliGgProto.PKG_GG_CLI_ReselRole_ACK
+	self._DecodePkgArray[CliGgProto.MessageID.GG_CLI_UnDelRole_ACK]=CliGgProto.PKG_GG_CLI_UnDelRole_ACK
+	self._DecodePkgArray[CliGgProto.MessageID.GG_CLI_KickOff_NTF]=CliGgProto.PKG_GG_CLI_KickOff_NTF
+	self._DecodePkgArray[CliGgProto.MessageID.GG_CLI_WaitQue_NTF]=CliGgProto.PKG_GG_CLI_WaitQue_NTF
+	self._DecodePkgArray[CliGgProto.MessageID.GG_CLI_VerifyUserName_ACK]=CliGgProto.PKG_GG_CLI_VerifyUserName_ACK
+	
+end
+
+
+function CliGgProto:getDataLen()
+	return self._netdata:getDataLen()
+end
+
+function CliGgProto:getData()
+	return self._netdata:getData()
+end
+
+function CliGgProto:beatHeart()
+	self._netdata:reset()
+
+	self._netdata:writeWord(20000)
+	self._netdata:writeWord(0)
+	self._netdata:writeByte(0)
+	self._netdata:writeByte(0)
+	return self._netdata:getData()
+end
+
+function CliGgProto:encode(MsgID, MsgData)
+	if(MsgID<=CliGgProto.CLIGGPROTO_MSGID_OFFSET or MsgID>CliGgProto.CLIGGPROTO_MSGID_RANGE) then
+		return nil
+	end
+
+	self._netdata:reset()
+
+	self._netdata:writeWord(MsgID)
+	self._netdata:writeWord(0)
+	self._netdata:writeByte(0)
+	self._netdata:writeByte(0)
+
+	MsgData:pack()
+
+	local bodylen = self._netdata:getDataLen() - 6
+	szBodylen = pack(">H",bodylen)
+	self._netdata:set(2,szBodylen)
+	
+	return self._netdata:getData()
+end
+
+function CliGgProto:decode(MsgID, byArray, len)
+
+	if(MsgID<=CliGgProto.CLIGGPROTO_MSGID_OFFSET or MsgID>CliGgProto.CLIGGPROTO_MSGID_RANGE) then
+		return nil
+	end
+
+	local pkg = self._DecodePkgArray[MsgID]
+	if pkg == nil then
+		return nil
+	end
+	self._netdata:reset()
+	self._netdata:prepare(byArray,len)
+
+	local msg = pkg.new()
+	msg:unPack()
+
+	if self._netdata:getError() ~= 0 then
+		return nil
+	end
+
+	return msg
+end
+
+----------------------------------------------------------
+--------协议头------
+CliGgProto.STNetMsgHeader = class("STNetMsgHeader")
+--成员
+CliGgProto.STNetMsgHeader._wMsgID = 0
+CliGgProto.STNetMsgHeader._wDataLen = 0
+CliGgProto.STNetMsgHeader._byCompress = 0
+CliGgProto.STNetMsgHeader._byCheckSum = 0
+--构造
+function CliGgProto.STNetMsgHeader:ctor()
+	self._wMsgID = 0
+	self._wDataLen = 0
+	self._byCompress = 0
+	self._byCheckSum = 0
+end
+
+function CliGgProto.STNetMsgHeader:pack()
+	CliGgProto._netdata:writeWord(self._wMsgID)
+	CliGgProto._netdata:writeWord(self._wDataLen)
+	CliGgProto._netdata:writeByte(self._byCompress)
+	CliGgProto._netdata:writeByte(self._byCheckSum)
+end
+
+function CliGgProto.STNetMsgHeader:unPack()
+	self._wMsgID = CliGgProto._netdata:readWord()
+	self._wDataLen = CliGgProto._netdata:readWord()
+	self._byCompress = CliGgProto._netdata:readByte()
+	self._byCheckSum = CliGgProto._netdata:readByte()
+end
+
+----------------------------------------------------------
+----------------------------------------------------------
+--------错误码------
+CliGgProto.SErrCode = class("SErrCode")
+--成员
+CliGgProto.SErrCode._wErrCode = 0
+--构造
+function CliGgProto.SErrCode:ctor()
+	self._wErrCode = 0
+end
+
+function CliGgProto.SErrCode:pack()
+	CliGgProto._netdata:writeWord(self._wErrCode)
+end
+
+function CliGgProto.SErrCode:unPack()
+	self._wErrCode = CliGgProto._netdata:readWord()
+end
+
+---------------------------
+---登录反馈信息
+CliGgProto.LoginData = class("LoginData")
+--成员
+CliGgProto.LoginData._nDataLen = 0;
+CliGgProto.LoginData._szDataBuf = "";
+--构造
+function CliGgProto.LoginData:ctor()
+	self._nDataLen = 0;
+	self._szDataBuf = "";
+end
+
+function CliGgProto.LoginData:unPack()
+	self._nDataLen = CliGgProto._netdata:readWord()
+	self._szDataBuf = CliGgProto._netdata:readBuf(self._nDataLen)
+end
+
+
+--------角色信息------
+-- <type name="SRoleBasicInfo">
+-- <item name="RoleName" type="string" count="ROLENAME_MAX_LEN" />
+-- <item name="Race" type="byte" />
+-- <item name="Gender" type="byte" />
+-- <item name="FaceShape" type="byte" />
+-- <item name="HairColor" type="byte" />
+-- <item name="SkinColor" type="byte" />
+-- <item name="STR" type="word" />
+-- <item name="DEX" type="word" />
+-- <item name="INT" type="word" />
+-- <item name="Level" type="word" />
+-- <item name="BladeLevel" type="word" />
+-- <item name="SwordLevel" type="word" />
+-- <item name="GunLevel" type="word" />
+-- <item name="HealLevel" type="word" />
+-- <item name="BlessLevel" type="word" />
+-- <item name="Repute" type="dword" />
+-- <item name="Grade" type="byte" />
+-- <item name="Advanced" type="byte" />
+-- <item name="WeaponAppr" type="string" count="ROLENAME_MAX_LEN" />
+-- <item name="ShieldAppr" type="string" count="ROLENAME_MAX_LEN" />
+-- <item name="HelmetAppr" type="string" count="ROLENAME_MAX_LEN" />
+-- <item name="BodyAppr" type="string" count="ROLENAME_MAX_LEN" />
+-- <item name="TrousersAppr" type="string" count="ROLENAME_MAX_LEN" />
+-- <item name="WeaponAppr" type="dword" />
+-- <item name="BodyAppr" type="dword" />
+-- <item name="DeleteTime" type="string" count="TIME_STRING_LEN" />
+-- <item name="Delete" type="byte" />
+-- <item name="AreaGroup" type="dword" />
+-- <item name="PlayerID"     type="string" count="PLAYERID_LEN" />
+-- <item name="CreateTime" type="string" count="TIME_STRING_LEN" />
+-- </type>
+
+CliGgProto.SRoleBasicInfo = class("SRoleBasicInfo")
+--成员
+CliGgProto.SRoleBasicInfo._szRoleName = ""
+CliGgProto.SRoleBasicInfo._byPos = 0
+CliGgProto.SRoleBasicInfo._byJob = 0
+CliGgProto.SRoleBasicInfo._bySex = 0
+CliGgProto.SRoleBasicInfo._byFaceShape = 0
+CliGgProto.SRoleBasicInfo._byHairColor = 0
+CliGgProto.SRoleBasicInfo._bySkinColor = 0
+CliGgProto._wSTR = 0
+CliGgProto._wDEX = 0
+CliGgProto._wINT = 0
+CliGgProto.SRoleBasicInfo._wLevel      = 0
+CliGgProto.SRoleBasicInfo._wBladeLevel = 0
+CliGgProto.SRoleBasicInfo._wSwordLevel = 0
+CliGgProto.SRoleBasicInfo._wGunLevel   = 0
+CliGgProto.SRoleBasicInfo._wHealLevel  = 0
+CliGgProto.SRoleBasicInfo._wBlessLevel = 0
+
+CliGgProto.SRoleBasicInfo._dwRepute   = 0
+CliGgProto.SRoleBasicInfo._byGrade    = 0
+CliGgProto.SRoleBasicInfo._byAdvanced = 0
+CliGgProto.SRoleBasicInfo._szWeaponAppr   = ""
+CliGgProto.SRoleBasicInfo._szShieldAppr   = ""
+CliGgProto.SRoleBasicInfo._szHelmetAppr   = ""
+CliGgProto.SRoleBasicInfo._szBodyAppr     = ""
+CliGgProto.SRoleBasicInfo._szTrousersAppr = ""
+-- CliGgProto.SRoleBasicInfo._dwWeaponAppr = 0
+-- CliGgProto.SRoleBasicInfo._dwBodyAppr = 0
+
+CliGgProto.SRoleBasicInfo._szDeleteTime = ""
+CliGgProto.SRoleBasicInfo._byDelete     = 0
+CliGgProto.SRoleBasicInfo._dwServerID   = 0
+CliGgProto.SRoleBasicInfo._szPlayerID   = ""
+CliGgProto.SRoleBasicInfo._szCreateTime = ""
+
+--构造
+function CliGgProto.SRoleBasicInfo:ctor()
+	self._szRoleName = ""
+	self._byPos = 0
+	self._byJob = 0
+	self._bySex = 0
+	self._byFaceShape = 0
+	self._byHairColor = 0
+	self._bySkinColor = 0
+	self._wSTR   = 0
+	self._wDEX   = 0
+	self._wINT   = 0
+	self._wLevel = 0
+	self._wBladeLevel = 0
+	self._wSwordLevel = 0
+	self._wGunLevel   = 0
+	self._wHealLevel  = 0
+	self._wBlessLevel = 0
+	
+	self._dwRepute = 0
+	self._byGrade  = 0
+	self._byAdvanced     = 0
+	self._szWeaponAppr   = ""
+	self._szShieldAppr   = ""
+	self._szHelmetAppr   = ""
+	self._szBodyAppr     = ""
+	self._szTrousersAppr = ""
+	
+	self._szDeleteTime = ""
+	self._byDelete     = 0
+	self._dwServerID   = 0
+	self._szPlayerID   = ""
+	self._szCreateTime = ""
+end
+
+
+function CliGgProto.SRoleBasicInfo:pack()
+	CliGgProto._netdata:writeString(self._szRoleName, CliGgProto.ROLENAME_MAX_LEN)
+	CliGgProto._netdata:writeByte(self._byPos)
+
+	CliGgProto._netdata:writeByte(self._byJob)
+	CliGgProto._netdata:writeByte(self._bySex)
+
+	CliGgProto._netdata:writeByte(self._byFaceShape)
+	CliGgProto._netdata:writeByte(self._byHairColor)
+	CliGgProto._netdata:writeByte(self._bySkinColor)
+
+	CliGgProto._netdata:writeWord(self._wSTR)
+	CliGgProto._netdata:writeWord(self._wDEX)
+	CliGgProto._netdata:writeWord(self._wINT)
+	
+	CliGgProto._netdata:writeWord(self._wLevel)
+	CliGgProto._netdata:writeWord(self._wBladeLevel)
+	CliGgProto._netdata:writeWord(self._wSwordLevel)
+	CliGgProto._netdata:writeWord(self._wGunLevel)
+	CliGgProto._netdata:writeWord(self._wHealLevel)
+	CliGgProto._netdata:writeWord(self._wBlessLevel)
+
+
+	CliGgProto._netdata:writeDword(self._dwRepute)
+	CliGgProto._netdata:writeByte(self._byGrade)
+	CliGgProto._netdata:writeByte(self._byAdvanced)
+	CliGgProto._netdata:writeString(self._szWeaponAppr, CliGgProto.ROLENAME_MAX_LEN)
+	CliGgProto._netdata:writeString(self._szShieldAppr, CliGgProto.ROLENAME_MAX_LEN)
+	CliGgProto._netdata:writeString(self._szHelmetAppr, CliGgProto.ROLENAME_MAX_LEN)
+	CliGgProto._netdata:writeString(self._szBodyAppr  , CliGgProto.ROLENAME_MAX_LEN)
+	CliGgProto._netdata:writeString(self._szTrousersAppr, CliGgProto.ROLENAME_MAX_LEN)
+
+	CliGgProto._netdata:writeString(self._szDeleteTime, CliGgProto.TIME_STRING_LEN)
+	CliGgProto._netdata:writeByte(self._byDelete)
+	CliGgProto._netdata:writeDword(self._dwServerID)
+	CliGgProto._netdata:writeString(self._szPlayerID, CliGgProto.PLAYERID_STRING_LEN)
+	CliGgProto._netdata:writeString(self._szCreateTime, CliGgProto.TIME_STRING_LEN)
+
+end
+
+function CliGgProto.SRoleBasicInfo:unPack()
+	self._szRoleName = CliGgProto._netdata:readString(CliGgProto.ROLENAME_MAX_LEN)
+	self._byPos      = CliGgProto._netdata:readByte()
+
+	self._byJob = CliGgProto._netdata:readByte()
+	self._bySex = CliGgProto._netdata:readByte()
+
+	self._byFaceShape = CliGgProto._netdata:readByte()
+	self._byHairColor = CliGgProto._netdata:readByte()
+	self._bySkinColor = CliGgProto._netdata:readByte()
+
+	self._wSTR = CliGgProto._netdata:readWord()
+	self._wDEX = CliGgProto._netdata:readWord()
+	self._wINT = CliGgProto._netdata:readWord()
+	
+	self._wLevel      = CliGgProto._netdata:readWord()
+	self._wBladeLevel = CliGgProto._netdata:readWord()
+	self._wSwordLevel = CliGgProto._netdata:readWord()
+	self._wGunLevel   = CliGgProto._netdata:readWord()
+	self._wHealLevel  = CliGgProto._netdata:readWord()
+	self._wBlessLevel = CliGgProto._netdata:readWord()
+
+	self._dwRepute       = CliGgProto._netdata:readDword()
+	self._byGrade        = CliGgProto._netdata:readByte()
+	self._byAdvanced     = CliGgProto._netdata:readByte()
+	self._szWeaponAppr   = CliGgProto._netdata:readString(CliGgProto.ROLENAME_MAX_LEN)
+	self._szShieldAppr   = CliGgProto._netdata:readString(CliGgProto.ROLENAME_MAX_LEN)
+	self._szHelmetAppr   = CliGgProto._netdata:readString(CliGgProto.ROLENAME_MAX_LEN)
+	self._szBodyAppr     = CliGgProto._netdata:readString(CliGgProto.ROLENAME_MAX_LEN)
+	self._szTrousersAppr = CliGgProto._netdata:readString(CliGgProto.ROLENAME_MAX_LEN)
+
+	self._szDeleteTime = CliGgProto._netdata:readString( CliGgProto.TIME_STRING_LEN)
+	self._byDelete     = CliGgProto._netdata:readByte()
+	self._dwServerID   = CliGgProto._netdata:readDword()
+	self._szPlayerID   = CliGgProto._netdata:readString(CliGgProto.PLAYERID_STRING_LEN)
+	self._szCreateTime = CliGgProto._netdata:readString(CliGgProto.TIME_STRING_LEN)
+end
+---------------------------
+--------角色列表------
+
+
+CliGgProto.SRoleList = class("SRoleList")
+--成员
+CliGgProto.SRoleList._bySelect = 0
+CliGgProto.SRoleList._byRoleCount = 0
+CliGgProto.SRoleList._astRoleList = nil --SRoleBasicInfo list
+--构造
+
+function CliGgProto.SRoleList:ctor()
+	self._bySelect = 0
+	self._byRoleCount = 0
+	self._astRoleList = {} --SRoleBasicInfo list
+end
+
+function CliGgProto.SRoleList:pack()
+
+	CliGgProto._netdata:writeByte(self._bySelect)
+	CliGgProto._netdata:writeByte(self._byRoleCount)
+
+	for i = 1, self._byRoleCount, 1 do
+		self._astRoleList[i]:pack()
+	end
+
+end
+
+function CliGgProto.SRoleList:unPack()
+
+	self._bySelect = CliGgProto._netdata:readByte()
+	self._byRoleCount = CliGgProto._netdata:readByte()
+
+	if (self._byRoleCount > CliGgProto.ROLE_MAX_NUM_ALL) then
+       return
+    end
+
+	for i = 1, self._byRoleCount, 1 do
+		self._astRoleList[i] = CliGgProto.SRoleBasicInfo.new()
+		self._astRoleList[i]:unPack()
+	end
+
+end
+---------------------------
+--------角色操作回应------
+CliGgProto.URoleOpAck = class("URoleOpAck")
+--成员
+CliGgProto.URoleOpAck._iSelect = 0
+CliGgProto.URoleOpAck._stSucc = nil
+CliGgProto.URoleOpAck._stFail = nil
+--构造
+function CliGgProto.URoleOpAck:ctor(iSelect)
+    self._iSelect = iSelect
+	if iSelect == CliGgProto.PROTO_SUCCESS then
+		self._stSucc = CliGgProto.SRoleList.new()
+	elseif iSelect == CliGgProto.PROTO_FAILURE then
+		self._stFail = CliGgProto.SErrCode.new()
+	end
+end
+
+function CliGgProto.URoleOpAck:pack()
+
+	if self._iSelect == CliGgProto.PROTO_SUCCESS then
+		self._stSucc:pack()
+	elseif self._iSelect == CliGgProto.PROTO_FAILURE then
+		self._stFail:pack()
+	end
+end
+
+function CliGgProto.URoleOpAck:unPack()
+
+	if self._iSelect == CliGgProto.PROTO_SUCCESS then
+		self._stSucc:unPack()
+	elseif self._iSelect == CliGgProto.PROTO_FAILURE then
+		self._stFail:unPack()
+	end
+end
+----------------------------------------------------------
+--------请求登录------
+CliGgProto.PKG_CLI_GG_Login_REQ=class("PKG_CLI_GG_APLogin_REQ")
+--成员
+CliGgProto.PKG_CLI_GG_Login_REQ._szAuthAct = ""
+CliGgProto.PKG_CLI_GG_Login_REQ._szAuthStr = ""
+CliGgProto.PKG_CLI_GG_Login_REQ._wAPType = 0
+CliGgProto.PKG_CLI_GG_Login_REQ._dwClientVersion = 0
+CliGgProto.PKG_CLI_GG_Login_REQ._wClientType = 0
+CliGgProto.PKG_CLI_GG_Login_REQ._dwServerID = 0
+CliGgProto.PKG_CLI_GG_Login_REQ._szInviteCode = ""
+CliGgProto.PKG_CLI_GG_Login_REQ._dwReserve = 0
+
+--构造
+function CliGgProto.PKG_CLI_GG_Login_REQ:ctor()
+	self._szAuthAct = ""
+	self._szAuthStr = ""
+	self._wAPType = 0
+	self._dwClientVersion = 0
+	self._wClientType = 0
+	self._dwServerID = 0
+	self._szInviteCode = ""
+	self._dwReserve = 0
+end
+
+
+function CliGgProto.PKG_CLI_GG_Login_REQ:pack()
+	CliGgProto._netdata:writeString(self._szAuthAct, CliGgProto.ACCOUNT_LEN)
+	CliGgProto._netdata:writeString(self._szAuthStr, CliGgProto.PASSWORD_LEN)
+	CliGgProto._netdata:writeWord(self._wAPType)
+	CliGgProto._netdata:writeDword(self._dwClientVersion)
+	CliGgProto._netdata:writeWord(self._wClientType)
+	CliGgProto._netdata:writeDword(self._dwServerID)
+	CliGgProto._netdata:writeString(self._szInviteCode, CliGgProto.INVITECODE_LEN)
+	CliGgProto._netdata:writeDword(self._dwReserve)
+end
+
+----------------------------------------------------------
+--------登录成功------
+CliGgProto.PKG_GG_CLI_Login_SUC=class("PKG_GG_CLI_Login_SUC")
+--成员
+CliGgProto.PKG_GG_CLI_Login_SUC._szPTID = ""
+CliGgProto.PKG_GG_CLI_Login_SUC._stLoginData = nil;
+CliGgProto.PKG_GG_CLI_Login_SUC._stRoleList= nil
+--构造
+function CliGgProto.PKG_GG_CLI_Login_SUC:ctor()
+	self._szPTID = ""
+	self._stLoginData= CliGgProto.LoginData.new()
+	self._stRoleList= CliGgProto.SRoleList.new()
+end
+
+function CliGgProto.PKG_GG_CLI_Login_SUC:unPack()
+	self._szPTID = CliGgProto._netdata:readString(CliGgProto.PTID_LEN)
+	self._stLoginData:unPack()
+	self._stRoleList:unPack()
+end
+
+----------------------------------------------------------
+--------登录回应------
+CliGgProto.PKG_GG_CLI_Login_ACK=class("PKG_GG_CLI_Login_ACK")
+--成员
+CliGgProto.PKG_GG_CLI_Login_ACK._byResult = 0
+CliGgProto.PKG_GG_CLI_Login_ACK._stReply = nil
+--构造
+function CliGgProto.PKG_GG_CLI_Login_ACK:ctor()
+	self._byResult = 0
+	self._stReply = nil
+end
+
+function CliGgProto.PKG_GG_CLI_Login_ACK:unPack() 
+	self._byResult = CliGgProto._netdata:readByte()
+
+    if self._byResult==CliGgProto.PROTO_SUCCESS then
+		self._stReply =  CliGgProto.PKG_GG_CLI_Login_SUC.new()
+	elseif self._byResult==CliGgProto.PROTO_FAILURE then
+		self._stReply =  CliGgProto.SErrCode.new()
+	end
+
+	if self._stReply~=nil then
+		self._stReply:unPack()
+	end 
+
+end
+
+----------------------------------------------------------
+--------选角色请求------
+CliGgProto.PKG_CLI_GG_SelectRole_REQ=class("PKG_CLI_GG_SelectRole_REQ")
+--成员
+CliGgProto.PKG_CLI_GG_SelectRole_REQ._szRoleName = ""
+--构造
+function CliGgProto.PKG_CLI_GG_SelectRole_REQ:ctor()
+	self._szRoleName = ""
+end
+
+function CliGgProto.PKG_CLI_GG_SelectRole_REQ:pack()
+	CliGgProto._netdata:writeString(self._szRoleName, CliGgProto.ROLENAME_MAX_LEN)
+end
+----------------------------------------------------------
+--------选角色回应------
+CliGgProto.PKG_GG_CLI_SelectRole_ACK=class("PKG_GG_CLI_SelectRole_ACK")
+--成员
+CliGgProto.PKG_GG_CLI_SelectRole_ACK._wResult = 0
+--构造
+function CliGgProto.PKG_GG_CLI_SelectRole_ACK:ctor()
+	self._wResult = 0
+end
+
+function CliGgProto.PKG_GG_CLI_SelectRole_ACK:unPack()
+	self._wResult = CliGgProto._netdata:readWord()
+end
+----------------------------------------------------------
+--------创建角色请求------
+-- <type name="SCreateRoleInfo">
+-- <item name="RoleName" type="string" count="ROLENAME_MAX_LEN" />
+-- <item name="Race" type="byte" />
+-- <item name="Gender" type="byte" />
+-- <item name="FaceShape" type="byte" />
+-- <item name="HairColor" type="byte" />
+-- <item name="SkinColor" type="byte" />
+-- <item name="STR" type="word" />
+-- <item name="DEX" type="word" />
+-- <item name="INT" type="word" />
+-- <item name="Invite" type="string" count="INVITECODE_LEN" />
+-- </type>
+CliGgProto.PKG_CLI_GG_CreateRole_REQ=class("PKG_CLI_GG_CreateRole_REQ")
+--成员
+CliGgProto.PKG_CLI_GG_CreateRole_REQ._szRoleName = ""
+CliGgProto.PKG_CLI_GG_CreateRole_REQ._byPos = 0
+CliGgProto.PKG_CLI_GG_CreateRole_REQ._byRace = 0
+CliGgProto.PKG_CLI_GG_CreateRole_REQ._bySex = 0
+CliGgProto.PKG_CLI_GG_CreateRole_REQ._byFaceShape = 0
+CliGgProto.PKG_CLI_GG_CreateRole_REQ._byHairColor = 0
+CliGgProto.PKG_CLI_GG_CreateRole_REQ._bySkinColor = 0
+
+CliGgProto.PKG_CLI_GG_CreateRole_REQ._wSTR = 0 --力量
+CliGgProto.PKG_CLI_GG_CreateRole_REQ._wDEX = 0 --敏捷
+CliGgProto.PKG_CLI_GG_CreateRole_REQ._wINT = 0 --智力
+CliGgProto.PKG_CLI_GG_CreateRole_REQ._szInvite = ""
+--构造
+function CliGgProto.PKG_CLI_GG_CreateRole_REQ:ctor()
+	self._szRoleName = ""
+	self._byPos = 0
+	self._byRace = 0
+	self._bySex = 0
+	self._byFaceShape = 0
+	self._byHairColor = 0
+	self._bySkinColor = 0
+
+	self._wSTR = 0
+	self._wDEX = 0
+	self._wINT = 0
+	
+	self._szInvite = ""
+end
+
+function CliGgProto.PKG_CLI_GG_CreateRole_REQ:pack()
+	CliGgProto._netdata:writeString(self._szRoleName, CliGgProto.ROLENAME_MAX_LEN)
+	CliGgProto._netdata:writeByte(self._byPos)
+	CliGgProto._netdata:writeByte(self._byRace)
+	CliGgProto._netdata:writeByte(self._bySex)
+	CliGgProto._netdata:writeByte(self._byFaceShape)
+	CliGgProto._netdata:writeByte(self._byHairColor)
+	CliGgProto._netdata:writeByte(self._bySkinColor)
+	
+	CliGgProto._netdata:writeWord(self._wSTR)
+	CliGgProto._netdata:writeWord(self._wDEX)
+	CliGgProto._netdata:writeWord(self._wINT)
+
+	CliGgProto._netdata:writeString(self._szInvite, CliGgProto.INVITECODE_LEN)
+end
+
+----------------------------------------------------------
+--------创建角色回应------
+CliGgProto.PKG_GG_CLI_CreateRole_ACK=class("PKG_GG_CLI_CreateRole_ACK")
+--成员
+CliGgProto.PKG_GG_CLI_CreateRole_ACK._byResult = 0
+CliGgProto.PKG_GG_CLI_CreateRole_ACK._stReply = nil
+--构造
+function CliGgProto.PKG_GG_CLI_CreateRole_ACK:ctor()
+	self._byResult = 0
+	self._stReply =  nil
+end
+
+function CliGgProto.PKG_GG_CLI_CreateRole_ACK:unPack()
+	self._byResult = CliGgProto._netdata:readByte()
+	self._stReply =  CliGgProto.URoleOpAck.new(self._byResult)
+	self._stReply:unPack()
+end
+
+----------------------------------------------------------
+--------删除角色请求------
+CliGgProto.PKG_CLI_GG_DelRole_REQ=class("PKG_CLI_GG_DelRole_REQ")
+--成员
+CliGgProto.PKG_CLI_GG_DelRole_REQ._szRoleName = ""
+--构造
+function CliGgProto.PKG_CLI_GG_DelRole_REQ:ctor()
+	self._szRoleName = ""
+end
+
+function CliGgProto.PKG_CLI_GG_DelRole_REQ:pack()
+	CliGgProto._netdata:writeString(self._szRoleName, CliGgProto.ROLENAME_MAX_LEN)
+end
+----------------------------------------------------------
+--------删除角色回应------
+CliGgProto.PKG_GG_CLI_DelRole_ACK=class("PKG_GG_CLI_DelRole_ACK")
+--成员
+CliGgProto.PKG_GG_CLI_DelRole_ACK._byResult = 0
+CliGgProto.PKG_GG_CLI_DelRole_ACK._stReason = nil
+--构造
+function CliGgProto.PKG_GG_CLI_DelRole_ACK:ctor()
+	self._byResult = 0
+	self._stReason =  CliGgProto.SErrCode.new()
+end
+
+function CliGgProto.PKG_GG_CLI_DelRole_ACK:unPack()
+	self._byResult = CliGgProto._netdata:readByte()
+	self._stReason:unPack()
+end
+----------------------------------------------------------
+--------恢复角色请求------
+CliGgProto.PKG_CLI_GG_UnDelRole_REQ=class("PKG_CLI_GG_UnDelRole_REQ")
+--成员
+CliGgProto.PKG_CLI_GG_UnDelRole_REQ._szRoleName = ""
+--构造
+function CliGgProto.PKG_CLI_GG_UnDelRole_REQ:ctor()
+	self._szRoleName = ""
+end
+
+function CliGgProto.PKG_CLI_GG_UnDelRole_REQ:pack()
+	CliGgProto._netdata:writeString(self._szRoleName, CliGgProto.ROLENAME_MAX_LEN)
+end
+
+----------------------------------------------------------
+--------恢复角色回应------
+CliGgProto.PKG_GG_CLI_UnDelRole_ACK=class("PKG_GG_CLI_UnDelRole_ACK")
+--成员
+CliGgProto.PKG_GG_CLI_UnDelRole_ACK._byResult = 0
+CliGgProto.PKG_GG_CLI_UnDelRole_ACK._stReason = nil
+--构造
+function CliGgProto.PKG_GG_CLI_UnDelRole_ACK:ctor()
+	self._byResult = 0
+	self._stReason =  CliGgProto.SErrCode.new()
+end
+
+function CliGgProto.PKG_GG_CLI_UnDelRole_ACK:unPack()
+	self._byResult = CliGgProto._netdata:readByte()
+	self._stReason:unPack()
+end
+----------------------------------------------------------
+--------客户端下线通知------
+CliGgProto.PKG_CLI_GG_Logout_NTF=class("PKG_CLI_GG_Logout_NTF")
+--成员
+--构造
+function CliGgProto.PKG_CLI_GG_Logout_NTF:ctor()
+
+end
+function CliGgProto.PKG_CLI_GG_Logout_NTF:pack()
+	
+end
+----------------------------------------------------------
+--------小退请求------
+CliGgProto.PKG_CLI_GG_ReselRole_REQ=class("PKG_CLI_GG_ReselRolee_REQ")
+--成员
+CliGgProto.PKG_CLI_GG_ReselRole_REQ._szRoleName = ""
+--构造
+function CliGgProto.PKG_CLI_GG_ReselRole_REQ:ctor()
+	self._szRoleName = ""
+end
+function CliGgProto.PKG_CLI_GG_ReselRole_REQ:pack()
+	CliGgProto._netdata:writeString(self._szRoleName, CliGgProto.ROLENAME_MAX_LEN)
+end
+----------------------------------------------------------
+--------小退回应------
+CliGgProto.PKG_GG_CLI_ReselRole_ACK=class("PKG_GG_CLI_ReselRole_ACK")
+--成员
+CliGgProto.PKG_GG_CLI_ReselRole_ACK._byResult = 0
+CliGgProto.PKG_GG_CLI_ReselRole_ACK._stReply = nil
+--构造
+function CliGgProto.PKG_GG_CLI_ReselRole_ACK:ctor()
+	self._byResult = byResult
+	self._stReply = nil
+end
+
+function CliGgProto.PKG_GG_CLI_ReselRole_ACK:unPack()
+	self._byResult = CliGgProto._netdata:readByte()
+
+	if self._byResult==CliGgProto.PROTO_SUCCESS then
+		self._stReply = CliGgProto.SRoleList.new()
+	elseif self._byResult==CliGgProto.PROTO_FAILURE then
+		self._stReply = CliGgProto.SErrCode.new()
+	end
+	if self._stReply~=nil then
+		self._stReply:unPack()
+	end 
+
+end
+
+----------------------------------------------------------
+--------服务器踢人通知------
+CliGgProto.PKG_GG_CLI_KickOff_NTF=class("PKG_GG_CLI_KickOff_NTF")
+--成员
+CliGgProto.PKG_GG_CLI_KickOff_NTF._wReason = 0
+--构造
+function CliGgProto.PKG_GG_CLI_KickOff_NTF:ctor()
+	self._wReason = 0
+end
+function CliGgProto.PKG_GG_CLI_KickOff_NTF:unPack()
+	self._wReason = CliGgProto._netdata:readWord()
+end
+----------------------------------------------------------
+--------排队通知------
+CliGgProto.PKG_GG_CLI_WaitQue_NTF=class("PKG_GG_CLI_WaitQue_NTF")
+--成员
+CliGgProto.PKG_GG_CLI_WaitQue_NTF._nPosition = 0
+--构造
+function CliGgProto.PKG_GG_CLI_WaitQue_NTF:ctor()
+	self._nPosition = 0
+end
+function CliGgProto.PKG_GG_CLI_WaitQue_NTF:unPack()
+	self._nPosition = CliGgProto._netdata:readInt()
+end
+
+
+----------------------------------------------------------
+--------验证昵称重复请求------
+CliGgProto.PKG_CLI_GG_VerifyUserName_REQ=class("PKG_CLI_GG_VerifyUserName_REQ")
+--成员
+CliGgProto.PKG_CLI_GG_VerifyUserName_REQ._szRoleName = ""
+CliGgProto.PKG_CLI_GG_VerifyUserName_REQ._szPid = ""
+--构造
+function CliGgProto.PKG_CLI_GG_VerifyUserName_REQ:ctor()
+	self._szRoleName = ""
+	self._szPid = ""
+end
+
+function CliGgProto.PKG_CLI_GG_VerifyUserName_REQ:pack()
+	CliGgProto._netdata:writeString(self._szPid, CliGgProto.PTID_LEN)
+	CliGgProto._netdata:writeString(self._szRoleName, CliGgProto.ROLENAME_MAX_LEN)
+end
+----------------------------------------------------------
+--------验证昵称重复回复------
+CliGgProto.PKG_GG_CLI_VerifyUserName_ACK=class("PKG_GG_CLI_VerifyUserName_ACK")
+--成员
+CliGgProto.PKG_GG_CLI_VerifyUserName_ACK._byResult = 0
+CliGgProto.PKG_GG_CLI_VerifyUserName_ACK._stReason = nil
+--构造
+function CliGgProto.PKG_GG_CLI_VerifyUserName_ACK:ctor()
+	self._byResult = 0
+	self._stReason = CliGgProto.SErrCode.new()
+end
+function CliGgProto.PKG_GG_CLI_VerifyUserName_ACK:unPack()
+	self._byResult = CliGgProto._netdata:readByte()
+	if self._stReason~=nil then
+		self._stReason:unPack()
+	end 
+end
+----------------------------------------------------------
+-----------------------------------------------------------
+
+return CliGgProto

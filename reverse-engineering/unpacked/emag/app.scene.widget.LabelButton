@@ -1,0 +1,144 @@
+
+local LabelButton = class("LabelButton", function(image, text, param, selectedImage, disableImage)
+    return ccui.Button:create(image, selectedImage, disableImage)
+end)
+
+function LabelButton:create(image, text)
+    local param = {}
+    param.font = lt.Constant.FONT_2
+    param.size = 20
+    param.color = cc.c3b(0xED, 0xB4, 0x87)
+
+    return LabelButton.new(image, text, param)
+end
+
+function LabelButton:ctor(image, text, param, selectedImage, disableImage)
+    local contentSize = self:getContentSize()
+
+    self._gray = false
+    self._labelEx = lt.LabelEx.new(text, param)
+    self._labelEx:setPosition(contentSize.width / 2, contentSize.height / 2)
+    self:setTitleLabel(self._labelEx)
+end
+
+function LabelButton:createButton(image, text, selectedImage, fontSize)
+    local param = {font=lt.Constant.FONT_2, 
+                   size=fontSize or 18, 
+                   color=lt.Constant.COLOR_BTN_0, }
+    return LabelButton.new(image, text, param, selectedImage, disableImage)
+end
+
+function LabelButton:createNormalButton(str, x, y, callback)
+    local btn = LabelButton:createButton(lt.ResManager:resPath("_szBtn02"), str)
+    btn:setPosition(x, y)
+    if callback then
+        btn:addClickEventListener(callback)
+    end
+    return btn
+end
+
+function LabelButton:createImgButton(image, str, x, y, callback)
+    local btn = LabelButton:createButton(image, str)
+    btn:setPosition(x, y)
+    if callback then
+        btn:addClickEventListener(callback)
+    end
+    return btn
+end
+
+function LabelButton:setLabelText(text)
+    self._labelEx:setString(text)
+end
+
+function LabelButton:getLabelText()
+   return self._labelEx:getString()
+end
+
+function LabelButton:setLabelColor(color)
+    self._labelEx:setTextColor3B(color)
+end
+
+function LabelButton:setLabelGray(bool)
+    if self._gray == bool then return end
+    
+    self._gray = bool
+
+    if bool then
+        self:setLabelColor(lt.Constant.COLOR_TEXT_GRAY)
+    else
+        self:setLabelColor(lt.Constant.COLOR_BTN_0)
+    end
+end
+
+function LabelButton:setLabelLineWidth(color, width)
+    --self:setDimensions(width,0)
+    self._labelEx:enableOutline(color, width)
+end
+
+function LabelButton:setLabelSize(size)
+    self._labelEx:setSystemFontSize(size)
+end
+
+function LabelButton:onListViewTouchBegan(evt)
+    self._beginPos = cc.p(evt.x, evt.y)
+    self._hasMove = false
+
+    if not self._disableListViewTouchScale then
+        self._toNormal = true
+        self:setScale(1.1)
+    end
+end
+
+function LabelButton:onListViewTouchMoved(evt)
+    if self._beginPos then
+        if not self._hasMove then
+            self._hasMove = math.abs(evt.x-self._beginPos.x) > 10 or math.abs(evt.y-self._beginPos.y) > 10
+        end
+
+        if not self._disableListViewTouchScale and self._hasMove and self._toNormal then
+            self:setScale(1)
+            self._toNormal = false
+        end
+    end
+end
+
+function LabelButton:onListViewTouchEnded(evt)
+    if self._beginPos then
+        if cc.rectContainsPoint(self:getBoundingBox(), self:getParent():convertToNodeSpace(cc.p(evt.x, evt.y))) and not self._hasMove and self._callback then
+            self._callback(self)
+        end
+
+        if not self._disableListViewTouchScale and self._toNormal then
+            self:setScale(1)
+            self._toNormal = false
+        end
+
+        self._beginPos = nil
+    end
+end
+
+function LabelButton:removeListViewTouchCallback()
+    self._callback = nil
+end
+
+function LabelButton:setListViewTouchCallback(callback)
+    self._callback = callback
+end
+
+function LabelButton:disableListViewTouchScale(b)
+    self._disableListViewTouchScale = b
+end
+
+function LabelButton:setBtnTag(idx)
+    self._tagidnex = idx
+end
+
+function LabelButton:getBtnTag()
+    return self._tagidnex
+end
+
+function LabelButton:getLabel()
+    return self._labelEx
+end
+
+return LabelButton

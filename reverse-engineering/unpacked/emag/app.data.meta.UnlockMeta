@@ -1,0 +1,67 @@
+
+local UnlockMeta = class("UnlockMeta")
+
+UnlockMeta._unlockId    = nil
+UnlockMeta._name        = nil
+UnlockMeta._serverPhase = nil
+UnlockMeta._level       = nil
+UnlockMeta._key         = nil
+UnlockMeta._content     = nil
+UnlockMeta._guide       = nil
+UnlockMeta._guideReward = nil
+UnlockMeta._guideTips   = nil
+
+function UnlockMeta:ctor(row)
+    self:initWithRow(row)
+end
+
+function UnlockMeta:initWithRow(row)
+    self._unlockId    = row.UnlockId
+    self._name        = row.CtgName
+    self._serverPhase = row.ServerPhase
+    self._level       = row.Level
+    self._key         = row.Remind
+    self._content     = row.OpenTips
+    self._guide       = row.Guide
+    self._guideReward = row.GuideReward
+    self._guideTips   = row.GuideTips
+end
+
+-- Setter && Getter
+function UnlockMeta:getUnlockId()
+    return self._unlockId
+end
+
+function UnlockMeta:getName()
+    return self._name
+end
+
+function UnlockMeta:getServerPhase()
+    return self._serverPhase
+end
+
+function UnlockMeta:getLevel()
+    return self._level
+end
+
+function UnlockMeta:getKey()
+    return self._key
+end
+
+function UnlockMeta:getContent()
+    return self._content or ""
+end
+
+function UnlockMeta:getGuide()
+    return self._guide
+end
+
+function UnlockMeta:getGuideReward()
+    return self._guideReward or ""
+end
+
+function UnlockMeta:getGuideTips()
+    return self._guideTips
+end
+
+return UnlockMeta

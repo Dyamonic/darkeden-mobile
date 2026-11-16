@@ -1,0 +1,1095 @@
+
+local CommonModule = {}
+
+local SocketApi = lt.SocketApi
+local Constant = lt.Constant
+local ServerCmdDef = lt.ServerCmdDef
+local NtfManager = lt.NtfManager
+local PrefManager = lt.PrefManager
+local StringManager = lt.StringManager
+local ServerClientEnum = lt.ServerClientEnum
+
+CommonModule._setType  = false
+CommonModule._serverPrase = 0
+CommonModule._ItemSetData = {}
+CommonModule._setItemType  = false
+local protectNum = Constant.PROTECT_NUM
+local protectsetNum = Constant.PROTECT_SETNUM 
+
+CommonModule._referLevel = nil
+
+CommonModule.BTN_TIME_TYPE = {
+    ONLINE_TIME = 1,            --在线时长
+    QUANTUM     = 2,            --时间段
+}
+
+CommonModule.LegendArray = {
+    [110] = "CurHp",
+    [111] = "HpMax",
+    [112] = "CurMp",
+    [113] = "MpMax",
+    [114] = "DcMax",
+    [115] = "DcMin",
+    [116] = "McMax",
+    [117] = "McMin",
+    [118] = "ScMax",
+    [119] = "ScMin",
+    [120] = "AcMax",
+    [121] = "AcMin",
+    [122] = "MacMax",
+    [123] = "MacMin",
+    [124] = "Hit",
+    [125] = "Dodge",
+    [126] = "Mdodge",
+    [127] = "Lucky",
+    [128] = "Curse",
+    [129] = "AttackMode",
+    [130] = "StormRatio",
+    [131] = "Storm",
+    [132] = "CritRatio",
+    [133] = "Crit",
+    [134] = "HpRecRate",
+    [135] = "HpRecMax",
+    [136] = "MpRecRate",
+    [137] = "MpRecMax",
+    [138] = "ParalysisTime",
+    [139] = "ParalysisRatio",
+    [140] = "Protect",
+    [141] = "ProtectRatio",
+    [142] = "Ap",
+    [143] = "ApRatio",
+    [144] = "ApTime",
+    [145] = "MHit",
+    [188] = "HpMaxPercent",
+    [189] = "DcPercent",
+    [190] = "McPercent" ,
+    [191] = "ScPercent" ,
+    [192] = "AcPercent" ,
+    [193] = "MacPercent",
+}
+
+-- NtfManager:dispatchNtf(NtfManager.NTF.NTF_SYSTEM_NOTICE,{content = msg})
+function CommonModule:init()
+   SocketApi:addProtoListener(ServerCmdDef.POP_MSG, handler(self, self.onPopMsg), "CommonModule:onPopMsg")
+   SocketApi:addProtoListener(ServerCmdDef.SERVER_PHASE, handler(self, self.onServerPhase), "CommonModule:onServerPhase")
+
+   SocketApi:addProtoListener(ServerCmdDef.COUNT_DOWN, handler(self, self.onCountDownTime), "CommonModule:onCountDownTime")
+   lt.NtfManager:addNtfListener(lt.NtfManager.NTF.NTF_LEARN_SKILL, handler(self, self.onLearnSkill),"CommonModule:onLearnSkill")
+   lt.NtfManager:addNtfListener(lt.NtfManager.NTF.NTF_DELETE_SKILL, handler(self, self.onDeleteSkill),"CommonModule:onDeleteSkill")
+   ----[[
+    lt.NtfManager:addNtfListener(lt.NtfManager.NTF.NTF_UPDATE_HERO_EVENT, function (event)
+        -- hp mp refresh
+        -- if not  self._setType then
+        --     self:setOrginData(1)
+        -- end
+        -- if not self._setItemType then
+        --     self:setItemData()
+        -- end
+    end, "CommonModule:NTF_UPDATE_HERO_EVENT")
+    --]]
+end
+
+function CommonModule:clear()
+    SocketApi:removeProtoListenerByTag("CommonModule:onPopMsg")
+    SocketApi:removeProtoListenerByTag("CommonModule:onServerPhase")
+    SocketApi:removeProtoListenerByTag("CommonModule:onCountDownTime")
+    lt.NtfManager:removeNtfListenerByTag("CommonModule:onLearnSkill")
+    lt.NtfManager:removeNtfListenerByTag("CommonModule:onDeleteSkill")
+    lt.NtfManager:removeNtfListenerByTag("CommonModule:NTF_UPDATE_HERO_EVENT")
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_TIME_COUNT_DOWN_STOP)
+    self._ItemSetData = nil
+    self._setItemType = false
+    self._setType = false
+    self._userValues = nil
+    self._setSkillInfo = nil
+end
+
+function CommonModule:onPopMsg(event)
+    local proto = event.param
+end
+
+function CommonModule:onServerPhase(event)
+    local proto = event.param
+    self._serverPrase = proto.serverprase
+    
+    -- self:setReferLevel(lt.ServerStageDao:queryById(self._serverPrase))
+end
+
+function CommonModule:onCountDownTime(event)
+    local proto = event.param
+    if proto.moduleID == 1 then  -- 副本显示
+        if proto.status == 0 then
+            lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_TIME_COUNT_DOWN, {timeLeft = proto.countCD})
+        elseif proto.status == 1 then
+            lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_TIME_COUNT_DOWN_STOP)
+
+            -- 副本结束停止挂机
+            -- lt.HangupManager:stopHangup()
+        end
+    end
+end
+
+function CommonModule:onChatMsg(event)
+    lt.LogUtil:debugTable("CommonModule:onChatMsg")
+    local proto = event.param
+    
+    if proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_SERVER then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SYSTEM_NOTICE,{content = proto.chatMsg})
+    elseif proto.chatType == Constant.MESSAGE_TALK_TYPE.TALKTYPE_CENTER then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = proto.chatMsg})
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = proto.chatMsg})
+    end
+end
+
+function CommonModule:onDeleteSkill(event)
+    local  skillid = event.param.skillId
+    if not self._setSkillInfo then
+        self._setSkillInfo = self:getCateInfo(4)
+    end
+    local job = lt.GameModule:getHeroData():getJob()
+    local setTypes = false
+    local setId = {}
+    for k,v in pairs(self._setSkillInfo) do
+        local value = self:getUserValue(4,v:getIdx())
+        if type(value) == "number" then
+            if tonumber(v:getLinkSkill()) == skillid then
+                self:setUserValue(4,v:getIdx(),0)
+                setId[#setId+1]= v:getIdx()
+                setTypes = true
+            end
+        elseif type(value) == "string" then
+            local infolist = json.decode(value)
+            if infolist[#infolist] == skillid then
+                local types,learnid = self:getLearnType(v:getIdx(),true)
+                if types then
+                    self:setSkillValue(v,learnid,job)
+                    setId[#setId+1]= v:getIdx()
+                    setTypes = true
+                else
+                    local setInfo = {}
+                    for i=1,#infolist do
+                        if i==1 or i== #infolist then
+                            setInfo[i] = 0
+                        else
+                            setInfo[i] = infolist[i]
+                        end
+                    end
+                    self:setUserValue(4,v:getIdx(),json.encode(setInfo))
+                end
+            end
+        end
+    end
+    if setTypes then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UI_DELETE_SKILL,{skillId = skillid,idList = setId})
+        NtfManager:dispatchNtf(NtfManager.NTF.NET_SETTING_CHANGE)
+    end
+end
+
+function CommonModule:onGetSetValue(event)
+    local  strconfig = event.param.gameConfig
+    if strconfig then
+        --print("TGTDFFFFFFFFFFFF:::",strconfig)
+        self:ReSetValue(strconfig)
+    end
+end
+
+function CommonModule:onLearnSkill()
+    if not self._setSkillInfo then
+        self._setSkillInfo = self:getCateInfo(4)
+    end
+    local job = lt.GameModule:getHeroData():getJob()
+    local  setTypes = false
+    for k,v in pairs(self._setSkillInfo) do 
+        local types,learnid = self:getLearnType(v:getIdx(),true)
+        if types then
+            self:setSkillValue(v,learnid,job)
+            setTypes = true
+        end
+    end
+    if setTypes then
+        NtfManager:dispatchNtf(NtfManager.NTF.NET_SETTING_CHANGE)
+    end
+end
+
+function CommonModule:setSkillValue(info,id,job)
+    local  setInfo = {}
+    local idx = info:getIdx()
+    local infos = self:getUserValue(4,idx)
+    local typenum = self:getUserValue(4,idx*1000)
+    local setTypes = false
+    if typenum then
+        if typenum == 0 then
+            setTypes = true  
+        end
+    else
+        setTypes = true 
+    end
+    if setTypes then
+        if #string.split(info:getLinkSkill(),",") > 1 then
+            if #string.split(info:getName(),"%d") > 1 then
+                if info:getTypes() == 2 and job == 2 then
+                    setInfo = {info:getOption(),protectNum[3],id}
+                else
+                    if idx == 40206 then
+                        setInfo = {info:getOption(),protectsetNum[7],id}
+                    else
+                        setInfo = {info:getOption(),protectNum[1],id}
+                    end
+                end
+            else
+                setInfo = {info:getOption(),id}
+            end 
+            self:setUserValue(4,idx,json.encode(setInfo))
+        else
+            -- 特殊处理道士挂机技能
+            if idx == 40204 then
+                setInfo = {info:getOption(),id}
+                self:setUserValue(4,idx,json.encode(setInfo))
+            else
+                self:setUserValue(4,idx,info:getOption())
+            end
+        end  
+        self:setUserValue(4,idx*1000,1) 
+    end
+end
+
+function CommonModule:getLearnType(idx,types)
+    local info = lt.BaseSetDao:query(idx):getLinkSkill()  
+    local infoarray = lt.CommonUtil:SplitStr(info,",")
+    self._showitemarray = {}
+    for i=1,#infoarray do
+        if self:checkLearnSkill(tonumber(infoarray[i])) then
+            if types then
+                return true,tonumber(infoarray[i])
+            else
+                return true
+            end
+        end
+    end
+    return false
+end
+
+
+function CommonModule:checkLearnSkill(id)
+    local array = lt.SkillModule:getSkillTable()
+    if not array then
+        return false
+    end
+    if array[id] ~= nil then
+        return true
+    else
+        return false
+    end
+end
+
+function CommonModule:getCateInfo(index)
+    local array = {}
+    local info = lt.BaseSetDao:queryAll()
+    local job = lt.GameModule:getHeroData():getJob()
+    if not info then
+        return 
+    end
+    for k,v in pairs(info) do
+        if v:getCategory() == index and v:getTypes() < 3 and job == v:getJob() then
+            array[#array+1] = v
+        end
+    end
+    return array
+end
+
+function CommonModule:setUserValue(index,id,value,type)
+    local key = nil
+    if index == 1 or index == 4 then
+        key = "BaseSet_"..id
+        --PrefManager:setUserValueByKey(key, value)
+    elseif index == 2 then
+        key = "ItemSet_"..type.."_"..id
+        --PrefManager:setUserValueByKey(key, value)
+    elseif index == 3 then
+        key = "ProtectSet_"..id
+        --PrefManager:setUserValueByKey(key, value)
+    elseif index == 0 then
+        key = "CustomSet_"..id
+        --PrefManager:setUserValueByKey(key, value)
+    elseif index == 5 then
+        key = "SystemSet_"..id
+        --PrefManager:setUserValueByKey(key, value)
+    elseif index == 6 then
+        key = "Common_"..id
+    end
+    PrefManager:setUserValueByKey(key, value)
+    if not self._userValues then
+        self._userValues = PrefManager:getUserDefaultDb()
+    end
+    self._userValues[key] = value
+end
+
+-- index 代表btn(1,2..) id是表配的SetIdx type是备用参数，可不填
+function CommonModule:getUserValue(index,id,type)
+    if not self._userValues then
+        self._userValues = PrefManager:getUserDefaultDb() or {}
+    end
+    local key = nil
+    if index == 1 or index == 4 then
+        key = "BaseSet_"..id
+        --return PrefManager:getUserValueByKey(key)
+    elseif index == 2 then
+        key = "ItemSet_"..type.."_"..id
+        if self._userValues[key] == nil then
+            local setInfo = {}
+            local info = lt.ItemSetDao:queryDefault(id,type)
+            if info then
+                for i=1,4 do
+                    setInfo[i] = info:getOption(i)
+                end
+                --self:setUserValue(index,id,json.encode(setInfo),type)
+                return json.encode(setInfo)
+            else
+                return nil
+            end
+        end
+        --return PrefManager:getUserValueByKey(key)
+    elseif index == 3 then
+        key = "ProtectSet_"..id
+        --return PrefManager:getUserValueByKey(key)
+    elseif index == 0 then
+        key = "CustomSet_"..id
+        --return PrefManager:getUserValueByKey(key)
+    elseif index == 5 then
+        key = "SystemSet_"..id
+        --return PrefManager:getUserValueByKey(key)
+    elseif index == 6 then
+        key = "Common_"..id
+    end
+    return self._userValues[key]
+end
+
+function CommonModule:getCommonValue(key)
+     if not self._userValues then
+        self._userValues = PrefManager:getUserDefaultDb()
+    end
+    return self._userValues[key]
+end
+
+function CommonModule:setCommonValue(key,value)
+    PrefManager:setUserValueByKey(key, value)
+    if not self._userValues then
+        self._userValues = PrefManager:getUserDefaultDb()
+    end
+    self._userValues[key] = value
+end
+
+
+function CommonModule:getSendSetValue(index,id,type) 
+    local key = nil
+    if index == 1 or index == 4 then
+        key = "BaseSet_"..id
+    elseif index == 2 then
+        key = "ItemSet_"..type.."_"..id
+    elseif index == 3 then
+        key = "ProtectSet_"..id
+    elseif index == 0 then
+        key = "CustomSet_"..id
+    elseif index == 5 then
+        key = "SystemSet_"..id
+    elseif index == 6 then
+        key = "Common_"..id
+    end
+    return key,self._userValues[key]
+end
+
+function CommonModule:SendServerSetValue(str)
+    local info = lt.netcmd_pb.SetGameConfigReq()
+    info.gameConfig = str
+    SocketApi:sendToGs(lt.ClientCmdDef.SET_GAME_CONFIG, info)
+end
+
+function CommonModule:getBool(index)
+    if index then
+        if index == 0 then
+            return false
+        else
+            return true
+        end
+    else
+        return false
+    end
+end
+
+function CommonModule:getValue(index)
+    if index then
+        if index == 0 then
+            return 1
+        else
+            return 0
+        end
+    else
+        return 1
+    end
+end
+
+function CommonModule:setItemData()
+    if not self._ItemSetData then
+        self._ItemSetData = {}
+    end
+    self._setItemType = true
+    local dataArray = lt.ItemSetDao:queryAll()
+    if not self._userValues then
+        self._userValues = PrefManager:getUserDefaultDb()
+    end
+    local infos = nil
+    local key = nil
+    for k,v in ipairs(dataArray) do
+        key = "ItemSet_"..v:getTypes().."_"..v:getItemId()
+        --local infos = PrefManager:getUserValueByKey(key)
+        infos = self._userValues[key]
+        --local infos = self:getUserValue(2,v:getItemId(),v:getTypes())
+        if infos then
+            local infocode = json.decode(infos)
+            for i=1,4 do
+                v:setOption(i,infocode[i])
+            end
+            self._ItemSetData[k] = v
+        else
+            self._ItemSetData[k] = v
+        end
+    end 
+end
+
+function CommonModule:getsetItemData()
+    return self._ItemSetData
+end
+
+function CommonModule:setItemDataArray(dataArray)
+    self._ItemSetData = dataArray
+end
+
+function CommonModule:setOrginData(index)
+    local infoarray = self:getSetData(index)
+    self._setType = true
+    local setType = false
+    for i =1 ,#infoarray do
+        if not self:getUserValue(index,infoarray[i]:getIdx()) then
+            self:setUserValue(index,infoarray[i]:getIdx(),infoarray[i]:getOption())
+            setType = true
+        end
+    end
+    local protectId = Constant.PROTECT_ID
+    for i=1,#protectId do
+        if not self:getUserValue(3,protectId[i]) then
+            local info = nil
+            if i < 5 then
+                info = {1,protectsetNum[i],protectNum[2]}
+            else
+                info = {1,protectsetNum[i],310000}
+            end
+            self:setUserValue(3,protectId[i],json.encode(info))
+            setType = true
+        end
+    end
+
+    local job = lt.GameModule:getHeroData():getJob()
+    if job == 3 then
+        --daoshi
+        self:setUserValue(4,40207,1)
+        -- 道士挂机技能特殊处理--覆盖以前的老存档
+        local value = self:getUserValue(4, 40204)
+        if value and type(value) == type(1) then
+            self:setUserValue(4,40204, json.encode({0,0}))
+        end
+        setType = true
+    end
+
+    --[[
+    local itemarray = lt.ItemSetDao:queryAll()
+    local setkeyType = "ItemSet_All_Type"
+    if not PrefManager:getUserValueByKey(setkeyType) and itemarray then
+        for i = 1,#itemarray do
+            local setInfo = {}
+            for j=1,4 do
+                setInfo[j] = itemarray[i]:getOption(j)
+            end
+            self:setUserValue(2,itemarray[i]:getItemId(),json.encode(setInfo),itemarray[i]:getTypes())
+        end
+        PrefManager:setUserValueByKey(setkeyType,1)
+        setType = true
+    end 
+    --]]
+    if setType then
+        lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NET_SETTING_CHANGE)
+    end
+end
+
+function CommonModule:setCacheValue(key,value)
+    if not self._userValues then
+        self._userValues = PrefManager:getUserDefaultDb()
+    end
+    self._userValues[key] = value
+end
+
+function CommonModule:getCacheValue()
+    if not self._userValues then
+        self._userValues = PrefManager:getUserDefaultDb()
+    end
+    return self._userValues
+end
+
+function CommonModule:getSetData(index)
+    local job = lt.GameModule:getHeroData():getJob()
+    local info = lt.BaseSetDao:queryAll()
+    local array = {}
+    for k,v in pairs(info) do
+        if v:getCategory() == index and (v:getJob() == job or v:getJob() == 0)then
+            array[#array+1] = v
+        end
+    end
+    return array
+end
+
+function CommonModule:loadSetting(k1, k2, k3)
+    local value = self:getUserValue(k1, k2, k3)
+    if not value then
+        if k1 == 5 then
+            return 0.5
+        elseif k1 == 2 then
+            return 1, 1, 1, 0
+        else
+            return false
+        end
+    end
+    -- dump(value, k1.."_"..k2.."_"..(k3 or "nil"))
+
+    if type(value) == "number" then
+        if k1 == 5 then
+            return value or 0.5
+        else
+            return value == 1
+        end
+    elseif type(value) == "string" then
+        if value == "" then
+            return false
+        end
+
+        local valueList = json.decode(value) or {}
+        if type(valueList) == "table" then
+            if k1 == 2 then
+                return tonumber(valueList[1]), tonumber(valueList[2]), tonumber(valueList[3]), tonumber(valueList[4])
+            else
+                return tonumber(valueList[1] or 0) == 1, tonumber(valueList[2] or 0), tonumber(valueList[3] or 0)
+            end
+        else
+            return false
+        end
+
+    else
+        return false
+
+    end
+end
+
+--[[
+string属性key 转换成number属性key
+]]
+function CommonModule:propertyKeyatoi(key)
+    if type(key) == "string" and string.len(key) ~= 0 then
+        local nkey = "Attr_" .. key
+        for k,v in pairs(lt.ServerClientEnum.CreatureValueDef) do
+            if nkey == k then
+                return v
+            end
+        end
+
+        for k,v in pairs(lt.ServerClientEnum.PlayerValueDef) do
+            if nkey == k then
+                return v
+            end
+        end
+
+        for k,v in pairs(lt.Constant.SuperRingDef) do
+            if nkey == k then
+                return v
+            end
+        end
+    end
+
+    return key
+end
+
+--[[
+number属性key 转换成字符串属性key
+]]
+function CommonModule:propertyKeyitoa(key)
+    if type(key) == "number" then
+        local done = false
+        for k,v in pairs(lt.ServerClientEnum.CreatureValueDef) do
+            if v == key then
+                local s, p = string.find(k, "Attr_")
+                if s and p then
+                    key = string.sub(k, p+1, -1)
+                    done = true
+                end
+                break
+            end
+        end
+
+        if not done then
+            for k,v in pairs(lt.ServerClientEnum.PlayerValueDef) do
+                if v == key then
+                    local s, p = string.find(k, "Attr_")
+                    if s and p then
+                        key = string.sub(k, p+1, -1)
+                        find = true
+                    end
+                    break
+                end
+            end
+        end
+    end
+
+    return key
+end
+
+function CommonModule:keyNeedTran(key)
+    if type(key) == "number" then
+        local def = lt.ServerClientEnum.CreatureValueDef
+        return key == def.Attr_DcMin or key == def.Attr_DcMax or key == def.Attr_McMin or key == def.Attr_McMax or key == def.Attr_ScMin or key == def.Attr_ScMax or key == def.Attr_AcMin or key == def.Attr_AcMax or key == def.Attr_MacMin or key == def.Attr_MacMax
+    elseif type(key) == "string" then
+        return key == "DcMin" or key == "DcMax" or key == "McMin"or key == "McMax"or key == "ScMin"or key == "ScMax"or key == "AcMin"or key == "AcMax"or key == "MacMin"or key == "MacMax"
+    end
+end
+
+--[[
+通过字符串属性key拿到对应显示中文
+@parma string|number key
+@parma table params[支持参数: tran2bound, mergeText ]
+            tran2bound 将需要转化成上下限的属性进行转化
+            mergeText  拼接字符串, 添加到属性字符串后面.
+]]
+function CommonModule:propertyKey2Chs(key, params,types)
+    key = CommonModule:propertyKeyatoi(key)
+
+    if type(key) ~= "number" or not StringManager._property_key[key] then
+        return ""
+    end
+    
+    if type(params) ~= "table" then params = {} end
+    params.tran2bound = params.tran2bound or false
+    params.mergeText = params.mergeText or ""
+
+    local szText = StringManager:getString(StringManager._property_key[key])
+    if types then
+        if key == 116 or key == 117 then
+            szText = StringManager:getString(StringManager.KEY_HERO_INFO_19)
+        end
+    end
+    if params.tran2bound then
+        if CommonModule:keyNeedTran(key) then
+            local skey = CommonModule:propertyKeyitoa(key)
+            local s, p = string.find(skey, "Max")
+            if s and p then
+                szText = szText .. StringManager:getString(StringManager.KEY_PRO_UPPER)
+            end
+
+            local s, p = string.find(skey, "Min")
+            if s and p then
+                szText = szText .. StringManager:getString(StringManager.KEY_PRO_LOWER)
+            end
+        end
+    end
+
+    return szText .. params.mergeText
+end
+
+function CommonModule:propertys2TextTable(propertys, params)
+    if type(params) ~= "table" then params = {} end
+    params.tran2bound = params.tran2bound or false
+
+    local result = {}
+    local kIdxs = {}
+    local function procMaxTranProperty(k, title, v)
+        local key = CommonModule:propertyKeyitoa(k)
+        local s, p = string.find(key, "Max")
+        if s and p then
+            local kMin = string.gsub(key, "Max", "Min")
+            if kIdxs[kMin] then
+                local values = string.split(result[kIdxs[kMin]].szValue, "-")
+                result[kIdxs[kMin]].szValue = values[1] .. "-" .. tostring(v)
+            else
+                result[#result+1] = { szTitle = title, szValue = "0-" .. tostring(v), sort = k }
+                kIdxs[key] = #result
+            end
+        end
+    end
+    local function procMinTranProperty(k, title, v)
+        local key = CommonModule:propertyKeyitoa(k)
+        local s, p = string.find(key, "Min")
+        if s and p then
+            local kMax = string.gsub(key, "Min", "Max")
+            if kIdxs[kMax] then
+                local values = string.split(result[kIdxs[kMax]].szValue, "-")
+                result[kIdxs[kMax]].szValue = tostring(v) .. "-" .. values[2]
+            else
+                result[#result+1] = { szTitle = title, szValue = tostring(v) .. "-0", sort = k }
+                kIdxs[key] = #result
+            end
+        end
+    end
+    for k,v in pairs(propertys) do
+        local ikey = CommonModule:propertyKeyatoi(k)
+        local title = CommonModule:propertyKey2Chs(ikey, params)
+        local value = v
+        if ikey == lt.ServerClientEnum.CreatureValueDef.Attr_CritLevel or ikey == lt.ServerClientEnum.CreatureValueDef.Attr_ProtectLevel  then
+            --value = string.format("%.2f%%", (v or 0) / 100)
+        elseif ikey == lt.ServerClientEnum.CreatureValueDef.Attr_StormRatio or ikey == lt.ServerClientEnum.CreatureValueDef.Attr_ApRatio or
+         ikey == lt.ServerClientEnum.CreatureValueDef.Attr_Mdodge or ikey == lt.ServerClientEnum.CreatureValueDef.Attr_Dodge or 
+         ikey == lt.ServerClientEnum.CreatureValueDef.Attr_Hit or ikey == lt.ServerClientEnum.CreatureValueDef.Attr_Crit or 
+         ikey == lt.ServerClientEnum.CreatureValueDef.Attr_CritRatio or ikey == lt.ServerClientEnum.CreatureValueDef.Attr_Protect or 
+         ikey == lt.ServerClientEnum.CreatureValueDef.Attr_ProtectRatio or ikey == lt.ServerClientEnum.CreatureValueDef.Attr_McHit or
+         ikey == lt.ServerClientEnum.CreatureValueDef.Attr_CritDef or ikey == lt.ServerClientEnum.CreatureValueDef.Attr_ProtectPenetration or
+         ikey == lt.ServerClientEnum.CreatureValueDef.Attr_StormRatio or ikey == lt.ServerClientEnum.CreatureValueDef.Attr_HpMaxPercent or
+         ikey == lt.ServerClientEnum.CreatureValueDef.Attr_DcPercent or ikey == lt.ServerClientEnum.CreatureValueDef.Attr_McPercent or
+         ikey == lt.ServerClientEnum.CreatureValueDef.Attr_ScPercent or  ikey == lt.ServerClientEnum.CreatureValueDef.Attr_AcPercent or
+         ikey == lt.ServerClientEnum.CreatureValueDef.Attr_MacPercent then
+            value = string.format("%.2f%%", (v or 0) / 100)
+        elseif ikey == lt.ServerClientEnum.CreatureValueDef.Attr_ApTime then
+            value = string.format("%.2f%s", (v or 0)/1000, StringManager:getString(StringManager.KEY_TIME_SECOND))
+        end
+
+        if string.len(title) ~= 0 then
+            if params.tran2bound then
+                result[#result+1] = { szTitle = title, szValue = value, sort = ikey }
+            else
+                if CommonModule:keyNeedTran(ikey) then
+                    procMaxTranProperty(ikey, title, v)
+                    procMinTranProperty(ikey, title, v)
+                else
+                    result[#result+1] = { szTitle = title, szValue = value, sort = ikey }
+                end
+            end
+        end
+    end
+
+    table.sort(result, function (a, b)
+        return a.sort < b.sort
+    end)
+
+    return result
+end
+
+-- 属性string 转化为数组
+function CommonModule:parseProperty(property,tag,minitag)
+    local result = {}
+    local tags = ";"
+    local minitags = ":"
+    if tag then
+        tags = tag
+    end
+    if minitag then
+        minitags = minitag
+    end
+    if property and property ~= "" then
+        local propertysTable = string.split(property,tags)
+        for i=1, #propertysTable do
+            local temp = string.split(propertysTable[i], minitags)
+            result[temp[1]] = tonumber(temp[2])
+        end
+    end
+
+    return result
+end
+
+function CommonModule:StrToArray(strs)
+    local datas = {}
+    for k,v in ipairs(string.split(strs,":")) do
+        datas[#datas+1] = tonumber(v)
+    end
+    return datas
+    -- body
+end
+
+----[[
+function CommonModule:AddPropTable(curarray,addarray)
+    local array = curarray 
+    for k,v in pairs(addarray) do
+        local types,index = self:checkPropEs(curarray,k)
+        if types then
+            array[k] = array[k] + v
+        else
+            array[k] = v
+        end
+    end
+    return array
+end
+
+function CommonModule:checkPropEs(array,key)
+    for k,v in pairs(array) do
+        if k == key then
+            return true,k
+        end
+    end
+    return false,0
+end
+--]]
+
+function CommonModule:needNameTip(name)
+    if not name or name == "" then return true end
+    str = string.gsub(name," ","")--过滤掉空格
+    local count = string.len(str)
+    local reCount = 0
+    for i = 1, count do
+        local s = string.sub(str, i, i)
+        local t = string.byte(s)
+        if t < 128 then
+            reCount = reCount + 1--1字节文字，长度加1
+        elseif t >= 192 then
+            reCount = reCount + 2--1字节以上文字，长度加2
+        end
+        if reCount > 3 then
+            return false
+        end
+    end
+    return true
+end
+
+function CommonModule:equipPropBaseInfo(item)
+    local itemMeta = item
+    local prop = {}
+    local index = 1
+
+    if itemMeta:getHpMax() and itemMeta:getHpMax() > 0 then
+        local v = {}
+        v.title = StringManager:getString(StringManager.KEY_ITEM_TIP_HP)
+        v.value =  " + " .. itemMeta:getHpMax()
+        prop[index] = v;
+        index = index + 1;
+    end
+
+    if itemMeta:getMpMax() and itemMeta:getMpMax() > 0 then
+        local v = {}
+        v.title = StringManager:getString(StringManager.KEY_ITEM_TIP_MP)
+        v.value =  " + " .. itemMeta:getMpMax()
+        prop[index] = v;
+        index = index + 1;
+    end
+
+    if itemMeta:getHit() and itemMeta:getHit() > 0 then
+        local v = {}
+        v.title = StringManager:getString(StringManager.KEY_ITEM_TIP_HIT)
+        v.value =  " + " .. itemMeta:getHit()
+        prop[index] = v;
+        index = index + 1;
+    end
+
+    if itemMeta:getDodge() and itemMeta:getDodge() > 0 then
+        local v = {}
+        v.title = StringManager:getString(StringManager.KEY_ITEM_TIP_DODGE)
+        v.value =  " + " .. string.format("%.2f%%", itemMeta:getDodge()/100)
+        prop[index] = v;
+        index = index + 1;
+    end
+
+    if itemMeta:getMdodge() and itemMeta:getMdodge() > 0 then
+        local v = {}
+        v.title = StringManager:getString(StringManager.KEY_ITEM_TIP_MACDODGE)
+        v.value =  " + " .. string.format("%.2f%%", itemMeta:getMdodge()/100)
+        prop[index] = v;
+        index = index + 1;
+    end
+
+    if itemMeta:getAcMin() then
+        local v = {}
+        v.title = StringManager:getString(StringManager.KEY_ITEM_TIP_DEF)
+        v.value = item:getDefense()
+        if v.value ~= "0-0" then
+            prop[index] = v;
+            index = index + 1;
+        end
+    end
+
+    if itemMeta:getMacMin() then
+        local v = {}
+        v.title = StringManager:getString(StringManager.KEY_ITEM_TIP_MACDEF)
+        v.value = item:getMagicDef()
+        if v.value ~= "0-0" then
+            prop[index] = v;
+            index = index + 1;
+        end
+    end
+
+    if itemMeta:getDcMin() then
+        local v = {}
+        v.title = StringManager:getString(StringManager.KEY_ITEM_TIP_ATK)
+        v.value = item:getAttack()
+        if v.value ~= "0-0" then
+            prop[index] = v;
+            index = index + 1;
+        end
+    end
+
+    if itemMeta:getMcMin() then
+        local v = {}
+        v.title = StringManager:getString(StringManager.KEY_ITEM_TIP_MACATK)
+        v.value = item:getMagicAtk()
+        if v.value ~= "0-0" then
+            prop[index] = v;
+            index = index + 1;
+        end
+    end
+
+    if itemMeta:getScMin() then
+        local v = {}
+        v.title = StringManager:getString(StringManager.KEY_ITEM_TIP_TAO)
+        v.value = item:getTaoAtk()
+        if v.value ~= "0-0" then
+            prop[index] = v;
+            index = index + 1;
+        end
+    end
+
+    if itemMeta:getLucky() and itemMeta:getLucky() > 0 then
+        local v = {}
+        v.title = StringManager:getString(StringManager.KEY_ITEM_TIP_LUCKY)
+        v.value = " + " .. itemMeta:getLucky()
+        prop[index] = v;
+        index = index + 1;
+    end
+
+    if itemMeta["getCurse"] and itemMeta:getCurse() > 0 then
+        local v = {}
+        v.title = StringManager:getString(StringManager.KEY_ITEM_TIP_CURSE)
+        v.value =  " + " .. itemMeta:getCurse()
+        prop[index] = v;
+        index = index + 1;
+    end
+
+    if itemMeta["getBless"] and itemMeta:getBless() > 0 then
+        local v = {}
+        v.title = StringManager:getString(StringManager.KEY_ITEM_TIP_BLESS)
+        v.value =  " + " .. itemMeta:getBless()
+        prop[index] = v;
+        index = index + 1;
+    end
+    return prop
+end
+
+function CommonModule:getLegendProp(items)
+    local prop = {}
+    local baseProp = items:getItemMeta():getProp()
+    for k,v in pairs(self.LegendArray) do
+        if (items:getValue(k) or 0) > 0 then
+            if baseProp[v] then
+                if items:getValue(k) - baseProp[v] > 0 then
+                    prop[v] = items:getValue(k) - baseProp[v]
+                end
+            else
+                prop[v] = items:getValue(k)
+            end
+        end
+    end
+    return prop
+end
+
+function CommonModule:getServerPrase()
+    return self._serverPrase
+end
+
+function CommonModule:setReferLevel(level)
+    self._referLevel = level
+end
+
+function CommonModule:getReferLevel()
+    return self._referLevel or 30
+end
+
+function CommonModule:initRedTips()
+end
+
+--[[ 
+比较两个属性table,是否有新增属性或属性值变化
+@parma prop 当前属性
+@parma targetProp 下一级属性
+@return meta[属性名] = 0新增/1提升/-1降低
+]]
+function CommonModule:ComparePropertys(prop, targetProp)
+    local meta = {}
+    local isAdd = true
+    local TextArray = CommonModule:propertys2TextTable(prop,{ mergeText="  " })
+    local NextArray = CommonModule:propertys2TextTable(targetProp,{ mergeText="  " })
+    for k,v in pairs(NextArray) do
+        isAdd = true
+		for j,d in pairs(TextArray) do
+			if d.szTitle == v.szTitle then
+                isAdd = false
+                local temp = string.split(d.szValue,"-") --解析属性判断是增加还是减少
+                if #temp > 1 then
+                    local temp2 = string.split(v.szValue,"-")
+                    if tonumber(temp2[2] or 0) > tonumber(temp[2] or 0) then
+                        meta[v.szTitle] = 1
+                    elseif tonumber(temp2[2] or 0) < tonumber(temp[2] or 0) then
+                        meta[v.szTitle] = -1
+                    end
+                else
+                    local temp1 = v.szValue
+                    local temp2 = d.szValue
+                    if #string.split(v.szValue,"%") >1 then
+                        temp1 = string.split(v.szValue,"%")[1]
+                        temp2 = string.split(d.szValue,"%")[1]
+                    end
+                    local secstr = lt.StringManager:getString(lt.StringManager.KEY_TIME_SECOND)
+                    if #string.split(v.szValue,secstr) >1 then
+                        temp1 = string.split(v.szValue,secstr)[1]
+                        temp2 = string.split(d.szValue,secstr)[1]
+                    end
+                    if tonumber(temp1 or 0) > tonumber(temp2 or 0) then
+                        meta[v.szTitle] = 1
+                    elseif tonumber(temp1 or 0) < tonumber(temp2 or 0) then
+                        meta[v.szTitle] = -1
+                    end
+                end
+				break
+			end
+		end
+        if isAdd then
+            meta[v.szTitle] = 0
+        end
+    end
+    return meta
+end
+
+function CommonModule:testButtonTime(btnId)
+    local b = true
+
+    -- print("=============> ", btnId)
+    local uiConfig = lt.CacheManager:getUIConfig(btnId)
+    local tType = uiConfig:getShowTimeType()
+    local tValue = uiConfig:getShowTime()
+
+    if tType == CommonModule.BTN_TIME_TYPE.ONLINE_TIME then
+    elseif tType == CommonModule.BTN_TIME_TYPE.QUANTUM then
+        b = false
+        for _, v in ipairs(lt.TimeCounter:splitTimeQuantum(tValue)) do
+            b = b or lt.TimeCounter:timeInRange(v.st, v.et)
+        end
+
+        -- print("=================> 检测时间段  配置时间段", tValue)
+    end
+
+    return b
+end
+
+function CommonModule:rechargeIsClose()
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_ALERT_TIP, {content = StringManager:getString(StringManager.KEY_CLOSE_RECHARGE),btns = {Constant.COMMON_TIP_BTN.BTN_CONFIM}})
+
+    return true
+end
+
+--获取netcmd中共用的枚举
+function CommonModule:GetNetCmdEnum(key)
+    if lt.netcmd_pb[key] then
+        return lt.netcmd_pb[key].number
+    end
+    return 0
+end
+
+return CommonModule

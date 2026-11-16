@@ -1,0 +1,92 @@
+---@class UICompTransactionCompareCell
+--- 交易行  参考价格物品结构
+local UICompTransactionCompareCell = class("UICompTransactionCompareCell", lt.UIGButtonBase)
+
+local CacheManager                 = lt.CacheManager
+local Constant                     = lt.Constant
+local ItemModule                   = lt.ItemModule
+local TransactionModule            = lt.TransactionModule
+
+UICompTransactionCompareCell.ChangeSkinConf = {
+    ["Transaction"] = {
+        ["n0"] = "bg_pmh_djkdiban01",
+        ["bg_txt"] = "bg_pmh_wzbtmdiban02",
+    },
+}
+
+function UICompTransactionCompareCell:ctor()
+    UICompTransactionCompareCell.super.ctor(self)
+    --UI
+    self._icon = nil
+    self._lblCount = nil
+    self._lblName = nil
+    self._lblPrice = nil
+    self._rareImg = nil
+    --数据
+    self._data = nil
+end
+
+function UICompTransactionCompareCell:onClear()
+    --UI
+    self._icon = nil
+    self._lblCount = nil
+    self._lblName = nil
+    self._lblPrice = nil
+    self._rareImg = nil
+    --数据
+    self._data = nil
+    UICompTransactionCompareCell.super.onClear(self)
+end
+
+function UICompTransactionCompareCell:onConstruct()
+    self._icon = self:getChild("icon")
+    self._lblCount = self:getChild("lbl_count")
+    self._lblName = self:getChild("lbl_name")
+    self._lblPrice = self:getChild("lbl_price")
+    self._rareImg = self:getChild("img_rare")
+end
+
+function UICompTransactionCompareCell:setObjInfo(data)
+    self._data = data
+    local sid = data.itemId
+
+    local cofingId = data.cofingId
+    local itemMeta = nil
+    local sid = nil
+    local itemType = nil
+
+    if cofingId then
+        local meta = CacheManager:getTransactionsById(cofingId)
+        sid = meta:getItemId()
+        itemType = meta:getType()
+        if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+            itemMeta = CacheManager:getItemMeta(sid)
+            self._icon:setURL(string.format("ui://Item/prop_%s", itemMeta and itemMeta:getIconId() or ""))
+        else
+            yflog:Info("----------------------------")
+        end
+    else
+        local itemInfo = ItemModule:getItemDataByProperty(data.objProperty)
+        itemMeta = itemInfo:getItemMeta()
+        sid = itemInfo:getItemId()
+        itemType = itemInfo:getItemType()
+        self._icon:setURL(string.format("ui://Item/equip_%s", itemMeta and itemMeta:getIconId() or ""))
+    end
+
+    local meta = TransactionModule:getTransactionDataByItemIdAndType(sid, itemType)
+    --缩放尺寸
+    local itemSize = self._icon:getSize()
+    local heightS = 50 / itemSize.height
+    local widthS = 50 / itemSize.width
+    local scale = heightS
+    if widthS < heightS then
+        scale = widthS
+    end
+    self._icon:setScale(scale, scale)
+    self._lblName:setText(itemMeta and itemMeta:getName() or "")
+    self._rareImg:setVisible(meta:getAnnounce() == 1)
+    self._lblPrice:setText(data.sellPrice .. GReadText.KEY_SHOPPING_TIPS1)
+    self._lblCount:setText(data.itemNum)
+end
+
+return UICompTransactionCompareCell

@@ -1,0 +1,353 @@
+return {
+    [1] = {
+        index = 1,
+        isAdd = true,
+        scale = 1.2,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 1
+    },
+    [2] = {
+        index = 2,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 2
+    },
+    [3] = {
+        index = 3,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 3
+    },
+    [4] = {
+        index = 4,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 4
+    },
+    [5] = {
+        index = 5,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 5
+    },
+    [6] = {
+        index = 6,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 6
+    },
+    [7] = {
+        index = 7,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 7
+    },
+    [8] = {
+        index = 8,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 8
+    },
+    [9] = {
+        index = 9,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 9
+    },
+    [10] = {
+        index = 10,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 10
+    },
+    [11] = {
+        index = 11,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 11
+    },
+    [12] = {
+        index = 12,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 12
+    },
+    [13] = {
+        index = 13,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 13
+    },
+    [14] = {
+        index = 14,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 14
+    },
+    [15] = {
+        index = 15,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 15
+    },
+    [16] = {
+        index = 16,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 16
+    },
+    [17] = {
+        index = 17,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 17
+    },
+    [18] = {
+        index = 18,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 18
+    },
+    [19] = {
+        index = 19,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 19
+    },
+    [20] = {
+        index = 20,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 20
+    },
+    [21] = {
+        index = 21,
+        isAdd = false,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 21
+    },
+    [22] = {
+        index = 22,
+        isAdd = false,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 22
+    },
+    [23] = {
+        index = 23,
+        isAdd = false,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 23
+    },
+    [24] = {
+        index = 24,
+        isAdd = false,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 24
+    },
+    [25] = {
+        index = 25,
+        isAdd = false,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 25
+    },
+    [26] = {
+        index = 26,
+        isAdd = false,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 26
+    },
+    [27] = {
+        index = 27,
+        isAdd = false,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 27
+    },
+    [28] = {
+        index = 28,
+        isAdd = false,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 28
+    },
+    [29] = {
+        index = 29,
+        isAdd = false,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 29
+    },
+    [30] = {
+        index = 30,
+        isAdd = true,
+        scale = 1.2,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 30
+    },
+    [31] = {
+        index = 31,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 31
+    },
+    [32] = {
+        index = 32,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 32
+    },
+    [33] = {
+        index = 33,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 33
+    },
+    [34] = {
+        index = 34,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 34
+    },
+    [35] = {
+        index = 35,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 35
+    },
+    [36] = {
+        index = 36,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 36
+    },
+    [37] = {
+        index = 37,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 37
+    },
+    [38] = {
+        index = 38,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 38
+    },
+    [39] = {
+        index = 39,
+        isAdd = true,
+        scale = 0.9,
+        skillId = nil,
+        x = nil,
+        y = nil,
+        zorder = 39
+    },
+}

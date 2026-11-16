@@ -1,0 +1,1045 @@
+--- 装备强化弹窗
+---@class UIWndLeader:UIWindowBase
+local UIWndLeader = class("UIWndLeader", lt.UIWindowBase)
+
+local MapModule = lt.MapModule
+local CacheManager = lt.CacheManager
+local RankModule = lt.RankModule
+local NtfManager = lt.NtfManager
+local Constant = lt.Constant
+local HolyFightModule = lt.HolyFightModule
+local GameModule = lt.GameModule
+local RaceSkinRes = Constant.RaceSkinRes
+local TimeCounter = lt.TimeCounter
+local CommonFunc = lt.CommonFunc
+local ItemModule = lt.ItemModule
+local AgentManager = lt.AgentManager
+local UIMonsterActor = lt.UIMonsterActor
+local FunctionToggleModule = lt.FunctionToggleModule
+
+local FITER_TYPES = {
+    BOSS = 1,       --首领
+    ELITE = 2,      --精英
+    DUNGEON = 3,    --副本
+    FIGHT = 4,      --争夺战
+}
+
+local DUNGEON_TYPE = {
+    VampireLair = 1, -- 副本
+    MonthCard = 2 -- 月卡
+}
+
+
+function UIWndLeader:ctor(param)
+    UIWndLeader.super.ctor(self, param)
+
+    -- 副本
+    self._dungeonInfoArray    = self:onInitData()--CacheManager:getDungeonMap()[DUNGEON_TYPE.VampireLair]
+    self._npcVampireLairTable = CacheManager:getNpcVampireLairTable()
+    self._curTimeStamp      = 0
+    self._item              = nil
+    self._itemMeta          = nil
+    self._itemInfo          = nil
+    self._rewardList        = nil
+    self._getSyncingTime    = nil
+    self._timer = 0
+    self._curDungeonType    = DUNGEON_TYPE.VampireLair
+    self._isOpenDunRefresh  = false
+end
+
+function UIWndLeader:onInitData()
+    local data =  CacheManager:getDungeonMap()[DUNGEON_TYPE.VampireLair]
+    local array = {}
+    for i,v in ipairs(data or {}) do
+        local data = {}
+        data.type = DUNGEON_TYPE.VampireLair
+        data.info = v
+        table.insert(array,data)
+    end
+    data =  CacheManager:getMonthCardMap() or {}
+    for i,v in pairs(data or {}) do
+        local data = {}
+        data.type = DUNGEON_TYPE.MonthCard
+        data.info = v
+        table.insert(array,data)
+    end
+    return array
+end
+
+function UIWndLeader:onClear()
+    self:unregisterAllComponent()
+    --通用
+    self._controlTab = nil
+    --首领
+    self._bossPanel = nil
+    self._mapLabel = nil
+    self._posLabel = nil
+    self._levelLabel = nil
+    self._killLabel = nil
+    self._diImg = nil
+    self._teamList = nil
+    self._bossList = nil
+    self._bossDropList = nil
+    self._gotoBtn = nil
+    self._bossNode = nil
+    self._touchLayer = nil
+    --精英
+    self._elitePanel = nil
+    self._mapLoader = nil
+    self._nameLabel = nil
+    self._eliteList = nil
+    self._eliteDropList = nil
+    self._eliteNode = nil
+    --数据
+    self._fiterBtns = nil
+    self._openViewType = nil
+    self._subViewType = nil
+    self._bossArray = nil
+    self._eliteArray = nil
+    self._worldBossData = nil
+
+    -- 副本
+    self._listTitle         = nil
+    self._listReward        = nil
+    self._lblTitle          = nil
+    self._lblDesc           = nil
+    self._lblTjLv           = nil
+    self._lblEnterLv        = nil
+    self._lblEnterCount     = nil
+    self._lblState          = nil
+    self._lblAim            = nil
+    self._btnEnter          = nil
+    self._btnTeam           = nil
+    self._dungeonInfoArray    = nil
+    self._npcVampireLairTable = nil
+    self._item              = nil
+    self._itemMeta          = nil
+    self._itemInfo          = nil
+    self._rewardList        = nil
+    self._img_bg            = nil
+    self._getSyncingTime    = nil
+    self._ctl               = nil
+    self._lblDiff           = nil
+    self._lblMTjLv          = nil
+    self._lblMCost          = nil
+    self._itemCost          = nil
+    if self._bossActor then
+        self._bossActor:onClear()
+        self._bossActor = nil
+    end
+
+    UIWndLeader.super.onClear(self)
+end
+
+function UIWndLeader:onInit()
+    self:registerComponent("UICompItem", "UICompLeaderBossItem", "UICompLeaderEliteItem", "UICompLeaderDropItem")
+    UIWndLeader.super.onInit(self, _GURL.UIWndLeader)
+    self:initUI()
+end
+
+function UIWndLeader:onShown()
+    self:enableUpdateEvent(true)
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_WORLD_BOSS, handler(self, self.refreshWorldBossView), "UIWndLeader:refreshWorldBossView")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_RED_DOT_EVENT, handler(self, self.uptRedDotEvt), "UIWndLeader:uptRedDotEvt")
+
+    for k, v in ipairs(self._fiterBtns) do
+        v:addClickListener(handler(self, self.openFiterBtnClick))
+        local isShowRedDot = HolyFightModule:getRedPoint(k)
+        v:getChild("red"):setVisible(isShowRedDot)
+    end
+
+    self._gotoBtn:addClickListener(handler(self, self.onGotoBtnClick))
+    self._killLabel:addClickListener(handler(self, self.onKillBtnClick))
+    self._touchLayer:addClickListener(handler(self, self.onTouchBtnClick))
+    self._bossList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickBossItem))
+    self._eliteList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickEliteItem))
+    self._itemCost:addClickListener(handler(self, self.onItemClick))
+
+    -- 副本
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_DUNGEON_LIST_CHANGE, handler(self, self.onRefreshList),
+        "UIWndLeader:onRefreshList")
+
+    self._listTitle:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickTitle))
+
+    self._listReward:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+    self._btnEnter:addClickListener(handler(self, self.onBtnEnterClick))
+    self._btnTeam:addClickListener(handler(self, self.onBtnTeamClick))
+
+    --刷新页签
+    local mainIdx = self:refreshTab()
+    local param = self:getParam().param or {}
+    mainIdx = param.index or mainIdx
+    mainIdx = mainIdx or 1
+    local defaultView = self._fiterBtns[mainIdx]
+    defaultView:setSortingOrder(3)
+
+    if mainIdx == FITER_TYPES.DUNGEON then
+        local heroAgent = AgentManager:getHeroAgent()
+        if heroAgent then
+            heroAgent:onMessage({msgId = Constant.MSG_ROUTE_STOP})
+        end
+    end
+    MapModule:onNpcVampireLairInfoReq()
+
+    self:openFiterView(defaultView)
+end
+
+function UIWndLeader:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndLeader:refreshWorldBossView")
+    NtfManager:removeNtfListenerByTag("UIWndLeader:uptRedDotEvt")
+
+    for k, v in ipairs(self._fiterBtns) do
+        v:removeClickListener()
+    end
+    
+    self._gotoBtn:removeClickListener()
+    self._killLabel:removeClickListener()
+    self._touchLayer:removeClickListener()
+    self._bossList:removeEventListener(fgui.UIEventType.ClickItem)
+    self._eliteList:removeEventListener(fgui.UIEventType.ClickItem)
+    -- 副本
+    NtfManager:removeNtfListenerByTag("UIWndLeader:onRefreshList")
+    self._listTitle:removeEventListener(fgui.UIEventType.ClickItem)
+    self._listReward:removeEventListener(fgui.UIEventType.ClickItem)
+    self._btnEnter:removeClickListener()
+    self._btnTeam:removeClickListener()
+    self._itemCost:removeClickListener()
+
+    self._openViewType = nil
+    self._subViewType = nil
+
+    local heroAgent = AgentManager:getHeroAgent()
+    if heroAgent then
+        heroAgent:resetProtalSending()
+    end
+    UIWndLeader.super.onHide(self)
+end
+
+function UIWndLeader:onUpdate(dt)
+    if self._bossActor then
+        self._bossActor:onUpdate(dt)
+    end
+    if self._eliteActor then
+        self._eliteActor:onUpdate(dt)
+    end
+
+    self._timer = self._timer + dt
+    if self._timer < 1 then
+        return
+    end
+
+    self._timer = 0
+
+    self:refreshDungeonTimer()
+end
+
+--刷新页签显示和位置
+function UIWndLeader:refreshTab()
+    local numbers = 0
+    local firstTab = nil
+    for k, v in ipairs(self._fiterBtns) do
+        local isShow = false
+        if k == FITER_TYPES.BOSS then
+            isShow = FunctionToggleModule:checkEnterVisible(FunctionToggleModule.FunctionHelpId.WorldBoss)
+        elseif k == FITER_TYPES.ELITE then
+            isShow = FunctionToggleModule:checkEnterVisible(FunctionToggleModule.FunctionHelpId.EliteMonster)
+        elseif k == FITER_TYPES.DUNGEON then
+            isShow = FunctionToggleModule:checkEnterVisible(FunctionToggleModule.FunctionHelpId.Instance)
+        elseif k == FITER_TYPES.FIGHT then
+            isShow = FunctionToggleModule:checkEnterVisible(FunctionToggleModule.FunctionHelpId.CompeteFight)
+        end
+        if isShow then
+            v:setY(75 + 110 * numbers)
+            numbers = numbers + 1
+            if not firstTab then
+                firstTab = k
+            end
+        end
+        v:setVisible(isShow)
+    end
+    return firstTab
+end
+
+function UIWndLeader:initUI()
+    self._controlTab = self:getController("tabs")
+    self._fiterBtns = {}
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        local obj = self:getChild("btnFiter"..fiterType)
+        obj.fiterType = fiterType
+        self._fiterBtns[fiterType] = obj
+    end
+    --首领
+    self._bossPanel = self:getChild("panel_boss")
+    self._mapLabel = self:getChild("label_map")
+    self._posLabel = self:getChild("label_pos")
+    self._levelLabel = self:getChild("label_level")
+    self._killLabel = self:getChild("label_kill")
+    self._diImg = self:getChild("img_di")
+    self._teamList = self:getChild("list_team")
+    self._teamList:setItemRenderer(handler(self, self.renderListTeam))
+    self._bossList = self:getChild("list_boss")
+    self._bossList:setItemRenderer(handler(self, self.renderListBoss))
+    self._bossDropList = self:getChild("list_boss_drop")
+    self._bossDropList:setItemRenderer(handler(self, self.renderListBossDrop))
+    self._gotoBtn = self:getChild("btn_goto")
+    self._bgLoader = self:getChild("loader_bg")
+    self._bossNode = self:getChild("node_boss")
+    self._touchLayer = self:getChild("touchLayer")
+    --精英
+    self._elitePanel = self:getChild("panel_elite")
+    self._mapLoader = self:getChild("map_elite"):getChild("map")
+    self._nameLabel = self:getChild("label_name")
+    self._eliteList = self:getChild("list_elite")
+    self._eliteList:setItemRenderer(handler(self, self.renderListElite))
+    self._eliteDropList = self:getChild("list_elite_drop")
+    self._eliteDropList:setItemRenderer(handler(self, self.renderListEliteDrop))
+    self._eliteNode = self:getChild("node_elite")
+
+    -- 副本
+    self._listTitle     = self:getChild("list_title")
+    self._listReward    = self:getChild("list_reward")
+    self._lblTitle      = self:getChild("lbl_title")
+    self._lblDesc       = self:getChild("lbl_desc")
+    self._lblTjLv       = self:getChild("lbl_tjLv")
+    self._lblEnterLv    = self:getChild("lbl_enterLv")
+    self._lblEnterCount = self:getChild("lbl_enterCount")
+    self._lblState      = self:getChild("lbl_state")
+    self._lblPk         = self:getChild("lbl_pk")
+    self._lblAim        = self:getChild("lbl_aim")
+    self._btnEnter      = self:getChild("btn_enter")
+    self._btnTeam       = self:getChild("btn_team")
+    self._img_bg        = self:getChild("img_bg")
+    self._txtTimeDesc   = self:getChild("lbl_dungeonTime")
+    self._ctl           = self:getController("c1")
+    self._lblDiff       = self:getChild("lbl_diff")
+    self._lblMTjLv      = self:getChild("lbl_mtjLv")
+    self._lblMCost      = self:getChild("lbl_cost")
+    self._itemCost      = self:getChild("itemCost")
+
+    self._listTitle:setItemRenderer(handler(self, self.onRenderDungeonTitle))
+    self._listReward:setItemRenderer(handler(self, self.onRenderItem))
+end
+
+function UIWndLeader:openFiterView(sender)
+    if self._openViewType == sender.fiterType then 
+        return
+    end
+    self._openViewType = sender.fiterType
+    self._controlTab:setSelectedIndex(self._openViewType - 1)
+
+    if self._openViewType == FITER_TYPES.BOSS then
+        self._bossArray = HolyFightModule:getLeaderMeta(FITER_TYPES.BOSS)
+        self._bossList:setNumItems(#self._bossArray)
+    elseif self._openViewType == FITER_TYPES.ELITE then
+        self._eliteArray = HolyFightModule:getLeaderMeta(FITER_TYPES.ELITE)
+        self._eliteList:setNumItems(#self._eliteArray)
+    end
+
+    --默认第一个
+    if self._subViewType == nil then
+        self._subViewType = 1
+        self:showCurPanel()
+    end
+end
+
+function UIWndLeader:showCurPanel()
+    if self._openViewType == FITER_TYPES.BOSS then
+        --首领界面
+        self:refreshBossView()
+        self._isOpenDunRefresh  = false
+    elseif self._openViewType == FITER_TYPES.ELITE then
+        --精英界面
+        self:refreshEliteView()
+        self._isOpenDunRefresh  = false
+    elseif self._openViewType == FITER_TYPES.DUNGEON then
+        --副本界面
+        self._isOpenDunRefresh  = true
+    elseif self._openViewType == FITER_TYPES.FIGHT then
+        --争夺战界面
+        self._isOpenDunRefresh  = false
+    end
+end
+
+function UIWndLeader:refreshBossView()
+    --选中
+    local childIndex = self._bossList:itemIndexToChildIndex(self._subViewType - 1)
+    local context = self._bossList:getChildAt(childIndex)
+    context:setSelected(true)
+    --刷新信息
+    local data = self._bossArray[self._subViewType]
+    self._mapLabel:setText(data:getRefreshMapName())
+    local pos = data:getMonsterRefreshesCoordinates()
+    self._posLabel:setText("X:"..pos[2].." Y:"..pos[3])
+    local level = data:getRecommendedLevel()
+    self._levelLabel:setText("Lv."..level)
+    --掉落
+    self._dropArray = HolyFightModule:getLeaderDrops(self._openViewType, self._subViewType)
+    self._bossDropList:setNumItems(#self._dropArray)
+    --背景
+    -- self._bgLoader:setURL(string.format(_GURL.GetLeaderImg, "bg_BossShow_"..data:getId()))
+    --模型
+    local monsterMeta = CacheManager:getMonsterInfoMeta(data:getMonsterId())
+    if monsterMeta then
+        if not self._bossActor then
+            self._bossActor = UIMonsterActor.new(1)
+            self._bossNode:displayObject():addChild(self._bossActor)
+        end
+        local modelId = monsterMeta:getModelId()
+        self._bossActor:playAction(modelId)
+        self._bossActor:setMonsterCfg(monsterMeta)
+        self._bossActor:setScale(data:getModelDisplayScaleValue())
+    end
+    --击杀信息
+    self._worldBossData = HolyFightModule:getWorldBossById(data:getId())
+    if self._worldBossData and self._worldBossData.killedTime ~= 0 then
+        local teamArray = self._worldBossData.teamMemberList
+        if #teamArray > 0 then
+            --组队击杀
+            self._killLabel:setText(string.format(GReadText.KEY_WORLDBOSS_TIPS3, self._worldBossData.killerName))
+        else
+            --单人击杀
+            self._killLabel:setText(string.format(GReadText.KEY_WORLDBOSS_TIPS2, self._worldBossData.killerName))
+        end
+    else
+        self._killLabel:setText(GReadText.KEY_WORLDBOSS_TIPS1)
+    end
+    --点击删除红点
+    HolyFightModule:setRedTips(self._openViewType, data:getId(), false)
+end
+
+function UIWndLeader:refreshEliteView()
+    --选中
+    local childIndex = self._eliteList:itemIndexToChildIndex(self._subViewType - 1)
+    local context = self._eliteList:getChildAt(childIndex)
+    context:setSelected(true)
+    --刷新信息
+    local data = self._eliteArray[self._subViewType]
+    self._nameLabel:setText(data:getMonsterInfoDesc())
+    --掉落
+    self._dropArray = HolyFightModule:getLeaderDrops(self._openViewType, self._subViewType)
+    self._eliteDropList:setNumItems(#self._dropArray)
+    --模型
+    local monsterMeta = CacheManager:getMonsterInfoMeta(data:getMonsterId())
+    if monsterMeta then
+        if not self._eliteActor then
+            self._eliteActor = UIMonsterActor.new(1)
+            self._eliteNode:displayObject():addChild(self._eliteActor)
+        end
+        local modelId = monsterMeta:getModelId()
+        self._eliteActor:playAction(modelId)
+        self._eliteActor:setMonsterCfg(monsterMeta)
+        self._eliteActor:setScale(data:getModelDisplayScaleValue())
+    end
+    --地图背景
+    local url = string.format(_GURL.GetLeaderImg, data:getMonsterDisplayPortrait())
+    self._mapLoader:setURL(url)
+    --点击删除红点
+    HolyFightModule:setRedTips(self._openViewType, data:getId(), false)
+end
+
+--刷新界面
+function UIWndLeader:refreshWorldBossView()
+    if self._openViewType == FITER_TYPES.BOSS then
+        self._bossArray = HolyFightModule:getLeaderMeta(FITER_TYPES.BOSS)
+        self._bossList:setNumItems(#self._bossArray)
+        self:refreshBossView()
+    elseif self._openViewType == FITER_TYPES.ELITE then
+        self._eliteArray = HolyFightModule:getLeaderMeta(FITER_TYPES.ELITE)
+        self._eliteList:setNumItems(#self._eliteArray)
+        self:refreshEliteView()
+    end
+end
+------------------------------- event listener--------------------------
+
+function UIWndLeader:openFiterBtnClick(context)
+    local sender = context:getSender()
+    self:onFiterBtnClick(sender)
+end
+
+function UIWndLeader:onFiterBtnClick(sender)
+    if self._openViewType == sender.fiterType then 
+        return
+    end
+
+    --取消选中
+    if self._openViewType == FITER_TYPES.BOSS then
+        local childIndex = self._bossList:itemIndexToChildIndex(self._subViewType - 1)
+        local context = self._bossList:getChildAt(childIndex)
+        context:setSelected(false)
+    elseif self._openViewType == FITER_TYPES.ELITE then
+        local childIndex = self._eliteList:itemIndexToChildIndex(self._subViewType - 1)
+        local context = self._eliteList:getChildAt(childIndex)
+        context:setSelected(false)
+    end
+    self._subViewType = nil
+
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        if fiterType == sender.fiterType then
+            self._fiterBtns[fiterType]:setSortingOrder(3)
+        else
+            self._fiterBtns[fiterType]:setSortingOrder(1)
+        end
+    end
+    self:openFiterView(sender)
+end
+
+--前往
+function UIWndLeader:onGotoBtnClick()
+    if self._openViewType == FITER_TYPES.BOSS then
+        local data = self._bossArray[self._subViewType]
+        local transferCode = data:getTransferCode()
+        MapModule:onTransferByConfigReq(transferCode)
+    elseif self._openViewType == FITER_TYPES.ELITE then
+        local data = self._eliteArray[self._subViewType]
+        local transferCode = data:getTransferCode()
+        MapModule:onTransferByConfigReq(transferCode)
+    end
+end
+
+--击杀详情
+function UIWndLeader:onKillBtnClick()
+    if self._openViewType == FITER_TYPES.BOSS then
+        if self._worldBossData then
+            local teamArray = self._worldBossData.teamMemberList
+            if #teamArray > 0 then
+                --组队击杀
+                self._teamList:setNumItems(#teamArray)
+                self._diImg:setVisible(true)
+                self._teamList:setVisible(true)
+                self._touchLayer:setVisible(true)
+            else
+                --单人击杀查看人物信息
+                RankModule:onQueryPlayerReq(self._worldBossData.killerPlayerId)
+            end
+        end
+    end
+end
+
+--触摸关闭
+function UIWndLeader:onTouchBtnClick()
+    self._diImg:setVisible(false)
+    self._teamList:setVisible(false)
+    self._touchLayer:setVisible(false)
+end
+
+function UIWndLeader:onClickBossItem(context)
+    local data = context:getData()
+    if data.index == self._subViewType then
+        return
+    end
+    self._subViewType = data.index
+    self:showCurPanel()
+end
+
+function UIWndLeader:onClickEliteItem(context)
+    local data = context:getData()
+    if data.index == self._subViewType then
+        return
+    end
+    self._subViewType = data.index
+    self:showCurPanel()
+end
+
+function UIWndLeader:renderListTeam(index, obj)
+    local teamArray = self._worldBossData.teamMemberList
+    local data = teamArray[index + 1]
+    obj:getChild("loader_job"):setURL(string.format(_GURL.GetImageJob, data.professionIcon))
+    obj:getChild("label_name"):setText(data.name)
+    obj:getChild("label_level"):setText("Lv."..data.level)
+end
+
+function UIWndLeader:renderListBoss(index, obj)
+    obj.index = index + 1
+    local data = self._bossArray[index + 1]
+    if not data then
+        return
+    end
+    obj:setObjInfo(data)
+    obj:insertObjectToFactory(self)
+    --红点
+    local isShowRedDot = HolyFightModule:getRedPoint(FITER_TYPES.BOSS, data:getId())
+    obj:getChild("red"):setVisible(isShowRedDot)
+end
+
+function UIWndLeader:renderListBossDrop(index, obj)
+    obj:setRegClass(self)
+    obj.index = index + 1
+    local data = self._dropArray[index + 1]
+    if not data then
+        return
+    end
+    obj:setObjInfo(data)
+    obj:insertObjectToFactory(self)
+end
+
+function UIWndLeader:renderListElite(index, obj)
+    obj.index = index + 1
+    local data = self._eliteArray[index + 1]
+    if not data then
+        return
+    end
+    obj:setObjInfo(data)
+    obj:insertObjectToFactory(self)
+    --红点
+    local isShowRedDot = HolyFightModule:getRedPoint(FITER_TYPES.ELITE, data:getId())
+    obj:getChild("red"):setVisible(isShowRedDot)
+end
+
+function UIWndLeader:renderListEliteDrop(index, obj)
+    obj:setRegClass(self)
+    obj.index = index + 1
+    local data = self._dropArray[index + 1]
+    if not data then
+        return
+    end
+    obj:setObjInfo(data)
+    obj:insertObjectToFactory(self)
+end
+
+--红点刷新
+function UIWndLeader:uptRedDotEvt(event)
+    local param = event.param
+    if string.find(param.name, "WorldBossRedTips") then
+        local redTipStr = string.split(param.name, "_")
+        local main = tonumber(redTipStr[2])
+        --刷新页签
+        for k, v in ipairs(self._fiterBtns) do
+            if k == main then
+                local isShowRedDot = HolyFightModule:getRedPoint(main)
+                v:getChild("red"):setVisible(isShowRedDot)
+            end
+        end
+        --不是当前界面不刷新
+        if self._openViewType ~= main then
+            return
+        end
+        --刷新详细界面
+        local sub = tonumber(redTipStr[3])
+        local isShowRedDot = HolyFightModule:getRedPoint(main, sub)
+        if main == FITER_TYPES.BOSS then
+            local childs = self._bossList:getChildren()
+            for k, v in ipairs(childs) do
+                if v:getCfgId() == sub then
+                    v:getChild("red"):setVisible(isShowRedDot)
+                    break
+                end
+            end
+        elseif main == FITER_TYPES.ELITE then
+            local childs = self._eliteList:getChildren()
+            for k, v in ipairs(childs) do
+                if v:getCfgId() == sub then
+                    v:getChild("red"):setVisible(isShowRedDot)
+                    break
+                end
+            end
+        end
+    end
+end
+
+function UIWndLeader:onGetMonthCardIndex()
+    local param = self:getParam().param
+    if not param then
+        return nil
+    end
+    local mapCode = param.mapCode or nil
+    if not mapCode then
+        return nil
+    end
+    for i,v in ipairs(self._dungeonInfoArray or {}) do
+        if v.type == DUNGEON_TYPE.MonthCard then
+            if v.info:getMapCode() == mapCode then
+                return i
+            end
+        end
+    end
+    return 1
+end
+
+-- 副本逻辑
+function UIWndLeader:onRefreshList()
+    self._listTitle:setNumItems(#self._dungeonInfoArray)
+    self._dIndex = self:onGetMonthCardIndex() or 1
+    self._listTitle:setSelectedIndex(self._dIndex - 1)
+    self:onRefreshUI()
+
+    self._refreshDungeon = true
+end
+
+function UIWndLeader:onRenderDungeonTitle(index, obj)
+    local index = index + 1
+    local data = self._dungeonInfoArray[index]
+    if not data then
+        return
+    end
+    if data.type == DUNGEON_TYPE.VampireLair then
+        local meta = data.info
+        if meta then
+            local mapCode = meta:getMapCode()
+            local targetMapMeta = CacheManager:getMapMeta(mapCode)
+            if targetMapMeta then
+                obj:getChild("lbl_tilte"):setText(targetMapMeta:getMapName())
+            end
+            obj:getChild("lbl_lv"):setText("Lv." .. meta:getMinLv())
+            obj.index = index
+        end
+    elseif data.type == DUNGEON_TYPE.MonthCard then
+        local meta = data.info
+        if meta then
+            obj:getChild("lbl_tilte"):setText(meta:getMapName())
+            local LvList = CommonFunc:analysisJsonToTable(meta:getRecommendLevel(), true)
+            obj:getChild("lbl_lv"):setText("Lv." .. LvList[1])
+            obj.index = index
+        end
+    end
+end    
+
+function UIWndLeader:onClickTitle(context)
+    local obj = context:getData()
+    self._dIndex = obj.index
+    self:onRefreshUI()
+end
+
+function UIWndLeader:onGetDungeonByMapCode(mapcode)
+    local dungeonInfo = MapModule:getDungeonInfo()
+    for i, v in ipairs(dungeonInfo or {}) do
+        if v.mapCode == mapcode then
+            return v
+        end
+    end
+    return nil
+end
+
+function UIWndLeader:refreshDungeonTimer()
+    if not self._isOpenDunRefresh then
+        return 
+    end
+    local time = self._curTimeStamp
+    if time <= 0 then
+        --初始化没取数据前
+        return
+    end
+    local serverTime = TimeCounter:serverTime()
+    local lastTime = time - serverTime
+    if lastTime <= 0 then
+        --【5秒请求一次避免跟服务器不同步】
+        if not self._getSyncingTime then
+            self._getSyncingTime = 5
+            MapModule:onNpcVampireLairInfoReq()
+        else
+            --处理请求间隔
+            self._getSyncingTime = self._getSyncingTime - 1
+            if self._getSyncingTime <= 0 then
+                self._getSyncingTime = nil
+            end
+        end
+        self._lblState:setText("")--等服务器状态回调【不要显示关闭】
+        return
+    end
+    local curtime = CommonFunc:secondsToTime2(lastTime)
+    self._lblState:setText(curtime)
+end
+
+function UIWndLeader:onRefreshUI()
+    local data = self._dungeonInfoArray[self._dIndex]
+    if not data then
+        return
+    end
+    if data.type == DUNGEON_TYPE.VampireLair then
+        self._ctl:setSelectedIndex(0)
+        local meta = data.info
+        if meta then
+            self._meta = meta
+            self._lblDesc:setText(self._meta:getDungeonDescribe())
+            self._lblTjLv:setText(self._meta:getRecommendLevel())
+            local minLv = self._meta:getMinLv()
+            self._lblEnterLv:setText(minLv)
+            local heroData = GameModule:getHeroData()
+            local advState = heroData:getAdvanceState()
+            local level = 0
+            if advState == Constant.AdvState.NotAdv then
+                level = heroData:getLevel()
+            else
+                local curAdvLvl = heroData:getAdvanceLevel()
+                level = curAdvLvl + Constant.TransferLevel
+            end
+            local lvColor = level < tonumber(minLv) and Constant.COLOR_TEXT_RED or Constant.COLOR_GREEN
+            self._lblEnterLv:setColor(lvColor)
+            local mapCode = meta:getMapCode()
+            local targetMapMeta = CacheManager:getMapMeta(mapCode)
+            local metaNpc = self._npcVampireLairTable[self._meta:getMapCode()]
+            local mapInfo = self:onGetDungeonByMapCode(mapCode)
+            self._curTimeStamp = mapInfo.timeStamp
+            local _intervalTick = 6--服务器需要6秒做副本的释放【确保数据的同步】
+            self._lblEnterCount:setText(mapInfo.curPlayerNum .. "/" .. self._meta:getMaxEnterNum() .. "people")
+            if mapInfo and mapInfo.vampireState == lt.CommonModule:GetNetCmdEnum("NPCVAMPIRELAIRSTATE_NPCVAMPIRELAIRSTATE_PREPARATION_ENUM") then
+                self._txtTimeDesc:setText(GReadText.KEY_DUNGEON_ENTERTIME_TIPS)
+                self._lblState:setColor(Constant.COLOR_GREEN_H)
+                if self._curTimeStamp - TimeCounter:serverTime() < 0 then
+                    --刷新时间走完就是副本的准备时间
+                    self._curTimeStamp = mapInfo.timeStamp + metaNpc:getStartDelay()
+                else
+                    --防止时间差导致服务器状态未及时更新
+                    self._txtTimeDesc:setText(GReadText.KEY_DUNGEON_REFRESHTIME_TIPS)
+                    self._lblState:setColor(Constant.COLOR_TEXT_WHITE_PURE)
+                    self._curTimeStamp = mapInfo.timeStamp + _intervalTick
+                end
+            else
+                self._txtTimeDesc:setText(GReadText.KEY_DUNGEON_REFRESHTIME_TIPS)
+                self._lblState:setColor(Constant.COLOR_TEXT_WHITE_PURE)
+                self._curTimeStamp = mapInfo.timeStamp + _intervalTick
+            end
+            self:refreshDungeonTimer()
+            self._lblPk:setText(self._meta:getPKType())
+            self._lblAim:setText(self._meta:getDungeonTarget())
+            local url = string.format(_GURL.GetLeaderImg, self._meta:getDungeonEnvironment())
+            self._img_bg:setURL(url)
+            if targetMapMeta then
+                self._lblTitle:setText(targetMapMeta:getMapName())
+            end
+            if metaNpc and metaNpc:getReward() then
+                local reward = metaNpc:getReward()
+                self._rewardList = reward
+                self._listReward:setNumItems(#reward)
+            end
+        end
+    elseif data.type == DUNGEON_TYPE.MonthCard then
+        self._ctl:setSelectedIndex(1)
+        local meta = data.info
+        if meta then
+            self._lblTitle:setText(meta:getMapName())
+            self._txtTimeDesc:setText("PK status")
+            self._lblDesc:setText(meta:getMapDescription())
+            self._lblDiff:setText(meta:getMapDifficulty())
+            self._lblPk:setText(meta:getPKType())
+            local url = string.format(_GURL.GetLeaderImg, meta:getMapEnvironment())
+            self._img_bg:setURL(url)
+            local LvList = CommonFunc:analysisJsonToTable(meta:getRecommendLevel(), true)
+            local heroData = GameModule:getHeroData()
+            local advState = heroData:getAdvanceState()
+            local level = 0
+            if advState == Constant.AdvState.NotAdv then
+                level = heroData:getLevel()
+            else
+                local curAdvLvl = heroData:getAdvanceLevel()
+                level = curAdvLvl + Constant.TransferLevel
+            end
+            local lvColor = (level >= LvList[1]) and Constant.COLOR_GREEN or Constant.COLOR_TEXT_RED
+            local lvStr = string.format("Lv.%s-Lv.%s", LvList[1], LvList[2])
+            self._lblMTjLv:setText(lvStr)
+            self._lblMTjLv:setColor(lvColor)
+            self._lblTjLv:setText(lvStr)
+            self._lblTjLv:setColor(lvColor)
+            local reward = nil
+            local heroData = GameModule:getHeroData()
+            if heroData:isSlayer() then
+                reward = meta:getMapPriceS()
+            elseif heroData:isVampire() then
+                reward = meta:getMapPriceV()
+            elseif heroData:isOusters() then
+                reward = meta:getMapPriceO()
+            end
+
+            -- 消耗
+            local itemMeta = ""
+            local iconPath = ""
+            local itemCost = meta:getEnterItem()
+            if itemCost[1] == Constant.ItemType.ITEM_TYPE_PROP then
+                iconPath = "prop"
+                itemMeta = CacheManager:getItemMeta(itemCost[2])
+            elseif itemCost[1] == Constant.ItemType.ITEM_TYPE_EQUIP then
+                iconPath = "equip"
+                itemMeta = CacheManager:queryEquipMeta(itemCost[2])
+            end
+
+            local allCount = ItemModule:getItemAllCountByItemId(itemMeta:getItemId(), itemMeta:getItemType())
+            local resUrl = string.format("ui://Item/%s_%s", iconPath, itemMeta:getIconId())
+            self._itemCost.itemMeta = itemMeta
+            self._itemCost:setURL(resUrl)
+            self._lblMCost:setText(allCount  .. "/" .. itemCost[3])
+            local lvColor = tonumber(allCount) < tonumber(itemCost[3]) and Constant.COLOR_TEXT_RED or Constant.COLOR_GREEN
+            self._lblMCost:setColor(lvColor)
+
+            self._rewardList = reward
+            self._curMate = meta
+            self._listReward:setNumItems(#reward)
+        end
+    end
+end
+
+function UIWndLeader:onRenderItem(index, obj)
+    local index = index + 1
+    local data = self._dungeonInfoArray[self._dIndex]
+    if not data then
+        return
+    end
+    local meta = self._rewardList[index]
+    if data.type == DUNGEON_TYPE.VampireLair then
+        if meta then
+            local num = lt.StringManager:convert4BitNumber(meta[3])
+            local lblCount = obj:getChild("lbl_count")
+            lblCount:setText(num)
+            lblCount:setVisible(true)
+            obj:getChild("bg_wen"):setURL("")
+            local resUrl = ""
+            local itemMeta = ""
+            local iconPath = ""
+            if meta[1] == Constant.ItemType.ITEM_TYPE_PROP then
+                iconPath = "prop"
+                itemMeta = CacheManager:getItemMeta(meta[2])
+            elseif meta[1] == Constant.ItemType.ITEM_TYPE_EQUIP then
+                iconPath = "equip"
+                itemMeta = CacheManager:queryEquipMeta(meta[2])
+            end
+            resUrl = string.format("ui://Item/%s_%s", iconPath, itemMeta:getIconId())
+            local bgProp = obj:getChild("bg_prop")
+            bgProp:setURL(resUrl)
+            bgProp:setGrayed(false)
+            obj.itemMeta = itemMeta
+            obj.itemInfo = meta
+        end
+    elseif data.type == DUNGEON_TYPE.MonthCard then
+        if meta then
+            local bgWen = obj:getChild("bg_wen")
+            --是否至灰色
+            if meta[1] == 1 then
+                local resUrl = string.format(string.format(_GURL.GetTaskPath, "icon_cwrw_wenhao"))
+                bgWen:setURL(resUrl)
+            else
+                bgWen:setURL("")
+            end
+            obj:getChild("lbl_count"):setVisible(false)
+            local resUrl = ""
+            local itemMeta = ""
+            local iconPath = ""
+            if meta[2] == Constant.ItemType.ITEM_TYPE_PROP then
+                iconPath = "prop"
+                itemMeta = CacheManager:getItemMeta(meta[3])
+            elseif meta[2] == Constant.ItemType.ITEM_TYPE_EQUIP then
+                iconPath = "equip"
+                itemMeta = CacheManager:queryEquipMeta(meta[3])
+            end
+            if itemMeta then
+                resUrl = string.format("ui://Item/%s_%s", iconPath, itemMeta:getIconId())
+                local bgProp = obj:getChild("bg_prop")
+                bgProp:setGrayed(meta[1] == 1)
+                bgProp:setURL(resUrl)
+                obj.itemMeta = itemMeta
+                obj.itemInfo = meta
+            end
+        end
+    end
+end
+
+function UIWndLeader:onClickItem(context)
+    local obj = context:getData()
+    self._itemMeta = obj.itemMeta
+    self._itemInfo = obj.itemInfo
+    self._item = obj
+    self:showTips()
+end
+
+function UIWndLeader:showTips()
+    local data = self._dungeonInfoArray[self._dIndex]
+    if not data then
+        return
+    end
+    if data.type == DUNGEON_TYPE.MonthCard then
+        if self._itemInfo[1] == 1 then
+            --圣物读其他字段
+            local itemSize = self._item:getSize()
+            local point = self._item:localToGlobal({ x = itemSize.width, y = itemSize.height })
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_TEXT_TIPS,
+                {
+                    content = self._curMate:getIconDescribe(),
+                    pt = point,
+                    pivot = cc.p(0, 1),
+                    width = 180
+                })
+            return
+        end
+    end
+    local itemType = self._itemMeta:getItemType()
+    if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+        self:showPropTips()
+    elseif itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+        self:showEquipTips()
+    end
+end
+
+function UIWndLeader:showPropTips()
+    local data = self._dungeonInfoArray[self._dIndex]
+    local itemInfo = nil
+    if data and data.type == DUNGEON_TYPE.MonthCard then
+        itemInfo = ItemModule:getItemDataByConfig(self._itemMeta)
+    else
+        itemInfo = ItemModule:getItemDataByConfig(self._itemMeta, nil, self._itemInfo[3])
+    end
+    
+    local point = nil
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,
+        { itemInfo = itemInfo, pt = point, tipsType = Constant.PROPTIPS_FORM.Display })
+end
+
+function UIWndLeader:showEquipTips()
+    local data = self._dungeonInfoArray[self._dIndex]
+    local itemInfo = nil
+    if data and data.type == DUNGEON_TYPE.MonthCard then
+        itemInfo = ItemModule:getItemDataByConfig(self._itemMeta)
+    else
+        itemInfo = ItemModule:getItemDataByConfig(self._itemMeta, nil, self._itemInfo[3])
+    end
+    local point = nil
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,
+        { itemInfo = itemInfo, pt = point, tipsType = Constant.EquipShowTipsType.Display })
+end
+
+function UIWndLeader:onBtnEnterClick(target)
+    local data = self._dungeonInfoArray[self._dIndex]
+    if not data then
+        return
+    end
+    if  data.type == DUNGEON_TYPE.VampireLair then
+        local meta = data.info
+        local transferByConfigId = meta:getTransferByConfigId()
+        MapModule:onTransferByConfigReq(transferByConfigId)
+    else
+        local isMonthCard = lt.RechargeModule:checkMonthCard()
+        --是否拥有月卡
+        if not isMonthCard then
+            --没有月卡判断次票数量
+            local itemCost = self._curMate:getEnterItem()
+            local isEnough = ItemModule:enoughItem(itemCost[1], itemCost[2], itemCost[3], {tips = true})
+            if not isEnough then
+                return
+            end
+        end
+
+        local meta = data.info
+        local mapCode = meta:getMapCode()       
+        MapModule:sendTransferReq(mapCode)
+    end
+end
+
+function UIWndLeader:onBtnTeamClick(target)
+    local data = self._dungeonInfoArray[self._dIndex]
+    if not data then
+        return
+    end
+    if data.type == DUNGEON_TYPE.VampireLair then
+        local meta = data.info
+        local mapCode = meta:getMapCode()
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndTeam", param = { mapCode = mapCode } })
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndTeam" })
+    end
+end
+
+function UIWndLeader:onItemClick(target)
+    local itemMeta = target:getSender().itemMeta
+    if itemMeta then
+        ItemModule:showTipsByType(itemMeta)
+    end
+end
+
+
+return UIWndLeader

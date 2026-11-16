@@ -1,0 +1,31 @@
+
+local UnlockDao = {}
+
+function UnlockDao:query()
+    local configTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM UnlockControl;") do
+        local unlock = lt.UnlockMeta.new(row)
+        configTable[row.UnlockId] = unlock
+    end
+    return configTable
+end
+
+function UnlockDao:queryDefault(id)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM UnlockControl WHERE UnlockId=%d;", id)) do
+       return lt.UnlockMeta.new(row)
+    end
+end
+
+function UnlockDao:queryArrByGuide()
+    local configTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM UnlockControl WHERE Guide=1 ;") do
+        local unlock = lt.UnlockMeta.new(row)
+        configTable[#configTable + 1] = unlock
+    end
+    return configTable
+end
+
+return UnlockDao

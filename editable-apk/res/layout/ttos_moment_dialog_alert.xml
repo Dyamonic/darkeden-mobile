@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout android:layout_gravity="center_horizontal" android:orientation="vertical" android:background="@android:color/transparent" android:layout_width="wrap_content" android:layout_height="wrap_content"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <ScrollView android:background="@drawable/ttos_moment_alert_bg" android:scrollbars="none" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_margin="20.0dp" android:paddingStart="35.0dp" android:paddingEnd="35.0dp">
+        <LinearLayout android:gravity="center_horizontal" android:orientation="vertical" android:layout_width="match_parent" android:layout_height="wrap_content">
+            <TextView android:textSize="18.0dp" android:textStyle="bold" android:textColor="@color/ttos_moment_font" android:gravity="center" android:id="@id/tv_alert_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="42.0dp" android:minHeight="28.0dp" />
+            <TextView android:textSize="14.0dp" android:textColor="@color/ttos_moment_font" android:id="@id/tv_alert_content" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="19.0dp" android:layout_marginBottom="21.0dp" android:lineSpacingExtra="4.0dp" />
+            <TextView android:textSize="14.0dp" android:textColor="@color/ttos_moment_white" android:gravity="center" android:id="@id/tv_positive" android:background="@drawable/ttos_moment_alert_positive_bg" android:paddingTop="8.0dp" android:paddingBottom="10.0dp" android:layout_width="match_parent" android:layout_height="38.0dp" />
+            <TextView android:textSize="14.0dp" android:textColor="@color/ttos_moment_font" android:gravity="center" android:id="@id/tv_negative" android:background="@drawable/ttos_moment_alert_negative_bg" android:paddingTop="8.0dp" android:paddingBottom="10.0dp" android:layout_width="match_parent" android:layout_height="38.0dp" android:layout_marginTop="15.0dp" android:layout_marginBottom="35.0dp" />
+        </LinearLayout>
+    </ScrollView>
+    <ImageView android:id="@id/iv_alert_close" android:layout_width="50.0dp" android:layout_height="50.0dp" android:src="@drawable/ttos_moment_alert_close" android:scaleType="centerCrop" />
+</FrameLayout>

@@ -1,0 +1,15 @@
+
+local CmdBase = class("CmdBase")
+
+CmdBase._cmdId = nil
+
+function CmdBase:ctor(cmdId)
+    self._cmdId = cmdId
+end
+
+-- Setter && Getter
+function CmdBase:getCmdId()
+    return self._cmdId
+end
+
+return CmdBase

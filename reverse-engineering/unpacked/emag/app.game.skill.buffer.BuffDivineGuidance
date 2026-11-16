@@ -1,0 +1,26 @@
+local BuffDivineGuidance = class("BuffDivineGuidance", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+local ScheduleUtil  = lt.ScheduleUtil
+local CacheManager = lt.CacheManager
+local Constant = lt.Constant
+
+--[[
+    神之诅咒
+]]
+function BuffDivineGuidance:ctor(time, actor, skilllevel)    
+    BuffDivineGuidance.super.ctor(self, BuffEnum.EFFECTSTATUS_WATER_ELEMENTAL_HEALED, time, actor)
+    -- 被攻击播特效即可
+    self._skillId = SkillEnum.SKILL_DIVINE_GUIDANCE
+    actor:playParallelEffectByLv(self._skillId, skilllevel, Constant.EFFECT.SELF)
+    actor:createDivineGuidance()
+end
+
+function BuffDivineGuidance:onClear()
+    self._actor:stopParallelEffect(self._skillId)
+    self._actor:removeDivineGuidance()
+    BuffDivineGuidance.super.onClear(self)
+end
+
+
+return BuffDivineGuidance

@@ -1,0 +1,423 @@
+
+local HeroStateChase = class("HeroStateChase", lt.HeroStateBase)
+local Constant = lt.Constant
+
+HeroStateChase._targetAgentId = nil
+HeroStateChase._targetAgentM = nil
+HeroStateChase._targetAgentN = nil
+
+HeroStateChase._moveTypeCur = nil
+HeroStateChase._mTarget = nil
+HeroStateChase._nTarget = nil
+HeroStateChase._xTarget = nil
+HeroStateChase._yTarget = nil
+
+HeroStateChase._route = nil
+
+--[[
+    追逐
+]]
+function HeroStateChase:ctor(heroAgent, targetAgentId)
+    HeroStateChase.super.ctor(self, heroAgent)
+
+    self._targetAgentId = targetAgentId
+
+    local targetAgent = lt.AgentManager:getAgent(self._targetAgentId)
+    if targetAgent then
+        self._targetAgentM, self._targetAgentN = targetAgent:getMNExactly()
+    end
+
+    -- 脚步身间隔
+    self._audioInterval = 0.4
+    self._audioElapse = self._audioInterval
+end
+
+function HeroStateChase:onClear()
+    HeroStateChase.super.onClear(self)
+end
+
+function HeroStateChase:onEnter()
+    if not self._targetAgentM or not self._targetAgentN then
+        self._heroAgent:setTargetAgentId(nil)
+        self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+        return
+    end
+
+    if self._heroAgent:hasSkillToUse(self._targetAgentM, self._targetAgentN) then
+        local skillId, level = self._heroAgent:getSkillId()
+        if self._heroAgent:handleSkill(skillId, {level = level}) then
+            return
+        end
+    end
+
+    if not self:route() then
+        return
+    end
+
+    self:initMove()
+end
+
+function HeroStateChase:onExit()
+    if self._route then
+        lt.CommonUtil:safeRelease(self._route)
+        self._route = nil
+    end
+end
+
+function HeroStateChase:onUpdate()
+    if not self._xTarget or not self._yTarget then
+        self._heroAgent:setTargetAgentId(nil)
+        self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+        return
+    end
+
+    if self._waitTime and self._waitTime > 0 then
+        self._waitTime = self._waitTime - lt.GameBoard:getDeltaTime()
+
+        if self._waitTime <= 0 then
+            self._waitTime = nil
+
+            if not self:route() then
+                self._heroAgent:setTargetAgentId(nil)
+                self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+                return
+            end
+            self:initMove()
+        end
+        return
+    end
+
+    -- 移动
+    local xHero, yHero = self._heroAgent:getPosition()
+    local directionV = cc.pSub(cc.p(self._xTarget, self._yTarget), cc.p(xHero, yHero))
+    local length = cc.pGetLength(directionV)
+
+    local step = self._heroAgent:getMoveSpeed(self._moveTypeCur) * lt.GameBoard:getDeltaTime()
+    if length < step or length > 300 then
+        -- 到达
+        self._heroAgent:setPosition(self._xTarget, self._yTarget)
+
+        -- 捡取
+        self._heroAgent:checkPickUp()
+
+        -- 定位
+        self._heroAgent:mapTileSound()
+        
+        -- 判断是否继续移动
+        if not self:checkMoveOn() then
+            return
+        end
+    else
+        -- 未到
+        directionV = cc.pMul(cc.pNormalize(directionV), step)
+        self._heroAgent:setPosition(xHero + directionV.x, yHero + directionV.y)
+
+        if self._fixDirection then
+            self._fixDirection = false
+            
+            self._heroAgent:setDirection(lt.MapUtil:calcDirectionXY(directionV.x, directionV.y))
+        end
+    end
+
+    self._moveType      = nil
+    self._moveDirection = nil
+    self._mNext         = nil
+    self._nNext         = nil
+
+    -- 脚步声
+    self._audioElapse = self._audioElapse + lt.GameBoard:getDeltaTime()
+    if self._audioElapse > self._audioInterval then
+        self._audioElapse = self._audioElapse - self._audioInterval
+
+        self._heroAgent:mapTileAudio(self._moveTypeCur)
+    end
+end
+
+--[[
+    2019/9/27 追击过程中主动操作不再取消目标
+]]
+function HeroStateChase:onMessage(msg)
+    if msg.msgId == Constant.MSG_MOVE_JOYSTICK then
+        -- 摇杆控制移动
+        self._moveType      = msg.moveType
+        self._moveDirection = msg.moveDirection
+        self._mNext         = msg.mNext
+        self._nNext         = msg.nNext
+        self._needStop = true
+        self._heroAgent:setSkillId(nil)
+        -- self._heroAgent:setTargetAgentId(nil)
+
+    elseif msg.msgId == Constant.MSG_MOVE_TOUCH then
+        -- 点击控制移动
+        self._needStop = true
+        self._heroAgent:setSkillId(nil)
+        -- self._heroAgent:setTargetAgentId(nil)
+
+    elseif msg.msgId == Constant.MSG_ROUTE then
+        self._needStop = true
+        self._heroAgent:setSkillId(nil)
+        -- self._heroAgent:setTargetAgentId(nil)
+        
+        self._routeMsg = msg
+    elseif msg.msgId == Constant.MSG_SKILL then
+        -- 技能
+        self._heroAgent:handleSkillMsg(msg)
+    end
+end
+
+function HeroStateChase:getStateId()
+    return Constant.HERO_STATE_CHASE
+end
+
+function HeroStateChase:getStateName()
+    return "HeroStateChase"
+end
+
+function HeroStateChase:setWait(waitTime)
+    self._waitTime = waitTime or 0.1
+
+    self._heroAgent:playAction(Constant.ROLE_ACTION_IDLE)
+end
+
+-- 判断是否继续移动
+function HeroStateChase:checkMoveOn()
+    if self._heroAgent:getIsOutOfGame() then
+        self._heroAgent:changeState(lt.HeroStateDie.new(self._heroAgent))
+        return false
+    end
+
+    -- 无法移动
+    if not self._heroAgent:canMove() then
+        self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+        return false
+    end
+
+    if self._needStop then
+        if self._routeMsg then
+            self._heroAgent:handleRouteMsg(self._routeMsg)
+            self._routeMsg = nil
+        else
+            self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+        end
+        return false
+    end
+
+    -- 摇杆
+    if self._moveType then
+        self._heroAgent:changeState(lt.HeroStateMove.new(self._heroAgent, self._moveType, self._moveDirection, self._mNext, self._nNext))
+        return false
+    end
+
+    -- 如果追击的是尸体并且释放的技能是吞噬尸体，并且吞噬尸体释放技能
+    if self._heroAgent:getSkillId() == lt.SkillEnum.MAGIC_EAT_CORPSE and self._targetAgentId then
+        local skillId, level = self._heroAgent:getSkillId()
+        self._heroAgent:handleSkill(skillId, {level = level})
+        return false
+    end
+
+    -- 判断是否切换目标
+    local targetAgentId = self._heroAgent:getTargetAgentId()
+    if targetAgentId then
+        local targetAgent = lt.AgentManager:getAgent(targetAgentId)
+        if not targetAgent  then  --or targetAgent:getIsOutOfGame() 灵魂吸收也能被释放
+            self._heroAgent:setTargetAgentId(nil)
+            self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+            return false
+        end
+
+        if targetAgentId ~= self._targetAgentId then
+            -- 切换目标
+            self._targetAgentId = targetAgentId
+
+            self._targetAgentM, self._targetAgentN = targetAgent:getMNExactly()
+            if not self:route() then
+                return false
+            end
+        else
+            -- 是否进入技能释放范围
+            local skillId, level = self._heroAgent:getSkillId()
+            if self._heroAgent:isInSkillDistance(skillId, self._targetAgentM, self._targetAgentN) then
+                self._heroAgent:handleSkill(skillId, {level = level})
+                return false
+            end
+
+            -- 继续追击
+            local mTarget, nTarget = targetAgent:getMNExactly()
+            if mTarget ~= self._targetAgentM or nTarget ~= self._targetAgentN then
+                self._targetAgentM = mTarget
+                self._targetAgentN = nTarget
+                if not self:route() then
+                    return false
+                end
+            end
+        end
+    else
+        self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+        return false
+    end
+
+    -- 判断是否移动到终点
+    if self._route:getMNCount() <= 0 then
+        local skillId, level = self._heroAgent:getSkillId()
+        local isSuccess = self._heroAgent:handleSkill(skillId, {level = level})
+        --技能释放失败切到idle
+        if not isSuccess then
+            yflog:Info("Failed to release skill, skill Id:%s",tostring(self._skillId))
+            self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+        end
+        return false
+    end
+
+    self:initMove()
+    return true
+end
+
+function HeroStateChase:initMove()
+    local mHero, nHero = self._heroAgent:getMNExactly()
+    local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+
+    -- 判断移动
+    self._moveTypeCur = nil
+    if self._route:getMNCount() == 1 then
+        local m, n = self._route:getNextMN()
+        if mapAgent:isBlocked(m, n) then
+            -- 这个点废弃
+            self:checkMoveOn()
+            return
+        end
+
+        self._moveTypeCur = Constant.MOVE_RUN
+        self._mTarget = m
+        self._nTarget = n
+
+    else
+        local mn0 = lt.MN.new(mHero, nHero)
+        local mn1 = lt.MN.new(self._route:getNextMN())
+        local mn2 = lt.MN.new(self._route:queryNextMN())
+
+        if mapAgent:isBlocked(mn1.m, mn1.n) then
+            -- 废弃下个点
+            self._route:getNextMN()
+
+            self:checkMoveOn()
+            return
+
+        elseif mapAgent:isBlocked(mn2.m, mn2.n) then
+            -- 废弃下个点
+            self._route:getNextMN()
+
+            self._moveTypeCur = Constant.MOVE_RUN
+            self._mTarget = mn1.m
+            self._nTarget = mn1.n
+
+        else
+            local isOnHorse = false
+            if isOnHorse then
+                while true do
+                    local mn3 = lt.MN.new(self._route:queryNextMN2())
+                    if mapAgent:isBlocked(mn3.m, mn3.n) then
+                        break
+                    end
+
+                    if lt.MapUtil:isMNInLine(mn0, mn1, mn2) and lt.MapUtil:isMNInLine(mn1, mn2, mn3) then
+                        self._route:getNextMN()
+                        self._route:getNextMN()
+
+                        self._moveTypeCur = Constant.MOVE_RUN_HORSE
+                        self._mTarget = mn3.m
+                        self._nTarget = mn3.n
+                    end
+
+                    break
+                end
+
+                if self._moveTypeCur == nil then
+                    self._moveTypeCur = Constant.MOVE_RUN
+                    self._mTarget = mn1.m
+                    self._nTarget = mn1.n
+                end
+
+            else
+                -- if lt.MapUtil:isMNInLine(mn0, mn1, mn2) then
+                --     self._route:getNextMN()
+
+                --     self._moveTypeCur = Constant.MOVE_RUN
+                --     self._mTarget = mn2.m
+                --     self._nTarget = mn2.n
+                -- else
+                self._moveTypeCur = Constant.MOVE_RUN
+                self._mTarget = mn1.m
+                self._nTarget = mn1.n
+                -- end
+
+            end
+        end
+    end
+
+    if not self._mTarget or not self._nTarget then
+        return
+    end
+
+    self._xTarget, self._yTarget = lt.MapUtil:calcMNMid(self._mTarget, self._nTarget)
+
+    -- 设置方向
+    local x1, y1 = lt.MapUtil:calcMNMid(mHero, nHero)
+    local x2, y2 = lt.MapUtil:calcMNMid(self._mTarget, self._nTarget)
+    local direction = lt.MapUtil:calcDirectionXY(x2 - x1, y2 - y1)
+    self._heroAgent:setDirection(direction)
+
+    -- 修改MapAgent的AgentSystem
+    mapAgent:changeAgentMN(self._heroAgent, self._mTarget, self._nTarget)
+
+    -- 播放动画
+    self:playMoveAction()
+
+    if self._heroAgent:getIsSelf() then
+        lt.GameModule:sendMove(self._moveTypeCur, direction, self._mTarget, self._nTarget)
+    end
+
+    -- 按照动作定义脚步声音间隔
+    local actionInfo = self._heroAgent:getActor():getActionInfo()
+    if actionInfo then
+        self._audioInterval = (actionInfo:getStep() or 0.1) * 4
+    end
+end
+
+function HeroStateChase:playMoveAction()
+    self._heroAgent:playMoveAction(self._moveTypeCur)
+end
+
+function HeroStateChase:route()
+    local mHero, nHero = self._heroAgent:getMNExactly()
+    local distance = lt.MapUtil:getMNDistance(mHero, nHero, self._targetAgentM, self._targetAgentN)
+    if distance <= 1 then
+        -- 贴身了
+        local skillId, level = self._heroAgent:getSkillId()
+        self._heroAgent:handleSkill(skillId, {level = level})
+        return false
+    end
+
+    local route = lt.MapUtil:route(mHero, nHero, self._targetAgentM, self._targetAgentN, true)
+    if route then
+        lt.CommonUtil:safeRelease(self._route)
+        self._route = route
+        lt.CommonUtil:safeRetain(self._route)
+        return true
+    else
+        if lt.AutoFightManager:isAuto() then
+            self._heroAgent:setTargetAgentId(nil)
+            local skillId, level = self._heroAgent:getSkillId()
+            self._heroAgent:getTargetAgent(true, skillId)
+        else
+            self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+        end
+        return false
+    end
+end
+
+-- 修正方向
+function HeroStateChase:setFixDirection()
+    self._fixDirection = true
+end
+
+return HeroStateChase

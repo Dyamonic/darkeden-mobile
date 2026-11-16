@@ -1,0 +1,15 @@
+
+local PetSkinDao = {}
+
+function PetSkinDao:querySkinUp(skinId)
+    local skilUpMap = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM PetSkin WHERE SkinId=%d ;", skinId)) do
+    	local skinMeta = lt.PetSkinMeta.new(row)
+        skilUpMap[skinMeta:getLevel()] = skinMeta
+    end
+
+    return skilUpMap
+end
+
+return PetSkinDao

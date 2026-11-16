@@ -1,0 +1,1439 @@
+
+local MonsterActor = class("MonsterActor", lt.RoleActor)
+
+local ShadowActor       = lt.ShadowActor
+local EffectManager     = lt.EffectManager
+local CacheManager      = lt.CacheManager
+local TimeTrigger       = lt.TimeTrigger
+local EffectQueueActor  = lt.EffectQueueActor
+local EffectParallelActor = lt.EffectParallelActor
+local SkillEnum         = lt.SkillEnum
+local EffectEnum        = lt.EffectEnum
+local Constant          = lt.Constant
+local ActionManager     = lt.ActionManager
+local HeroAndMonsterEffect = lt.HeroAndMonsterEffect
+local ResUtil = lt.ResUtil
+local NtfManager        = lt.NtfManager
+
+MonsterActor._sprite            = nil
+MonsterActor._dieFinishDig      = nil  -- 判断是否死亡完成挖掘，控制播放死亡动作的最后一帧
+MonsterActor._spriteSkillHide   = nil  -- 怪物隐蔽
+MonsterActor._spriteOffsetY     = nil  -- sprite偏移量Y(血腥巅峰)
+
+function MonsterActor:ctor(roleData, direction, heroData)
+    MonsterActor.super.ctor(self, roleData, direction)
+
+    -- 天炼pc端转换坐标会有一个偏移值offsetX = -25, offsetY = 15
+    local offsetX, offsetY = -25, 15
+    local zorder = 2
+    self._currentColorIndex = 1
+    self._buffDurations = {}
+    self._colorList = {}
+    self._elapsedTime = 0
+    self._divineCounter = 0
+
+
+    -- 人物模型
+    self._heroNode = display.newNode()
+    self._heroNode:setPosition(offsetX, offsetY)
+    self:addChild(self._heroNode, zorder)
+
+
+    self._soleEffectNode = display.newNode()
+    self._soleEffectNode:setPosition(offsetX, offsetY)
+    self:addChild(self._soleEffectNode, -1)
+
+    self._sprite = self:CreateSprite(self.ANCHOR_MIDDLE, self.ANCHOR_MIDDLE, zorder, self._heroNode)
+    zorder = zorder + 1
+    self._spriteWeapon = self:CreateSprite(self.ANCHOR_MIDDLE, self.ANCHOR_MIDDLE, zorder, self._heroNode)
+
+    --召唤物死亡尸体
+    self._corpseSprite = display.newSprite("tlui/Etc_34.png")
+    self:addChild(self._corpseSprite)
+    self._corpseSprite:setVisible(false)
+
+    -- 模型影子
+    self._shadowActor = ShadowActor.new(2)
+
+    zorder = zorder + 1
+    self._effectNode = display.newNode()
+    self._effectNode:setPosition(offsetX, offsetY)
+    self:addChild(self._effectNode, zorder)
+
+    self._spriteEffect = self:CreateSprite(self.ANCHOR_MIDDLE, self.ANCHOR_MIDDLE, zorder, self._effectNode)
+
+    self._queueEffectNode = display.newNode()
+    self._queueEffectNode:setPosition(offsetX, offsetY)
+    self:addChild(self._queueEffectNode, zorder)
+    self._queueEffectActorArr = {}
+    self._parabEffectActorArr = {}
+
+    if self._roleData:getMasterObjId() and self._roleData:getMasterObjId() > 0 then
+        -- 宠物
+        self._nameNode = lt.NameNode.new(self._roleData, lt.Constant.NameNodeType.PET)
+    else
+        -- 怪物
+        self._nameNode = lt.NameNode.new(self._roleData, lt.Constant.NameNodeType.MONSTER, heroData)
+    end
+
+    self._effectLoopCount = 0
+    self._nextEffectFrameIndex = 1
+    self._timeEffectTrigger = TimeTrigger.new()
+    self._openRotateDivine = false
+
+    -- self._scale = roleData:getMonsterMeta():getScale() or 1
+    -- self._sprite:setScale(self._scale)
+
+    self:initShader()
+
+    local monsterId = self._roleData:getMonsterId()
+    if monsterId and Constant.MONSTER2SKILLID[monsterId] then
+        self:playParallelEffectByLv(Constant.MONSTER2SKILLID[monsterId], 1, Constant.EFFECT.SELF)
+    end
+  
+    self._shadowsPhantomArr = {}
+
+    self._spriteSkillHide = display.newSprite("game/common/hide_icon.png")
+    self._spriteSkillHide:setVisible(false)
+    self:addChild(self._spriteSkillHide)
+
+    -- 旋转特效列表，根据旋转的位置调整层级
+    self._rotateEffectActorArr = {}
+    self._mon765DirCount = 0
+end
+
+function MonsterActor:onClear()
+    self:removeDivineGuidance()
+
+
+    if self._shadowsPhantomArr and type(self._shadowsPhantomArr) == "table" then
+        for i = #self._shadowsPhantomArr, 1, -1 do
+            if self._shadowsPhantomArr[i] then
+                self._shadowsPhantomArr[i]:removeFromParent()
+            end
+            table.remove(self._shadowsPhantomArr, i)
+        end
+        self._shadowsPhantomArr = nil
+    end
+
+    self:clearLevelUpSpine()
+    self:removeAllParalEffect()
+    self:removeAllRotateEffect()
+    self:removeAllQueueEffect()
+    self:removeAllChildren()
+    self._actionInfo = nil
+    self._actionShadowInfo = nil
+    self._effectInfo        = nil
+    self._weaponActionInfo = nil
+
+    
+   
+    MonsterActor.super.onClear(self)
+
+    self._shadowActor = nil
+    self._sprite = nil
+    self._spriteWeapon = nil
+    self._spriteEffect = nil
+    self._heroNode = nil
+    self._queueEffectNode        = nil
+    self._queueEffectActorArr        = nil
+    self._timeEffectTrigger = nil
+    self._rotateEffectActorArr = nil
+    self._colorList = nil
+    self._buffDurations = nil
+    self._skillColor = nil
+end
+
+-- override
+function MonsterActor:onUpdate(delta)
+    MonsterActor.super.onUpdate(self)
+    
+    self:onUpdateAction()
+
+    self:onUpdateEffect()
+
+    self:onUpdateQueueEffect()
+    self:onUpdateParalEffect()
+    self:onUpdateRotateEffect()
+
+    self:updateBuffColor(delta)
+    self._pCreature:updateInvisible()
+    if self._selectColor or self._pCreature:getInvisibleStep() then
+        self:changeModelColor(self._sprite)
+    end
+    self:divineUpdate()
+end
+
+--怪物动作速率控制
+function MonsterActor:resetActionStep()
+    ----------------------------------------------------------------------
+    -- 设置step倍率
+    local agent = self:getAgent()
+    local param = 1
+    if agent and agent.getCurStepMultiple then--buff冰冻等慢动作播放
+        param = agent:getCurStepMultiple() or 1
+    end
+    local speedRate = 1
+    if agent and agent.getCurSpeedRate then--客户端掉帧快速追帧参数
+        speedRate = agent:getCurSpeedRate()
+    end
+    ----------------------------------------------------------------------
+    if self._actionInfo then
+        self._timeTrigger:reset(self._actionInfo:getStep()*param/speedRate)
+    end
+end
+
+function MonsterActor:hideTargetMark()
+    MonsterActor.super.hideTargetMark(self)
+    self:changeModelColor(self._sprite) --取消描边效果
+end
+
+
+function MonsterActor:_setDirection(direction)
+    MonsterActor.super._setDirection(self, direction)
+   
+    self:changeEffectDir(direction)
+end
+
+function MonsterActor:changeEffectDir(direction)
+    -- 离子火箭发射器
+    -- XRL 炸裂导弹
+    if (self._modelId == 226 or self._modelId == 271) and self._effectInfo then
+        self._effectInfo = EffectManager:getEffectInfo(self._effectInfo:getEffectId(), direction, self._effectInfo:getBltType())
+        self._effectInfo:setLoop(-1)
+        
+        self._timeEffectTrigger:reset(self._effectInfo:getStep())
+        self:startEffect()
+    end
+end
+
+-- 怪物死亡会被挖掘，挖掘前会保留最后一帧
+function MonsterActor:onUpdateAction()
+    if not self._actionInfo or not self._actionInfo:getLoop() then
+        return
+    end
+
+    local frameCount = self._actionInfo:getSpriteFrameCount()
+    local loop = self._actionInfo:getLoop()
+
+    -- 非无限循环 and (循环次数 >= 设置的循环次数 or 播放的帧数 > 设置的播放帧) 则不在播放
+    if self._actionInfo:getLoop() ~= -1 and (self._loopCount >= loop or self._nextFrameIndex > frameCount) then
+        -- 非站立动作 && 如跑步或者attack动作每循环一次就要重新发起动作执行 startAction()
+        return
+         
+    end
+
+    --柱子的特殊逻辑
+    local columnUpdate = self:columnUpdate()
+    if not columnUpdate then
+        return
+    end
+
+    -- 刷新死亡并且未完成挖掘，死亡动作保留最后一帧,直到完成尸体挖掘
+    if self:isDie() and not self:isDieFinishDig() and not self._roleData:getDigLastFrame() then
+        -- 下一帧为最后一帧时 保留帧等完成挖掘后再播放
+        if self._nextFrameIndex == frameCount then
+            return
+        end
+    end
+
+    -- 死亡后重进游戏
+    if self:isDead() then
+        self._nextFrameIndex = frameCount
+
+        if not self:isDieFinishDig() and not self._roleData:getDigLastFrame() then
+            self._nextFrameIndex = frameCount - 1
+        end
+    end
+
+    -- 
+    if self._timeTrigger:tick() then
+        self:gotoNextFrame()
+        if self._nextFrameIndex > frameCount then
+            self._nextFrameIndex = 1
+
+            self._loopCount = self._loopCount + 1
+        end
+    end
+end
+
+-- override
+function MonsterActor:initActionInfo()
+    local modelId = self._modelId
+
+    -- 查询特殊类
+    local action, direction = ActionManager:getSpecialMonsterDirection(modelId, self._actionId)
+    action = action or self._actionId
+    direction = direction or self._direction
+
+    if self._roleData:getMasterObjId() and self._roleData:getMasterObjId() > 0 then
+        -- 宠物检测变身
+        local petMeta = CacheManager:getPetMeta(self._roleData:getMonsterId())
+        if petMeta then
+            local petLevel = self._roleData:getPetLevel()
+            local stage = lt.PetModule:getPetStateByLevel(petLevel)
+            local petModelId = lt.PetModule:getPetModelByState(petMeta, stage)
+            local petSkinModelId = self._roleData:getPetSkinModelId()
+            if petSkinModelId then
+                petModelId = petSkinModelId
+            end
+            if petModelId ~= 0 then
+                self._modelId = petModelId
+                self._roleData:setModelId(petModelId)
+                modelId = self._modelId
+            end
+        end
+    end
+
+    --------------------------------------------------------------------------------------------------------------------
+    -- transform 变身蝙蝠
+    if self._agent then
+        local transform = 0
+        local transformId = self._agent:getTransformId()
+        local isTranformBat = (transformId == SkillEnum.TRANSFORM.BAT or transformId == SkillEnum.TRANSFORM.DARKBAT or transformId == SkillEnum.TRANSFORM.DARKANGEL)
+        if isTranformBat then
+            local modelId = SkillEnum.TRANSFORM_MODELID[lt.SkillEnum.TRANSFORM.BAT]
+            transform = SkillEnum.TRANSFORM.BAT
+            self._actionInfo = lt.ActionManager:getActionMonsterInfo("monster", modelId, self._actionId, self._direction)
+            self._actionInfo:setActionStep()
+            self._shadowActor:LoadMonsterActionInfo(modelId, self._actionId, self._direction) 
+            self._offsetHeight = SkillEnum.TRANSFORM_EFFECTHIGHT[transform]
+            if self.transformId ~= transform then
+                self.transformId = transform
+                self._nameNode:setPositionY(self._offsetHeight)
+            end
+            return
+        end
+    else
+        self._offsetHeight = 0
+    end
+    --------------------------------------------------------------------------------------------------------------------
+    -- 迷幻术
+    if self:getIsHallu() then
+        modelId = self:getIsHallu()
+    end
+    --------------------------------------------------------------------------------------------------------------------
+    if modelId == SkillEnum.SUMMON.SUMMON_MIGA or modelId == SkillEnum.SUMMON.SUMMON_WIND then
+        self._actionInfo = self:getSummonEffectInfo(modelId)
+        return 
+    else
+        if SkillEnum.STOP_DIR_MONSTER_MODEL[modelId] then
+            direction = SkillEnum.STOP_DIR_MONSTER_MODEL[modelId]
+        end
+        self._actionInfo = ActionManager:getActionMonsterInfo("monster", modelId, action, direction)
+    end
+
+    local weaponModelId = self._roleData:getWeaponModelId() or 0
+    if weaponModelId > 0 then
+        self._weaponActionInfo = ActionManager:getActionMonsterInfo("monster", weaponModelId, action, direction)
+    else
+        self._weaponActionInfo = nil
+    end
+
+    if self._shadowActor.LoadMonsterActionInfo then
+        self._shadowActor:LoadMonsterActionInfo(modelId, self._actionId, direction)
+    end
+    if self.transformId and self.transformId ~= transform then
+        self.transformId = transform
+        self._nameNode:setPositionY(self._offsetHeight)
+    end
+end
+
+-- 特殊召唤物actionInfo(用技能特效资源的)
+function MonsterActor:getSummonEffectInfo(modelId)
+    local meta
+    if modelId == SkillEnum.SUMMON.SUMMON_MIGA then
+        local skillId = SkillEnum.SKILL_SUMMON_MIGA
+        local buffMetas = CacheManager:getBuffMetas(SkillEnum.SKILL_SUMMON_MIGA)
+        meta = buffMetas[1]
+    elseif modelId == SkillEnum.SUMMON.SUMMON_WIND then
+        local buffMetas = CacheManager:getProcessMetas(SkillEnum.SKILL_DRAGON_TORNADO)
+        meta = buffMetas[1]
+    end
+    local effectInfo = lt.EffectInfo.new(meta:getSpriteId(),  self._direction, meta:getBltType())
+    effectInfo:setLoop(-1)
+    return effectInfo
+end
+
+function MonsterActor:gotoNextFrame()
+    if self._actionPause and self._initFrame then
+        return
+    end
+
+    if self._roleData:isDivine() then
+        self._nextFrameIndex = 10
+    end
+
+    if self._actionId == Constant.ACTION_MOVE  
+    and (self._roleData:getMonsterId() == 765 or self._roleData:getMonsterId() == 764 )
+    then
+       if self._nextFrameIndex == 1 or self._nextFrameIndex == 8 then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_EVENTFLAG_SHAKE_SCREEN, {eventDelay = 300, parameter3 = 1, eventType = Constant.SHARK_SCREEN_TYPE.EVENTID_METEOR_SHAKE})
+       end
+    end
+    if self._skillId and self._skillId == SkillEnum.SKILL_PLAYING_WITH_FIRE and self._actionId == Constant.ACTION_ATTACK then 
+        if self._nextFrameIndex > 4 then
+            self._nextFrameIndex = 4
+            if (bit.band(self._nextFrameIndex, 0x01))then
+                local curDir = self:getDirection()
+                self._mon765DirCount = self._mon765DirCount + 1 
+                if self._mon765DirCount < 5 then
+                    curDir = ((curDir - 1 ) + 8)%8;
+                    self:_setDirection(curDir)
+                else
+                    self:playAction(Constant.ROLE_ACTION_IDLE)
+                end
+            end
+        end
+    end
+ 
+    self:updateFrame(true)
+    
+    self._nextFrameIndex = self._nextFrameIndex + 1
+end
+
+function MonsterActor:updateClipFrame(percent)
+    if not self._actionInfo then
+        return
+    end
+
+    local frame = self._actionInfo:getSpriteFrame(self._nextFrameIndex)
+    if frame then
+        self._sprite:setSpriteFrame(frame.sprite)
+        
+        local textRect = frame.sprite:getRect()
+        local isRotated = frame.sprite:isRotated()
+        local rect = cc.rect(textRect.x,textRect.y, textRect.width, textRect.height*percent)
+        if isRotated then
+            rect = cc.rect(textRect.x+textRect.height*(1-percent),textRect.y, textRect.width, textRect.height*percent)
+        end
+        self._sprite:setTextureRect(rect,isRotated,cc.size(textRect.width,textRect.height*percent))
+        
+        local pos = self:conversionOffsetPoint(cc.p(0, 0), cc.p(frame.x, frame.y), frame.size)
+        self._sprite:setPosition(pos.x, pos.y-textRect.height*(1-percent)/2)
+    end
+end
+
+function MonsterActor:updateFrame(update)
+    if not self._actionInfo then
+        return
+    end
+    if not self._hideSprite then
+        self._sprite:setVisible(true)
+        if update then
+            local frame = self._actionInfo:getSpriteFrame(self._nextFrameIndex)
+            if frame then
+                self._initFrame = true
+                self._sprite:setSpriteFrame(frame.sprite)
+                if self._selectColor then
+                    self._pixelSize = ResUtil:getPlistPixelSize(frame.sprite)
+                end
+                local pos = self:conversionOffsetPoint(cc.p(0, 0), cc.p(frame.x, frame.y), frame.size)
+                if self._agent and (self._agent:hasBuffer(lt.BuffEnum.EFFECT_CLASS_TRANSFORM_TO_BAT) or self._agent:getTransformId() == SkillEnum.TRANSFORM.BAT) then
+                    local transformZ = CacheManager:getVariableById(Constant.Variable.TransformZ) or 120
+                    pos.y = pos.y + transformZ
+                end
+                if type(self._spriteOffsetY) == "number" then
+                    pos.y = pos.y + self._spriteOffsetY
+                end
+                self._sprite:setPosition(pos)
+                if self._fasetMoveTrigger:tick() then
+                    self:updateFastMove()
+                end
+                self:updateShadowCount(pos)
+                if self._shadowActor.onUpdateFrame then
+                    self._shadowActor:onUpdateFrame(self._nextFrameIndex)
+                end
+            end
+
+            -- 怪物武器
+            if self._weaponActionInfo then
+                local frame = self._weaponActionInfo:getSpriteFrame(self._nextFrameIndex)
+                if frame then
+                    self._spriteWeapon:setSpriteFrame(frame.sprite)
+                    local pos = self:conversionOffsetPoint(cc.p(0, 0), cc.p(frame.x, frame.y), frame.size)
+                    self._spriteWeapon:setPosition(pos)
+                end
+                self._spriteWeapon:setVisible(true)
+            else
+                self._spriteWeapon:setVisible(false)
+            end
+        end
+    else
+        self._sprite:setVisible(false)
+        self._spriteWeapon:setVisible(false)
+        self._shadowActor:hideSprite()
+    end
+end
+
+function MonsterActor:setColor(color)
+    self._sprite:setColor(color)
+end
+
+function MonsterActor:setColorAll(colorList)
+    self._colorList = colorList or {}
+    if #self._colorList >= 2 then
+        self._currentColorIndex = 2
+    end
+    for index, color in pairs(self._colorList) do
+        if index == 2 then
+            self._buffDurations[index] = 80
+        else
+            self._buffDurations[index] = 600 / (#self._colorList - 1)
+        end
+    end
+    if #self._colorList < 2 then
+        self._skillColor = self._colorList[1]
+        self:changeModelColor(self._sprite)
+    end
+end
+
+function MonsterActor:setAlpha(alpha)
+    self._sprite:setOpacity(255 * alpha)
+end
+
+function MonsterActor:changeName()
+    if not self._nameNode then
+        return
+    end
+    if self._roleData:getMasterObjId() and self._roleData:getMasterObjId() > 0 then
+        self._nameNode:setNameType(lt.Constant.NameNodeType.PET)
+    else
+        self._nameNode:setNameType(lt.Constant.NameNodeType.MONSTER)
+    end
+    
+    MonsterActor.super.changeName(self)
+end
+
+-- 怪物死亡，未挖掘
+function MonsterActor:setDie()
+    self._die = true
+    self._dieFinishDig = false
+end
+-- die 是刚死，dead是重新进入地图，已死
+function MonsterActor:setDead()
+    self._die = true
+    self._dead = true
+    self._dieFinishDig = false
+end
+
+-- 刷新死亡完成挖掘 播放死亡动作的最后一帧
+function MonsterActor:dieFinishDig()
+    self._dieFinishDig = true
+end
+
+function MonsterActor:isDie()
+    return self._die
+end
+
+function MonsterActor:isDead()
+    return self._dead
+end
+
+function MonsterActor:isDieFinishDig()
+    return self._dieFinishDig
+end
+
+function MonsterActor:getSprite()
+    return self._sprite
+end
+
+function MonsterActor:columnUpdate()
+    if self:isColumn() then
+        local data = self:getRoleData()
+        if self:isDie() then
+            self._isFive = false
+            self._isHalf = false
+            if self:getActionPause() then
+                self:setActionPause(false)
+            end
+        elseif data:getCurHp() / data:getMaxHp() <= 0.2 then
+            self._isFive = true
+            self:playAction(Constant.ROLE_ACTION_DIE)
+        elseif data:getCurHp() / data:getMaxHp() <= 0.5 then
+            self._isHalf = true
+            self:playAction(Constant.ROLE_ACTION_DIE)
+        end
+        if self._isFive then
+            if self:getActionPause() then
+                self:setActionPause(false)
+            end
+            if self._nextFrameIndex == 5 then
+                self:setActionPause(true)
+                return false
+            end
+        elseif not self._isFive and self._isHalf then
+            if self._nextFrameIndex == 3 then
+                self:setActionPause(true)
+                return false
+            end
+        end
+    end
+    return true
+end
+
+function MonsterActor:playAction(actionId, skillId)
+    self._mon765DirCount = 0
+    --理性的柱子单独处理
+    if self:isColumn() then
+        if self._actionId == Constant.ROLE_ACTION_DIE and (self._isFive or self._isHalf) then
+            return
+        end
+    end
+    self._actionId = actionId
+    self._skillId = skillId
+
+    self:playActionSound()
+    self:startAction()
+end
+
+--[[
+    *************************** 天炼播放技能特效 ********************************
+    monster effect
+]]
+function MonsterActor:onUpdateEffect()
+    if not self._endEffect then
+        return
+    end
+
+    if not self._effectInfo or not self._effectInfo:getLoop() then
+        return
+    end
+
+    -- 死亡对象停止当前所有特效(除死亡特效)
+    if self._effectInfo:getEffectId() ~= EffectEnum.DIE_EFFECT_ID and self:isDie() then
+        self:closeLoopEffect()
+        return
+    end
+
+    -- 默认循环1次
+    local loop = self._effectInfo:getLoop()
+    local frameCount = self._effectInfo:getSpriteFrameCount()
+
+    if loop ~= -1 and (self._effectLoopCount >= loop or self._nextEffectFrameIndex > frameCount) then
+        return
+    end
+
+    if self._timeEffectTrigger:tick() then
+        self:gotoNextEffectFrame()
+
+        -- 循环数已到,添加循环次数
+        if self._nextEffectFrameIndex > frameCount then
+            self._nextEffectFrameIndex = 1
+            self._effectLoopCount = self._effectLoopCount + 1
+
+            if self:loopEnd(self._effectLoopCount, loop) then
+                -- 关闭显示 
+                self:closeLoopEffect()
+            end
+        end
+    end
+end
+
+-- 循环次数是否结束
+function MonsterActor:loopEnd(loop, maxLoop)
+    if  maxLoop ~= -1 and loop >= maxLoop then
+        return true
+    end
+
+    return false
+end
+
+-- override
+function MonsterActor:gotoNextEffectFrame()
+    if self._actionPause then
+        return
+    end
+
+    self:updateEffectFrame(self._spriteEffect, self._nextEffectFrameIndex, self._effectInfo)
+    
+    self._nextEffectFrameIndex = self._nextEffectFrameIndex + 1
+end
+
+function MonsterActor:closeLoopEffect()
+    self._spriteEffect:setVisible(false)
+
+    -- 随时清理
+    self:endEffect()
+end
+
+-- 显示角色特效
+function MonsterActor:updateEffectFrame(effectSprite, frameIdx, effectInfo)
+    effectSprite:setVisible(true)
+    
+    local frame = effectInfo:getSpriteFrame(frameIdx)
+    local bltType = effectInfo:getBltType()
+    if frame then
+        local sprite = frame.sprite
+        if sprite == nil then
+            return
+        end
+
+        effectSprite:setSpriteFrame(sprite)
+        if bltType == lt.Constant.BLT_TYPE.BLT_SCREEN then
+            effectSprite:setBlendFunc(({src = ccb.BlendFactor.ONE, dst = ccb.BlendFactor.ONE}))
+        end
+
+        local pos = self:conversionOffsetPoint(cc.p(0, 0), cc.p(frame.x, frame.y), frame.size)
+        effectSprite:setPosition(pos)
+    end
+end
+
+-- 加入播放列表  isScreen可从Skill表中获得 bltType=3 FIXME isScreen先走传参
+function MonsterActor:playEffect(skillId, index)
+    if self._endEffect then
+        return
+    end
+
+    if skillId == 0 then
+        return
+    end
+    local effectMetas = {}
+
+    if skillId == SkillEnum.RING_OF_FLARE then
+        effectMetas = CacheManager:getSkillEffectBySkillIdAndEName(skillId, "result_skill_ring_of_flare_damage_1")
+    elseif skillId == SkillEnum.SKILL_PLASMA_ROCKET_LAUNCHER
+        or skillId == SkillEnum.SKILL_XRL_MISSILE then
+        effectMetas = CacheManager:getProcessMetas(skillId,1)
+    else
+        effectMetas = CacheManager:getSkillEffectBySkillId(skillId)
+    end
+    if not effectMetas or table.nums(effectMetas) < 1 then
+        yflog:InfoLine("MonsterActor the skill:%d has no skill effect meta", skillId)
+        return
+    end
+
+    -- bltType
+    local bltType = effectMetas[1]:bltType()
+    local effectId =  effectMetas[1]:getEffectId()
+
+    if index and effectMetas[index] then
+        bltType = effectMetas[index]:bltType()
+        effectId =  effectMetas[index]:getEffectId()
+    end
+    self._effectInfo = EffectManager:getEffectInfo(effectId, self._direction, bltType)
+    if skillId == SkillEnum.SKILL_PLASMA_ROCKET_LAUNCHER
+    or skillId == SkillEnum.SKILL_XRL_MISSILE then
+        self._effectInfo:setLoop(-1)
+    end
+    
+    self._timeEffectTrigger:reset(self._effectInfo:getStep())
+    self:startEffect()
+end
+
+--[[
+    EffectScreen 74 写死
+    死亡会停止特效，所以此处特效需要加标记
+]]
+function MonsterActor:playDieEffect()
+    local effectId = EffectEnum.DIE_EFFECT_ID
+    local bltType = 3
+    local modelId = self:getAgent():getModelId()
+    if modelId and SkillEnum.IS_SUMMON_MODEL[modelId] then
+        self._corpseSprite:setVisible(true)
+        self._hideSprite = true
+        self._sprite:setVisible(false)
+        return 
+    end
+
+    self._effectInfo = EffectManager:getEffectInfo(effectId, self._direction, bltType)
+    self._timeEffectTrigger:reset(self._effectInfo:getStep())
+    self:startEffect()
+end
+
+function MonsterActor:startEffect(bltType)
+    self._effectLoopCount = 0
+    self._nextEffectFrameIndex = 1
+
+    self._endEffect = true
+end
+
+function MonsterActor:endEffect()
+    self._endEffect = false
+    self._effectInfo = nil
+end
+
+-- -- ***************** 列表式播放特效 ************************
+function MonsterActor:playQueueEffect(skillId, owner, skillGrade)
+    local effectQueueActor = EffectQueueActor.new(self, skillId, self._direction)
+    self._queueEffectNode:addChild(effectQueueActor)
+
+    -- 此处存在2个一样的技能效果 移除时会出问题，存在不及时移除
+    table.insert(self._queueEffectActorArr, effectQueueActor)
+
+    if skillId == SkillEnum.SKILL_POISON_STRIKE then
+        -- 毒性攻击 最终阶段
+        effectQueueActor:addEffectEName(skillId, "result_skill_poison_strike")
+    elseif skillId == SkillEnum.SKILL_ACID_STRIKE then
+        -- 酸性攻击 最终阶段
+        effectQueueActor:addEffectEName(skillId, "result_skill_acid_strike")
+    elseif skillId == SkillEnum.SKILL_ACID_HANDS or 
+        skillId == SkillEnum.MAGIC_BLOODY_NAIL  or 
+        skillId ==  SkillEnum.MAGIC_ACID_BOLT  or
+        skillId == SkillEnum.SKILL_HANDS_OF_WISDOM or
+        skillId == SkillEnum.SKILL_TRIPLE_BREAK 
+        or skillId == SkillEnum.SKILL_DOUBLE_IMPACT  
+        or skillId == SkillEnum.SKILL_TRIPLE_SLASHER then
+        effectQueueActor:addEffectGenerator(skillId, EffectEnum.EFFECTGENERATORID_ATTACH_CREATURE, owner)
+    elseif skillId == SkillEnum.SKILL_DARKBLUE_POISON then
+        -- 幽暗之毒
+        effectQueueActor:setLoopOrder(2) -- 循环的队列顺序
+        effectQueueActor:addEffectEName(skillId, "result_magic_darkblue_poison")
+    elseif skillId == SkillEnum.SKILL_GREEN_STALKER then
+        -- 毒物
+        effectQueueActor:setLoopOrder(2) -- 循环的队列顺序
+        effectQueueActor:addEffectGenerator(skillId, EffectEnum.EFFECTGENERATORID_ATTACH_CREATURE)
+    elseif skillId == SkillEnum.SKILL_MAGIC_PARALYZE then
+        -- 麻痹
+        effectQueueActor:setLoopOrder(2)
+        effectQueueActor:addEffectGenerator(skillId, EffectEnum.EFFECTGENERATORID_ATTACH_CREATURE)
+    elseif skillId == SkillEnum.SKILL_VINE then --藤蔓
+        effectQueueActor:setLoopOrder(1)
+        effectQueueActor:addEffectEName(skillId, "result_skill_tendril")
+    elseif skillId == SkillEnum.SKILL_MAGIC_SEDUCTION then
+        -- 诱惑
+        effectQueueActor:setLoopOrder(1)
+        effectQueueActor:addEffectGenerator(skillId, EffectEnum.EFFECTGENERATORID_ATTACH_CREATURE)
+    -- elseif skillId == SkillEnum.SKILL_SINGLE_BLOW   -- 精准打击
+    --     or skillId == SkillEnum.SKILL_SPIRAL_SLAY   -- 罗旋一击
+    --     or skillId == SkillEnum.SKILL_WILD_SMASH    -- 野蛮爆击
+    --     or skillId == SkillEnum.SKILL_THUNDER_SPARK -- 雷光闪电
+    --     then
+    --     local skillToName = SkillEnum.SKILL_TO_NAME_RESULT or {}
+    --     if skillToName[skillId] then
+    --         effectQueueActor:addEffectEName(skillId, skillToName[skillId])
+    --     end
+    elseif skillId == SkillEnum.SKILL_HOLY_ARROW         -- 神圣箭矢
+        or skillId == SkillEnum.SKILL_CAUSE_LIGHT_WOUNDS -- 光击术
+        or skillId == SkillEnum.SKILL_LIGHT_BALL         -- 光球
+        or skillId == SkillEnum.SKILL_AURA_BALL          -- 圣光弹
+        then
+        if owner == SkillEnum.EFFECT_OWNER.OTHER then
+            effectQueueActor:addEffectGenerator(skillId, EffectEnum.EFFECTGENERATORID_ATTACH_CREATURE, owner)
+        end
+    elseif skillId == SkillEnum.MAGIC_BLOODY_KNIFE then
+        effectQueueActor:addEffectEName(skillId, "result_magic_bloody_knife", owner)
+    else
+        effectQueueActor:addEffectGenerator(skillId, 0) 
+    end
+end
+
+function MonsterActor:playQueueEffectByLv(skillId, skillLevel, effectName)
+    HeroAndMonsterEffect:playQueueEffectByLv(self, skillId, skillLevel, effectName)
+end
+
+-- 主要是停止循环播放的队列
+function MonsterActor:stopQueueEffect(skillId)
+    for i, effectActor in ipairs(self._queueEffectActorArr) do
+        if skillId == effectActor:getSkillId() then
+            effectActor:stopQueueEffect()
+            break
+        end
+    end
+end
+
+-- 清除某个持续特效
+function MonsterActor:removeQueueEffect(skillId)
+    for i, effectActor in ipairs(self._queueEffectActorArr) do
+        if skillId == effectActor:getSkillId() then
+            effectActor:onClear()
+            table.remove(self._queueEffectActorArr, i)
+            break
+        end
+    end
+end
+
+function MonsterActor:onUpdateQueueEffect()
+	local queueEffectActorArr = self._queueEffectActorArr 
+	if not queueEffectActorArr or #queueEffectActorArr == 0 then
+		return
+	end
+
+    local removeTable = {}
+	for index, queueEffectActor in pairs(queueEffectActorArr) do
+        if queueEffectActor:isEndEffect() then
+            removeTable[index] = true
+        else
+		    queueEffectActor:onUpdate()
+        end
+	end
+
+    self:removeEffectFromRemoveTable(queueEffectActorArr, removeTable)
+end
+
+function MonsterActor:playSoleQueueSpecail(skillId, metas)
+    local effectQueueActor = EffectQueueActor.new(self, skillId, self._direction)
+    self._soleEffectNode:addChild(effectQueueActor)
+    table.insert(self._queueEffectActorArr, effectQueueActor)
+    effectQueueActor:addEffect(skillId, metas)
+end
+
+
+-- ***************** 列表特效 end ************************
+
+
+
+-- -- ***************** 并列式播放特效 ************************
+function MonsterActor:playParallelEffect(skillId, owner, skillGrade)
+    local effectParabolaActor = EffectParallelActor.new(self, skillId, self._direction)
+    self._queueEffectNode:addChild(effectParabolaActor)
+
+    table.insert(self._parabEffectActorArr, effectParabolaActor)
+    if skillId == SkillEnum.MAGIC_ACID_BOLT 
+        or skillId == SkillEnum.MAGIC_ACID_BALL
+        then
+    elseif skillId == SkillEnum.SKILL_MAGIC_DOOM then
+        -- 毁灭
+        effectParabolaActor:setLoopOrder(1)
+        effectParabolaActor:addEffectGenerator(skillId, EffectEnum.EFFECTGENERATORID_ATTACH_CREATURE)
+    elseif skillId == SkillEnum.SKILL_KASAS_ARROW then
+        effectParabolaActor:addEffectGeneratorByIndex(skillId, EffectEnum.EFFECTGENERATORID_ATTACH_CREATURE, owner)
+    elseif skillId == SkillEnum.SKILL_SINGLE_BLOW   -- 精准打击
+        or skillId == SkillEnum.SKILL_SPIRAL_SLAY   -- 罗旋一击
+        or skillId == SkillEnum.SKILL_WILD_SMASH    -- 野蛮爆击
+        or skillId == SkillEnum.SKILL_THUNDER_SPARK -- 雷光闪电
+        then
+        local skillToName = SkillEnum.SKILL_TO_NAME_ATK or {}
+        if skillToName[skillId] then
+            -- local directionArr = lt.CommonFunc:randomArray(Constant.DIRECTION_LEFT, Constant.DIRECTION_LEFT_UP, 1)
+            -- effectParabolaActor:setEffectDirection(directionArr)
+            effectParabolaActor:addEffectEName(skillId, skillToName[skillId])
+        end
+    elseif skillId == SkillEnum.SKILL_SLAYER_FLARE then
+        if owner == SkillEnum.EFFECT_OWNER.OTHER then
+            effectParabolaActor:addEffectEName(skillId, "result_magic_flare_damage",owner)
+        elseif owner == SkillEnum.EFFECT_OWNER.SELF then
+            effectParabolaActor:addEffectEName(skillId, "magic_continual_light",owner)
+        end
+    elseif skillId == SkillEnum.SKILL_VINE then --藤蔓
+        effectParabolaActor:addEffectEName(skillId, "result_skill_tendril_single")
+    elseif skillId == SkillEnum.SKILL_EMISSION_WATER then
+        -- 液体喷发
+        if owner == SkillEnum.EFFECT_OWNER.SELF then
+            effectParabolaActor:addEffectEName(skillId, "skill_emission_water_" .. skillGrade)
+        elseif owner == SkillEnum.EFFECT_OWNER.OTHER then
+            effectParabolaActor:addEffectEName(skillId, "result_skill_emission_water_" .. skillGrade)
+        end
+    elseif skillId == SkillEnum.SKILL_BEAT_HEAD then
+        -- 致命打击
+        if owner == SkillEnum.EFFECT_OWNER.SELF then
+            effectParabolaActor:addEffectEName(skillId, "casting_ground")
+        elseif owner == SkillEnum.EFFECT_OWNER.OTHER then
+            effectParabolaActor:addEffectEName(skillId, "result_skill_beat_head_" .. skillGrade)
+        end
+    elseif skillId == SkillEnum.SKILL_EVADE     -- 回避术
+        or skillId == SkillEnum.SKILL_BLUNTING  -- 防御崩坏
+        then
+            effectParabolaActor:addEffectGenerator(skillId, EffectEnum.EFFECTGENERATORID_ATTACH_CREATURE)
+    elseif skillId == SkillEnum.SKILL_SHARP_ROUND then
+        if not skillGrade then
+            skillGrade = 1 
+        end
+        effectParabolaActor:addEffectEName(skillId,"result_skill_sharp_round_"..skillGrade, owner) 
+    else
+        effectParabolaActor:addEffectGenerator(skillId, 0) 
+    end
+end
+
+function MonsterActor:playParallelEffectByLv(skillId, skillLevel, effectName, fromObjId)
+    --替换特效而非技能
+    local monsterSkillId = SkillEnum.MONSTER_SKILL_REPLACE[skillId]
+    if monsterSkillId then
+        skillId = monsterSkillId
+    end
+    HeroAndMonsterEffect:playParallelEffectByLv(self,skillId, skillLevel, effectName, fromObjId)
+end
+
+function MonsterActor:playBindingEffectByLv(skillId, skillLevel, effectName, param)
+    HeroAndMonsterEffect:playQueueEffectByLv(self, skillId, skillLevel, effectName)
+end
+
+-- 主要是停止循环播放的队列
+function MonsterActor:stopParallelEffect(skillId)
+    for i, effectActor in ipairs(self._parabEffectActorArr) do
+        if skillId == effectActor:getSkillId() then
+            effectActor:stopParallelEffect()
+        end
+    end
+end
+
+function MonsterActor:onUpdateParalEffect()
+	local parabEffectActorArr = self._parabEffectActorArr 
+	if not parabEffectActorArr or #parabEffectActorArr == 0 then
+		return
+	end
+
+    local removeTable = {}
+    for index, parabEffectActor in pairs(parabEffectActorArr) do
+        if parabEffectActor:isCloseEffect() then
+            removeTable[index] = true
+        else
+            parabEffectActor:onUpdate()
+        end
+	end
+    self:removeEffectFromRemoveTable(parabEffectActorArr, removeTable)
+
+end
+
+function MonsterActor:playSoleParalSpecail(skillId, metas)
+    local effectParallelActor = EffectParallelActor.new(self, skillId, self._direction)
+    self._soleEffectNode:addChild(effectParallelActor)
+    table.insert(self._parabEffectActorArr, effectParallelActor)
+    effectParallelActor:addEffect(skillId, metas)
+end
+
+-- *****************  并列式特效 end ************************
+
+-- ***************** 旋转改变层级特效 start ************************
+function MonsterActor:playRotateEffect(metas,skillId)
+    HeroAndMonsterEffect:playRotateEffect(self, metas, skillId)
+end
+
+function MonsterActor:addRotateEffect(effectActor)
+    table.insert(self._rotateEffectActorArr, effectActor)
+end
+
+function MonsterActor:playRotateEffectQueue(metas,skillId)
+    if not metas or table.nums(metas) < 1 then
+        yflog:InfoLine(" MonsterActor playRotateEffectQueue metas is empty")
+        return
+    end
+    
+    local offsetX, offsetY = -25, 15
+    local effectQueueActor = EffectQueueActor.new(self, skillId, self._direction)
+    effectQueueActor:setPosition(offsetX, offsetY)
+    self:addChild(effectQueueActor)
+
+    table.insert(self._rotateEffectActorArr, effectQueueActor)
+
+    effectQueueActor:addEffect(skillId, metas)
+end
+
+function MonsterActor:onUpdateRotateEffect()
+    local rotateEffectActorArr = self._rotateEffectActorArr
+	if not rotateEffectActorArr or #rotateEffectActorArr == 0 then
+		return
+	end
+
+    local removeTable = {}
+    for i, rotateEffectActor in ipairs(rotateEffectActorArr) do
+        if rotateEffectActor:isEndEffect() then
+            removeTable[i] = true
+        else
+            rotateEffectActor:onUpdate()
+            rotateEffectActor:setLocalZOrder(rotateEffectActor:getEffectInfoZorder() or 3)
+        end
+	end
+
+    -- 清除播完的特效
+    self:removeEffectFromRemoveTable(rotateEffectActorArr, removeTable)
+end
+
+function MonsterActor:removeRotateEffectByIndex(index)
+    if #self._rotateEffectActorArr < index or #self._rotateEffectActorArr == 0 then
+        return
+    end
+
+    if index and self._rotateEffectActorArr[index] then
+        self._rotateEffectActorArr[index]:onClear()
+        table.remove(self._rotateEffectActorArr, index)
+    end
+end
+
+-- FIME 需要移除吗
+function MonsterActor:removeRotateEffect(skillId)
+    for i, effectActor in ipairs(self._rotateEffectActorArr) do
+        if skillId == effectActor:getSkillId() then
+            if effectActor.stopEffect then
+                effectActor:stopEffect()
+            end
+
+            if effectActor.stopQueueEffect then
+                effectActor:stopQueueEffect()
+            end
+        end
+    end
+end
+
+function MonsterActor:setRotateEffectVisible(skillId,isVisible)
+    for i, effectActor in ipairs(self._rotateEffectActorArr) do
+        if skillId == effectActor:getSkillId() then
+            if effectActor then
+                effectActor:setVisible(isVisible or false)
+            end
+        end
+    end
+end
+
+-- ***************** 旋转改变层级特效 end ************************
+
+function MonsterActor:setEffectZOrder(singleEffectZ, queueEffectZ)
+    self._effectNode:setLocalZOrder(singleEffectZ)
+    self._queueEffectNode:setLocalZOrder(queueEffectZ)
+end
+
+function MonsterActor:playParallelEffectSpecial(skillId, metas, direction)
+    if not direction then
+        direction = self._direction
+    end
+    local effectParabolaActor = EffectParallelActor.new(self, skillId, direction)
+    self._queueEffectNode:addChild(effectParabolaActor)
+    table.insert(self._parabEffectActorArr, effectParabolaActor)
+    effectParabolaActor:addEffect(skillId, metas)
+end
+function MonsterActor:playQueueEffectSpecial(skillId, metas)
+    local effectQueueActor = EffectQueueActor.new(self, skillId, self._direction)
+    self._queueEffectNode:addChild(effectQueueActor)
+    table.insert(self._queueEffectActorArr, effectQueueActor)
+    effectQueueActor:addEffect(skillId, metas)
+end
+
+function MonsterActor:changeModelColor(node, params)
+    if self._roleData:getMonsterId() == lt.MonsterEnum.TUG_LEGGER then
+        --黑色瘸腿单独染色
+        self:changeModelGryColor(self._sprite)
+        return
+    end
+    params = params or {}
+    local spAllColor = self:getSpColor()
+    local destClothColor = self._roleData:getMonsterInfoMeta():getDestClothColor() or cc.vec3(1.0, 1.0, 1.0)
+    if params.ignoreSpColor then
+        spAllColor = nil
+    end
+    local param = {
+        node = node,
+        colorB = destClothColor,
+        colorG32B = nil,
+        colorG64B = nil,
+        colorG96B = nil,
+        darkFactor = params.darkFactor,
+        -- isBlink = params.isBlink, --是否闪烁
+        -- colorList = params.colorList, --Buff变色
+        skillColor = self._skillColor,
+        originColor = spAllColor,
+        visibleCount = 1 - (self._pCreature:getInvisibleCount() / 64), --隐身
+        wipeAmount = self._pCreature:getInvisibleCount(),
+        pixelSize = self._pixelSize,
+        selectColor = self._selectColor
+    }
+    lt.ShaderBackendUtil:makeMulModelEffect(param.node, param)
+end
+
+function MonsterActor:getSpColor()
+    return self._roleData:getMonsterInfoMeta():getColor()
+end
+
+function MonsterActor:changeModelGryColor(node)
+    local param = {
+        node = node,
+        originColor = cc.vec4(0.5, 0.5, 0.5, 1),
+        grayOffset = 2.5
+    }
+    lt.ShaderBackendUtil:makeMulModelEffect(param.node, param)
+end
+
+function MonsterActor:initShader()
+    local roleData = self:getRoleData()
+    local param = {}
+    if roleData:isDivine() then
+        param = {darkFactor = 0.4}
+    end
+    self:changeModelColor(self._sprite, param)
+end
+
+--更新箭头
+function MonsterActor:updateTargetArrow(show)
+    if not self._nameNode then
+        return
+    end
+    self._nameNode:updateTargetArrow(show)
+end
+
+--技能变色
+function MonsterActor:updateBuffColor(dt)
+    if #self._colorList < 2 then 
+        self._elapsedTime = 0
+        return 
+    end
+
+    self._elapsedTime = self._elapsedTime + dt
+    local function changeColor()
+        self._skillColor = self._colorList[self._currentColorIndex]
+        self:changeModelColor(self._sprite)
+        self._currentColorIndex = self._currentColorIndex + 1
+        if self._currentColorIndex > #self._colorList then
+            self._currentColorIndex = 1 
+        end
+    end
+
+    if self._elapsedTime >= self._buffDurations[self._currentColorIndex] / 1000 then
+        changeColor()
+        self._elapsedTime = 0
+    end
+end
+
+-- 神之诅咒旋转
+function MonsterActor:divineUpdate()
+    if self._openRotateDivine then
+        self._divineCounter =  self._divineCounter + 1
+        if self._divineCounter > 10 then
+            local direction = self._divineActor:getDirection()
+            direction = direction + 1
+            if direction > 7 then
+                direction = 0
+            end
+            if self._divineActor then
+                self._divineActor:_setDirection(direction)
+            end
+            self._divineCounter = 0
+        end
+    end
+end
+
+--- 神之诅咒
+function MonsterActor:createDivineGuidance()
+    local heroData = clone(self._roleData)
+    heroData:setDivine(true)
+    self._divineActor = lt.MonsterActor.new(heroData, self._direction)
+    self._divineActor:playAction(Constant.ROLE_ACTION_FLY)
+    local divineZ = CacheManager:getVariableById(Constant.Variable.DivineZ) or 70
+    self._divineActor:setPosition(cc.p(0, tonumber(divineZ)))
+    self._divineActor:setLocalZOrder(5)
+    self._openRotateDivine = true
+    self:addChild(self._divineActor)
+end
+function MonsterActor:removeDivineGuidance()
+    self._openRotateDivine = false
+    if self._divineActor then
+        self._divineActor:onClear()
+        self._divineActor = nil
+    end
+end
+
+function MonsterActor:getIsHallu()
+    if not self:getAgent() then
+        return false
+    end
+    
+    return self:getAgent():getIsHallu()
+end
+
+function MonsterActor:isColumn()
+    return self._modelId == 242
+end
+
+function MonsterActor:updateShadowCount(pPoint)
+    for index, shadow in pairs(self._shadowsPhantomArr) do
+        if shadow then
+            shadow:removeFromParent()
+        end
+        self._shadowsPhantomArr[index] = nil
+    end
+    self._shadowsPhantomArr = {}
+
+    local shadowCount
+    if self._skillId == SkillEnum.SKILL_CHAIN_THROWING_AXE then
+        shadowCount = 3
+    end
+    if shadowCount then
+        local pointTemp2 = {};
+        local cxStep, cyStep, cxInc, cyInc = 0, 0, 0 , 0;
+        -- if (self._actionId == Constant.ACTION_MOVE) then
+            --     cxInc = -pCreature->GetCX();
+            --     cyInc = -pCreature->GetCY();
+        -- end
+        local faNum = self._actionInfo:getSpriteFrameCount()
+        local frame = self._nextFrameIndex
+        for f=1, shadowCount do
+            local frame_f = frame-f;
+            if frame_f < 0 then
+                frame_f = frame_f + faNum;
+            end
+            if frame_f == 0 then
+                frame_f = 1
+            end
+            local offsetX, offsetY = -25, 15
+            local heroNode = display.newNode()
+            local phantom = self:cloneByDarkbit(EffectEnum.DARKBITS[f])
+            local frame = self._actionInfo:getSpriteFrame(frame_f)
+            if frame then
+                phantom:setSpriteFrame(frame.sprite)
+            else
+                yflog:Error("updateShadowCount not found frame")
+            end
+            heroNode:addChild(phantom)
+            phantom:setPosition(pPoint)
+            local x, y = self:getPosition()
+            pointTemp2.x = x + cxStep + offsetX ;
+            pointTemp2.y = y + cyStep + offsetY ;
+            cxStep = cxStep + cxInc;
+            cyStep = cxStep + cyInc;
+            heroNode:setPosition(cc.p(pointTemp2.x, pointTemp2.y))
+
+            local worldAgent = lt.AgentManager:getWorldAgent()
+            if worldAgent then
+                local mapActor = worldAgent:getMapAgent():getMapActor()
+                -- 添加到场景
+                mapActor:addPhantom(heroNode)
+            end
+            table.insert(self._shadowsPhantomArr, heroNode)
+        end
+    end
+
+end
+
+function MonsterActor:clone(step)
+    local cloneNode = lt.CommonFunc:deepCopySprite(self._sprite)
+    local blacks = {0.5, 0.2}
+    
+    self:changeModelColor(cloneNode, {darkFactor = blacks[step] or 0.2, ignoreSpColor = true})
+    return cloneNode
+end
+
+function MonsterActor:cloneByDarkbit(darkbit)
+    local cloneNode = lt.CommonFunc:deepCopySprite(self._sprite)
+    self:changeModelColor(cloneNode, {darkFactor = darkbit or 0.2, ignoreSpColor = true})
+    return cloneNode
+end
+-----------------------------------------------------------------------------------------
+-- 隐蔽技能
+function MonsterActor:changeSkillHide(hideEffect)
+    -- local isVampire = self._roleData:isVampire()
+    -- if not isVampire then
+    --     return
+    -- end
+
+    -- 播放隐蔽特效
+    if not hideEffect then
+        self:playSmoking()
+    end
+
+    self:refreshSkillHide()
+end
+
+-- 冒烟特效
+function MonsterActor:playSmoking()
+    local actorM, atorN = self:getAgent():getMNExactly()
+    local skillId = SkillEnum.TRANSFORM_TO_BAT
+    local x, y = self:getPosition()--lt.MapUtil:calcMNMid(actorM,atorN)
+    local offsetX, offsetY = -25, 15
+    local reX, reY = x + offsetX, y + offsetY
+    local metas = CacheManager:getBuffMetas(skillId)
+    local direction = self:getAgent():getDirection()
+    local bullet = lt.BullectScreenEffect.new(skillId, direction, cc.p(reX, reY))
+    bullet:addEffect(skillId, metas[1])
+    local zorder = (atorN  * 10000 + actorM + 9999) * 10 * 1 + 100
+    lt.BulletManager:addBulletToMapZOrder(bullet, zorder)
+end
+
+
+-- 刷新隐蔽
+function MonsterActor:refreshSkillHide()
+    if self._roleData:isSkillHide() then
+        self:hideSprite()
+        self._nameNode:setVisible(false)
+        self._spriteSkillHide:setVisible(true)
+    else
+        self:showSprite()
+        self._nameNode:setVisible(true)
+        self._spriteSkillHide:setVisible(false)
+    end
+end
+
+function MonsterActor:getSpriteSkillHideVisible()
+    if not self._spriteSkillHide then
+        return false
+    end
+
+    return self._spriteSkillHide:isVisible()
+end
+-----------------------------------------------------------------------------------------
+
+function MonsterActor:setSpriteOffsetY(offsetY)
+    self._spriteOffsetY = offsetY
+end
+
+function MonsterActor:getQueueEffectNode()
+    return self._queueEffectNode
+end
+
+--清掉所有持续特效
+function MonsterActor:removeAllParalEffect()
+    -- yflog:Info("MonsterActor:removeAllParalEffect id:%s #self._parabEffectActorArr = %s",self._roleData:getMasterObjId(), #self._parabEffectActorArr)
+    if self._parabEffectActorArr then
+        for i = #self._parabEffectActorArr, 1, -1 do
+            if self._parabEffectActorArr[i].onClear then
+                self._parabEffectActorArr[i]:onClear()
+            end
+            table.remove(self._parabEffectActorArr, i)
+        end
+    end
+    self._parabEffectActorArr = nil
+end
+
+function MonsterActor:removeAllRotateEffect()
+    if self._rotateEffectActorArr then
+        for j = #self._rotateEffectActorArr, 1, -1 do
+            if self._rotateEffectActorArr[j].onClear then
+                self._rotateEffectActorArr[j]:onClear()
+            end
+            table.remove(self._rotateEffectActorArr,j)
+        end
+    end
+    self._rotateEffectActorArr = nil
+end
+
+function MonsterActor:removeAllQueueEffect()
+    if not self._queueEffectActorArr then 
+        return
+    end
+    for i = #self._queueEffectActorArr, 1, -1 do
+        local effectActor = self._queueEffectActorArr[i]
+        if effectActor then
+            effectActor:onClear()
+        end
+        self._queueEffectActorArr[i] = nil 
+    end
+    self._queueEffectActorArr = nil
+end
+
+-- 清除某个持续特效
+function MonsterActor:removeParalEffect(skillId)
+    for i, effectActor in ipairs(self._parabEffectActorArr) do
+        if skillId == effectActor:getSkillId() then
+            effectActor:onClear()
+            table.remove(self._parabEffectActorArr, i)
+            break
+        end
+    end
+end
+
+function MonsterActor:showLevelUpSpine()
+    if not self._levelUpSpine then
+        self._levelUpSpine = lt.SkeletonManager:createSkeletonEffectWithFile("PetsUpgradesk", "Pets_Upgradesk_skeleton")
+        self:addChild(self._levelUpSpine,self._heroNode:getLocalZOrder()+1)
+    end
+    
+    self._levelUpSpine:setAnimation(0, "Pets_Upgrade_up", false)
+
+    if not self._levelUpSpineDown then
+        self._levelUpSpineDown = lt.SkeletonManager:createSkeletonEffectWithFile("PetsUpgradesk", "Pets_Upgradesk_skeleton")
+        self:addChild(self._levelUpSpineDown)
+    end
+    
+    self._levelUpSpineDown:setAnimation(0, "Pets_Upgrade_down", false)
+end
+
+function MonsterActor:clearLevelUpSpine()
+    if self._levelUpSpine then
+        self._levelUpSpine:removeFromParent()
+        self._levelUpSpine = nil
+    end
+
+    if self._levelUpSpineDown then
+        self._levelUpSpineDown:removeFromParent()
+        self._levelUpSpineDown = nil
+    end
+end
+
+return MonsterActor

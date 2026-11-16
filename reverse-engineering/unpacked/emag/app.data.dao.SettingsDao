@@ -1,0 +1,34 @@
+local SettingsDao = {}
+
+function SettingsDao:query(idx)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM Settings WHERE Idx=%d;", tonumber(idx))) do
+    	local meta = lt.SettingsMeta.new(row)
+        return meta
+    end
+end
+
+function SettingsDao:queryAll()
+    local map = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM Settings") do
+        local meta = lt.SettingsMeta.new(row)
+        if not map[meta:getType()] then
+            map[meta:getType()] = {}
+        end
+        table.insert(map[meta:getType()], meta)
+    end
+    return map
+end
+
+function SettingsDao:queryAllMeta()
+    local map = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM Settings") do
+        local meta = lt.SettingsMeta.new(row)
+        map[meta:getIdx()] = meta
+    end
+    return map
+end
+
+return SettingsDao

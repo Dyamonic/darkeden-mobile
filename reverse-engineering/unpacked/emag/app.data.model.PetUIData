@@ -1,0 +1,162 @@
+
+local PetUIData = class("PetUIData")
+
+local luaBean = lt.CommonFunc.metaLuaBean
+
+function PetUIData:ctor(petProto)
+	self:setPetInfo(petProto)
+end
+
+function PetUIData:setPetInfo(petProto)
+	self._id = petProto.id
+	self._uid = petProto.uid
+	self._exp = petProto.exp
+	self._status = petProto.status
+	self._sign = petProto.sign
+	self._capsule = petProto.capsule
+	self._deadTime = petProto.deadTime
+	self._openDigLeftTimes = petProto.openDigLeftTimes
+	self._dig = petProto.dig
+	self._attr1 = petProto.attr1
+	self._attr2 = petProto.attr2
+	self._attr3 = petProto.attr3
+	self._compose = petProto.compose
+	self._capsuleRace = petProto.capsuleRace
+	self._digSpeedUpTime = petProto.digSpeedUpTime
+	self._expSpeedUpTime = petProto.expSpeedUpTime
+	self._skinId = petProto.skinId
+
+	self._level      = self:buildPetLevel()    -- 计算宠物等级
+	self._attr1Str   = self:buildAttr1()
+	self._attr2Str   = self:buildAttr2()
+	self._attr3Str   = self:buildAttr3()
+	self._composeStr = self:buildComposeStr()  -- 计算组合属性
+	self._curExp     = self:buildCurExp()      -- 计算当前的经验值
+	self._petModel   = self:buildPetModel()    -- 计算宠物模型
+end
+
+function PetUIData:buildPetModel()
+	if self._skinId and self._skinId > 0 then
+		local skinTypeCfg = lt.CacheManager:getPetSkinTypeMeta(self._skinId)
+		if skinTypeCfg then
+			return skinTypeCfg:getModel()
+		end
+	end
+
+	local stage = math.floor(self._level / 10)
+    if stage < 1 then stage = 1 end
+    if stage > 5 then stage = 5 end
+		
+	local petMeta = lt.CacheManager:getPetMeta(self._id)
+	if stage == 1 then
+        return petMeta:getCreatureType1()
+    elseif stage == 2 then
+        return petMeta:getCreatureType2()
+    elseif stage == 3 then
+        return petMeta:getCreatureType3()
+    elseif stage == 4 then
+        return petMeta:getCreatureType4()
+    elseif stage == 5 then
+        return petMeta:getCreatureType5()
+    end
+end
+
+function PetUIData:buildCurExp()
+	if self._level == 0 then
+		return self._exp
+	end
+
+	local perLevel = self._level - 1
+    local petLevelCfg = lt.CacheManager:getPetLevelMeta(perLevel)
+	if not petLevelCfg then
+		return self._exp
+	end
+
+	return self._exp - petLevelCfg:getPetAccumExp()
+end
+
+function PetUIData:buildComposeStr()
+	local compose = self._compose
+	if compose and compose ~= "" then
+		local composeList = string.split(compose, ",")
+		local key   = tonumber(composeList[1])
+		local value = tonumber(composeList[2])
+		local optionInfo = lt.CacheManager:getOptionInfoMeta(key)
+		if optionInfo then
+			return optionInfo:getName() .. "+" .. value
+		end
+	end
+	return ""
+end
+
+function PetUIData:buildAttr1()
+	local attr1 = self._attr1
+	if attr1 > 0 then
+		local optionInfo = lt.CacheManager:getOptionInfoMeta(attr1)
+		local petAttr = lt.CacheManager:getPetAttrByPetLevel(attr1,self._level)
+		if optionInfo and petAttr then
+			return optionInfo:getName() .. "+" .. petAttr:getAccumAttr()
+		end
+	end
+	
+	return ""
+end
+
+function PetUIData:buildAttr2()
+	local attr2 = self._attr2
+	if attr2 > 0 then
+		local attrMeta = lt.CacheManager:getAttributeMetaByOptionId(attr2)
+		if attrMeta then
+			return attrMeta:getName()
+		end
+	end
+
+	return ""
+end
+
+function PetUIData:buildAttr3()
+	local attr3 = self._attr3
+	if attr3 > 0 then
+		return GReadText.KEY_PET_TIPS37 .. attr3
+	end
+
+	return ""
+end
+
+--获得宠物等级
+function PetUIData:buildPetLevel()
+    local list = lt.CacheManager:getAllPetLevelMap()
+    for i = 1, #list do
+        if self._exp < list[i]:getPetAccumExp() then
+            return list[i]:getLevel()
+        end
+    end
+    return list[#list]:getLevel()
+end
+
+function PetUIData:getId() return self._id end
+function PetUIData:getUid() return self._uid end
+function PetUIData:getExp() return self._exp end
+function PetUIData:getStatus() return self._status end
+function PetUIData:getSign() return self._sign end
+function PetUIData:getCapsule() return self._capsule end
+function PetUIData:getDeadTime() return self._deadTime end
+function PetUIData:getOpenDigLeftTimes() return self._openDigLeftTimes end
+function PetUIData:getDig() return self._dig end
+function PetUIData:getAttr1() return self._attr1 end
+function PetUIData:getAttr2() return self._attr2 end
+function PetUIData:getAttr3() return self._attr3 end
+function PetUIData:getCompose() return self._compose end
+function PetUIData:getCapsuleRace() return self._capsuleRace end
+function PetUIData:getDigSpeedUpTime() return self._digSpeedUpTime end
+function PetUIData:getExpSpeedUpTime() return self._expSpeedUpTime end
+function PetUIData:getSkinId() return self._skinId end
+function PetUIData:getAttr1Str() return self._attr1Str end
+function PetUIData:getAttr2Str() return self._attr2Str end
+function PetUIData:getAttr3Str() return self._attr3Str end
+function PetUIData:getLevel() return self._level end
+function PetUIData:getComposeStr() return self._composeStr end
+function PetUIData:getCurExp() return self._curExp end
+function PetUIData:getPetModel() return self._petModel end
+
+return PetUIData

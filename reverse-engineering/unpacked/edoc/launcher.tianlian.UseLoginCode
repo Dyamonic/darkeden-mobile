@@ -1,0 +1,138 @@
+local UseLoginCode = class("UseLoginCode", fgui.GButton)
+local CODEERRORTYPE = {
+    ERROR_URL_1             = 1; -- 系统错误
+    ERROR_URL_2             = 2; -- code不存在
+    ERROR_URL_3             = 3; -- code已被使用
+    ERROR_URL_4             = 4; -- code已过期 
+    ERROR_PARAMS             = 5; -- 参数错误
+    ERROR_SIGN            = 6; -- 签名错误;
+    ERROR_CONNECT_DB         = 7; -- link db failed;
+    ERROR_QUERY_DB         = 8; -- query db failed;
+    ERROR_URL             = 9; -- Url error;
+}
+local ERROR_TIPS = {
+    [CODEERRORTYPE.ERROR_URL_1] = "系统繁忙，请稍后再试",
+    [CODEERRORTYPE.ERROR_URL_2] = "激活码不存在",
+    [CODEERRORTYPE.ERROR_URL_3] = "激活码已被使用",
+    [CODEERRORTYPE.ERROR_URL_4] = "激活码已过期",
+    [CODEERRORTYPE.ERROR_PARAMS] = "参数错误，请检查输入",
+    [CODEERRORTYPE.ERROR_SIGN] = "签名验证失败",
+    [CODEERRORTYPE.ERROR_CONNECT_DB] = "数据库连接失败",
+    [CODEERRORTYPE.ERROR_QUERY_DB] = "数据查询失败",
+    [CODEERRORTYPE.ERROR_URL] = "请求地址错误"
+}
+local function getErrorTips(_type)
+    return ERROR_TIPS[_type] or "未知错误"
+end
+function UseLoginCode:ctor()
+    self:enableComponentEvents()
+end
+
+function UseLoginCode:onConstruct()
+    self.textCode = self:getChild("textCode")
+    self.tips = self:getChild("tips")
+    self.errorTips = self:getChild("errorTips")
+    self.btnCode = self:getChild("btnCode")
+    self._closeBtn = self:getChild("close")
+    self.btnCode:addClickListener(handler(self, self.btnUseCodeClick))
+    self._closeBtn:addClickListener(handler(self, self.btnCloseClick))
+    self.reString = self.reString or "输入您的激活码"
+    self:initCocosInputUI(self:getChild("textCode"),self:getChild("n5"))
+end
+
+function UseLoginCode:onEnter()
+    self:refreshUI()
+end
+
+function UseLoginCode:refreshUI()
+   self.tips:setText("请输入激活码")
+   self.tips:setVisible(true)
+   self.errorTips:setVisible(false)
+end
+
+function UseLoginCode:onClear()
+    if self._codeInput then
+        self._codeInput:removeEditHandler()
+        self._codeInput:removeSelf()
+        self._codeInput = nil
+    end
+end
+
+function UseLoginCode:onExit()
+    
+end
+
+function UseLoginCode:initCocosInputUI(_label,_bg)
+    if not self._codeInput then
+        local _position = _bg:getPosition()
+        local _size = _bg:getSize()
+        local _textsize = _label:getFontSize()
+        self._codeInput = ccui.EditBox:create(_size,"", ccui.TextureResType.localType)
+        self._codeInput:setAnchorPoint(_bg:getPivot())
+        self._codeInput:setFontName("font/fangzheng.ttf")
+        self._codeInput:setFontSize(_textsize)
+        self._codeInput:setReturnType(cc.KEYBOARD_RETURNTYPE_SEND)
+        self._codeInput:setInputMode(cc.EDITBOX_INPUT_MODE_SINGLELINE)
+        self._codeInput:setPosition(cc.p(_position.x,_position.y+(_size.height-_textsize)*0.5))
+        self._codeInput:registerScriptEditBoxHandler(handler(self, self.editBoxEvent))
+        _label:getParent():displayObject():addChild(self._codeInput)
+        _label:setVisible(false)
+        self._codeInput:setText(self.reString)
+    end
+end
+
+function UseLoginCode:editBoxEvent(eventType,sender)
+    if eventType == "began" then
+        sender:setText("")
+    elseif eventType == "ended" then
+    elseif eventType == "changed" then
+        self.reString = sender:getText()
+        sender:setText("")
+        self._codeInput:setText(self.reString)
+    elseif eventType == "return" then
+
+    end
+end
+
+function UseLoginCode:setCallBack(callback,callclose)
+    self.callback = callback
+    self.callclose = callclose
+end
+
+function UseLoginCode:setCodeErrorTips(code,codetips)
+   self.errorTips:setVisible(true)
+   self.tips:setVisible(false)
+   local _errortips = ""
+   if codetips then
+        _errortips = codetips
+    else
+        local _errs = getErrorTips(code)
+        if code >= 2 and code <= 4 then
+            _errortips = self._codeInput:getText().._errs
+        else
+            _errortips = _errs
+        end
+   end
+    self.errorTips:setText(_errortips)
+end
+
+function UseLoginCode:btnUseCodeClick(context)
+    local code = self._codeInput:getText()
+    print(string.format("输入的内容是：%s",code))
+    if code == "" then
+        self:setCodeErrorTips(nil,"激活码不能为空")
+        return
+    end
+    -- self._codeInput:setText("")
+    -- self.reString = nil
+    if self.callback then
+        self.callback(code)
+    end
+end
+function UseLoginCode:btnCloseClick(context)
+    if self.callclose then
+        self.callclose()
+    end
+end
+
+return UseLoginCode

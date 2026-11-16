@@ -1,0 +1,629 @@
+
+require("game")
+
+local updateStr = require("updater.updateStr")
+
+local updaterCommit = class("updaterCommit", function()
+	return display.newLayer()
+end)
+
+function updaterCommit:ctor(msg, commitCallback, cancelCallback)
+    self:enableNodeEvents()
+    self:setTouchEnabled(true)
+    self:setSwallowsTouches(true)
+
+    self:setTouchMode(cc.EVENT_TOUCH_ONE_BY_ONE)
+
+    self._listener = cc.EventListenerTouchOneByOne:create()
+    self._listener:setEnabled(true)
+    self._listener:setSwallowTouches(true)
+    self._listener:registerScriptHandler(function()
+    	return true
+    end, cc.Handler.EVENT_TOUCH_BEGAN)
+    self._listener:registerScriptHandler(function()
+    end, cc.Handler.EVENT_TOUCH_MOVED)
+    self._listener:registerScriptHandler(function()
+    end, cc.Handler.EVENT_TOUCH_ENDED)
+    cc.Director:getInstance():getEventDispatcher():addEventListenerWithSceneGraphPriority(self._listener, self)
+
+	self._commitCallback = commitCallback
+	self._cancelCallback = cancelCallback
+
+	local bg = display.newSprite("updater/bg.png")
+	bg:setPosition(display.cx, display.cy)
+	self:addChild(bg)
+
+	local w = bg:getContentSize().width
+
+	local titleLabel = display.newTTFLabel({text = updateStr.SYSTEM_TIPS, font = "font/chs/FONT_1.TTF", size = 24, color = cc.c3b(0xEB, 0xC4, 0x91)})
+	titleLabel:enableOutline(cc.c4b(0x15, 0x0F, 0x05, 0xFF), 2)
+    titleLabel:setPosition(display.cx, display.cy + 80)
+    self:addChild(titleLabel)
+
+    local msgLabel = display.newTTFLabel({text = msg, font = "font/chs/FONT_1.TTF", size = 14, color = cc.c3b(0xFC, 0xF0, 0xDF)})
+    msgLabel:enableOutline(cc.c4b(0x15, 0x0F, 0x05, 0xFF), 2)
+    msgLabel:setAnchorPoint(0, 1)
+    msgLabel:setDimensions(w - 100, 0)
+    msgLabel:setPosition(display.cx + 50 - w / 2, titleLabel:getPositionY() - 15)
+    self:addChild(msgLabel)
+
+	local cancelBtn = ccui.Button:create("updater/btn.png")
+    cancelBtn:setTitleText(updateStr.CANCEL)
+    cancelBtn:setTitleFontSize(16)
+    cancelBtn:setTitleColor(cc.c3b(0xB6, 0xA3, 0x3A))
+    cancelBtn:setPosition(display.cx + 80, display.cy - 70)
+    cancelBtn:addClickEventListener(handler(self, self.onCancel))
+    self:addChild(cancelBtn)
+
+    local commitBtn = ccui.Button:create("updater/btn.png")
+    commitBtn:setTitleText(updateStr.COMMIT)
+    commitBtn:setTitleFontSize(16)
+    commitBtn:setTitleColor(cc.c3b(0xB6, 0xA3, 0x3A))
+    commitBtn:setPosition(display.cx - 80, display.cy - 70)
+    commitBtn:addClickEventListener(handler(self, self.onCommit))
+    self:addChild(commitBtn)
+end
+
+function updaterCommit:onExit()
+	print("updaterCommit:onExit")
+	if self._listener then
+    	cc.Director:getInstance():getEventDispatcher():removeEventListener(self._listener)
+    	self._listener = nil
+    end
+end
+
+function updaterCommit:onCancel()
+	local cancelCallback = self._cancelCallback
+
+	self:close()
+
+	if cancelCallback then
+		cancelCallback()
+	end
+end
+
+function updaterCommit:onCommit()
+	local commitCallback = self._commitCallback
+
+	self:close()
+
+	if commitCallback then
+		commitCallback()
+	end
+end
+
+function updaterCommit:close()
+	self:removeFromParent()
+end
+
+local updaterProgressLayer = class("updaterProgressLayer", function()
+	return display.newLayer()
+end)
+
+function updaterProgressLayer:ctor()
+	self:enableNodeEvents()
+    self:setTouchEnabled(true)
+    self:setSwallowsTouches(true)
+
+    self:setTouchMode(cc.EVENT_TOUCH_ONE_BY_ONE)
+
+    self._listener = cc.EventListenerTouchOneByOne:create()
+    self._listener:setEnabled(true)
+    self._listener:setSwallowTouches(true)
+    self._listener:registerScriptHandler(function()
+    	return true
+    end, cc.Handler.EVENT_TOUCH_BEGAN)
+    self._listener:registerScriptHandler(function()
+    end, cc.Handler.EVENT_TOUCH_MOVED)
+    self._listener:registerScriptHandler(function()
+    end, cc.Handler.EVENT_TOUCH_ENDED)
+    cc.Director:getInstance():getEventDispatcher():addEventListenerWithSceneGraphPriority(self._listener, self)
+
+	-- 背景
+	local bgSprite = display.newSprite("ui/init/bg_account.jpg")
+	bgSprite:setPosition(display.cx, display.cy)
+    self:addChild(bgSprite)
+
+    -- 进度条
+	local bgSize = cc.size(600, 28)
+    local bg = display.newSprite("updater/progress_bg.png", display.cx, display.cy - 192, {scale9 = true, size = bgSize, capInsets = cc.rect(14, 8, 2, 12)})
+    self:addChild(bg)
+
+    self._barSize = cc.size(bgSize.width - 24, 18)
+    self._bar = display.newSprite("updater/progress_bar.png", 12, bgSize.height / 2, {scale9 = true, size = self._barSize, capInsets = cc.rect(3, 4, 2, 10)})
+    self._bar:setAnchorPoint(0, 0.5)
+    bg:addChild(self._bar)
+end
+
+function updaterProgressLayer:onExit()
+	print("updaterProgressLayer:onExit")
+	if self._listener then
+    	cc.Director:getInstance():getEventDispatcher():removeEventListener(self._listener)
+    	self._listener = nil
+    end
+end
+
+function updaterProgressLayer:displayProgress(percent, sumSize)
+	-- print("percent:", percent)
+
+	local fixPercent = percent
+	if fixPercent < 0 then
+		fixPercent = 0
+	elseif fixPercent > 1 then
+		fixPercent = 1
+	end
+
+	self._bar:setContentSize(cc.size(self._barSize.width * fixPercent, self._barSize.height))
+end
+
+local updater = {}
+
+function updater:updateHandler(event, value)
+    if event == "success" then
+        local handle
+        handle = cc.Director:getInstance():getScheduler():scheduleScriptFunc(function()
+        	cc.Director:getInstance():getScheduler():unscheduleScriptEntry(handle)
+        	self:updateStep()
+        end, 0 , false)
+        
+    elseif event == "state" then
+        -- 过程事件
+        if value == "downloadStart" then
+        elseif value == "downloadDone" then
+        elseif value == "uncompressStart" then
+        elseif value == "uncompressDone" then
+        elseif value == "stateUnknown" then
+        end
+    elseif event == "error" then
+        -- 错误事件
+        local errorCode = -1
+        if value == "errorCreateFile" then
+            -- 创建文件失败 没权限?
+            print("创建文件失败")
+            errorCode = 1
+        elseif value == "errorNetwork" then
+            -- 网络下载失败 网不好?
+            print("网络下载失败")
+            errorCode = 2
+        elseif value == "errorUncompress" then
+            -- 解压失败 资源坏了?
+            print("解压失败")
+            errorCode = 3
+        elseif value == "errorCopyFile" then
+            -- 拷贝文件失败
+            print("拷贝失败")
+            errorCode = 4
+        elseif value == "errorMD5" then
+            -- MD5校验失败
+            print("MD5校验失败")
+            errorCode = 5
+        elseif value == "errorUnknown" then
+            print("errorUnknown wtf?")
+        end
+
+        self:downloadFail(errorCode)
+
+    elseif event == "progress" then
+        -- 下载进度
+        self:updateProgress(value) 
+    end
+end
+
+local cppUpdater = cpp.Updater:new()
+cppUpdater:registerScriptHandler(handler(updater, updater.updateHandler))
+
+updater.ERROR_CODE = {
+	UNKNOW 			= 1,
+	NO_RES_URL		= 2,
+	REQUEST_ERROR	= 3,
+	DOWNLOAD_ERROR	= 4,
+}
+
+updater._UIDelegate = nil
+updater._callback = nil
+updater._resMapFileName = "res_map.txt"
+
+local uroot = device.writablePath
+if device.platform == "mac" or device.platform == "windows" then
+	uroot = uroot .. "download"..device.directorySeparator
+end
+
+function updater:setUIDelegate(UIDelegate)
+	self._UIDelegate = UIDelegate
+end
+
+function updater:setCallback(callback, errorCallback)
+	self._callback = callback
+	self._errorCallback = errorCallback
+end
+
+function updater:checkUpdate(resMapCode)
+	print("updater:checkUpdate")
+	resMapCode = resMapCode or _G__RES_MAP_CODE
+	_G__RES_MAP_CODE = resMapCode
+
+	local resMapMd5 = self:_getLocalResMapMd5()
+
+	if resMapCode and resMapMd5 and resMapCode == resMapMd5 then
+		-- md5相同不需要更新
+		self:updateSuccess()
+	else
+		-- 拉取
+		if not _G_RES_URL then
+			self:updateFail(self.ERROR_CODE.NO_RES_URL)
+			return
+		end
+
+		local url = _G_RES_URL .. self._resMapFileName
+		print("url:", url)
+		local request = network.createHTTPRequest(handler(self, self._onRequestFinished), url, "GET")
+    	request:start()
+	end
+end
+
+function updater:clear()
+	self:_stopUpdate()
+end
+
+function updater:_onRequestFinished(event)
+    local request = event.request
+    local name    = event.name
+    if name == "failed" then
+        -- 请求失败
+		self:updateFail(self.ERROR_CODE.REQUEST_ERROR, "failed_"..request:getErrorCode() .. "_" .. request:getErrorMessage())
+        return
+    end
+
+    if name ~= "completed" then
+        return
+    end
+
+    local request = event.request
+    local code = request:getResponseStatusCode()
+    if code == 200 then
+        self._targetResMapStr = request:getResponseString()
+        self:_compareResMap()
+
+    else
+		self:updateFail(self.ERROR_CODE.REQUEST_ERROR, "response_"..code)
+
+    end
+end
+
+function updater:_getLocalResMapPath()
+	-- return cc.FileUtils:getInstance():fullPathForFilename(self._resMapFileName)
+	local localResMapPath = uroot .. self._resMapFileName
+	if not io.exists(localResMapPath) then
+		local fullPath = cc.FileUtils:getInstance():fullPathForFilename(self._resMapFileName)
+		local dataFromFile = cc.FileUtils:getInstance():getDataFromFile(fullPath)
+
+		local file = io.open(localResMapPath,"w+b")
+        file:write(dataFromFile)
+        file:close()
+	end
+
+	return localResMapPath
+end
+
+function updater:analysisResMapLine(line)
+	local lineArray = string.split(line, ",")
+	if #lineArray < 3 then
+		return nil
+	end
+
+	return {lineArray[1] or "nil", lineArray[2] or "", lineArray[3] or 0}
+end
+
+function updater:_getLocalResMapMd5()
+	return crypto.md5file(self:_getLocalResMapPath())
+end
+
+function updater:_getLocalResMap()
+	local resMap = {}
+	local f = io.open(self:_getLocalResMapPath(), "r")
+	if f then
+		for line in f:lines()  do
+			if line and line ~= "" then
+				local value = self:analysisResMapLine(line)
+				if value then
+					resMap[value[1]] = value
+				end
+			end
+		end
+
+		io.close(f)
+	end
+
+	return resMap
+end
+
+function updater:_getTargetResMap()
+	local resMap = {}
+
+	if self._targetResMapStr then
+		local lines = string.split(self._targetResMapStr, "\n")
+		for _, line in ipairs(lines) do
+			if line and line ~= "" then
+				local value = self:analysisResMapLine(line)
+				if value then
+					resMap[value[1]] = value
+				end
+			end
+		end
+	end
+
+	return resMap
+end
+
+function updater:_compareResMap()
+	print("updater:_compareResMap")
+	local updateList = {}
+	local localResMap = self:_getLocalResMap()
+	local tarResMap = self:_getTargetResMap()
+
+	for key, value in pairs(tarResMap) do
+		if key ~= "nil" then
+			if not isset(localResMap, key) then
+				updateList[#updateList + 1] = value
+			else
+				if value[2] ~= localResMap[key][2] then
+					updateList[#updateList + 1] = value
+				end
+			end
+		end
+	end
+
+	if #updateList == 0 then
+		-- 没有更新内容？
+		self:updateComplete()
+
+	else
+		-- 排序
+		table.sort(updateList, function(value1, value2)
+			return value1[3] > value2[3]
+		end)
+
+		-- 开启下载流程
+		self:startUpdate(updateList)
+	end
+end
+
+function updater:saveLocalResMap()
+	if not self._targetResMapStr then
+		return
+	end
+
+	local localResMapPath = uroot .. self._resMapFileName
+
+	print("save to "..localResMapPath)
+	io.writefile(localResMapPath, self._targetResMapStr)
+end
+
+function updater:startUpdate(updateList)
+	print("updater:startUpdate")
+	self._updateList 	= updateList
+	self._updateIdx	 	= 0
+	self._updateProgress = 0
+	local sumSize = 0
+	for _, value in ipairs(self._updateList) do
+		if not self:_isDownload(value) then
+			-- 过滤已下载
+			sumSize = sumSize + value[3]
+		end
+	end
+	self._updateSumSize = sumSize
+	self._updateCurSize = 0
+
+	-- 弹出确认
+	local size = ""
+	if sumSize > 1024 * 1024 then
+		size = string.format("%.2fM", sumSize / 1024 / 1024)
+	else
+		size = string.format("%.1fK", sumSize / 1024)
+	end
+
+	print("updater:startUpdate showCommit")
+	local commitLayer = updaterCommit.new(string.format(updateStr.UPDATE_MSG, size), handler(self, self._startUpdate))
+	display.getRunningScene():addChild(commitLayer, 100000)
+end
+
+function updater:_startUpdate()
+	print("updater:_startUpdate")
+	if not self._updateHandler then
+		self._updateHandler = cc.Director:getInstance():getScheduler():scheduleScriptFunc(handler(self, self._update), 0 , false)
+
+		self:displayProgress()
+	end
+end
+
+function updater:_stopUpdate()
+	if self._updateHandler then
+		cc.Director:getInstance():getScheduler():unscheduleScriptEntry(self._updateHandler)
+		self._updateHandler = nil
+	end
+
+	if self._progressLayer then
+		self._progressLayer:removeFromParent()
+		self._progressLayer = nil
+	end
+
+	self._download = false
+end
+
+function updater:_update(delta)
+	if self._download then
+		return
+	end
+
+	self._updateIdx = self._updateIdx + 1
+	if self._updateIdx > #self._updateList then
+		self:updateComplete()
+		return
+	end
+
+	self._download = true
+	local value = self._updateList[self._updateIdx]
+
+	if self:_isDownload(value) then
+		self:updateStep(true)
+		return
+	end
+
+	self:downloadFile(value)
+end
+
+function updater:downloadFile(value)
+	-- do return end
+	value = value or self._updateList[self._updateIdx]
+
+	print("updater:downloadFile "..value[1])
+
+	-- 分析文件
+	local pathinfo = io.pathinfo(value[1])
+	if pathinfo.extname == ".zip" then
+		-- 压缩包
+		local zipUrl  		 = _G_RES_URL .. value[1]
+		local uncompressPath = uroot-- .. pathinfo.dirname
+		local zipName 		 = pathinfo.filename
+		local fileMd5  		 = value[2]
+
+		self:_downloadZipFile(zipUrl, uncompressPath, zipName, fileMd5)
+
+	else
+		-- 普通文件
+		local fileUrl  = _G_RES_URL .. value[1]
+		local filePath = uroot .. pathinfo.dirname
+		local fileName = pathinfo.filename
+		local fileMd5  = value[2]
+
+		self:_downloadNormalFile(fileUrl, filePath, fileName, fileMd5)
+	end
+end
+
+function updater:_downloadNormalFile(fileUrl, filePath, fileName, fileMd5)
+	cppUpdater:downloadNormalFile(fileUrl, filePath, fileName, fileMd5)
+end
+
+function updater:_downloadZipFile(zipUrl, uncompressPath, zipName, fileMd5)
+	print("_downloadZipFile", zipUrl, uncompressPath, zipName, fileMd5)
+	cppUpdater:downloadZipFile(zipUrl, uncompressPath, zipName, fileMd5)
+end
+
+function updater:displayProgress()
+	local curSize = 0
+	local value = self._updateList[self._updateIdx]
+	if value and self._updateProgress then
+		curSize = value[3] * self._updateProgress / 100
+	end
+
+	if not self._progressLayer then
+		self._progressLayer = updaterProgressLayer.new()
+		display.getRunningScene():addChild(self._progressLayer, 100000 - 1)
+	end
+
+	-- print(string.format("update %.2f, %.2f, %.0f/%.0f", self._updateProgress, (self._updateCurSize + curSize) / self._updateSumSize, (self._updateCurSize + curSize), self._updateSumSize))
+	self._progressLayer:displayProgress((self._updateCurSize + curSize) / self._updateSumSize, self._updateSumSize)
+end
+
+function updater:updateProgress(progress)
+	-- print("updater:updateProgress ", progress)
+	self._updateProgress = progress
+
+	self:displayProgress()
+end
+
+function updater:updateStep(noSave)
+	print("updater:updateStep")
+	local value = self._updateList[self._updateIdx]
+	self._updateCurSize = self._updateCurSize + value[3]
+	self._updateProgress = 0
+
+	if not noSave then
+		-- 标记这个文件已经下载
+		self:_saveDownloadInfo(value[1])
+	end
+
+	self:displayProgress()
+
+	self._download = false
+end
+
+function updater:downloadFail(errorCode)
+	self:updateFail(self.ERROR_CODE.DOWNLOAD_ERROR, errorCode)
+end
+
+function updater:updateComplete()
+	print("updater:updateComplete")
+	self:_stopUpdate();
+	self:_clearDownloadInfo()
+	self:saveLocalResMap()
+	self:updateSuccess(true)
+end
+
+function updater:getDownloadInfo()
+	if not self._downloadInfo then
+		local downloadList = cc.UserDefault:getInstance():getStringForKey("GAME_UPDATE_DOWNLOAD_LIST", "")
+		if downloadList == "" then
+			self._downloadInfo = {}
+		else
+			self._downloadInfo = json.decode(downloadList) or {}
+		end
+	end
+
+	return self._downloadInfo
+end
+
+function updater:_saveDownloadInfo(fileName)
+	local downloadInfo = self:getDownloadInfo()
+	self._downloadInfo[fileName] = true
+	cc.UserDefault:getInstance():setStringForKey("GAME_UPDATE_DOWNLOAD_LIST", json.encode(self._downloadInfo))
+	cc.UserDefault:getInstance():flush()
+end
+
+function updater:_clearDownloadInfo()
+	self._downloadInfo = {}
+	cc.UserDefault:getInstance():setStringForKey("GAME_UPDATE_DOWNLOAD_LIST", json.encode(self._downloadInfo))
+end
+
+function updater:_isDownload(value)
+	local downloadInfo = self:getDownloadInfo()
+	return isset(downloadInfo, value[1])
+end
+
+function updater:updateRestart()
+end
+
+function updater:updateSuccess(needRestart)
+	if self._callback then
+		self._callback(needRestart)
+	end
+end
+
+function updater:updateFail(errorCode, errorMsg)
+	errorCode = errorCode or self.ERROR_CODE.UNKNOW
+	errorMsg = errorMsg or ""
+
+	print("updateFail errorCode:", errorCode, "errorMsg:", errorMsg)
+
+	local commitLayer = updaterCommit.new(updateStr.UPDATE_FIAL .." error "..tostring(errorCode), function()
+		print("继续下载")
+		if errorCode == 4 then
+			self:downloadFile(value)
+			self:_startUpdate()
+
+		else
+			self:checkUpdate()
+		end
+
+	end, function()
+		print("放弃下载")
+		self:_stopUpdate();
+
+		if self._errorCallback then
+			self._errorCallback(errorCode, errorMsg)
+		end
+	end)
+	display.getRunningScene():addChild(commitLayer, 100000)
+end
+
+return updater

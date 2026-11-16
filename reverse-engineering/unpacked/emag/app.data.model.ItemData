@@ -1,0 +1,1396 @@
+
+local ItemData = class("ItemData")
+--[[
+    物品
+]]
+local Constant = lt.Constant
+local ServerClientEnum = lt.ServerClientEnum
+local ItemDao = lt.ItemDao
+local PetModule = lt.PetModule
+local ItemValueDef = ServerClientEnum.ItemValueDef
+
+ItemData._objId              = nil
+ItemData._propertyData       = nil
+ItemData._itemMeta           = nil
+-- ItemData._typePos            = nil
+ItemData._propertyArray      = nil
+ItemData._usetype            = false
+ItemData._pickEndTime        = nil
+
+
+function ItemData:ctor(objId, propertyArray,propertyTable)
+    assert(objId ~= nil, "ItemData objId is nil ! ")
+    
+    self:setObjId(objId)
+    self._propertyData = lt.PropertyData.new(propertyArray,propertyTable)
+    self._propertyArray = propertyArray
+    self:initMetaInfo()
+end
+
+function ItemData:initMetaInfo()
+    local itemType = self:getItemType()
+    local itemIdx = self:getItemId()
+    if itemType == 1 then
+        self._itemMeta = lt.ItemDao:query(itemIdx)
+        if not self._itemMeta then
+            self._itemMeta = lt.ItemDao:query(1320001)
+        end
+    elseif itemType == 2 then
+        self._itemMeta = lt.EquipDao:query(itemIdx)
+        if not self._itemMeta then
+            self._itemMeta = lt.EquipDao:query(602001)
+        end
+    elseif itemType == 3 then
+        self._itemMeta = lt.BookDao:query(itemIdx)
+        if not self._itemMeta then
+            self._itemMeta = lt.BookDao:query(64)
+        end
+    elseif itemType == lt.Constant.ItemType.ITEM_TYPE_RUNE then
+        self._itemMeta = lt.RuneDao:queryGood(itemIdx)
+        if not self._itemMeta then
+            self._itemMeta = lt.RuneDao:queryGood(102001)
+        end
+    elseif itemType == 5 then
+        self._itemMeta = lt.SpiritEquipDao:queryItem(itemIdx)
+        if not self._itemMeta then
+            self._itemMeta = lt.SpiritEquipDao:queryItem(100)
+        end
+    end
+end
+
+function ItemData:getObjId()
+    return self._objId
+end
+
+function ItemData:setObjId(objId)
+    self._objId = objId
+end
+
+function ItemData:setPropertyArray(propertyArray)
+    self._propertyData:setPropertyArray(propertyArray)
+end
+
+function ItemData:setValue(key, value)
+    self._propertyData:setValue(key, value)
+end
+
+function ItemData:getValue(key)
+    return self._propertyData:getValue(key)
+end
+
+function ItemData:getPreValue(key)
+    return self._propertyData:getPreValue(key)
+end
+
+function ItemData:getChangeValueByKey(key)
+    return self._propertyData:getChangeValueByKey(key)
+end
+
+function ItemData:getItemMeta()
+    return self._itemMeta
+end
+
+-- 保存类型 1背包 2装备 3仓库 4扩容背包 5腰带
+function ItemData:setTypePos(typePos)
+    self:setValue(ItemValueDef.Attr_SaveType, typePos)
+end
+
+function ItemData:getTypePos()
+    return self:getValue(ItemValueDef.Attr_SaveType) or 0
+end
+
+function ItemData:setSellItem(value)
+    self._sell = value
+end
+
+function ItemData:getSellItem()
+    return self._sell
+end
+--[[
+        *******************  基础信息 *******************
+    
+    Attr_ItemIdx = 8050, -- 道具Id
+    Attr_ItemType = 8051, -- 道具类别（区分道具，装备）
+    Attr_ILevel = 8052, -- 等级
+    Attr_Deadline = 8053, -- 限时道具截止日期
+    Attr_ItemPositionX = 8054, -- 道具位置X
+    Attr_ItemPositionY = 8055, -- 道具位置Y
+    Attr_SaveType = 8056, // 保存类型 1背包 2装备 3仓库 4扩容背包 5腰带
+    Attr_SavePos = 8057, -- 装备或仓库存放位置
+    Attr_SuperposeCount = 8058, -- 当前叠加数量
+]]
+
+function ItemData:setItemId(itemId)
+    return self:setValue(ItemValueDef.Attr_ItemIdx, itemId)
+end
+
+function ItemData:getItemId()
+    return self:getValue(ItemValueDef.Attr_ItemIdx)
+end
+
+function ItemData:getItemType()
+    return self:getValue(ItemValueDef.Attr_ItemType) or 1
+end
+
+function ItemData:getMasterObjId()
+    return self:getValue(ServerClientEnum.ObjectValueDef.Attr_MasterID) or 0
+end
+
+function ItemData:getItemSize()
+    return self:getValue(ItemValueDef.Attr_ItemSize) or 1
+end
+
+function ItemData:getItemX()
+    return self:getValue(ItemValueDef.Attr_ItemPositionX) or 0
+end
+function ItemData:getItemY()
+    return self:getValue(ItemValueDef.Attr_ItemPositionY) or 0
+end
+
+function ItemData:getItemUid()
+    return self:getValue(ItemValueDef.Attr_ItemId) or "0"
+end
+
+function ItemData:getItemPetExp()
+    return self:getValue(ItemValueDef.Attr_ItemPetExp) or 0
+end
+
+function ItemData:getItemPetAttr1()
+    return self:getValue(ItemValueDef.Attr_ItemPetAttr1) or 0
+end
+
+function ItemData:getItemPetAttr2()
+    return self:getValue(ItemValueDef.Attr_ItemPetAttr2) or 0
+end
+
+function ItemData:getItemPetAttr3()
+    return self:getValue(ItemValueDef.Attr_ItemPetAttr3) or 0
+end
+
+function ItemData:getItemPetDeadTime()
+    return self:getValue(ItemValueDef.Attr_ItemPetDeadTime) or 0
+end
+
+function ItemData:getItemPetCompose()
+    return self:getValue(ItemValueDef.Attr_ItemPetCompose) or ""
+end
+
+function ItemData:getEquipScore()
+    return self:getValue(ItemValueDef.Attr_EquipScore) or 0
+end
+
+function ItemData:setPage(page)
+    self._page = page
+end
+
+function ItemData:getPage()
+    return self._page or 0
+end
+
+function ItemData:setFiterXY(x,y)
+    self._fiterX = x
+    self._fiterY = y
+end
+function ItemData:getFiterXY()
+   return self._fiterX, self._fiterY
+end
+
+
+function ItemData:setPos(pos)
+    self:setValue(ItemValueDef.Attr_SavePos, pos)
+end
+
+function ItemData:getPos()
+    return self:getValue(ItemValueDef.Attr_SavePos) or 0
+end
+
+function ItemData:setExpandPos(pos)
+    self._expandPos = pos
+end
+
+function ItemData:getExpandPos()
+    return self._expandPos
+end
+
+function ItemData:getName()
+    local name = self:getItemMeta():getName()
+    return name
+end
+
+function ItemData:getIName()
+    local ilevel = lt.StringManager:getRomeNumber(self:getILevel())
+    return self:getName()..ilevel
+end
+
+function ItemData:getIconId()
+    return self._itemMeta:getIconId()
+end
+
+function ItemData:getMetaType()
+    return self._itemMeta:getType() or 0
+end
+
+function ItemData:getMetaKind()
+    return self._itemMeta:getKind() or 0
+end
+
+function ItemData:getMetaEquipPos()
+    return self._itemMeta:getEquipPos() or 0
+end
+
+function ItemData:getMateTypeValue()
+    return self._itemMeta:getTypeValue() or ""
+end
+
+function ItemData:getMateTypeEndValue()
+    return self._itemMeta:getTypeEndValue() or ""
+end
+
+function ItemData:getMateDes()
+    return self._itemMeta:getDes() or ""
+end
+
+function ItemData:getMetaDura()
+    return self._itemMeta:getDura() or 0
+end
+
+function ItemData:getMetaSuidId()
+    return self._itemMeta:getSuitId()
+end
+
+function ItemData:getMetaFastUse()
+    return self._itemMeta:getFastUse() == 1
+end
+
+function ItemData:getEffectParam()
+    return self._itemMeta:getEffectParam()
+end
+
+function ItemData:getMetaNeedJob()
+    local itemType = self:getItemType()
+    if itemType ~= 1 then
+        return self._itemMeta:getNeedJob()
+    end
+    return 0
+end
+
+function ItemData:getMetaNeedLv()
+    return self._itemMeta:getNeedLv()
+end
+
+function ItemData:getMetaFocuslv()
+    return self._itemMeta:getEquipFocus()
+end
+
+
+function ItemData:getMetaGoto()
+    local itemType = self:getItemType()
+    if itemType == 1 then
+        return self._itemMeta:getGoto()
+    end
+    return ""
+end
+
+function ItemData:getMetaQualityTitle()
+    return self._itemMeta:getQualityTitle()
+end
+
+function ItemData:getMetaRank()
+    return self._itemMeta:getRank() or 0
+end
+
+function ItemData:getMetaDurability()
+    return self._itemMeta:getDurability()
+end
+
+function ItemData:getMetaSilverMax()
+    return self._itemMeta:getSilverMax()
+end
+
+function ItemData:getMetaRace()
+    return tonumber(self._itemMeta:getRace())
+end
+
+--[[
+    *******************  道具信息 *******************
+    
+    Attr_Dura               = 8053,        -- 持久  -- 个数
+    Attr_DuraMax            = 8075,        -- 最大持久
+    Attr_AddLimit           = 8054,        -- 是否可以叠加    大于0就是可叠加的上限
+    Attr_Bound              = 8055,        -- 配置绑定标记   0bit=1 内绑定, 1bit=1 不可丢弃, 2bit=1 不可存仓
+    Attr_Price              = 8056,        -- 价格
+    Attr_PriceType          = 8077,        -- 价格类型
+    Attr_Type               = 8063,        -- 道具小类
+    Attr_King               = 8062,        -- 道具大类
+    Attr_Quality            = 8064,        -- 道具品质
+    Attr_ClearItem          = 8078,        -- 地上消失时间，单位：分钟
+    Attr_CreateTime         = 8079,        -- 物品创建时间
+    Attr_ValidPeriod        = 8076,        -- 是否具有有效期  大于0有有效期  单位：分钟
+    Attr_StorePrice         = 8080,        -- 商铺/摊位物品价格
+    Attr_ItemExp            = 8081,        -- 物品基础经验
+    Attr_RenewHp            = 8082,        -- 回血 每一次回血的值                     
+    Attr_RenewMp            = 8083,        -- 回蓝 每一次回蓝的值                         
+    Attr_RenewCd            = 8084,        -- 使用物品冷却时间                                    
+    Attr_RenewTime          = 8085,        -- 使用物品持续的时间
+    Attr_ItemOwner          = 8086,        -- 物品在地上属于的人POINTID 
+    Attr_Deadline           = 8106,        -- 限时道具截止日期
+]]
+
+--[[
+    --天炼
+    ITEM_START = 8050,
+    Attr_ItemIdx = 8050, // 道具Id
+    Attr_ItemType = 8051, // 道具类别（区分道具，装备）
+    Attr_Kind = 8052, // 道具大类
+    Attr_Type = 8053, // 道具小类
+    Attr_Quality = 8054, // 道具品质
+    Attr_ItemSize = 8055, // 道具尺寸
+    Attr_AddLimit = 8056, // 最大堆叠数量
+    Attr_MaxSize = 8057, // 最大持有数量
+    Attr_Price = 8058, // 价格
+    Attr_IRace = 8059, // 种族
+    Attr_NeedLv = 8060, // 等级要求
+    Attr_RequireSTR = 8061, // 力量要求
+    Attr_RequireDEX = 8062, // 敏捷要求
+    Attr_RequireINT = 8063, // 智力要求
+    Attr_RequireSum = 8064, // 总能力要求
+    Attr_NeedSex = 8065, // 装备性别
+
+    Attr_Durability = 8066, // 耐久值
+    Attr_Defense = 8067, // 防御率
+    Attr_IMinDamage = 8068, // 最小伤害
+    Attr_IMaxDamage = 8069, // 最大伤害
+    Attr_IHit = 8070, // 命中率
+    Attr_Range = 8071, // 攻击范围
+    Attr_IDodge = 8072, // 回避率
+    Attr_Speed = 8073, // 攻击速度
+    Attr_CriticalHit = 8074, // 有效打击
+    Attr_SilverMax = 8075, // 镀银上限
+    Attr_ElementalType = 8076, // 元素类型及数量
+    Attr_DefaultOption = 8077, // 默认附加属性
+
+    Attr_ItemPositionX = 8078, // 道具位置X
+    Attr_ItemPositionY = 8079, // 道具位置Y
+    Attr_SavePos = 8080, // 装备或仓库存放位置
+    Attr_Dura = 8081, // 当前叠加数量
+    Attr_ILevel = 8085,  // 强化等级
+]]
+
+function ItemData:setNum(value)
+    self:setValue(ItemValueDef.Attr_SuperposeCount, value)
+end
+
+function ItemData:getNum()
+    return self:getValue(ItemValueDef.Attr_SuperposeCount) or 1
+end
+
+function ItemData:getMaxNum()
+    return self:getItemMeta():getAddLimit() or 0
+end
+
+function ItemData:getMetaName()
+    return self:getItemMeta():getName()
+end
+
+-- function ItemData:getDura()
+--     return self:getValue(ItemValueDef.Attr_Dura) or 0
+-- end
+
+-- function ItemData:getDuraMax()
+--     return self:getValue(ItemValueDef.Attr_DuraMax)
+-- end
+
+function ItemData:getAddLimit()
+    return self:getValue(ItemValueDef.Attr_AddLimit)
+end
+
+function ItemData:getSeal()
+    return self:getValue(ItemValueDef.Attr_SealState) or 0
+end
+
+function ItemData:getRuneId()
+    if self:getItemType() == lt.Constant.ItemType.ITEM_TYPE_RUNE then
+        return self._itemMeta:getRuneId()
+    else
+        return self:getValue(ItemValueDef.Attr_RuneID) or 0
+    end
+end
+
+function ItemData:getRuneInfo()
+    return self:getValue(ItemValueDef.Attr_RuneInfo)
+end
+
+-- 0bit=1 内绑定
+function ItemData:getIsBind()
+    local bind = lt.CommonUtil:d2b(self:getBound())
+    return bind[32] == 1
+end
+
+function ItemData:getBind()
+    local bind = lt.CommonUtil:d2b(self:getBound())
+    return bind[32]
+end
+
+-- 1bit=1 不可丢弃
+function ItemData:cantDiscard()
+    local bind = lt.CommonUtil:d2b(self:getBound())
+    return bind[31] == 1
+end
+-- 2bit=1 不可存仓
+function ItemData:canInDepot()
+    local bind = lt.CommonUtil:d2b(self:getBound())
+    return bind[30] ~= 1
+end
+
+function ItemData:getPrice()
+    return self:getValue(ItemValueDef.Attr_Price)
+end
+
+function ItemData:getPriceType()
+    return self:getValue(ItemValueDef.Attr_PriceType)
+end
+
+function ItemData:getType()
+    return self:getValue(ItemValueDef.Attr_Type) or 0
+end
+
+function ItemData:getKing()
+    return self:getValue(ItemValueDef.Attr_King)
+end
+
+function ItemData:getQuality()
+    local quality = 0
+    if self:getItemType() == Constant.ItemType.ITEM_TYPE_EQUIP then
+        if self:getFirstAffixId() ~= 0 then
+            quality = quality + 1
+        end
+        if self:getSecondAffixId() ~= 0 then
+            quality = quality + 1
+        end
+        if self:getThirdAffixId() ~= 0 then
+            quality = quality + 1
+        end
+    elseif self:getItemType() == Constant.ItemType.ITEM_TYPE_PROP then
+        quality = self:getValue(ItemValueDef.Attr_Quality) or self._itemMeta:getQuality()
+    end
+    return quality
+end
+
+function ItemData:getClearItem()
+    return self:getValue(ItemValueDef.Attr_ClearItem)
+end
+
+function ItemData:getCreateTime()
+    return self:getValue(ItemValueDef.Attr_CreateTime)
+end
+
+function ItemData:getValidPeriod()
+    return self:getValue(ItemValueDef.Attr_ValidPeriod)
+end
+
+function ItemData:getStorePrice()
+    return self:getValue(ItemValueDef.Attr_StorePrice)
+end
+
+function ItemData:getItemExp()
+    return self:getValue(ItemValueDef.Attr_ItemExp)
+end
+
+function ItemData:getRenewHp()
+    return self:getValue(ItemValueDef.Attr_RenewHp)
+end
+
+function ItemData:getRenewMp()
+    return self:getValue(ItemValueDef.Attr_RenewMp)
+end
+
+function ItemData:getRenewCd()
+    return self:getValue(ItemValueDef.Attr_RenewCd)
+end
+
+function ItemData:getRenewTime()
+    return self:getValue(ItemValueDef.Attr_RenewTime)
+end
+
+function ItemData:getItemOwner()
+    return self:getValue(ItemValueDef.Attr_ItemOwner)
+end
+
+function ItemData:getItemRefine()
+    return self:getValue(ItemValueDef.Attr_NonsuchProp)
+end
+-- ---------------------equip------------------------------
+--[[
+       *******************  装备信息 *******************
+    
+    Attr_SuitId             = 8050,        -- 套装ID
+    Attr_EquipPos           = 8065,        -- 装备部位
+    Attr_NeedSex            = 8066,        -- 装备性别
+    Attr_NeedLv             = 8051,        -- 佩戴所需等级
+    Attr_NeedJob            = 8052,        -- 佩戴所需职业
+    Attr_NeedDc             = 8057,        -- 佩戴所需攻击
+    Attr_NeedMc             = 8068,        -- 佩戴所需魔法
+    Attr_NeedSc             = 8069,        -- 佩戴所需道术
+    Attr_NeedRep            = 8070,        -- 佩戴所需声望
+    Attr_NeedPkp            = 8071,        -- 佩戴所需PK值
+    Attr_ApprLook           = 8087,        -- 武器外观
+]]
+
+function ItemData:getSuitId()
+    return self:getValue(ItemValueDef.Attr_SuitId)
+end
+
+function ItemData:getEquipPos()
+    return self:getValue(ItemValueDef.Attr_EquipPos) or 0
+end
+
+function ItemData:getNeedSex()
+    return self._itemMeta:getNeedSex()
+end
+
+function ItemData:getNeedLv()
+    return self:getValue(ItemValueDef.Attr_NeedLv)
+end
+
+function ItemData:getNeedJob()
+    return self:getValue(ItemValueDef.Attr_NeedJob)
+end
+
+function ItemData:getNeedDc()
+    return self:getValue(ItemValueDef.Attr_NeedDc)
+end
+
+function ItemData:getNeedMc()
+    return self:getValue(ItemValueDef.Attr_NeedMc)
+end
+
+function ItemData:getNeedSc()
+    return self:getValue(ItemValueDef.Attr_NeedSc)
+end
+
+function ItemData:getNeedRep()
+    return self:getValue(ItemValueDef.Attr_NeedRep)
+end
+
+function ItemData:getNeedPkp()
+    return self:getValue(ItemValueDef.Attr_NeedPkp)
+end
+
+function ItemData:getApprLook()
+    return self:getValue(ItemValueDef.Attr_ApprLook)
+end
+
+--                *******装备属性*******
+
+function ItemData:getAttack()
+    return self:getPropString(self:getItemMeta():getDcMin(), self:getItemMeta():getDcMax(), 
+        self:getValue(ServerClientEnum.CreatureValueDef.Attr_DcMin) or 0, self:getValue(ServerClientEnum.CreatureValueDef.Attr_DcMax) or 0)
+end
+
+function ItemData:getMagicAtk()
+    return self:getPropString(self:getItemMeta():getMcMin(), self:getItemMeta():getMcMax(), 
+        self:getValue(ServerClientEnum.CreatureValueDef.Attr_McMin) or 0, self:getValue(ServerClientEnum.CreatureValueDef.Attr_McMax) or 0)
+end
+
+function ItemData:getTaoAtk()
+    return self:getPropString(self:getItemMeta():getScMin(), self:getItemMeta():getScMax(), 
+        self:getValue(ServerClientEnum.CreatureValueDef.Attr_ScMin) or 0, self:getValue(ServerClientEnum.CreatureValueDef.Attr_ScMax) or 0)
+end
+
+function ItemData:getDefense()
+    return self:getPropString(self:getItemMeta():getAcMin(), self:getItemMeta():getAcMax(), 
+        self:getValue(ServerClientEnum.CreatureValueDef.Attr_AcMin) or 0, self:getValue(ServerClientEnum.CreatureValueDef.Attr_AcMax) or 0)
+end
+
+function ItemData:getMagicDef()
+    return self:getPropString(self:getItemMeta():getMacMin(), self:getItemMeta():getMacMax(), 
+        self:getValue(ServerClientEnum.CreatureValueDef.Attr_MacMin) or 0, self:getValue(ServerClientEnum.CreatureValueDef.Attr_MacMax) or 0)
+end
+
+function ItemData:getHpMaxStr()
+    return self:getSinglePropString(self:getItemMeta():getHpMax(), 
+    self:getValue(ServerClientEnum.CreatureValueDef.Attr_HpMax) or 0)
+end
+
+function ItemData:getMpMaxStr()
+    return self:getSinglePropString(self:getItemMeta():getMpMax(), 
+    self:getValue(ServerClientEnum.CreatureValueDef.Attr_MpMax) or 0)
+end
+
+function ItemData:getHitStr()
+    return self:getSinglePropString(self:getItemMeta():getHit(), 
+    self:getValue(ServerClientEnum.CreatureValueDef.Attr_Hit) or 0,true)
+end
+
+function ItemData:getDodgeStr()
+    return self:getSinglePropString(self:getItemMeta():getDodge(), 
+    self:getValue(ServerClientEnum.CreatureValueDef.Attr_Dodge) or 0,true)
+end
+
+function ItemData:getMdodgeStr()
+    return self:getSinglePropString(self:getItemMeta():getMdodge(), 
+    self:getValue(ServerClientEnum.CreatureValueDef.Attr_Mdodge) or 0,true)
+end
+
+function ItemData:getLuckyStr()
+    return self:getSinglePropString(self:getItemMeta():getLucky(), 
+    self:getValue(ServerClientEnum.CreatureValueDef.Attr_Lucky) or 0)
+end
+
+function ItemData:getCurseStr()
+    return self:getSinglePropString(self:getItemMeta():getCurse(), 
+    self:getValue(ServerClientEnum.CreatureValueDef.Attr_Curse) or 0)
+end
+
+function ItemData:getMcHitStr()
+    return self:getSinglePropString(self:getItemMeta():getMcHit(), 
+    self:getValue(ServerClientEnum.CreatureValueDef.Attr_McHit) or 0,true)
+end
+
+function ItemData:getCurHp()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_CurHp) or 0
+end
+
+function ItemData:getHpMax()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_HpMax) or 0
+end
+
+function ItemData:getCurMp()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_CurMp) or 0
+end
+
+function ItemData:getMpMax()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_MpMax) or 0
+end
+
+function ItemData:getDcMax()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_DcMax) or 0
+end
+
+function ItemData:getDcMin()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_DcMin) or 0
+end
+
+function ItemData:getMcMax()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_McMax) or 0
+end
+
+function ItemData:getMcMin()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_McMin) or 0
+end
+
+function ItemData:getScMax()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_ScMax) or 0
+end
+
+function ItemData:getScMin()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_ScMin) or 0
+end
+
+function ItemData:getAcMax()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_AcMax) or 0
+end
+
+function ItemData:getAcMin()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_AcMin) or 0
+end
+
+function ItemData:getMacMax()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_MacMax) or 0
+end
+
+function ItemData:getMacMin()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_MacMin) or 0
+end
+
+function ItemData:getHit()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_Hit) or 0
+end
+
+function ItemData:getDodge()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_Dodge) or 0
+end
+
+function ItemData:getMdodge()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_Mdodge) or 0
+end
+
+function ItemData:getLucky()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_Lucky) or 0
+end
+
+function ItemData:getCurse()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_Curse) or 0
+end
+
+function ItemData:getStormRatio()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_StormRatio) or 0
+end
+
+function ItemData:getStorm()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_Storm) or 0
+end
+
+function ItemData:getCritLevel()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_CritLevel) or 0
+end
+
+function ItemData:getProtectLevel()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_ProtectLevel) or 0
+end
+
+function ItemData:getSheildLevel()
+    return self:getValue(ItemValueDef.Attr_ShieldsStrengthenLevel) or 0
+end
+
+-- function ItemData:getTotalINT()
+--     return self:getValue(ItemValueDef.Attr_TotalINT) or 0
+-- end
+
+-- function ItemData:getTotalINT()
+--     return self:getValue(ItemValueDef.Attr_TotalINT) or 0
+-- end
+
+-- function ItemData:getTotalINT()
+--     return self:getValue(ItemValueDef.Attr_TotalINT) or 0
+-- end
+
+-- function ItemData:getTotalINT()
+--     return self:getValue(ItemValueDef.Attr_TotalINT) or 0
+-- end
+
+function ItemData:getMedalLevel()
+    return self:getValue(ItemValueDef.Attr_XunZhangLevel) or 0
+end
+
+function ItemData:getIdentifyLevel()
+    return self:getValue(ItemValueDef.Attr_IdentifyLevel) or 0
+end
+
+function ItemData:getBlessLevel()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_BlessLevel) or 0
+end
+
+function ItemData:getSpecialObjId()
+    return self:getValue(ItemValueDef.Attr_SPIRITEQUIP_ID) or ""
+end
+
+function ItemData:isSpiritEquip()
+    return (self:getValue(ItemValueDef.Attr_SPIRITEQUIP_EQUIP) or 0) == 1
+end
+
+function ItemData:isSpiritEquipLock()
+    return (self:getValue(ItemValueDef.Attr_SPIRITEQUIP_LOCK) or 0) == 1
+end
+
+function ItemData:getHpRstore()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_HpRstore) or 0
+end
+
+function ItemData:getHpCurse()
+    return self:getValue(ServerClientEnum.CreatureValueDef.Attr_HpCurse) or 0
+end
+
+function ItemData:getPropString(baseMin, baseMax, addMin, addMax)
+    if addMin > 0 then
+        return string.format("%d-%d(+%d-%d)",baseMin+addMin, baseMax+addMax, addMin, addMax), Constant.COLOR_TEXT_GREEN_H
+    elseif addMax > 0 then
+        return string.format("%d-%d(+%d)",baseMin, baseMax+addMax, addMax), Constant.COLOR_TEXT_GREEN_H
+    else
+        return string.format("%d-%d",baseMin, baseMax), Constant.COLOR_TEXT_WHITE
+    end
+end
+
+function ItemData:getSinglePropString(baseMin, addMin,types)
+    if types then
+        if addMin > 0 then
+            return string.format("%.2f%%(+%.2f%%)",(baseMin+addMin)/100, addMin/100), Constant.COLOR_TEXT_GREEN_H
+        else
+            return string.format("%.2f%%",baseMin/100), Constant.COLOR_TEXT_WHITE
+        end
+    else
+        if addMin > 0 then
+            return string.format("%d(+%d)",baseMin+addMin, addMin), Constant.COLOR_TEXT_GREEN_H
+        else
+            return string.format("%d",baseMin), Constant.COLOR_TEXT_WHITE
+        end
+    end
+end
+
+-- ----------------------end-------------------------------
+
+-- ---------------------Skill------------------------------
+--[[
+    *******************  技能书信息 *******************
+    Attr_SkillId            = 8072,        -- 技能ID
+    Attr_SkillLv            = 8073,        -- 技能等级
+]]
+
+function ItemData:getSkillId()
+    return self:getValue(ItemValueDef.Attr_SkillId)
+end
+
+function ItemData:getSkillLv()
+    return self:getValue(ItemValueDef.Attr_SkillLv)
+end
+
+function ItemData:setTaskItem(value)
+    -- self:setValue(ItemValueDef.Attr_MakeFromTask, value)
+end
+
+function ItemData:getIsTaskItem()
+    -- return (self:getValue(ItemValueDef.Attr_MakeFromTask) or 0) == 1
+    return false
+end
+
+function ItemData:getPropertyArray()
+    return self._propertyArray
+end
+
+function ItemData:getPropertyTable()
+    return self._propertyData:getPropertyTable()
+end
+
+function ItemData:setUseType(types)
+    self._usetype = types
+end
+
+function ItemData:getUseType()
+    return self._usetype
+end
+
+--------------------------------------------------
+-- 以下接口外部调用时, 需要自行判断ItemType 为装备
+
+-- 获取装备基础属性列表
+function ItemData:getBasePropertys()
+    local propertys = {}
+
+    local meta = self:getItemMeta()
+    for k,v in pairs(ServerClientEnum.BaseAttr) do
+        local funName = "get" .. v
+        local value = nil
+        if meta[funName] then
+            value = meta[funName](meta) or 0
+        else
+            value = self:getValue(k) or 0
+        end
+
+        propertys[k] = value
+    end
+
+
+    setmetatable(propertys, {
+        __add = function(ta, tb) 
+            for k,v in pairs(tb) do
+                if type(k) == "string" then
+                    k = lt.CommonModule:propertyKeyatoi(k)
+                end
+
+                if ta[k] then
+                    ta[k] = ta[k] + tonumber(v)
+                else
+                    ta[k] = tonumber(v)
+                end
+            end
+
+            return ta
+        end
+    })
+    
+    return propertys
+end
+
+-- 获取装备上随机小极品属性列表
+function ItemData:getQualityPropertys()
+    local propertys = {}
+    for k,_ in pairs(ServerClientEnum.BaseAttr) do
+        local value = self:getValue(k)
+        if value and value > 0 then
+            propertys[k] = value
+        end
+    end
+
+    return propertys
+end
+
+-- 获取装备上洗炼属性列表
+function ItemData:getNonsuchPropertys()
+    return lt.ItemModule:deserializeAttr(self:getValue(ItemValueDef.Attr_NonsuchProp))
+end
+
+-- 获取装备上精炼属性列表
+function ItemData:getRefinePropertys()
+    return lt.ItemModule:deserializeAttr(self:getValue(ItemValueDef.Attr_RefinersProp))
+end
+
+-- 小极品属性
+function ItemData:getRareNum()
+    return table.nums(self:getQualityPropertys())
+end
+
+-- 是否包含 小极品属性
+function ItemData:isRareEquip()
+    return self:getRareNum() > 0 or ((self:getValue(ItemValueDef.Attr_IsNonsuchProp) or 0) == 1)
+end
+
+function ItemData:isNaturalRareEquip()
+    return (self:getValue(ItemValueDef.Attr_IsNonsuchProp) or 0) == 1
+end
+
+-- 
+function ItemData:propertys2Combat(prop)
+    local job = lt.GameModule:getHeroData():getJob()
+    local meta = lt.CacheManager:getBattleChange(job)
+    local value = 0
+
+    for i,v in pairs(prop) do
+        local skey = lt.CommonModule:propertyKeyitoa(i)
+        local tmp = meta:getValue(skey)
+        if not tmp then
+            print(string.format("========================> [warning] ItemData:propertys2Combat not match key %s, can\'t transform", skey))
+        end
+
+        value = value + v * (meta:getValue(skey) or 0)
+    end
+
+    return value
+end
+
+--装备强化等级
+function ItemData:getILevel()
+    return self:getValue(ItemValueDef.Attr_ILevel) or 1
+end
+
+--装备附魔词条/等级
+function ItemData:getFirstAffixId()
+    return self:getValue(ItemValueDef.Attr_FirstAffixId) or 0
+end
+
+function ItemData:getFirstAffixLevel()
+    return self:getValue(ItemValueDef.Attr_FirstAffixLevel) or 0
+end
+
+function ItemData:getSecondAffixId()
+    return self:getValue(ItemValueDef.Attr_SecondAffixId) or 0
+end
+
+function ItemData:getSecondAffixLevel()
+    return self:getValue(ItemValueDef.Attr_SecondAffixLevel) or 1
+end
+
+function ItemData:getThirdAffixId()
+    return self:getValue(ItemValueDef.Attr_ThirdAffixId) or 0
+end
+
+function ItemData:getThirdAffixLevel()
+    return self:getValue(ItemValueDef.Attr_ThirdAffixLevel) or 1
+end
+
+-- 弹药数量
+function ItemData:getAmmoCount()
+    return self:getValue(ItemValueDef.Attr_AmmoCount) or 0
+end
+
+-- 弹药数量上限
+function ItemData:getAmmoMaxCount()
+    return self:getValue(ItemValueDef.Attr_AmmoMaxCount) or 0
+end
+
+-- 镀银值
+function ItemData:getSilver()
+    return self:getValue(ItemValueDef.Attr_Silver) or 0
+end
+
+-- 耐久度
+function ItemData:getDurability()
+    return self:getValue(ItemValueDef.Attr_Durability) or 0
+end
+
+--限时
+function ItemData:getDeadline()
+    local deadlineLeftTime = self:getValue(ItemValueDef.Attr_DeadlineLeftTime) or 0
+    if deadlineLeftTime ~= 0 then
+        local serverTime = lt.TimeCounter:serverTime()
+        deadlineLeftTime = serverTime + deadlineLeftTime
+        return deadlineLeftTime
+    end
+    return self:getValue(ItemValueDef.Attr_Deadline) or 0
+end
+
+--绑定
+function ItemData:getBound()
+    return self:getValue(ItemValueDef.Attr_Bound) or 0
+end
+
+--道具归属objid
+function ItemData:getOwnerObjId()
+    return self:getValue(ItemValueDef.Attr_OwnerObjId) or 0
+end
+
+--道具归属objid过期时间戳
+function ItemData:getOwnerTimeout()
+    local ownerLeftTime = self:getValue(ItemValueDef.Attr_OwnerTimeout) or 0
+    return ownerLeftTime
+end
+
+--丢弃装备的玩家objid
+function ItemData:getDropOwnerId()
+    return self:getValue(ItemValueDef.Attr_DropOwnerId) or 0
+end
+
+-- 技能标记道具信息
+function ItemData:getMarkInfo()
+    if self:getMetaKind() == Constant.PropType.TRANSFER and self:getMetaType() == Constant.PropTypeSub_6.VampireTransformS then
+        --特殊的固定传送印章(读配置)
+        local effectParam = self:getEffectParam()
+        return {
+            mapId = effectParam[1][2],
+            x = effectParam[1][3],
+            y = effectParam[1][4],
+        }
+    else
+        return {
+            mapId = self:getValue(ItemValueDef.Attr_Bloody_Mark_Map_Id) or 0,
+            x = self:getValue(ItemValueDef.Attr_Bloody_Mark_Map_X) or 0,
+            y = self:getValue(ItemValueDef.Attr_Bloody_Mark_Map_Y) or 0,
+        }
+    end
+end
+
+function ItemData:getMarkMapId()
+    if self:getMetaKind() == Constant.PropType.TRANSFER and self:getMetaType() == Constant.PropTypeSub_6.VampireTransformS then
+        --特殊的固定传送印章(读配置)
+        local effectParam = self:getEffectParam()
+        return effectParam[1][2]
+    else
+        return self:getValue(ItemValueDef.Attr_Bloody_Mark_Map_Id) or 0
+    end
+end
+
+--是否满足条件缓存
+function ItemData:setFilter(filter)
+    self._filter = filter
+end
+
+function ItemData:getFilter()
+    return self._filter or 0
+end
+
+--是否为新道具
+function ItemData:setNew(new)
+    self._new = new
+end
+
+function ItemData:getNew()
+    return self._new or false
+end
+
+--道具使用数量
+function ItemData:getUseCount()
+    return self:getValue(ItemValueDef.Attr_UseCount) or 0
+end
+
+--拾取保护结束时间
+function ItemData:setPickEndTime(pickEndTime)
+    self._pickEndTime = pickEndTime
+end
+
+function ItemData:getPickEndTime()
+    return self._pickEndTime or 0
+end
+
+-- 是否可穿戴
+function ItemData:isWearable()
+    local itemType = self:getItemType()
+    if itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+        local itemMeta = self:getItemMeta()
+        local race = lt.GameModule:getHeroRace()
+        local heroData = lt.GameModule:getHeroData()
+        local sex = heroData:getSex() + 1
+        --种族要求
+        if tonumber(itemMeta:getRace()) ~= 0 and race ~= tonumber(itemMeta:getRace()) then
+            return false
+        end
+        --性别要求
+        if itemMeta:getNeedSex() ~= 0 and sex ~= itemMeta:getNeedSex() then
+            return false
+        end
+        --装备词条额外等级限制
+        local totalAffixLv = lt.StrengthenModule:getTotalAffixLv(self)
+        --等级要求
+        local advState, level = itemMeta:getNeedLevel()
+        if advState == Constant.AdvState.NotAdv then
+            if level > 0 then
+                local heroLevel = heroData:getLevel()
+                if heroLevel < level + totalAffixLv then
+                    return false
+                end
+            end
+        else
+            if heroData:getAdvanceState() ~= Constant.AdvState.Adv then
+                return false
+            end
+            local heroLevel = heroData:getAdvanceLevel()
+            if heroLevel < level then
+                return false
+            end
+        end
+        --力量要求
+        local requireStr = itemMeta:getRequireSTR()
+        local heroStr = heroData:getPureSTR()
+        if requireStr > 0 and heroStr < requireStr + totalAffixLv*2 then
+            return false
+        end
+        --敏捷要求
+        local requireDex = itemMeta:getRequireDEX()
+        local heroDex = heroData:getPureDEX()
+        if requireDex > 0 and heroDex < requireDex + totalAffixLv then
+            return false
+        end
+        --智力要求
+        local requireInt = itemMeta:getRequireINT()
+        local heroInt = heroData:getPureINT()
+        if requireInt > 0 and heroInt < requireInt + totalAffixLv then
+            return false
+        end
+        --总能力要求
+        local requireSum = itemMeta:getRequireSum()
+        if requireSum > 0 and heroStr+heroDex+heroInt < requireSum + totalAffixLv then
+            return false
+        end
+        return true
+    else
+        --宠物死亡显示红色
+        if self:getItemPetDeadTime() > 0 then
+            local isDie = PetModule:isDie(self:getItemPetDeadTime())
+            return not isDie
+        end
+    end
+    return true
+end
+
+---------------------------------------------------------------------------------------------------
+-- 装备总属性 = 装备属性 + 装备强化属性
+-- 获取装备升级表
+function ItemData:getUpgradeMeta()
+    local ilevel = self:getILevel()
+    local rank = self._itemMeta:getRank()
+    if rank == 0 then rank = 1 end
+    local upgradeMeta = lt.CacheManager:getEquipUpgradeMeta(rank, ilevel)
+    return upgradeMeta
+end
+
+--获得词条耐久度百分比加成
+function ItemData:getAffixDurability(totalDurability)
+    local value = 0
+    if self:getFirstAffixId() == Constant.AFFIXTYPES.DURABILITY then
+        local lv = self:getFirstAffixLevel()
+        local eqMeta = lt.CacheManager:getEnchantingAffixMeta(self:getFirstAffixId())
+        local attrNum = eqMeta:getBaseValue() + (lv - 1) * eqMeta:getValuesPreLevel()
+        value = value + attrNum
+    end
+    if self:getSecondAffixId() == Constant.AFFIXTYPES.DURABILITY then
+        local lv = self:getSecondAffixLevel()
+        local eqMeta = lt.CacheManager:getEnchantingAffixMeta(self:getSecondAffixId())
+        local attrNum = eqMeta:getBaseValue() + (lv - 1) * eqMeta:getValuesPreLevel()
+        value = value + attrNum
+    end
+    if self:getThirdAffixId() == Constant.AFFIXTYPES.DURABILITY then
+        local lv = self:getThirdAffixLevel()
+        local eqMeta = lt.CacheManager:getEnchantingAffixMeta(self:getThirdAffixId())
+        local attrNum = eqMeta:getBaseValue() + (lv - 1) * eqMeta:getValuesPreLevel()
+        value = value + attrNum
+    end
+    value = totalDurability * (value/100)
+    return value
+end
+
+-- 总耐久度最大值
+function ItemData:getTotalDurability()
+    local totalDurability = self._itemMeta:getDurability()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalDurability = totalDurability + upgradeMeta:getDurability()
+    end
+    --获取词条表属性加成(只有耐久度会显示)
+    local addAffixDurability = self:getAffixDurability(totalDurability)
+    if addAffixDurability > 0 then
+        totalDurability = totalDurability + addAffixDurability
+    end
+    return totalDurability
+end
+
+-- 总镀银值最大值
+function ItemData:getTotalSilverMax()
+    local totalSilverMax = self._itemMeta:getSilverMax()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalSilverMax = totalSilverMax + upgradeMeta:getSilverMax()
+    end
+    return totalSilverMax
+end
+
+-- 总最小伤害值
+function ItemData:getTotalMinDamage()
+    local totalMinDamage = self._itemMeta:getMinDamage()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalMinDamage = totalMinDamage + upgradeMeta:getMinDamage()
+    end
+    return totalMinDamage
+end
+
+-- 总最大伤害值
+function ItemData:getTotalMaxDamage()
+    local totalMaxDamage = self._itemMeta:getMaxDamage()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalMaxDamage = totalMaxDamage + upgradeMeta:getMaxDamage()
+    end
+    return totalMaxDamage
+end
+
+-- 总有效打击
+function ItemData:getTotalCriticalHit()
+    local totalCriticalHit = self._itemMeta:getCriticalHit()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalCriticalHit = totalCriticalHit + upgradeMeta:getCriticalHit()
+    end
+    return totalCriticalHit
+end
+
+-- 总回避率
+function ItemData:getTotalDodge()
+    local totalDodge = self._itemMeta:getDodge()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalDodge = totalDodge + upgradeMeta:getDodge()
+    end
+    return totalDodge
+end
+
+-- 总防御率
+function ItemData:getTotalDefense()
+    local totalDefense = self._itemMeta:getDefense()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalDefense = totalDefense + upgradeMeta:getDefense()
+    end
+    return totalDefense
+end
+
+-- 总力量
+function ItemData:getTotalStr()
+    local totalStr = self._itemMeta:getStr()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalStr = totalStr + upgradeMeta:getStr()
+    end
+    return totalStr
+end
+
+-- 总敏捷
+function ItemData:getTotalDex()
+    local totalDex = self._itemMeta:getDex()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalDex = totalDex + upgradeMeta:getDex()
+    end
+    return totalDex
+end
+
+-- 总智力
+function ItemData:getTotalInt()
+    local totalInt = self._itemMeta:getInt()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalInt = totalInt + upgradeMeta:getInt()
+    end
+    return totalInt
+end
+
+-- 总物理伤害
+function ItemData:getTotalPdam()
+    local totalPdam = self._itemMeta:getPdam()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalPdam = totalPdam + upgradeMeta:getPdam()
+    end
+    return totalPdam
+end
+
+-- 总魔法伤害
+function ItemData:getTotalMdam()
+    local totalMdam = self._itemMeta:getMdam()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalMdam = totalMdam + upgradeMeta:getMdam()
+    end
+    return totalMdam
+end
+
+-- 总物理防御
+function ItemData:getTotalPpro()
+    local totalPpro = self._itemMeta:getPpro()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalPpro = totalPpro + upgradeMeta:getPpro()
+    end
+    return totalPpro
+end
+
+-- 总魔法防御
+function ItemData:getTotalMpmo()
+    local totalMpmo = self._itemMeta:getMpmo()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalMpmo = totalMpmo + upgradeMeta:getMpmo()
+    end
+    return totalMpmo
+end
+
+-- 总能力
+function ItemData:getTotalAttr()
+    local totalAttr = self._itemMeta:getAttr()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalAttr = totalAttr + upgradeMeta:getAttr()
+    end
+    return totalAttr
+end
+
+-- 幸运
+function ItemData:getTotalLucky()
+    local totalLuck = self._itemMeta:getLuck()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalLuck = totalLuck + upgradeMeta:getLuck()
+    end
+    return totalLuck
+end
+
+-- 对怪增伤
+function ItemData:getTotalDbtm()
+    local totalDbtm = self._itemMeta:getDbtm()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalDbtm = totalDbtm + upgradeMeta:getDbtm()
+    end
+    return totalDbtm/100
+end
+
+-- 对人增伤
+function ItemData:getTotalDbtp()
+    local totalDbtp = self._itemMeta:getDbtp()
+    local upgradeMeta = self:getUpgradeMeta()
+    if upgradeMeta then
+        totalDbtp = totalDbtp + upgradeMeta:getDbtp()
+    end
+    return totalDbtp/100
+end
+
+---------------------------------------------------------------------------------------------------
+
+return ItemData

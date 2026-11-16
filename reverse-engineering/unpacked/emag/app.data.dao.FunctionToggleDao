@@ -1,0 +1,21 @@
+local FunctionToggleDao = {}
+
+function FunctionToggleDao:query(id)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM FunctionToggle WHERE FunctionId=%d;", tonumber(id))) do
+        local meta = lt.FunctionToggleMeta.new(row)
+        return meta
+    end
+end
+
+function FunctionToggleDao:queryAll()
+    local map = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM FunctionToggle") do
+        local meta = lt.FunctionToggleMeta.new(row)
+        map[meta:getFunctionId()] = meta
+    end
+    return map
+end
+
+return FunctionToggleDao

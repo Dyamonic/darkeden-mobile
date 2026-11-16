@@ -1,0 +1,47 @@
+
+-- 棺材擦除特效
+---@class ShaderCasketEffect
+local ShaderCasketEffect = class("ShaderCasketEffect", lt.ShaderBaseEffect)
+
+local ccEngine = cc
+
+function ShaderCasketEffect:ctor(node, program)
+    ShaderCasketEffect.super.ctor(self, node, program)
+end
+
+--- ShaderCasketEffect
+---@param node cc.Node 需要修改的纹理节点
+---@param targetColor cc.vec3 目标颜色值（头发、皮肤） 
+function ShaderCasketEffect:render(param)
+    self._casketValue = param.casketValue
+    self._selectColor = param.selectColor
+    self._pixelSize = param.pixelSize
+    self:setNodeShader()
+end
+
+function ShaderCasketEffect:setUniform(glState, time, node)
+    if self._casketValue then
+        glState:setUniform("u_wipeAmount", ccEngine.bytearray.from_float(self._casketValue))
+    end
+
+    if self._selectColor then
+        glState:setUniform("select_color", ccEngine.bytearray.from_vec4(self._selectColor))
+        if self._pixelSize then
+            glState:setUniform("pixelSize", ccEngine.bytearray.from_vec2(self._pixelSize))
+        end
+    end
+end
+
+function ShaderCasketEffect:resetUniform(glState, time)
+end
+
+function ShaderCasketEffect.needRefresh()
+    return false
+end
+
+function ShaderCasketEffect:resetTime(time)
+    return time + 0.5
+end
+
+return ShaderCasketEffect
+

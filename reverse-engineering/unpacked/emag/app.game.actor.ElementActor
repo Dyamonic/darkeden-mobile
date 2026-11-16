@@ -1,0 +1,715 @@
+--- 元素类（技能-火元素与水元素使用）
+local ElementActor = class("ElementActor", function()
+   return display.newNode() 
+end)
+
+local Constant = lt.Constant
+local MapUtil = lt.MapUtil
+local CacheManager = lt.CacheManager
+
+local SECTORPOSITION_NULL = 0xFFFF
+local MAX_FRAME_MOVE = 16
+local MAX_DIRECTION = 8
+local TILE_X = Constant.TILE_X
+local TILE_Y = Constant.TILE_Y
+
+function ElementActor:ctor(creatureType, m, n, dir, skillId)
+    self._actionNode = nil
+    self._ownerId = nil 
+    self._traceId = nil
+    self._finalTurretDirect = nil
+    self._traceFlag = false
+    self._patrolCount = math.random(1, 5)
+    self._bFastMove = false
+    self._creatureType = creatureType
+    self._skillId = skillId
+
+    self._nextDestX = nil
+
+    self._mElement = m
+    self._nElement = n
+    self.m_MoveCount			= 0; 
+    self.m_TraceX				= SECTORPOSITION_NULL;
+	self.m_TraceY				= SECTORPOSITION_NULL;
+    self.m_listDirection = {}
+    self.m_listDirection = {2,3,4,5,6,7,0,1}--{2,1,0,7,6,5,4,3}
+
+
+    self.m_X = self._mElement
+    self.m_Y = self._nElement
+    self.shouldCallMethod = 0
+
+    -- local test = display.newSprite("debug/route.png")
+    -- test:setAnchorPoint(cc.p(0.5, 0.5))
+    -- self:addChild(test)
+    -- test:setPosition(48/ 2, -24/2)
+
+    self.m_sXTable = {
+
+	    [0] = TILE_X, TILE_X, 0, -TILE_X, -TILE_X, -TILE_X, 0, TILE_X
+    }
+
+    self.m_sYTable = {
+	    [0] = 0, -TILE_Y, -TILE_Y, -TILE_Y, 0, TILE_Y, TILE_Y, TILE_Y
+    }
+
+    self:initActionNode()
+    self.m_cXTable = {}
+    self.m_cYTable = {}
+    for i = 0, MAX_FRAME_MOVE - 1 do
+        self.m_cXTable[i] = {}
+        self.m_cYTable[i] = {}
+        for j = 0, MAX_DIRECTION - 1 do
+            self.m_cXTable[i][j] = {}
+            self.m_cYTable[i][j] = {}
+        end
+    end
+    self:InitMoveTable()
+    self:setNextDestination(self.m_X, self.m_Y)
+end
+
+function ElementActor:setPositionEx(x, y)
+    self:setPosition(cc.p(x, y))
+end
+function ElementActor:setDirection(dir)
+end
+function ElementActor:setMN(m, n)
+    self._mElement = m
+    self._nElement = n
+    self.m_X = self._mElement
+    self.m_Y = self._nElement
+end
+
+function ElementActor:onClear()
+    self:stopAllActions()
+    if self._effectActor then
+        self._effectActor:onClear()
+        self._effectActor = nil
+    end
+    if self._effectAttack then
+        self._effectAttack:onClear()
+        self._effectAttack = nil
+    end
+    self:removeFromParent()
+end
+
+
+function ElementActor:setAgent(agent)
+    self._agent = agent
+end
+function ElementActor:getAgent(agent)
+    return self._agent
+end
+
+
+function ElementActor:initActionNode()
+
+    local skillId = self._skillId
+
+    local actionInfoMetas = CacheManager:getBuffMetas(skillId,0)
+    if not actionInfoMetas or #actionInfoMetas < 1 then
+        return
+    end
+
+
+    self._effectActor = lt.EffectActor.new(actionInfoMetas[1], 1, nil, true)
+    self:addChild(self._effectActor)
+end
+
+function ElementActor:playAttackAction()
+    local actionInfoMetas = CacheManager:getHitMetas(self._skillId,0)
+    if not actionInfoMetas or #actionInfoMetas < 1 then
+        return
+    end
+    self._effectAttack = lt.EffectActor.new(actionInfoMetas[1], 0, nil, false)
+    self:addChild(self._effectAttack)
+
+    self._effectActor:setVisible(false)
+    lt.ScheduleUtil:performWithDelayGlobal(function()
+        if self._effectActor then
+            self._effectActor:setVisible(true)
+        end
+        if self._effectAttack then
+            self._effectAttack:onClear()
+            self._effectAttack = nil
+        end
+    end, 0.87)
+end
+
+function ElementActor:setOwnerID(ownerId)
+    self._ownerId = ownerId
+end
+
+function ElementActor:setTraceID(traceId)
+    self._traceId = traceId
+end
+
+function ElementActor:onUpdate()
+    self:keepTraceCreature()
+    self.shouldCallMethod = self.shouldCallMethod + 1
+    if self.shouldCallMethod > 3 then
+        self:actionMovePet()
+        self.shouldCallMethod = 1
+    end
+
+    if self._effectActor then
+        self._effectActor:onUpdateEffect()
+    end
+    if self._effectAttack then
+        self._effectAttack:onUpdateEffect()
+    end
+end
+
+
+function ElementActor:caculatePetPosition(sX, sY, distance, distanceMin, moveType, petX, petY)
+    local p = {x = sX, y = sY}
+
+    -- if g_pZone == nil then
+    --     return p
+    -- end
+    local x0 = sX - distance
+    local x1 = sX + distance
+    local y0 = sY - distance
+    local y1 = sY + distance
+
+    local vMovePoint = {}
+
+    for i = y0, y1 - 1 do
+        for j = x0, x1 - 1 do
+            --g_pZone:CanMove(moveType, j, i) TODO 端游中某些地块不能飞行
+            if j ~= sX and i ~= sY and math.max(math.abs(i - petY), math.abs(j - petX)) >= distanceMin then
+                local tempPoint = {x = j, y = i}
+                table.insert(vMovePoint, tempPoint)
+            end
+        end
+    end
+
+    if #vMovePoint > 0 then
+        p = vMovePoint[math.random(#vMovePoint)]
+    end
+
+    return p
+end
+
+function ElementActor:getCreature(traceId)
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    return  worldAgent:getAgent(traceId)
+end
+
+function ElementActor:keepTraceCreature()
+    local pCreature = self:getCreature(self._traceId)
+    if not pCreature then return end
+    local mAction = pCreature:getActor():getActionId()
+    local mHero, nHero = pCreature:getMNExactly()
+
+    if pCreature ~= nil then
+        local distance = math.max(math.abs(mHero - self._mElement), math.abs(nHero - self._nElement))
+        if distance >= 6 then
+            self._finalTurretDirect = 0xFF
+            self:removeNodes()
+            self._traceFlag = true
+            self:getAgent():setMNExactly(mHero, nHero)
+            self:getAgent():setPosition(lt.MapUtil:calcMNMid(mHero, nHero))
+
+            -- SetFakeCreatureFastMoveAction(pCreature:GetX(), pCreature:GetY(), ACTIONINFO_NULL, pCreature:GetID())
+        elseif distance > 3 then
+            self._finalTurretDirect = 0xFF
+            self._traceFlag = true
+            self:removeNodes()
+            self:setNextDestination(mHero, nHero)
+            if mAction == Constant.ACTION_VAMPIRE_DRAIN then
+                -- if m_ActionCount < m_ActionCountMax - 13 then
+                --     m_ActionCount = m_ActionCountMax - 13
+                -- end
+                -- SetNextActionToMove()
+            else
+                if mAction ~= Constant.ACTION_MOVE then
+                    -- self:SetAction(m_MoveAction)
+                end
+            end
+        end
+
+        local lastAction = Constant.ACTION_STAND
+        if lastAction ~= Constant.ACTION_STAND and mAction == Constant.ACTION_STAND then
+            self._traceFlag = false
+        end
+        lastAction = mAction
+    else
+        self:setStop()
+    end
+end
+
+function ElementActor:setNextDestination(sX, sY)
+    -- 추적 중이 아니면서
+    -- 이미 목표위치에 있는 경우는 길찾기 필요없다.
+    if not self._traceFlag and sX == self._mElement and sY == self._nElement then
+        return false
+    end
+
+    -- 잘못된 값
+    -- 이전에 못 갔던 곳..
+    if sX == SECTORPOSITION_NULL or sY == SECTORPOSITION_NULL  then
+        --or (sX == m_BlockDestX and sY == m_BlockDestY) then
+        return false
+    end
+
+    if not self._traceFlag then
+        local bCanStand = false--m_pZone:CanMove(m_MoveType, sX, sY)
+        if not bCanStand then
+            local MovePoint = {x = 0, y = 0}
+
+            if sY > self._nElement then
+                MovePoint.y = -1
+            elseif sY < self._nElement then
+                MovePoint.y = 1
+            else
+                MovePoint.y = 0
+            end
+            if sX > self._mElement then
+                MovePoint.x = -1
+            elseif sX < self._mElement then
+                MovePoint.x = 1
+            else
+                MovePoint.x = 0
+            end
+
+            local limit = 20 -- 유효값 20번내에 못찾으면 포기
+
+            while not bCanStand and not (self._mElement == sX and self._nElement == sY) and
+                  sX >= 0 and sY >= 0 and limit > 0 do
+                if self._mElement ~= sX then sX = sX + MovePoint.x end
+                if self._nElement ~= sY then sY = sY + MovePoint.y end
+                bCanStand = true
+                limit = limit - 1
+            end
+
+            if not bCanStand or (self._mElement == sX and self._nElement == sY) then
+                return false
+            end
+        end
+    end
+    self._nextDestX = sX
+    self._nextDestY = sY
+    -- print("setNextDestination===>", self._nextDestX, self._nextDestY)
+    -- self:getAgent():handleRouteMsg({mTarget = self._nextDestX, nTarget = self._nextDestY})
+    self:getAgent():startTrace()
+    -- SetDestination(self._nextDestX, self._nextDestY)
+
+    return true
+end
+
+function ElementActor:removeNodes()
+    -- yflog:Info("ElementActor:removeNodes()")
+
+    --移除方向列表
+end
+
+function ElementActor:setStop()
+    -- yflog:Info("ElementActor:setStop()")
+
+end
+
+function ElementActor:actionMovePet()
+    local moveTimesTemp = 6
+
+    --[[ 
+        到达下一个扇区的情况 
+    --]]
+    -- print("self.m_MoveCount % moveTimesTemp",self.m_MoveCount % moveTimesTemp)
+    if self.m_MoveCount % moveTimesTemp == 0 then
+        local x, y
+
+        if self.m_bFastMove then
+            x = self.m_NextX
+            y = self.m_NextY
+
+            self.m_NextX = SECTORPOSITION_NULL
+            self.m_Direction = self:GetDirectionToPosition(x, y)
+        else
+            if self.m_DestX == SECTORPOSITION_NULL and self._nextDestX == SECTORPOSITION_NULL then
+                yflog:Info("### Don't need to move any more - Move Stop! ###")
+                self.m_MoveCount = self.m_MoveCountMax
+                return
+            end
+
+            if self._traceFlag then
+                local pCreature = self:getCreature(self._traceId)
+
+                if pCreature == nil then
+                    self._traceFlag = false
+                    self:setStop()
+                    return
+                end
+
+                local mHero,nHero = pCreature:getMNExactly()
+                if mHero ~= self.m_TraceX or nHero ~= self.m_TraceY then
+                    self._nextDestX = mHero
+                    self._nextDestY = nHero
+                end
+
+                self.m_TraceX = mHero
+                self.m_TraceY = nHero
+            end
+
+            if self._nextDestX ~= SECTORPOSITION_NULL then
+                self.m_DestX = self._nextDestX
+                self.m_DestY = self._nextDestY
+                self._nextDestX = SECTORPOSITION_NULL
+                self._nextDestY = SECTORPOSITION_NULL
+            end
+
+            if self.m_DestX ~= SECTORPOSITION_NULL then
+                self:SetDestination(self.m_DestX, self.m_DestY)
+            end
+
+            if #self.m_listDirection == 0 then
+                if self.m_DestX == self.m_X and self.m_DestY == self.m_Y then
+                    self.m_DestX = SECTORPOSITION_NULL
+                    self.m_DestY = SECTORPOSITION_NULL
+                    yflog:Info("dest reached")
+                end
+                yflog:Info("no way")
+                return
+            end
+            
+            self.m_Direction = table.remove(self.m_listDirection, 1)
+            -- print("===>self.m_Direction", self.m_Direction)
+
+            if self._nextDestX ~= SECTORPOSITION_NULL then
+                self:SetNextAction(self.m_MoveAction)
+            end
+
+            x = self.m_X
+            y = self.m_Y
+            local x, y = MapUtil:getPositionToDirection(x, y, self.m_Direction)
+
+            if true or self.m_pZone:CanMove(self.m_MoveType, x, y) or self.m_bFastMove then
+                if self.m_bFastMove then
+                    -- nothing
+                else
+                    -- normal movement validation
+                end
+
+                local ox = self.m_X
+                local oy = self.m_Y
+
+                self:movePosition(x, y)
+
+                if self.m_bFastMove then
+                    self.m_sX = (ox - self.m_X) * Constant.TILE_X
+                    self.m_sY = (oy - self.m_Y) * Constant.TILE_Y
+                    --math.floor(num / 2) g_pCreatureTable[self.m_CreatureType].MoveTimes >> 1
+                    local moveTimes_div_2 = 3
+                    self.m_cX = -self.m_sX / moveTimes_div_2
+                    self.m_cY = -self.m_sY / moveTimes_div_2
+                    self.m_MoveCount = self.m_MoveCount + 2
+
+                    if self.m_MoveCount > self.m_MoveCountMax then
+                        self.m_MoveCount = self.m_MoveCountMax
+                    end
+                else
+                    self.m_DirectionMoved = self.m_Direction
+                    self.m_sX = self.m_sXTable[self.m_DirectionMoved]
+                    self.m_sY = self.m_sYTable[self.m_DirectionMoved]
+
+                    local moveTimes_1 = 5
+
+                    self.m_MoveTableCount = 0
+                    self.m_cX = self.m_cXTable[moveTimes_1][self.m_DirectionMoved][self.m_MoveTableCount % moveTimes_1]
+                    self.m_cY = self.m_cYTable[moveTimes_1][self.m_DirectionMoved][self.m_MoveTableCount % moveTimes_1]
+                end
+
+                self.m_sX = self.m_sX + self.m_cX
+                self.m_sY = self.m_sY + self.m_cY
+
+                if self.m_MoveCount == 0 then
+                    self.m_NextMoveCount = 1
+                else
+                    self.m_NextMoveCount = self.m_NextMoveCount + 1
+                end
+
+                self.m_MoveCount = self.m_MoveCount + 1
+
+            else
+                self._nextDestX = self.m_DestX
+                self._nextDestY = self.m_DestY
+                self.m_listDirection = {}
+            end
+
+            if #self.m_listDirection > 0 then
+                self:SetNextAction(self.m_MoveAction)
+            end
+        end
+    else
+        -- 还没有到达下一个扇区
+        if self.m_MoveCount >= self.m_NextMoveCount then
+            if self.m_bFastMove then
+                if self.m_sX ~= 0 then self.m_sX = self.m_sX + self.m_cX end
+                if self.m_sY ~= 0 then self.m_sY = self.m_sY + self.m_cY end
+
+                self.m_MoveCount = self.m_MoveCount + 2
+
+                if self.m_MoveCount > self.m_MoveCountMax then
+                    self.m_MoveCount = self.m_MoveCountMax
+                end
+
+                self.m_NextMoveCount = self.m_NextMoveCount + 1
+            else
+                local moveTimes_1 = 5
+                self.m_MoveTableCount = self.m_MoveTableCount + 1
+                self.m_cX = self.m_cXTable[moveTimes_1][self.m_DirectionMoved][self.m_MoveTableCount % moveTimes_1]
+                self.m_cY = self.m_cYTable[moveTimes_1][self.m_DirectionMoved][self.m_MoveTableCount % moveTimes_1]
+
+                if self.m_sX ~= 0 then self.m_sX = self.m_sX + self.m_cX end
+                if self.m_sY ~= 0 then self.m_sY = self.m_sY + self.m_cY end
+
+                self.m_NextMoveCount = self.m_NextMoveCount + 1
+                self.m_MoveCount = self.m_MoveCount + 1
+            end
+        else
+            self.m_MoveCount = self.m_MoveCount + 1
+        end
+    end
+
+    -- yflog:Info("moveok")
+end
+
+
+function ElementActor:InitMoveTable()
+    for maxFrame = 0, MAX_FRAME_MOVE - 1 do
+        local maxFrame_plus_1 = maxFrame + 1
+
+        for d = 0, 7 do
+            -- maxFrame个帧
+            if self.m_cXTable[maxFrame][d] ~= nil then
+                self.m_cXTable[maxFrame][d] = nil
+            end
+            self.m_cXTable[maxFrame][d] = {}
+
+            if self.m_cYTable[maxFrame][d] ~= nil then
+                self.m_cYTable[maxFrame][d] = nil
+            end
+            self.m_cYTable[maxFrame][d] = {}
+
+            -- maxFrame为8时
+            local totalX = -self.m_sXTable[d]  -- 48
+            local totalY = -self.m_sYTable[d]  -- 24
+
+            local pX, pY = 0, 0  -- 前一个x,y值
+            local fX, fY = 0, 0  -- 当前累加的x,y值
+            local cX = totalX / maxFrame_plus_1  -- 6
+            local cY = totalY / maxFrame_plus_1  -- 3
+
+            -- 初始化每个帧
+            -- maxFrame个帧的总和应等于totalX和totalY
+            for f = 0, maxFrame - 1 do
+                -- 当前累加的x,y值
+                fX = fX + cX
+                fY = fY + cY
+
+                -- 当前值减去前一个值得到差值
+                self.m_cXTable[maxFrame][d][f] = fX - pX
+                self.m_cYTable[maxFrame][d][f] = fY - pY
+
+                -- 记住当前值
+                pX = fX
+                pY = fY
+            end
+
+            self.m_cXTable[maxFrame][d][maxFrame] = totalX - pX
+            self.m_cYTable[maxFrame][d][maxFrame] = totalY - pY
+        end
+    end
+end
+
+function ElementActor:SetNextAction()
+    -- print("=====>SetNextAction")
+end
+
+function ElementActor:SetDestination(sX, sY)
+    -- print('ElementActor:SetDestination(sX, sY)',  self.m_Direction)
+    if (#self.m_listDirection == 0) then
+       self.m_listDirection = {2,3,4,5,6,7,0,1}--{2,1,0,7,6,5,4,3}
+    end
+    local x, y = lt.MapUtil:calcMNMid(self._mElement, self._nElement)
+    local offsetX, offsetY = -25, 15
+    local reX, reY = x + offsetX, y + offsetY
+    if not self.m_cX then return end
+    local curX, curY = self:getPosition()
+    local moveTo = cc.MoveTo:create(0.3, cc.p(curX + self.m_cX, curY + self.m_cY))
+    self:runAction(moveTo)
+    -- transition.moveTo(self, {
+    --     x = curX + self.m_cX,
+    --     y = curY + self.m_cY,
+    --     time = 0.3,
+    --     onComplete = function()
+    --         -- yflog:Info("SetDestination moveok")
+    --     end
+    -- })
+end
+
+-- function ElementActor:SetDestination(sX, sY)
+--     if #self.m_listDirection > 0 then
+--         self.m_listDirection = {}
+--     end
+
+--     if self._traceFlag and math.max(math.abs(self.m_TraceX - self.m_X), math.abs(self.m_TraceY - self.m_Y)) <= 1 then
+--         self.m_MoveCount = self.m_MoveCountMax
+--         self.m_DestX = SECTORPOSITION_NULL
+--         self.m_DestY = SECTORPOSITION_NULL
+--         yflog("already in dist")
+--         return false
+--     end
+
+--     local bCanStand = true
+    
+--     if bCanStand or self._traceFlag then
+--         self.m_DestX = sX
+--         self.m_DestY = sY
+
+--         self:RemoveNodes()
+
+--         local firstSector = g_pTopView:GetFirstSector()
+--         local x0 = firstSector.x - 1
+--         local x1 = firstSector.x + SECTOR_WIDTH + 5
+--         local y0 = firstSector.y - 1
+--         local y1 = firstSector.y + SECTOR_HEIGHT + 5
+
+--         x0 = math.max(0, x0)
+--         x1 = math.min(g_pZone:GetWidth(), x1)
+--         y0 = math.max(0, y0)
+--         y1 = math.min(g_pZone:GetHeight(), y1)
+
+--         for i = y0, y1 - 1 do
+--             for j = x0, x1 - 1 do
+--                 g_pZone:UnSetVisitedFlag(j, i)
+--             end
+--         end
+
+--         local FirstDirection = self:GetDirectionToPosition(self.m_DestX, self.m_DestY)
+--         local previousDestX = SECTORPOSITION_NULL
+--         local previousDestY = SECTORPOSITION_NULL
+
+--         if previousDestX ~= self.m_DestX or previousDestY ~= self.m_DestY then
+--             FirstDirection = self:GetDirectionToPosition(self.m_DestX, self.m_DestY)
+--             previousDestX = self.m_DestX
+--             previousDestY = self.m_DestY
+--         else
+--             FirstDirection = self.m_Direction
+--         end
+
+--         local currentDNode = DNode:new(self.m_X, self.m_Y, FirstDirection, self:CalculateDistance(self.m_X, self.m_Y), 0)
+--         table.insert(self.m_listDNodes, currentDNode)
+--         currentDNode:SetParent(nil)
+--         self.m_pqDNodes:push(currentDNode)
+
+--         local next = {}
+--         local dist
+--         local bFound = false
+
+--         while not bFound and not self.m_pqDNodes:empty() do
+--             local pDNode = self.m_pqDNodes:top()
+--             self.m_pqDNodes:pop()
+
+--             if pDNode.distance == 0 then
+--                 self.m_pqDNodes:push(pDNode)
+--                 bFound = true
+--                 break
+--             end
+
+--             if self._traceFlag and math.max(math.abs(pDNode.x - self.m_DestX), math.abs(pDNode.y - self.m_DestY)) <= 1 then
+--                 self.m_pqDNodes:push(pDNode)
+--                 bFound = true
+--                 break
+--             end
+
+--             local Direction = pDNode.direction
+
+--             for i = 0, 7 do
+--                 local dir = (Direction + i) % 8
+--                 next.x, next.y = pDNode.x, pDNode.y
+
+--                 if dir == DIRECTION_LEFTDOWN then
+--                     next.x = next.x - 1; next.y = next.y + 1
+--                 elseif dir == DIRECTION_RIGHTUP then
+--                     next.x = next.x + 1; next.y = next.y - 1
+--                 elseif dir == DIRECTION_LEFTUP then
+--                     next.x = next.x - 1; next.y = next.y - 1
+--                 elseif dir == DIRECTION_RIGHTDOWN then
+--                     next.x = next.x + 1; next.y = next.y + 1
+--                 elseif dir == DIRECTION_LEFT then
+--                     next.x = next.x - 1
+--                 elseif dir == DIRECTION_DOWN then
+--                     next.y = next.y + 1
+--                 elseif dir == DIRECTION_UP then
+--                     next.y = next.y - 1
+--                 elseif dir == DIRECTION_RIGHT then
+--                     next.x = next.x + 1
+--                 end
+
+--                 if next.x >= 0 and next.y >= 0 and next.x < self.m_pZone:GetWidth() and next.y < self.m_pZone:GetHeight() then
+--                     if not g_pZone:IsVisitedFlag(next.x, next.y) and 
+--                        next.x >= x0 and next.y >= y0 and 
+--                        next.x < x1 and next.y < y1 and 
+--                        self.m_pZone:CanMove(self.m_MoveType, next.x, next.y) then
+
+--                         g_pZone:SetVisitedFlag(next.x, next.y)
+
+--                         dist = self:CalculateDistance(next.x, next.y)
+
+--                         local nextDNode = DNode:new(next.x, next.y, dir, dist, pDNode.step + 1)
+--                         table.insert(self.m_listDNodes, nextDNode)
+--                         nextDNode:SetParent(pDNode)
+--                         self.m_pqDNodes:push(nextDNode)
+--                     end
+--                 end
+--             end
+--         end
+
+--         if bFound then
+--             local currentNode = self.m_pqDNodes:top()
+--             self.m_pqDNodes:pop()
+
+--             while currentNode.pParent ~= nil do
+--                 table.insert(self.m_listDirection, 1, currentNode.direction)
+--                 currentNode = currentNode.pParent
+--             end
+
+--             self:RemoveNodes()
+--             self.m_BlockDestX = SECTORPOSITION_NULL
+--             self.m_BlockDestY = SECTORPOSITION_NULL
+--         else
+--             if self._traceFlag then
+--                 self.m_MoveCount = self.m_MoveCountMax
+--                 self._traceFlag = false
+--                 self.m_nUsedActionInfo = ACTIONINFO_NULL
+--                 self.m_nNextUsedActionInfo = ACTIONINFO_NULL
+--             end
+
+--             self.m_BlockDestX = self.m_DestX
+--             self.m_BlockDestY = self.m_DestY
+--             self.m_DestX = SECTORPOSITION_NULL
+--             self.m_DestY = SECTORPOSITION_NULL
+--         end
+--     else
+--         self.m_MoveCount = self.m_MoveCountMax
+--         self.m_DestX = SECTORPOSITION_NULL
+--         self.m_DestY = SECTORPOSITION_NULL
+--         -- DEBUG_LOG("no way!")
+--         return false
+--     end
+
+--     -- DEBUG_LOG("find way")
+--     return true
+-- end
+
+function ElementActor:movePosition(x, y)
+    self.m_X = x
+    self.m_Y = y
+end
+
+
+
+
+
+return ElementActor

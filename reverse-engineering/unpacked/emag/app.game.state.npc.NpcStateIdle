@@ -1,0 +1,34 @@
+
+local NpcStateIdle = class("NpcStateIdle", lt.NpcStateBase)
+
+local Constant = lt.Constant
+
+function NpcStateIdle:ctor(npcAgent)
+    NpcStateIdle.super.ctor(self, npcAgent)
+end
+
+function NpcStateIdle:onClear()
+end
+
+function NpcStateIdle:onEnter()
+    self._npcAgent:playAction(Constant.ROLE_ACTION_IDLE)
+end
+
+function NpcStateIdle:onExit()
+end
+
+function NpcStateIdle:onUpdate()
+end
+
+function NpcStateIdle:onMessage(msg)
+end
+
+function NpcStateIdle:getStateId()
+    return Constant.NPC_STATE_IDLE
+end
+
+function NpcStateIdle:getStateName()
+    return "NpcStateIdle"
+end
+
+return NpcStateIdle

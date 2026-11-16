@@ -1,0 +1,63 @@
+local ActionMonster = class("ActionMonster", lt.ActionBase)
+
+local Constant = lt.Constant
+local CacheManager = lt.CacheManager
+
+function ActionMonster:ctor(modelName, modelId, actionId, direction, loop, isShadow)
+    self._actionType = self.ACTION_TYPE.MONSTER
+    self._step = 0.06
+    ActionMonster.super.ctor(self, modelName, modelId, actionId, direction, loop, isShadow)
+end
+
+function ActionMonster:getActionStep(actionId, attackTime,  moveInterval)
+    if actionId == Constant.ACTION_MOVE then 
+        -- 走路的帧播放速度
+        local speed = (Constant.MONSTER_WALK_SPEED) / moveInterval
+        self._step = (Constant.MAP_BLOCK_HEIGHT / (speed * self._frameCount))
+        return self._step
+    elseif actionId == Constant.ACTION_ATTACK
+        or actionId == Constant.ROLE_ACTION_BEAT 
+        or actionId == Constant.ACTION_OUSTERS_MAGIC_ATTACK 
+        or actionId == Constant.ACTION_OUSTERS_DRAIN then
+        if not attackTime then
+            local meta = CacheManager:getModelMeta(self._modelId)
+            if not meta then
+                self._step = 0.06
+                return self._step
+            else
+                attackTime = meta:getAttackTime()
+            end
+        end
+        -- attackTime单位为千
+        self._step = attackTime/1000/self._frameCount
+    else
+        -- yflog:Info("ActionMonster 怪物的其他动作：%s", actionId)
+        self._step = 0.06
+    end
+    return self._step
+end
+
+function ActionMonster:setActionStep()
+    self._step = 0.06
+end
+
+function ActionMonster:loadActionData()
+    local modelId = self._modelId
+    -- 怪物目前用 creature.cfpk  后续需要写脚本拆分cfpk 每个id模型对应一个
+    local name = "creature"
+    if self._isShadow then
+        name = "creatureshadow"
+    end
+
+    self._actionData = lt.ActionManager:getActionData(name, modelId)
+    local dataFrameArr = self._actionData:getDirection(self._actionId, self._direction)
+    if not dataFrameArr then
+        yflog:Error("dataFrameArr is nil")
+        return
+    end
+
+    self._dataFrameArray = dataFrameArr
+    self._frameCount = #dataFrameArr
+end
+
+return ActionMonster

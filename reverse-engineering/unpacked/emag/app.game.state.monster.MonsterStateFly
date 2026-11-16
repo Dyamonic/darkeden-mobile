@@ -1,0 +1,91 @@
+local MonsterStateFly = class("MonsterStateFly", lt.MonsterStateBase)
+
+local Constant = lt.Constant
+local BuffEnum = lt.BuffEnum
+
+--[[
+    飞起挂起状态
+]]
+
+function MonsterStateFly:ctor(monsterAgent,buffId)
+    MonsterStateFly.super.ctor(self, monsterAgent)
+
+    if buffId == BuffEnum.EFFECT_CAUSE_CRITICAL_WOUNDS then
+        self._monsterAgent:playAction(Constant.ROLE_ACTION_IDLE)
+        self._timeTriggerIdle = lt.TimeTrigger.new(1)
+        self._checkBuff = BuffEnum.EFFECT_CAUSE_CRITICAL_WOUNDS_DOWN
+    end
+
+    if buffId == BuffEnum.EFFECT_EXPLOSION_WATER then
+        self._monsterAgent:playAction(Constant.ROLE_ACTION_FLY)
+        self._timeTriggerFly = lt.TimeTrigger.new(0.5)
+        self._checkBuff = BuffEnum.EFFECT_EXPLOSION_WATER_DOWN
+    end
+    self._buffId = buffId
+
+    self._monsterActor = self._monsterAgent:getActor()
+end
+
+function MonsterStateFly:onClear()
+    MonsterStateFly.super.onClear(self)
+
+    self._checkBuff = nil
+    self._buffId    = nil
+    self._monsterActor   = nil
+    self._timeTriggerFly = nil
+    self._timeTriggerIdle= nil
+    self._timeTriggerReverse = nil
+end
+
+function MonsterStateFly:onEnter()
+end
+
+function MonsterStateFly:onExit()
+    self._monsterActor:setActionPause(false)
+end
+
+function MonsterStateFly:onUpdate()
+    if self._timeTriggerIdle and self._timeTriggerIdle:tick(lt.GameBoard:getDeltaTime()) then
+        self._timeTriggerIdle = nil
+        self._monsterAgent:playAction(Constant.ROLE_ACTION_FLY)
+        self._timeTriggerFly = lt.TimeTrigger.new(0.5)
+    end
+
+    if self._timeTriggerFly and self._timeTriggerFly:tick(lt.GameBoard:getDeltaTime()) then
+        self._monsterActor:setActionPause(true)
+        self._timeTriggerFly = nil
+    end
+
+    ------------------------------------------------------------------------------------------------
+    -- 倒放
+    if self._checkBuff then
+        if not self._timeTriggerFly and not self._timeTriggerIdle and not self._timeTriggerReverse then
+            local buff = self._monsterAgent:hasBuffer(self._checkBuff)
+            if not buff then
+                self._timeTriggerReverse = lt.TimeTrigger.new(0.06)
+            end
+        end
+
+        if self._timeTriggerReverse and self._timeTriggerReverse:tick(lt.GameBoard:getDeltaTime()) then
+            if self._monsterActor:getNextFrameIndex() < 1 then
+                return
+            end
+            self._monsterActor:addNextFrameIndex(-1)
+            self._monsterActor:updateFrame(true)
+            self._timeTriggerReverse = lt.TimeTrigger.new(0.06)
+        end
+    end
+end
+
+function MonsterStateFly:onMessage(msg)
+end
+
+function MonsterStateFly:getStateId()
+    return Constant.MONSTER_STATE_FLY
+end
+
+function MonsterStateFly:getStateName()
+    return "MonsterStateFly"
+end
+
+return MonsterStateFly

@@ -1,0 +1,49 @@
+---@class TransitionLayer 过场动画层
+local TransitionLayer = class("TransitionLayer", lt.UICompBase)
+local NtfManager = lt.NtfManager
+local ScheduleUtil = lt.ScheduleUtil
+function TransitionLayer:ctor()
+    TransitionLayer.super.ctor(self)
+    self:initUI()
+end
+
+function TransitionLayer:initUI()
+    self._view = fgui.UIPackage:createObject("Main", "TransitionLayer")
+    self._view:makeFullScreen()
+    self._view:center()
+    self:addChild(self._view)
+    --引导层
+    self._transition = self._view:getChild("transition")
+    self:onEventTransitionAnimation()
+end
+function TransitionLayer:onClear()
+    self:removeFromParent()
+    self._view = nil
+    self._transition = nil
+    TransitionLayer.super.onClear(self)
+end
+
+
+function TransitionLayer:onEnter()
+    TransitionLayer.super.onEnter(self)
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_EVENTFLAG_TRANSITION_ANIMATION, handler(self, self.onEventTransitionAnimation),
+    "TransitionLayer:onEventTransitionAnimation")
+end
+
+function TransitionLayer:onExit()
+    if self._delayHideHandler then
+        ScheduleUtil:unscheduleGlobal(self._delayHideHandler)
+        self._delayHideHandler = nil
+    end
+    NtfManager:removeNtfListenerByTag("TransitionLayer:onEventTransitionAnimation")
+    TransitionLayer.super.onExit(self)
+end
+function TransitionLayer:onEventTransitionAnimation()
+    self._transition:setVisible(true)
+    self._delayHideHandler = ScheduleUtil:performWithDelayGlobal(function()
+        self._transition:setVisible(false)
+    end, 0.27)
+end
+
+
+return TransitionLayer

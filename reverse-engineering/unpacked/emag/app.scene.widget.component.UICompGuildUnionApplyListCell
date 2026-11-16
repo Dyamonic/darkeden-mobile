@@ -1,0 +1,74 @@
+--- 联盟申请列表Cell
+---@class UICompGuildUnionApplyListCell
+local UICompGuildUnionApplyListCell = class("UICompGuildUnionApplyListCell", lt.UIGButtonBase)
+
+local NtfManager = lt.NtfManager
+local CommonModule = lt.CommonModule
+local Constant = lt.Constant
+local CacheManager = lt.CacheManager
+local GuildModule = lt.GuildModule
+
+UICompGuildUnionApplyListCell.ChangeSkinConf = {
+    ["Guild"] = {
+        ["bg"] = "bg_gonghuixt_13",
+    },
+
+    ["CommonTL"] = {
+        ["btn_reject"] = { loaderdown = "bg_beibao_ren_anniu" },
+        ["btn_agree"] = { loaderdown = "bg_beibao_ren_anniu" },
+    }
+}
+function UICompGuildUnionApplyListCell:ctor()
+    UICompGuildUnionApplyListCell.super.ctor(self)
+end
+
+function UICompGuildUnionApplyListCell:onClear()
+    self._lblGuildName  = nil
+    self._lblMasterName = nil
+    self._lbl_Grade     = nil
+    self._lblCount      = nil
+    self._bgGuildIcon   = nil
+    self._btnReject     = nil
+    self._btnAgree      = nil
+    UICompGuildUnionApplyListCell.super.onClear(self)
+end
+
+function UICompGuildUnionApplyListCell:onEnter()
+    self._btnReject:removeClickListener()
+    self._btnAgree:removeClickListener()
+    UICompGuildUnionApplyListCell.super.onEnter(self)
+end
+
+function UICompGuildUnionApplyListCell:onExit()
+    self._btnReject:removeClickListener()
+    self._btnAgree:removeClickListener()
+    UICompGuildUnionApplyListCell.super.onExit(self)
+end
+
+function UICompGuildUnionApplyListCell:onConstruct()
+    self._lblGuildName  = self:getChild("lbl_guildName")
+    self._lblMasterName = self:getChild("lbl_masterName")
+    self._lbl_Grade     = self:getChild("lbl_grade")
+    self._lblCount      = self:getChild("lbl_count")
+    self._bgGuildIcon   = self:getChild("bg_guildIcon")
+    self._btnReject     = self:getChild("btn_reject")
+    self._btnAgree      = self:getChild("btn_agree")
+end
+
+function UICompGuildUnionApplyListCell:setInfo(info, index)
+
+end
+
+function UICompGuildUnionApplyListCell:setSelected(select)
+    self._bgSelect:setVisible(select)
+end
+
+function UICompGuildUnionApplyListCell:onClickRejectBtn(obj)
+
+end
+
+function UICompGuildUnionApplyListCell:onClickAgreeBtn(obj)
+
+end
+
+return UICompGuildUnionApplyListCell

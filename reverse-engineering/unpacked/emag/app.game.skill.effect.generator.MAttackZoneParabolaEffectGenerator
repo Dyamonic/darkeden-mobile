@@ -1,0 +1,86 @@
+-- MAttackZoneParabolaEffectGenerator.lua
+
+local MAttackZoneParabolaEffectGenerator = class("MAttackZoneParabolaEffectGenerator", lt.MEffectGenerator)
+
+local SkillEnum = lt.SkillEnum
+local Constant = lt.Constant
+local CacheManager = lt.CacheManager
+local MapUtil = lt.MapUtil
+
+local TILE_X = Constant.TILE_X	
+local TILE_Y= Constant.TILE_Y 
+local TILE_X_HALF= Constant.TILE_X_HALF 
+local TILE_Y_HALF= Constant.TILE_Y_HALF 
+function MAttackZoneParabolaEffectGenerator:generate(egInfo)
+    -- local bltType = g_pEffectSpriteTypeTable[egInfo.effectSpriteType].BltType
+    -- local frameID = g_pEffectSpriteTypeTable[egInfo.effectSpriteType].FrameID
+    local skillId = egInfo.skillId
+
+    -- 创建抛物线效果对象
+    local pEffect = lt.BullectParabolaEffect.new(skillId)
+
+    -- 获取最大帧数
+    -- local maxFrame = g_pTopView:GetMaxEffectFrame(bltType, frameID)
+
+    -- 设置帧ID
+    -- pEffect:SetFrameID(frameID, maxFrame)
+
+    -- 根据方向计算目标偏移
+    local cxy = MapUtil:getChangeValueToDirection(egInfo.direction)
+    
+    -- 计算目标位置（多加一格）
+    local tx = egInfo.x1 + cxy.x * (TILE_X / 2)
+    local ty = egInfo.y1 + cxy.y * (TILE_Y /2)
+
+    -- 设置发射位置（Z轴有特殊处理）
+    if skillId == SkillEnum.SKILL_CANNONADE then
+        pEffect:setPixelPosition(egInfo.x0, egInfo.y0, egInfo.z0)
+        local m, n = MapUtil:PixelToMap(egInfo.x1, egInfo.y1)
+        pEffect:setTargetTile(m, n)
+    else
+        -- 默认Z轴抬高2个瓦片高度
+        pEffect:setPixelPosition(egInfo.x0, egInfo.y0, egInfo.z0 + TILE_Y * 2)
+    end
+
+    -- 设置方向
+    pEffect:setDirection(egInfo.direction)
+
+    pEffect:addEffectActor(skillId)
+
+    -- 设置目标位置（Z轴抬高1个瓦片高度）
+    pEffect:setTarget(tx, ty, egInfo.z1 + TILE_Y, egInfo.step)
+
+    -- 设置持续帧数
+    pEffect:setCount(egInfo.count)
+
+    pEffect:setEndCallBack(egInfo.callback)
+    -- pEffect:setPosition(1943.9559970295, -4963.3461741136)
+
+    lt.BulletManager:addBulletToMap(pEffect)
+    -- pEffect:setPixelPosition(1943.9559970295, -4963.3461741136, 0)
+
+    -- local actionInfoMetas = CacheManager:getBulletMetas(skillId)
+
+    -- local cannonadeSmoke = lt.BullectScreenEffect.new(self._skillId, egInfo.direction, cc.p(1943.9559970295, -4963.3461741136))
+    -- cannonadeSmoke:addEffect(self._skillId, actionInfoMetas[5], true)
+    -- lt.BulletManager:addBulletToMap(cannonadeSmoke)
+
+    -- local cannonadeSmoke = lt.BullectScreenEffect.new(self._skillId, 0, cc.p(1943.9559970295, -4963.3461741136))
+    -- cannonadeSmoke:addEffect(self._skillId, actionInfoMetas[1], true)
+    -- lt.BulletManager:addBulletToMap(cannonadeSmoke)
+    -- 1943.9559970295 -4963.3461741136
+
+
+    -- 设置威力
+    -- pEffect:SetPower(egInfo.power)
+
+    -- 添加到场景
+    -- if g_pZone:AddEffect(pEffect) then
+    --     pEffect:SetLink(egInfo.nActionInfo, egInfo.pEffectTarget)
+    --     return true
+    -- end
+
+    return false
+end
+
+return MAttackZoneParabolaEffectGenerator

@@ -1,0 +1,110 @@
+-- 公会申请列表
+---@class UIWndGuildApplyList:UIWindowBase
+local UIWndGuildApplyList            = class("UIWndGuildApplyList", lt.UIWindowBase)
+
+local NtfManager                     = lt.NtfManager
+local GuildModule                    = lt.GuildModule
+local Constant                       = lt.Constant
+local RaceType                       = Constant.RaceType
+
+UIWndGuildApplyList.ChangeSkinConf   = {
+    ["Guild"] = {
+        ["bg"] = "bg_gonghuixt_11",
+        ["bg_kuang"] = "bg_gonghuixt_12",
+    },
+    ["CommonTL"] = {
+        ["frame"] = {
+            closeButton = { bg = "bg_beibao_anniu01", bgup = "bg_beibao_anniu02" },
+        },
+        ["btn_rejectAll"] = { icon = "bg_youjian_changanniu02" },
+        ["btn_agreeAll"] = { icon = "bg_youjian_changanniu02" },
+    }
+}
+
+UIWndGuildApplyList.ChangeSkinOffset = {
+    [RaceType.Slayer] = { -- 人
+        ["frame"] = {
+            closeButton = { x = 10, y = -10 },
+        },
+    },
+    [RaceType.Vampire] = { -- 鬼
+        ["frame"] = {
+            closeButton = { x = 12, y = -8 },
+        },
+    },
+    [RaceType.Ousters] = { -- 魔
+
+    }
+}
+
+function UIWndGuildApplyList:ctor(param)
+    self:registerComponent("UICompGuildApplyListCell")
+    UIWndGuildApplyList.super.ctor(self, param)
+end
+
+function UIWndGuildApplyList:onShown()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_GUILD_APPLY_LIST, handler(self, self.onGuildApplyList),
+        "UIWndGuildApplyList:onGuildApplyList")
+    self._btnRejectAll:addClickListener(handler(self, self.onBtnFncRejectAllClick))
+    self._btnAgreeAll:addClickListener(handler(self, self.onBtnFncAgreeAllClick))
+end
+
+function UIWndGuildApplyList:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndGuildApplyList:onGuildApplyList")
+    self._btnRejectAll:removeClickListener()
+    self._btnAgreeAll:removeClickListener()
+    UIWndGuildApplyList.super.onHide(self)
+end
+
+function UIWndGuildApplyList:doShowAnimation()
+    GuildModule:sendGuildApplyListReq()
+end
+
+function UIWndGuildApplyList:onClear()
+    self._listApply = nil
+    self._btnRejectAll = nil
+    self._btnAgreeAll = nil
+    self:unregisterAllComponent()
+    UIWndGuildApplyList.super.onClear(self)
+end
+
+function UIWndGuildApplyList:onInit()
+    UIWndGuildApplyList.super.onInit(self, _GURL.GuildApplyListPanel)
+    self._listApply = self:getChild("list_apply")
+    self._listApply:setItemRenderer(handler(self, self.renderListItem))
+    self._btnRejectAll = self:getChild("btn_rejectAll")
+    self._btnAgreeAll = self:getChild("btn_agreeAll")
+end
+
+function UIWndGuildApplyList:onGuildApplyList()
+    local listApply = GuildModule:getApplyList()
+    self._listApply:setNumItems(#listApply)
+end
+
+function UIWndGuildApplyList:renderListItem(index, obj)
+    local listApply = GuildModule:getApplyList()
+    local info = listApply[index + 1]
+    obj:setInfo(info, index + 1)
+end
+
+--全部拒绝
+function UIWndGuildApplyList:onBtnFncRejectAllClick(obj)
+    local listApply = GuildModule:getApplyList()
+    if #listApply == 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_GUILD_TIPS18 })
+        return
+    end
+    GuildModule:sendGuildApplyOptReq("0", 2) --// 1.同意  2.拒绝
+end
+
+--全部同意
+function UIWndGuildApplyList:onBtnFncAgreeAllClick(obj)
+    local listApply = GuildModule:getApplyList()
+    if #listApply == 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_GUILD_TIPS18 })
+        return
+    end
+    GuildModule:sendGuildApplyOptReq("0", 1) --// 1.同意  2.拒绝
+end
+
+return UIWndGuildApplyList

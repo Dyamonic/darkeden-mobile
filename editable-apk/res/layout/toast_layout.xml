@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:gravity="center_vertical" android:orientation="horizontal" android:background="@drawable/toast_bg" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingHorizontal="8.0dp" android:paddingVertical="8.0dp"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <ImageView android:layout_width="26.0dp" android:layout_height="26.0dp" android:src="@drawable/tap_toast_avatar" />
+    <TextView android:textSize="14.0dp" android:textStyle="bold" android:textColor="@android:color/white" android:id="@id/tv_tap_toast" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="已使用 Tap 登录" android:layout_marginStart="8.0dp" />
+</LinearLayout>

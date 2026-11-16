@@ -1,0 +1,949 @@
+local PetModule = {}
+
+local SocketApi     = lt.SocketApi
+local netcmd_pb     = lt.netcmd_pb
+local ServerCmdDef  = lt.ServerCmdDef
+local Constant      = lt.Constant
+local NtfManager    = lt.NtfManager
+local CacheManager  = lt.CacheManager
+local CommonModule  = lt.CommonModule
+local ClientCmdDef  = lt.ClientCmdDef
+local TimeCounter   = lt.TimeCounter
+local GameModule    = lt.GameModule
+local ItemModule    = lt.ItemModule
+local GuideModule   = lt.GuideModule
+local CommonFunc    = lt.CommonFunc
+local Save_PetModule_ToppingId = "Save_PetModule_ToppingId" 
+
+PetModule._petList = nil
+PetModule._petSkinList = nil
+PetModule._learnSkillState = nil -- 学习技能状态 Constant.PETLEARNSKILL.START = 1 开始发送协议 Constant.PETLEARNSKILL.SUCCESS = 2 学习成功
+PetModule._learnSkillItem  = nil -- 学习技能消耗材料标记
+PetModule._petSkinUpId     = nil -- 皮肤升级Id
+PetModule._petComposeState = nil -- 宠物合成状态 Constant.PETCOMPOSE.SUCCESS = 1 合成成功
+PetModule._petUid          = nil -- 宠物取出标记
+PetModule._petComposeUid2  = nil -- 宠物合成材料uid标记
+PetModule._sendPetRaiseLimit  = nil -- 限制宠物驯养发送协议
+
+function PetModule:init()
+    self._petList     = {}
+    self._petSkinList = {}
+    self._learnSkillState = nil
+    self._learnSkillItem  = nil
+    self._petSkinUpId     = nil
+    self._petComposeState = nil
+    self._petUid          = nil
+    self._petComposeUid2  = nil
+    self._sendPetRaiseLimit  = nil
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_LIST_RESP), handler(self, self.onPetList), "PetModule:onPetList")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_CAPTURE_RESP), handler(self, self.onPetCapture), "PetModule:onPetCapture")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_DETAIL_RESP), handler(self, self.onPetDetail), "PetModule:onPetDetail")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_UPDATE_NTF), handler(self, self.onPetUpdate), "PetModule:onPetUpdate")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_CAPTURE_NTF), handler(self, self.onPetCaptureNtf), "PetModule:onPetCaptureNtf")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_FIGHT_RESP), handler(self, self.onPetFight), "PetModule:onPetFight")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_TAKEOUT_RESP), handler(self, self.onPetTakeOut), "PetModule:onPetTakeOut")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_OPENDIG_RESP), handler(self, self.onPetOpenDig), "PetModule:onPetOpenDig")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_SIGN_RESP), handler(self, self.onPetSign), "PetModule:onPetSign")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_RAISE_RESP), handler(self, self.onPetRaise), "PetModule:onPetRaise")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_FEED_RESP), handler(self, self.onPetFeed), "PetModule:onPetFeed")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_RELIVE_RESP), handler(self, self.onPetRelive), "PetModule:onPetRelive")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_CAPSULE_RESP), handler(self, self.onPetCapsule), "PetModule:onPetCapsule")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_COMPOSE_RESP), handler(self, self.onPetCompose), "PetModule:onPetCompose")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_SKIN_LVUPRESP), handler(self, self.onPetSkinLvUp), "PetModule:onPetSkinLvUp")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_SKINNTF), handler(self, self.onPetSkinNtf), "PetModule:onPetSkinNtf")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_SKIN_WEAR_RESP), handler(self, self.onPetUseSkin), "PetModule:onPetUnUseSkin")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_SKIN_UNWEAR_RESP), handler(self, self.onPetCancelSkin), "PetModule:onPetCancelSkin")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_PET_USEITEMRESP), handler(self, self.onPetUseItem), "PetModule:onPetUseItem")
+end
+
+function PetModule:clear()
+    SocketApi:removeProtoListenerByTag("PetModule:onPetList")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetCapture")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetDetail")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetUpdate")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetCaptureNtf")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetFight")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetTakeOut")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetOpenDig")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetSign")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetRaise")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetFeed")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetRelive")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetCapsule")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetCompose")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetSkinLvUp")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetSkinNtf")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetUnUseSkin")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetCancelSkin")
+    SocketApi:removeProtoListenerByTag("PetModule:onPetUseItem")
+    self._petList     = nil
+    self._petSkinList = nil
+    self._learnSkillState = nil
+    self._learnSkillItem  = nil
+    self._petSkinUpId     = nil
+    self._petComposeState = nil
+    self._petUid          = nil
+    self._petComposeUid2  = nil
+    self._sendPetRaiseLimit  = nil
+end
+
+-- 获得宠物列表(包括已拥有和图鉴) 属性界面显示列表
+function PetModule:getPetList()
+    local petlist = {}
+    local petMap = CacheManager:getAllPetMap()
+    local toppingId = self:getToppingId()
+    local toppingPet = nil
+    for i = 1, #petMap do
+        local list = self:getOwnPetById(petMap[i]:getId())
+        if #list == 0 then
+            local tbl = {}
+            tbl.meta = petMap[i]
+            table.insert(petlist, tbl)
+        else
+            for j = 1, #list do
+                local tbl = {}
+                tbl.meta = petMap[i]
+                tbl.data = list[j]
+                if toppingId == tostring(list[j]:getUid()) then
+                    toppingPet = tbl
+                else
+                    table.insert(petlist, tbl)
+                end
+            end
+        end
+    end
+    table.sort(petlist,  function(a, b)
+        -- 优先按 data 存在性排序（存在者在前）
+        local aHasData = a.data ~= nil
+        local bHasData = b.data ~= nil
+        if aHasData ~= bHasData then
+            return aHasData  -- a有data时排在b前面
+        else
+            -- 若data状态相同，再按ID升序排序
+            if a.meta:getId() ~= b.meta:getId() then
+                return a.meta:getId() < b.meta:getId()
+            else
+                if aHasData and bHasData then
+                    local aDie = self:isDie(a.data:getDeadTime())
+                    local bDie = self:isDie(b.data:getDeadTime())
+                    if aDie ~= bDie then
+                        return bDie
+                    end
+                    -- 若ID相同，再按经验排序
+                    if a.data:getExp() ~= b.data:getExp() then
+                        return a.data:getExp() > b.data:getExp()
+                    end
+                    return a.data:getUid() < b.data:getUid()
+                end
+            end
+        end
+    end)
+    --置顶插入第一个
+    if toppingPet then
+        table.insert(petlist, 1, toppingPet)
+    end
+    return petlist
+end
+
+-- 非属性列表显示    小于10级和死亡宠物不显示
+function PetModule:getPetFuncList()
+    local petlist = {}
+    local petMap = CacheManager:getAllPetMap()
+    local toppingId = self:getToppingId()
+    local toppingPet = nil
+    for i = 1, #petMap do
+        local list = self:getOwnPetById(petMap[i]:getId())
+        for j = 1, #list do
+            local petData = list[j]
+            local isDie = PetModule:isDie(petData:getDeadTime())
+            if petData:getLevel() >= Constant.PET_MIN_LVL and not isDie then
+                local tbl = {}
+                tbl.meta = petMap[i]
+                tbl.data = list[j]
+                if toppingId == tostring(list[j]:getUid()) then
+                    toppingPet = tbl
+                else
+                    table.insert(petlist, tbl)
+                end
+            end
+        end
+    end
+    table.sort(petlist,  function(a, b)
+        -- 优先按 data 存在性排序（存在者在前）
+        local aHasData = a.data ~= nil
+        local bHasData = b.data ~= nil
+        if aHasData ~= bHasData then
+            return aHasData  -- a有data时排在b前面
+        else
+            -- 若data状态相同，再按ID升序排序
+            if a.meta:getId() ~= b.meta:getId() then
+                return a.meta:getId() < b.meta:getId()
+            else
+                if aHasData and bHasData then
+                    local aDie = self:isDie(a.data:getDeadTime())
+                    local bDie = self:isDie(b.data:getDeadTime())
+                    if aDie ~= bDie then
+                        return bDie
+                    end
+                    -- 若ID相同，再按经验排序
+                    if a.data:getExp() ~= b.data:getExp() then
+                        return a.data:getExp() > b.data:getExp()
+                    end
+                    return a.data:getUid() < b.data:getUid()
+                end
+            end
+        end
+    end)
+    --置顶插入第一个
+    if toppingPet then
+        table.insert(petlist, 1, toppingPet)
+    end
+    return petlist
+end
+
+--获得所有宠物实例
+function PetModule:getAllPets()
+    local petlist = self._petList or {}
+    return petlist
+end
+
+--获得该宠物的实例
+function PetModule:getPetByUid(uid)
+    local petlist = self._petList or {}
+    for i = 1, #petlist do
+        if petlist[i]:getUid() == uid then
+            return petlist[i]
+        end
+    end
+    return nil
+end
+
+--获得所有该宠物的实例
+function PetModule:getOwnPetById(id)
+    local ownPets = {}
+    local petlist = self._petList or {}
+    for i = 1, #petlist do
+        if petlist[i]:getId() == id then
+            table.insert(ownPets, petlist[i])
+        end
+    end
+    return ownPets
+end
+
+--获得宠物等级
+function PetModule:getPetLevel(exp)
+    local list = CacheManager:getAllPetLevelMap()
+    for i = 1, #list do
+        if exp < list[i]:getPetAccumExp() then
+            return list[i]:getLevel()
+        end
+    end
+    return list[#list]:getLevel()
+end
+
+--获得宠物下一级总经验值
+function PetModule:getPetLastExp(exp)
+    local list = CacheManager:getAllPetLevelMap()
+    for i = 1, #list do
+        if exp < list[i]:getPetAccumExp() then
+            return list[i]:getPetAccumExp()
+        end
+    end
+    return list[#list]:getPetAccumExp()
+end
+
+--获得宠物当前升级需要的经验值
+function PetModule:getPetCurExp(exp)
+    local list = CacheManager:getAllPetLevelMap()
+    for i = 1, #list do
+        if exp < list[i]:getPetAccumExp() then
+            return list[i]:getExp()
+        end
+    end
+    return list[#list]:getExp()
+end
+
+--获得已死亡时间
+function PetModule:getDeadTime(deadTime)
+    local serverTime = TimeCounter:serverTime()
+    local day = CommonFunc:daysSinceMidnight(deadTime, serverTime)
+    return day
+end
+
+--获得该宠物是否死亡
+function PetModule:isDie(deadTime)
+    local serverTime = TimeCounter:serverTime()
+    return serverTime >= deadTime
+end
+
+--获得存活时间(天,小时/分)
+function PetModule:getSurviveTime(deadTime)
+    local day = 0
+    local hour = 0
+    local serverTime = TimeCounter:serverTime()
+    if self:isDie(deadTime) then
+        return day, hour
+    end
+    local stamp = deadTime - serverTime
+    day = math.floor(stamp / Constant.WHOLE_DAY)
+    hour = stamp - day * Constant.WHOLE_DAY
+    return day, hour 
+end
+
+--通过经验获得第几形态
+function PetModule:getPetStateByExp(exp)
+    local level = self:getPetLevel(exp)
+    local stage = math.floor(level / 10)
+    if stage < 1 then stage = 1 end
+    if stage > 5 then stage = 5 end
+    return stage
+end
+
+--通过等级获得第几形态
+function PetModule:getPetStateByLevel(level)
+    local stage = math.floor(level / 10)
+    if stage < 1 then stage = 1 end
+    if stage > 5 then stage = 5 end
+    return stage
+end
+
+--根据阶级获得宠物模型
+function PetModule:getPetModelByState(petMeta, stage)
+    if stage == 1 then
+        return petMeta:getCreatureType1()
+    elseif stage == 2 then
+        return petMeta:getCreatureType2()
+    elseif stage == 3 then
+        return petMeta:getCreatureType3()
+    elseif stage == 4 then
+        return petMeta:getCreatureType4()
+    elseif stage == 5 then
+        return petMeta:getCreatureType5()
+    end
+end
+
+--获得宠物的捕捉道具
+function PetModule:getPetCaptureItem(monsterId)
+    local petMeta = CacheManager:getPetMeta(monsterId)
+    if petMeta == nil then
+        petMeta = CacheManager:getPetMeta(monsterId - 100)
+    end
+    if petMeta then
+        local items = petMeta:getFeed()
+        for i = 1, #items do
+            local itemNum = ItemModule:getItemNum(items[i][2])
+            if itemNum > 0 then
+                return items[i][2]
+            end
+        end
+        return items[1][2]
+    end
+end
+
+--获得挖掘加速剩余时间
+function PetModule:getDigSpeedUpTime(petInfo, isShort)
+    local digSpeedUpTime = petInfo.data:getDigSpeedUpTime()
+    local serverTime = TimeCounter:serverTime()
+    if digSpeedUpTime <= serverTime then
+        return 0
+    end
+    local seconds = digSpeedUpTime - serverTime
+    local day, hour, minite = CommonFunc:secondsToTime(seconds)
+    local lastTime = string.format(GReadText.KEY_PET_TIPS77, day, hour, minite)
+    if day == 0 then
+        lastTime = string.format(GReadText.KEY_PET_TIPS80, hour, minite)
+        if hour == 0 then
+            if minite == 0 then minite = 1 end
+            lastTime = string.format(GReadText.KEY_PET_TIPS81, minite)
+        end
+    else
+        if isShort then
+            lastTime = string.format(GReadText.KEY_PET_TIPS83, day, hour)
+        end
+    end
+    return lastTime
+end
+
+--获得经验加速剩余时间
+function PetModule:getExpSpeedUpTime(petInfo, isShort)
+    local digSpeedUpTime = petInfo.data:getExpSpeedUpTime()
+    local serverTime = TimeCounter:serverTime()
+    if digSpeedUpTime <= serverTime then
+        return 0
+    end
+    local seconds = digSpeedUpTime - serverTime
+    local day, hour, minite = CommonFunc:secondsToTime(seconds)
+    local lastTime = string.format(GReadText.KEY_PET_TIPS77, day, hour, minite)
+    if day == 0 then
+        lastTime = string.format(GReadText.KEY_PET_TIPS80, hour, minite)
+        if hour == 0 then
+            if minite == 0 then minite = 1 end
+            lastTime = string.format(GReadText.KEY_PET_TIPS81, minite)
+        end
+    else
+        if isShort then
+            lastTime = string.format(GReadText.KEY_PET_TIPS83, day, hour)
+        end
+    end
+    return lastTime
+end
+
+function PetModule:isDigSpeedUp(petData)
+    local digSpeedUpTime = petData:getDigSpeedUpTime()
+    local serverTime = TimeCounter:serverTime()
+    return digSpeedUpTime >= serverTime
+end
+
+--宠物置顶
+function PetModule:setToppingId(iid)
+    local roleId = GameModule:getHeroData():getPlayerId()
+    cc.UserDefault:getInstance():setStringForKey(Save_PetModule_ToppingId .. roleId, tostring(iid))
+    cc.UserDefault:getInstance():flush()
+end
+
+function PetModule:getToppingId()
+    local roleId = GameModule:getHeroData():getPlayerId()
+    local toppingId = cc.UserDefault:getInstance():getStringForKey(Save_PetModule_ToppingId .. roleId, "0")
+    return toppingId
+end
+
+--宠物列表
+function PetModule:sendPetList()
+    local msg = netcmd_pb.CS_Pet_ListReq()
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_PET_LIST_REQ), msg)
+end
+
+--宠物列表回调
+function PetModule:onPetList(event)
+    lt.LogUtil:debugInfo("PetModule:onPetList")
+    local proto = event.param
+    local petList = proto.vPet or {}
+    self._petList = {}
+    for _,v in ipairs(petList) do
+        local petData = lt.PetUIData.new(v)
+        table.insert(self._petList, petData)
+    end
+
+    local petSkinList = proto.vSkin or {}
+    self._petSkinList = {}
+    for _,v in ipairs(petSkinList) do
+        local petSkinData = lt.PetSkinData.new(v)
+        self._petSkinList[petSkinData:getSkinId()] = petSkinData
+    end
+
+    lt.RedDotModule:onRedDotNotice(Constant.SYSTEM_TYPES.PET)
+end
+
+--宠物捕捉
+function PetModule:sendPetCapture(nMonsterObjId, itemId)
+    local msg = netcmd_pb.CS_Pet_CaptureReq()
+    msg.nMonsterObjId = nMonsterObjId
+    msg.itemId = itemId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_PET_CAPTURE_REQ), msg)
+end
+
+--宠物捕捉回调
+function PetModule:onPetCapture(event)
+    lt.LogUtil:debugInfo("PetModule:onPetCapture")
+    local proto = event.param
+    local counter = proto.counter
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_PET_CAPTURE_START, {counter = counter})
+end
+
+--宠物详情
+function PetModule:sendPetDetail(masterId, petUid)
+    local msg = netcmd_pb.CS_Pet_DetailReq()
+    msg.masterId = masterId
+    msg.petUid = petUid
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_PET_DETAIL_REQ), msg)
+end
+
+--宠物详情回调
+function PetModule:onPetDetail(event)
+    lt.LogUtil:debugInfo("PetModule:onPetDetail")
+    local proto = event.param
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_PET_DETAIL_TIPS, {pet = proto.pet})
+end
+
+--宠物出战或休息
+function PetModule:sendPetFight(petInfo, fight)
+    local msg = netcmd_pb.CS_Pet_FightReq()
+    msg.petUid = petInfo.data:getUid()
+    msg.fight = fight
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_PET_FIGHT_REQ), msg)
+end
+
+--宠物出战或休息回调
+function PetModule:onPetFight(event)
+    lt.LogUtil:debugInfo("PetModule:onPetFight")
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_PET_LIST)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_PET_MY)
+    --完成所有宠物出战的引导
+    GuideModule:directEndGuide({Constant.GUIDE_ID.PETFIGHT1, Constant.GUIDE_ID.PETFIGHT2, Constant.GUIDE_ID.PETFIGHT3, Constant.GUIDE_ID.PETFIGHT4, Constant.GUIDE_ID.PETFIGHT5,
+        Constant.GUIDE_ID.PETFIGHT11, Constant.GUIDE_ID.PETFIGHT12, Constant.GUIDE_ID.PETFIGHT13, Constant.GUIDE_ID.PETFIGHT14, Constant.GUIDE_ID.PETFIGHT15})
+end
+
+--宠物取出
+function PetModule:sendPetTakeOut(petInfo)
+    local msg = netcmd_pb.CS_Pet_TakeOutReq()
+    msg.petUid = petInfo.data:getUid()
+    self._petUid = petInfo.data:getUid()
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_PET_TAKEOUT_REQ), msg)
+end
+
+--宠物取出回调
+function PetModule:onPetTakeOut(event)
+    lt.LogUtil:debugInfo("PetModule:onPetTakeOut")
+    local toppingId = self:getToppingId()
+    for i = 1, #self._petList do
+        if self._petUid == self._petList[i]:getUid() then
+            table.remove(self._petList, i)
+            break
+        end
+    end
+    if tostring(self._petUid) == toppingId then
+        --宠物置顶取消
+        self:setToppingId(0)
+    end
+    self._petUid = nil
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_RESET_PET_INDEX)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_PET_LIST)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_PET_MY)
+end
+
+--宠物开启挖掘
+function PetModule:sendPetOpenDig(petInfo)
+    local msg = netcmd_pb.CS_Pet_OpenDigReq()
+    msg.petUid = petInfo.data:getUid()
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_PET_OPENDIG_REQ), msg)
+end
+
+--宠物开启挖掘回调
+function PetModule:onPetOpenDig(event)
+    lt.LogUtil:debugInfo("PetModule:onPetOpenDig")
+    local proto = event.param
+    if proto.success then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS28})
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS29})
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_PET_LIST)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_PET_MY)
+end
+
+--宠物签名
+function PetModule:sendPetSign(petInfo, sign)
+    local msg = netcmd_pb.CS_Pet_SignReq()
+    msg.petUid = petInfo.data:getUid()
+    msg.sign = sign
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_PET_SIGN_REQ), msg)
+end
+
+--宠物签名回调
+function PetModule:onPetSign(event)
+    lt.LogUtil:debugInfo("PetModule:onPetSign")
+end
+
+--宠物驯养
+function PetModule:sendPetRaise(petUid, attrPos)
+    local msg = netcmd_pb.CS_Pet_RaiseReq()
+    msg.petUid = petUid
+    msg.attr = attrPos
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_PET_RAISE_REQ), msg)
+    self._sendPetRaiseLimit = true
+end
+
+--宠物驯养回调
+function PetModule:onPetRaise(event)
+    lt.LogUtil:debugInfo("PetModule:onPetRaise")
+    local proto = event.param or {}
+    if proto.ret == 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_PET_TAME_ATTR_REFRESH)
+    else
+        self._sendPetRaiseLimit = nil
+    end
+end
+
+function PetModule:getSendPetRaiseLimit()
+    return self._sendPetRaiseLimit
+end
+
+function PetModule:clearSendPetRaiseLimit()
+    self._sendPetRaiseLimit = nil
+end
+
+--宠物喂食
+function PetModule:sendPetFeed(petInfo, itemId)
+    local msg = netcmd_pb.CS_Pet_FeedReq()
+    msg.petUid = petInfo.data:getUid()
+    msg.itemId = itemId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_PET_FEED_REQ), msg)
+end
+
+--宠物喂食回调
+function PetModule:onPetFeed(event)
+    lt.LogUtil:debugInfo("PetModule:onPetFeed")
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS21})
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_PET_LIST)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_PET_MY)
+end
+
+--宠物复活
+function PetModule:sendPetRelive(petUid, itemId)
+    local msg = netcmd_pb.CS_Pet_ReliveReq()
+    msg.petUid = petUid
+    msg.itemId = itemId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_PET_RELIVE_REQ), msg)
+end
+
+--宠物复活回调
+function PetModule:onPetRelive(event)
+    lt.LogUtil:debugInfo("PetModule:onPetRelive")
+    local proto = event.param
+    if proto.success then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS22})
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS23})
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_PET_LIST)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_PET_MY)
+end
+
+-- 宠物物品使用
+function PetModule:sendPetUseItem(petUid, itemId)
+    local msg = netcmd_pb.CS_Pet_UseItemReq()
+    msg.petUid = petUid
+    msg.itemId = itemId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.CS_PET_USEITEMREQ), msg)
+end
+
+-- 宠物物品使用回调
+function PetModule:onPetUseItem(event)
+    yflog:Info("PetModule:onPetUseItem")
+end
+
+--宠物胶囊TODO
+function PetModule:sendPetCapsule(petUid, itemId)
+    local msg = netcmd_pb.CS_Pet_CapsuleReq()
+    msg.petUid = petUid
+    msg.itemId = itemId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_PET_CAPSULE_REQ), msg)
+    self._learnSkillState = Constant.PETLEARNSKILL.START
+    self._learnSkillItem  = itemId
+end
+
+--宠物胶囊回调TODO
+function PetModule:onPetCapsule(event)
+    yflog:Info("PetModule:onPetCapsule")
+    local proto = event.param or {}
+    if proto.ret == 0 then
+        yflog:Info("onPetCapsule----->>>> success")
+        -- 技能学习成功
+        self._learnSkillState = Constant.PETLEARNSKILL.SUCCESS
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_PET_CAPSULE_REFRESH)
+    else
+        self._learnSkillState = nil
+    end
+end
+
+function PetModule:getLearnSkillState()
+    return self._learnSkillState
+end
+
+function PetModule:clearLearnSkillState()
+    self._learnSkillState = nil
+end
+
+function PetModule:getLearnSkillItem()
+    return self._learnSkillItem
+end
+
+function PetModule:clearLearnSkillItem()
+    self._learnSkillItem = nil
+end
+
+--宠物合成TODO
+function PetModule:sendPetCompose(petUid, petUid2)
+    local msg = netcmd_pb.CS_Pet_ComposeReq()
+    msg.petUid  = petUid
+    msg.petUid2 = petUid2
+    if petUid2 > 0 then
+        self._petComposeUid2 = petUid2
+    else
+        self._petComposeUid2 = nil
+    end
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_PET_COMPOSE_REQ), msg)
+end
+
+--宠物合成回调TODO
+function PetModule:onPetCompose(event)
+    lt.LogUtil:debugInfo("PetModule:onPetCompose")
+    local proto = event.param or {}
+    if proto.ret == 0 then
+        if self._petComposeUid2 then
+            self._petComposeState = Constant.PETCOMPOSE.SUCCESS
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS61})
+        else
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS60})
+        end
+    end
+    local toppingId = self:getToppingId()
+    for i = 1, #self._petList do
+        if self._petComposeUid2 == self._petList[i]:getUid() then
+            table.remove(self._petList, i)
+            break
+        end
+    end
+    if tostring(self._petComposeUid2) == toppingId then
+        --宠物置顶取消
+        self:setToppingId(0)
+    end
+    self._petComposeUid2 = nil
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_PET_COMPOSE_REFRESH) -- 合成刷新并且记录uid
+    -- NtfManager:dispatchNtf(NtfManager.NTF.NTF_RESET_PET_INDEX)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_PET_LIST)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_PET_MY)
+end
+
+function PetModule:getPetComposeState()
+    return self._petComposeState
+end
+
+function PetModule:clearPetComposeState()
+    self._petComposeState = nil
+end
+
+--宠物数据更新NTF
+function PetModule:onPetUpdate(event)
+    lt.LogUtil:debugInfo("PetModule:onPetUpdate")
+    local proto = event.param
+    local petData = proto.pet
+    local petlist = self._petList or {}
+    local isNew = true
+    for i = 1, #petlist do
+        if petlist[i]:getUid() == petData.uid then
+            petlist[i]:setPetInfo(petData)
+            isNew = false
+            break
+        end
+    end
+    --新增
+    if isNew then
+        table.insert(self._petList, lt.PetUIData.new(petData))
+        local petMeta = CacheManager:getPetMeta(petData.id)
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = petMeta:getPetName()..GReadText.KEY_PET_TIPS34})
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_PET_MY)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_PET_LIST)
+    lt.RedDotModule:onRedDotNotice(Constant.SYSTEM_TYPES.PET)
+end
+
+--宠物捕获结果NTF
+function PetModule:onPetCaptureNtf(event)
+    lt.LogUtil:debugInfo("PetModule:onPetCaptureNtf")
+    local proto = event.param
+    local success = proto.success
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_PET_CAPTURE_END, {success = success})
+end
+
+-------------------------------------------------------------------------------------------------------
+-- 宠物皮肤相关
+function PetModule:getSkinDataById(id)
+    return self._petSkinList[id]
+end
+
+--宠物皮肤升级
+function PetModule:sendPetSkinLvUp(skinId)
+    local msg = netcmd_pb.CS_Pet_Skin_LvUpReq()
+    msg.skinId  = skinId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.CS_PET_SKIN_LVUPREQ), msg)
+    self._petSkinUpId = skinId
+end
+
+--宠物皮肤升级回调
+function PetModule:onPetSkinLvUp(event)
+    local proto = event.param or {}
+    if proto.ret == 0 then
+        -- 宠物皮肤升级成功
+        if self._petSkinUpId then
+            local petData = self._petSkinList[self._petSkinUpId] 
+            if petData and petData:getLevel() == 1 then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS91})
+            end
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_PET_SKIN_UP)
+        lt.RedDotModule:onRedDotNotice(Constant.SYSTEM_TYPES.PET)
+    end
+    self._petSkinUpId = nil
+end
+
+function PetModule:onPetSkinNtf(event)
+    local proto = event.param
+    local skin = proto.skin
+    if skin then
+        if self._petSkinList[skin.skinId] then
+            self._petSkinList[skin.skinId]:setPetSkinInfo(skin)
+        else
+            local petSkinData = lt.PetSkinData.new(skin)
+            self._petSkinList[petSkinData:getSkinId()] = petSkinData
+        end
+    end
+
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_PET_SKIN)
+end
+
+-- 使用皮肤
+function PetModule:sendPetUseSkin(skinId, petUid)
+    local msg = netcmd_pb.CS_Pet_Skin_WearReq()
+    msg.skinId = skinId
+    msg.petUid = petUid
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.CS_PET_SKIN_WEAR_REQ), msg)
+end
+
+function PetModule:onPetUseSkin(event)
+    local proto = event.param
+    if proto.ret == 0 then
+        -- 使用成功
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS64})
+    end
+end
+
+-- 取消皮肤
+function PetModule:sendPetCancelSkin(petUid)
+    local msg = netcmd_pb.CS_Pet_Skin_UnWearReq()
+    msg.petUid = petUid
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.CS_PET_SKIN_UNWEAR_REQ), msg)
+end
+
+function PetModule:onPetCancelSkin(event)
+    local proto = event.param
+    if proto.ret == 0 then
+        -- 取消成功
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS65})
+    end
+end
+
+function PetModule:getPetSkinAttrById(skinId)
+    local skinData = PetModule:getSkinDataById(skinId)
+    if skinData then
+        local curLevel = skinData:getLevel()
+        local levelUpCfg = CacheManager:getPetSkinById(skinId)
+        local race = lt.GameModule:getHeroRace()
+        local accumAttr = levelUpCfg[curLevel]:getAccumAttrByRace(race)
+        return accumAttr
+    end
+end
+
+function PetModule:getPetSkinAttrList()
+    local skinAttrTable = {}
+    local race = lt.GameModule:getHeroRace()
+    local petSkinData = CacheManager:getPetSkinTypeMap() or {}
+    for _,skinCfg in pairs(petSkinData) do
+        local skinId = skinCfg:getId()
+        local skinData = PetModule:getSkinDataById(skinId)
+        if skinData then
+            local curLevel = skinData:getLevel()
+            local levelUpCfg = CacheManager:getPetSkinById(skinId)
+            local accumAttr = levelUpCfg[curLevel]:getAccumAttrByRace(race)
+            for k,v in ipairs(accumAttr) do
+                local key = v[1]
+                local value = v[2] or 0
+                if key then
+                    if skinAttrTable[key] then
+                        skinAttrTable[key] = skinAttrTable[key] + value
+                    else
+                        skinAttrTable[key] = value
+                    end
+                end
+            end
+        end
+    end
+
+    local skinAttrList = {}
+    for k,v in pairs(skinAttrTable) do
+        table.insert(skinAttrList, {k, v})
+    end
+
+    return skinAttrList
+end
+
+-- 小红点，1. 宠物皮肤 2.宠物开启二次能力
+function PetModule:initRedTips()
+    ---------------------------------------------------------------------
+    -- 1. 宠物皮肤
+    local isRed = self:checkPetSkinRed()
+    lt.RedDotModule:setTipsStateByName("PetModule_checkPetUp", isRed)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_RED_DOT_EVENT,{name = "PetModule_checkPetUp"})
+    ---------------------------------------------------------------------
+    -- 2.宠物开启二次能力
+    local isRed2 = self:checkPetFunctionRed()
+    lt.RedDotModule:setTipsStateByName("PetModule_checkPetFunction", isRed2)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_RED_DOT_EVENT,{name = "PetModule_checkPetFunction"})
+end
+
+function PetModule:checkPetSkinRed()
+    local skinTypeMap = CacheManager:getPetSkinTypeMap()
+    for _,v in pairs(skinTypeMap) do
+        local petSkinId = v:getId()
+        if PetModule:checkPetUp(petSkinId) then
+            return true
+        end
+    end
+
+    return false
+end
+
+function PetModule:checkPetFunctionRed()
+    for _,v in ipairs(self._petList or {}) do
+        local isDig            = v:getDig()
+        local openDigLeftTimes = v:getOpenDigLeftTimes()
+        local isRed = not isDig and openDigLeftTimes ~= 0
+        if isRed then
+            return true
+        end
+    end
+    return false
+end
+
+function PetModule:checkPetUp(petSkinId)
+    local skinData = PetModule:getSkinDataById(petSkinId)
+    local levelUpCfg = CacheManager:getPetSkinById(petSkinId)
+    local nextCfg = nil
+    if not skinData then -- 未激活
+        nextCfg = levelUpCfg[1]
+    else
+        local curLevel = skinData:getLevel()
+        if curLevel < #levelUpCfg then
+            nextCfg = levelUpCfg[curLevel+1]
+        end
+    end
+
+    if not nextCfg then
+        return false
+    end
+
+    -- 第一个消耗(金币)
+    local consumeItem = nextCfg:getConsumeItem()
+    if consumeItem and consumeItem[1] and #consumeItem > 1 then
+        local needItem = consumeItem[1][3] or 0
+        local itemId = consumeItem[1][2]
+        local curItemNum = ItemModule:getValueItem(consumeItem[1][1], itemId)
+        if curItemNum < needItem then
+            return false
+        end
+    end
+
+    -- 资源消耗显示
+    if consumeItem and consumeItem[#consumeItem] then
+        local itemId = consumeItem[#consumeItem][2]
+        local curItemNum = ItemModule:getItemNum(itemId)
+        local needItem = consumeItem[#consumeItem][3] or 0
+        if curItemNum < needItem then
+            return false
+        end
+    end
+
+    return true
+end
+
+return PetModule

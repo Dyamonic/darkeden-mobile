@@ -1,0 +1,319 @@
+--- Npc阶级技能清洗
+---@class UIWndNpcClsSkill:UIWindowBase
+local UIWndNpcClsSkill = class("UIWndNpcClsSkill", lt.UIWindowBase)
+
+UIWndNpcClsSkill.ChangeSkinConf = {
+    ["CommonTL"] = {
+        ["frame"] = {
+            bg = "bg_common_dahaobg_01"
+        },
+        ["clean"] = {
+            bg = "btn_common_anniu_01"
+        }
+    }
+}
+
+local CacheManager = lt.CacheManager
+local AgentManager = lt.AgentManager
+local Constant = lt.Constant
+local GameModule = lt.GameModule
+local SkillModule = lt.SkillModule
+local NtfManager = lt.NtfManager
+
+function UIWndNpcClsSkill:ctor(param)
+    self:registerComponent("UICompNpcClsSkillItem")
+    UIWndNpcClsSkill.super.ctor(self, param)
+
+    self._npcId        = nil
+    self._skillList    = nil
+    self._curSelect    = nil
+    self._curClsSkill  = nil
+    self._curSkillFalg = nil -- 标记1-4技能位是否清洗过，关闭界面需显示不同内容
+    -- UI
+    self._npcHead  = nil
+    self._npcName  = nil
+    self._npcIntro = nil
+    self._list     = nil
+end
+
+function UIWndNpcClsSkill:onConstruct()
+
+end
+
+function UIWndNpcClsSkill:onClear()
+    self:unregisterAllComponent()
+    UIWndNpcClsSkill.super.onClear(self)
+    self._npcId        = nil
+    self._skillList    = nil
+    self._curSelect    = nil
+    self._curClsSkill  = nil
+    self._curSkillFalg = nil
+    -- UI
+    self._npcHead  = nil
+    self._npcName  = nil
+    self._npcIntro = nil
+    -- self._list     = nil
+    if self._list then
+        self._list:removeChildrenToPool()
+        self._list:removeItemRenderer()
+        self._list = nil
+    end
+end
+
+function UIWndNpcClsSkill:onInit()
+    UIWndNpcClsSkill.super.onInit(self, _GURL.NpcClsSkill)
+
+    self._npcHead = self:getChild("npcHead")
+    self._npcName = self:getChild("title")
+    self._npcIntro = self:getChild("intro")
+    self._list = self:getChild("list")
+
+    -- 初始化一些参数
+    for i = 1,4 do
+        local clsItem = self:getChild("cls" .. i)
+        clsItem:initUI()
+    end
+
+    self:initNpcInfo()
+end
+
+function UIWndNpcClsSkill:onShown()
+    UIWndNpcClsSkill.super.onShown(self)
+    self._curSkillFalg = {}
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_INIT_PASSIVE_SKILL_LIST, handler(self, self.onRefreshClsSkill), "UIWndNpcClsSkill:onRefreshClsSkill")
+    
+    -- 清除按钮
+    local clean = self:getChild("clean")
+    clean:addClickListener(handler(self, self.cleanClickFunc))
+
+    self:initNpcInfo()
+end
+
+function UIWndNpcClsSkill:onHide()
+    self._curSkillFalg = nil
+    NtfManager:removeNtfListenerByTag("UIWndNpcClsSkill:onRefreshClsSkill")
+
+    -- 清除按钮
+    local clean = self:getChild("clean")
+    clean:removeClickListener()
+
+    UIWndNpcClsSkill.super.onHide(self)
+end
+
+function UIWndNpcClsSkill:initNpcInfo()
+    local param = (self:getParam() or {}).param
+    if not param then
+        return
+    end
+    -- dump(param)
+    local viewParam = param.viewParam
+    self._npcId = lt.NpcModule:getNpcId()
+    if type(self._npcId) ~= "number" then
+        yflog:Info("------------>>>npcId error")
+        return
+    end
+    
+    -- npc 信息显示
+    local worldAgent = AgentManager:getWorldAgent()
+    local npcName = worldAgent:getNpcNameById(self._npcId)
+    local name,_ = unpack(string.split(npcName, "-"))
+    self._npcName:setText(name)
+    local meta = CacheManager:queryNpc(self._npcId)
+    local headId = meta:getNpcHeadId()
+    self._npcHead:setURL(string.format(_GURL.NPCHeadURL, headId))
+
+    -- 返回按钮
+    local back = self:getChild("back")
+    local answerStr = viewParam.answerStr
+    back:setObjInfo({content = answerStr or GReadText.KEY_NPC_SKILL_TIPS2, index = 1, callback = handler(self, self.onClickCallback)})
+
+    -- 提示信息
+    local dialogueStr = viewParam.dialogueStr or ""
+    self._npcIntro:setText(dialogueStr)
+
+    ------------------------------------------------------------------------------------------------------
+    -- 功能类
+    self:refreshClsSkill()
+    self:refreshSelect()
+end
+
+function UIWndNpcClsSkill:onRefreshClsSkill()
+    self:refreshClsSkill()
+    self:refreshSelect()
+end
+
+function UIWndNpcClsSkill:refreshClsSkill()
+    -- 技能列表
+    local raceId = lt.GameModule:getHeroRace()
+    local skillList = CacheManager:getRankBonusInfoCfg(raceId, 1, 4) or {}
+    local clsSkill = { [1] = 0, [2] = 0, [3] = 0, [4] = 0}
+    for k,v in ipairs(skillList) do
+        if clsSkill[k] == 0 and v[1] then
+            clsSkill[k] = v[1]:getClassLevel()
+        end
+
+        for _,clsCfg in ipairs(v) do
+            local isExist = SkillModule:checkPassiveSkillLearned(clsCfg:getRankId())
+            if isExist then
+                clsSkill[k] = clsCfg
+            end
+        end
+    end
+    
+    self._curClsSkill = clsSkill
+
+    -- 阶级技能显示
+    for i = 1,4 do
+        local clsItem = self:getChild("cls" .. i)
+        local curSkill = clsSkill[i]
+        if type(curSkill) == "table" then
+            clsItem:setInfo(curSkill,function ()
+                self._curSelect = i
+                self:refreshSelect()
+                self:refreshDesc()
+            end)
+        elseif type(curSkill) == "number" then
+            clsItem:setInfoEmpty(curSkill,function ()
+                self._curSelect = i
+                self:refreshSelect()
+                self:refreshDesc()
+            end)
+        end
+        clsItem:insertObjectToFactory(self)
+    end
+
+    self:refreshDesc()
+end
+
+-- 选中刷新
+function UIWndNpcClsSkill:refreshSelect()
+    for i = 1,4 do
+        local clsItem = self:getChild("cls" .. i)
+        clsItem:setSelect(self._curSelect == i)
+    end
+end
+
+-- 描述刷新
+function UIWndNpcClsSkill:refreshDesc()
+    local cleanStudy = self:getChild("cleanStudy") -- 学习过的分组
+    local cleanNotStudy = self:getChild("cleanNotStudy") -- 未学习过的分组
+    local notSelect = self:getChild("notSelect") -- 未选中
+    if (not self._curClsSkill) or (not self._curSelect) or (not self._curClsSkill[self._curSelect]) then
+        notSelect:setVisible(true)
+        cleanStudy:setVisible(false)
+        cleanNotStudy:setVisible(false)
+        return
+    end
+    notSelect:setVisible(false)
+
+    local raceId = lt.GameModule:getHeroRace()
+    local curSkill = self._curClsSkill[self._curSelect]
+    if type(curSkill) == "table" then -- 已学习阶级技能
+        cleanNotStudy:setVisible(false)
+        cleanStudy:setVisible(true)
+
+        local name = self:getChild("name")
+        name:setText(curSkill:getEnName())
+
+        local desc = self:getChild("desc")
+        desc:setText(curSkill:getName())
+
+        local clean = self:getChild("clean")
+
+        -- 消耗金币
+        local consume = self:getChild("consume")
+        local heroData = lt.GameModule:getHeroData()
+        local curJinbi = heroData:getJinBi()
+        local cleanPrice = curSkill:getCleanPrice()
+        local cleanPriceStr = "[color=#00FF00]" .. cleanPrice .. "[/color]"
+        if curJinbi < cleanPrice then
+            cleanPriceStr = "[color=#FF0000]" .. cleanPrice .. "[/color]"
+        end
+        consume:setText(string.format(GReadText.KEY_NPC_CLS_SKILL_TIPS3, cleanPriceStr))
+
+        -- 清洗次数
+        local need = self:getChild("need")
+        local needStr = "1/1"
+        need:setColor(cc.c3b(0,255,0))
+        local classLevel = curSkill:getClassLevel()
+        local isClean = lt.SkillModule:checkCleanedClassLevel(classLevel)
+        clean:getChild("bg"):setGrayed(false)
+        if isClean then
+            needStr = "0/1"
+            need:setColor(cc.c3b(255,0,0))
+            clean:getChild("bg"):setGrayed(true)
+        end
+        need:setText(needStr)
+
+        -- 按钮状态
+        clean._callback = function()
+            if isClean then
+                lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_NPC_CLS_SKILL_TIPS4})
+                return
+            end
+
+            if curJinbi < cleanPrice then
+                lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_NPC_CLS_SKILL_TIPS5})
+                return
+            end
+
+            local rankData = lt.CacheManager:getRoleRankByRaceAndLvl(raceId,classLevel)
+            local nameStr = ""
+            if rankData then
+                nameStr = "[color=#00FF00]" .. rankData:getName() .. "[/color]"
+            end
+            local cleanStr = string.format(GReadText.KEY_NPC_CLS_SKILL_TIPS6,nameStr,cleanPriceStr)
+            lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+                content = cleanStr,
+                confirmCallback = function()
+                    yflog:Info("---->>>>> %s",curSkill:getRankId())
+                    self._curSkillFalg[self._curSelect] = true
+                    lt.NpcModule:cleanClassSkill(curSkill:getRankId())
+                end,
+            })
+        end
+    elseif type(curSkill) == "number" then -- 未学习阶级技能
+        cleanNotStudy:setVisible(true)
+        cleanStudy:setVisible(false)
+
+        local clsName = self:getChild("clsName")
+        local isClean = lt.SkillModule:checkCleanedClassLevel(curSkill)
+        local rankData = lt.CacheManager:getRoleRankByRaceAndLvl(raceId,curSkill)
+        if rankData then
+            local clsStr = string.format(GReadText.KEY_NPC_CLS_SKILL_TIPS7,rankData:getName())
+            if isClean and (not self._curSkillFalg[self._curSelect]) then
+                clsStr = clsStr .. "  " .. GReadText.KEY_NPC_CLS_SKILL_TIPS8
+            end
+            clsName:setText(clsStr)
+        end
+        local clsDesc = self:getChild("clsDesc")
+        if isClean then
+            clsDesc:setText(GReadText.KEY_NPC_CLS_SKILL_TIPS9)
+            clsDesc:setColor(cc.c3b(255,0,0))
+        else
+            clsDesc:setText(GReadText.KEY_NPC_CLS_SKILL_TIPS2)
+            clsDesc:setColor(cc.c3b(255,0,0))
+        end
+
+        -- 如果被标记显示固定内容
+        if self._curSkillFalg[self._curSelect] then
+            clsDesc:setText(GReadText.KEY_NPC_CLS_SKILL_TIPS10)
+            clsDesc:setColor(cc.c3b(0,255,0))
+        end
+
+        self._callback = nil
+    end
+end
+
+function UIWndNpcClsSkill:onClickCallback()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndNpcClsSkill", close = true})
+end
+
+function UIWndNpcClsSkill:cleanClickFunc(obj)
+    local target = obj:getSender()
+    if target._callback then
+        target._callback()
+    end
+end
+
+return UIWndNpcClsSkill

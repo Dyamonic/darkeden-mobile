@@ -1,0 +1,14 @@
+local HelpDao = {}
+
+function HelpDao:queryAll()
+    local table = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM Help")) do
+        local meta = lt.HelpMeta.new(row)
+        -- table[meta:getIdxId()] = meta
+        table[#table+1] = meta
+    end
+    return table
+end
+
+return HelpDao

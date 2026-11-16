@@ -1,0 +1,232 @@
+-- 公会主界面 (已有行会)
+---@class UIWndGuildMain:UIWindowBase
+local UIWndGuildMain            = class("UIWndGuildMain", lt.UIWindowBase)
+
+local NtfManager                = lt.NtfManager
+local GuildModule               = lt.GuildModule
+local GameModule                = lt.GameModule
+local Constant                  = lt.Constant
+local RaceType                  = Constant.RaceType
+
+local FITER_TYPES               = {
+    GuildInfo   = 1, --公会信息
+    GuildMember = 2, --公会成员
+    GuildUnion  = 3, --公会联盟
+}
+
+UIWndGuildMain.ChangeSkinConf   = {
+    ["Guild"] = {
+        ["bg"] = "bg_zhuangbei_beijinban",
+    },
+    ["CommonTL"] = {
+        ["btnFiter1"] = { n0 = "tab_normal", n1 = "tab_select", n2 = "tab_select", n3 = "tab_select" },
+        ["btnFiter2"] = { n0 = "tab_normal", n1 = "tab_select", n2 = "tab_select", n3 = "tab_select" },
+        ["btnFiter3"] = { n0 = "tab_normal", n1 = "tab_select", n2 = "tab_select", n3 = "tab_select" },
+        ["frame"] = {
+            closeButton = { bg = "bg_beibao_anniu01", bgup = "bg_beibao_anniu02" },
+        },
+    }
+}
+
+UIWndGuildMain.ChangeSkinOffset = {
+    [RaceType.Slayer] = { -- 人
+        ["frame"] = {     -- 863 0
+            closeButton = { x = 0, y = 0 },
+        },
+    },
+    [RaceType.Vampire] = { -- 鬼
+        ["frame"] = {      -- 861 0
+            closeButton = { x = -4, y = 1 },
+        },
+    },
+    [RaceType.Ousters] = { -- 魔
+
+    }
+}
+
+function UIWndGuildMain:ctor(param)
+    self:registerComponent("UICompGuildInfo", "UICompGuildMemberList", "UICompGuildUnionList")
+    UIWndGuildMain.super.ctor(self, param)
+    self._fiterBtns = {}
+    self._guildInfoPanel = nil
+    self._guildMenberPanel = nil
+    self._guildUnionList = nil
+end
+
+function UIWndGuildMain:onShown()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_GUILDMEMBER_LIST_SELECT, handler(self, self.onGuildMemberListSelect),
+        "UIWndGuildMain:onGuildMemberListSelect")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_GUILD_INFO, handler(self, self.onGuildInfoRefresh),
+        "UIWndGuildMain:onGuildInfoRefresh")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_GUILD_MEMBER_LIST, handler(self, self.onGuildListRefresh),
+        "UIWndGuildMain:onGuildListRefresh")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_RED_DOT_EVENT, handler(self, self.uptRedDotEvt),
+        "UIWndGuildMain:uptRedDotEvt")
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        self._fiterBtns[fiterType]:addClickListener(handler(self, self.openFiterBtnClick))
+    end
+
+    local param = self:getParam().param or {}
+    local mainIdx = param.index or FITER_TYPES.GuildInfo
+    local defaultView = self._fiterBtns[mainIdx]
+    defaultView:setSortingOrder(3)
+    self:openFiterView(defaultView)
+    self:onRefreshRedDotEvt()
+end
+
+function UIWndGuildMain:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndGuildMain:onGuildMemberListSelect")
+    NtfManager:removeNtfListenerByTag("UIWndGuildMain:onGuildInfoRefresh")
+    NtfManager:removeNtfListenerByTag("UIWndGuildMain:onGuildListRefresh")
+    NtfManager:removeNtfListenerByTag("UIWndGuildMain:uptRedDotEvt")
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        self._fiterBtns[fiterType]:removeClickListener()
+    end
+    UIWndGuildMain.super.onHide(self)
+end
+
+function UIWndGuildMain:onClear()
+    self._fiterBtns        = {}
+    self._guildInfoPanel   = nil
+    self._guildMenberPanel = nil
+    self._guildUnionList   = nil
+    self._emptyNode        = nil
+    self._controlTab       = nil
+    self:unregisterAllComponent()
+    UIWndGuildMain.super.onClear(self)
+end
+
+function UIWndGuildMain:doShowAnimation()
+    local heroData = GameModule:getHeroData()
+    local guildId = heroData:getGuildId()
+    GuildModule:sendGuildDetailReq(guildId)
+end
+
+function UIWndGuildMain:onInit()
+    UIWndGuildMain.super.onInit(self, _GURL.GuildMainPanel)
+    self._emptyNode = self:getChild("emptyNode")
+    self._controlTab = self:getController("tabs")
+
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        local obj = self:getChild("btnFiter" .. fiterType)
+        obj:setVisible(not (FITER_TYPES.GuildUnion == fiterType))
+        obj.fiterType = fiterType
+        self._fiterBtns[fiterType] = obj
+    end
+    self._emptyNode:setSortingOrder(99)
+end
+
+function UIWndGuildMain:openFiterBtnClick(context)
+    local sender = context:getSender()
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        if fiterType == sender.fiterType then
+            self._fiterBtns[fiterType]:setSortingOrder(3)
+        else
+            self._fiterBtns[fiterType]:setSortingOrder(1)
+        end
+    end
+    self:openFiterView(sender)
+end
+
+function UIWndGuildMain:openFiterView(sender)
+    if self._openViewType == sender.fiterType then
+        return
+    end
+    self._openViewType = sender.fiterType
+    self._controlTab:setSelectedIndex(self._openViewType - 1)
+    self:showCurPanel()
+end
+
+function UIWndGuildMain:showCurPanel()
+    if self._openViewType == FITER_TYPES.GuildInfo then
+        if not self._guildInfoPanel then
+            self._guildInfoPanel = fgui.UIPackage:createObject("Guild", "GuildInfoPanel")
+            self._guildInfoPanel:insertObjectToFactory(self)
+            self._guildInfoPanel:setPosition(43, 53)
+            self._emptyNode:addChild(self._guildInfoPanel)
+        else
+            self._guildInfoPanel:refreshView()
+        end
+    elseif self._openViewType == FITER_TYPES.GuildMember then
+        if not self._guildMemberPanel then
+            self._guildMemberPanel = fgui.UIPackage:createObject("Guild", "GuildMemberListPanel")
+            self._guildMemberPanel:insertObjectToFactory(self)
+            self._guildMemberPanel:setPosition(43, 53)
+            self._emptyNode:addChild(self._guildMemberPanel)
+        else
+            self._guildMemberPanel:refreshView()
+        end
+    elseif self._openViewType == FITER_TYPES.GuildUnion then
+        if not self._guildUnionList then
+            self._guildUnionList = fgui.UIPackage:createObject("Guild", "GuildUnionList")
+            self._guildUnionList:insertObjectToFactory(self)
+            self._guildUnionList:setPosition(43, 53)
+            self._emptyNode:addChild(self._guildUnionList)
+        else
+            self._guildUnionList:refreshView()
+        end
+
+        -- if not self._guildUnionInfo then
+        --     fgui.registerComponent(_GURL.GuildUnionPanel, lt.UICompGuildUnionInfo)
+        --     self._guildUnionInfo = fgui.UIPackage:createObject("Guild", "GuildUnionPanel")
+        --     self._guildUnionInfo:setPosition(43, 53)
+        --     self._emptyNode:addChild(self._guildUnionInfo)
+        --     self._guildUnionInfo:initUI()
+        -- else
+        --     self._guildUnionInfo:refreshView()
+        -- end
+    end
+
+    --显示
+    if self._guildInfoPanel then
+        self._guildInfoPanel:setVisible(self._openViewType == FITER_TYPES.GuildInfo)
+    end
+    if self._guildMemberPanel then
+        self._guildMemberPanel:setVisible(self._openViewType == FITER_TYPES.GuildMember)
+    end
+    if self._guildUnionList then
+        self._guildUnionList:setVisible(self._openViewType == FITER_TYPES.GuildUnion)
+    end
+end
+
+function UIWndGuildMain:onGuildMemberListSelect(event)
+    local param = event.param
+    if self._guildMemberPanel then
+        self._guildMemberPanel:onClickItem(param.data)
+    end
+end
+
+function UIWndGuildMain:onGuildInfoRefresh()
+    if self._guildInfoPanel then
+        self._guildInfoPanel:refreshView()
+    end
+end
+
+function UIWndGuildMain:onGuildListRefresh()
+    if self._guildMemberPanel then
+        self._guildMemberPanel:refreshView()
+    end
+end
+
+function UIWndGuildMain:uptRedDotEvt(event)
+    local param = event.param
+    if param.name ~= "GuildApplyRedTips" then
+        return
+    end
+    self:onRefreshRedDotEvt()
+    if self._guildMemberPanel then
+        self._guildMemberPanel:uptRedDotEvt()
+    end
+end
+
+function UIWndGuildMain:onRefreshRedDotEvt()
+    local isShowRedDot = GuildModule:getRedPoint()
+    local btn = self._fiterBtns[FITER_TYPES.GuildMember]
+    btn:getChild("reddot"):setVisible(isShowRedDot)
+end
+
+function UIWndGuildMain:onLayerClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndGuildMain", close = true })
+end
+
+return UIWndGuildMain

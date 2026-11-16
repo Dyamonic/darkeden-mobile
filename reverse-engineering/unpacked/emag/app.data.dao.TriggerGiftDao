@@ -1,0 +1,14 @@
+-- 触发礼包
+local TriggerGiftDao = {}
+
+function TriggerGiftDao:queryAll()
+    local mapTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM TriggerGift") do
+        local mapMeta = lt.TriggerGiftMeta.new(row)
+        mapTable[mapMeta:getId()] = mapMeta
+    end
+    return mapTable
+end
+
+return TriggerGiftDao

@@ -1,0 +1,274 @@
+
+local HttpApi = {}
+local Sdk  = require('app.net.http.Sdk')
+local HttpClient = lt.HttpClient
+
+local SocketManager = lt.SocketManager
+
+--------------------------天之炼狱--------------------------
+local Platform = {
+    Win = 0,
+    Android = 1,
+    IOS = 2,
+    WEB = 3,
+    OHOS = 4,
+
+}
+local APICenterFlag = "tlian"
+local Lang = "zh-CN"
+function HttpApi:getApiPlat()
+    if device.platform == "windows" then
+        return Platform.Win
+    elseif device.platform == "android" then
+        return Platform.Android
+    elseif device.platform == "ios" then
+        return Platform.IOS
+    elseif device.platform == "ohos" then
+        return Platform.OHOS
+    end
+end
+local APIPlat = HttpApi:getApiPlat()
+local APIAppVer = Sdk:getAppVersion()
+local APIUUID = Sdk:getUUID()
+
+---上报角色信息
+function HttpApi:reportRoleInfo(subParams, onSuccess, onFailed)
+	local url = _G_TL_URL .. "api/v1/report/role"
+
+    local params = {
+        centerFlag = APICenterFlag,
+        uuid = APIUUID,
+        serverId = SocketManager:getServerId(),
+        timestamp = "",
+        roleName = "",
+        roleId = 0,
+        roleLevel = 0,
+        vipLevel = Sdk:getVipLevel(),
+        extData = ""
+    }
+
+    if subParams then
+        for k,v in pairs(subParams) do
+            params[k] = v
+        end
+    end
+    params.sign = HttpClient:getAppSign(params)
+    local httpClient = HttpClient.new(url, params, onSuccess, onFailed)
+    httpClient:post(false)
+end
+
+---删除角色信息
+function HttpApi:reportDeleteRoleInfo(subParams, onSuccess, onFailed)
+	local url = _G_TL_URL .. "api/v1/report/deleteRole"
+
+    local params = {
+        centerFlag = APICenterFlag,
+        uuid = APIUUID,
+        serverId = SocketManager:getServerId(),
+        roleId = 0,
+        timestamp = "",
+    }
+
+    if subParams then
+        for k,v in pairs(subParams) do
+            params[k] = v
+        end
+    end
+    params.sign = HttpClient:getAppSign(params)
+    local httpClient = HttpClient.new(url, params, onSuccess, onFailed)
+    httpClient:post(false)
+end
+
+-- 游戏埋点统计 正式服启用判断
+function HttpApi:reportGameStage(stage)
+    -- 正式服为2
+    if lt.ConfigLoader:getCDNType() ~= 2 then
+        return
+    end
+
+    if device.platform ~= "android" and device.platform ~= "ios" then
+        return
+    end
+
+    local url = "https://yfdb.yofijoy.com/v1/report/event"
+
+    local deviceId = cpp.GamePlatform:getDeviceId()
+    local channelId = cpp.SdkService:shared():getChannelType()
+    if not _G_START_APP_TIME then
+        _G_START_APP_TIME = cc.UserDefault:getInstance():getIntegerForKey("startAppTime", 0) or 0
+    end
+
+    local params = {
+        appid  = 100,
+        appkey = "YiRR0WmOzBrHHlRDUCvV50eLIjEg0I7K",
+        data = {
+            type="track",
+            device_id = tostring(deviceId),
+            event_name = tostring(stage),
+            properties={
+                game = "tianZhiLianYu", -- 游戏简拼 单个游戏在所有环境都是一致的 可以直接写死
+                center_flag = _G_API_CENTER_FLAG,-- 专区标识 和拉区服的一样
+                channel_id = tostring(channelId),
+                activation_time= _G_START_APP_TIME -- 激活时间(首次打开app)秒
+            }
+        }
+    }
+    local paramsString = json.encode(params)
+
+    -- yflog:Info("HttpApi:reportGameStage params:%s",paramsString)
+
+    local httpClient = HttpClient.new(url, paramsString, function (data)
+         yflog:Info("HttpApi:reportGameStage success:%s",data)
+    end, function (data)
+        yflog:Info("HttpApi:reportGameStage failed:%s",data)
+    end)
+
+    httpClient:post(false)
+end
+
+-- 流量上报
+function HttpApi:reportBytes(subParams)
+    if lt.ConfigLoader:getCDNType() ~= 2 then
+        return
+    end
+
+    if device.platform ~= "android" and device.platform ~= "ios" then
+        return
+    end
+
+    if not subParams then
+        return
+    end
+
+    -- 流量上报为统一yofi接口
+    local url = "https://yfdb.yofijoy.com/v1/report/event"
+ 
+    local channelId = cpp.SdkService:shared():getChannelType()
+    local deviceId = cpp.GamePlatform:getDeviceId()
+    local os = 1 -- 默认安卓
+    if device.platform == "ios" then
+        os = 2
+    end
+
+    local params = {
+        appid  = "10008",
+        appkey = "MCsYr2oTl5tfonxxbrbqL8EtxEuk1WJ8",
+        data = {
+            type="track",
+            account_id = subParams.userId,
+            device_id = tostring(deviceId),
+            event_name = "flow",
+            properties={
+                center_flag = _G_API_CENTER_FLAG,-- 专区标识 和拉区服的一样
+                os = os,
+                channel = tostring(channelId),
+                server_id = subParams.serverId,
+                server_name = subParams.serverName,
+                role_id = subParams.roleId,
+                role_name = subParams.roleName,
+                role_level = subParams.roleLevel,
+                num_value = subParams.value,
+            }
+        }
+    }
+
+    local paramsString = json.encode(params)
+
+    local httpClient = HttpClient.new(url, paramsString, function (data)
+        yflog:Info("HttpApi:reportBytes success:%s", data)
+    end, function (data)
+        yflog:Info("HttpApi:reportBytes failed:%s", data)
+    end)
+
+    httpClient:post(false)
+end
+
+function HttpApi:getChannelId()
+    return cpp.SdkService:shared().getChannelType and cpp.SdkService:shared():getChannelType() or lt.ConfigLoader:getChannelId()
+end
+
+
+function HttpApi:plyCreateStatistics(gameId, uuid, serverId, playerId, playerName, createTime, playerJob)
+	if not _G_STARTER_MODE or not _G_PHP_CENTER_URL then
+		return
+	end
+
+    local channelId = self:getChannelId()
+
+    local url = _G_PHP_CENTER_URL .. "api/plystatistics/create.php"
+    local params = {
+        game_id   = gameId,
+        user_type = lt.ConfigLoader:getUserType(),
+        uuid      = uuid,
+        sdk_id    = lt.ConfigLoader:getSdkId(),
+        server_id = serverId,
+        channel_id  = channelId,
+        player_id = playerId,
+        player_name = playerName,
+        create_time = createTime,
+        player_job = playerJob,
+    }
+
+    local httpClient = lt.HttpClient.new(url, params)
+    httpClient:get(true)
+end
+
+function HttpApi:plyLoginStatistics(gameId, uuid, serverId, playerId, playerName, createTime, roleLevel)
+    if not _G_STARTER_MODE or not _G_PHP_CENTER_URL then
+        return
+    end
+
+    local url = _G_PHP_CENTER_URL .. "api/plystatistics/login.php"
+    local channelId = self:getChannelId()
+
+    local params = {
+        game_id   = gameId,
+        user_type = lt.ConfigLoader:getUserType(),
+        uuid      = uuid,
+        sdk_id    = lt.ConfigLoader:getSdkId(),
+        server_id = serverId,
+        channel_id  = channelId,
+        player_id = playerId,
+        player_name = playerName,
+        create_time = createTime,
+        player_level = roleLevel,
+    }
+
+    local deviceId = ""
+    if cpp.GamePlatform and cpp.GamePlatform.getDeviceId then
+        deviceId = cpp.GamePlatform:getDeviceId()
+    end
+
+    params.device_id = deviceId
+
+    local httpClient = lt.HttpClient.new(url, params)
+    httpClient:get(true)
+end
+
+
+function HttpApi:plyLevelStatistics(gameId, uuid, serverId, playerId, playerName, createTime, roleLevel)
+    if not _G_STARTER_MODE or not _G_PHP_CENTER_URL then
+        return
+    end
+
+    local url = _G_PHP_CENTER_URL .. "api/plystatistics/level.php"
+    local channelId = self:getChannelId()
+
+    local params = {
+        game_id   = gameId,
+        user_type = lt.ConfigLoader:getUserType(),
+        uuid      = uuid,
+        sdk_id    = lt.ConfigLoader:getSdkId(),
+        server_id = serverId,
+        channel_id  = channelId,
+        player_id = playerId,
+        player_name = playerName,
+        create_time = createTime,
+        player_level = roleLevel,
+    }
+
+    local httpClient = lt.HttpClient.new(url, params)
+    httpClient:get(true)
+end
+
+return HttpApi

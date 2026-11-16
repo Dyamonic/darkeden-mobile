@@ -1,0 +1,142 @@
+---@改名
+---@class UICompRename
+local UICompRename = class("UICompRename",lt.UICompBase, lt.UICompChangeSkin)
+
+local NtfManager = lt.NtfManager
+
+UICompRename.ChangeSkinConf = {
+    ["MessageBox"] = {
+        ["bg"] = "bg_tytanchuang_01",
+    },
+    ["CommonTL"] = {
+        closeButton = {bg  = "sort"},
+        confirm = {bg  = "sort"},
+    } 
+}
+
+function UICompRename:ctor()
+    UICompRename.super.ctor(self)
+end
+
+function UICompRename:onConstruct()
+    self:startSkin()
+end
+
+function UICompRename:onClear()
+    if self._nameInput then
+        self._nameInput:removeFromParent()
+        self._nameInput = nil
+    end
+    self._confirmBtn = nil
+    self._closeButton = nil
+    UICompRename.super.onClear(self)
+end
+
+function UICompRename:onEnter()
+    UICompRename.super.onEnter(self)
+    self._confirmBtn:addClickListener(handler(self, self.onBtnClick))
+    self._closeButton:addClickListener(handler(self, self.onCloseBtnClick))
+
+end
+function UICompRename:onExit()
+    self._confirmBtn:removeClickListener()
+    self._closeButton:removeClickListener()
+    UICompRename.super.onExit(self)
+end
+
+function UICompRename:initUI()
+    self._confirmBtn = self:getChild("confirm")
+    self._closeButton = self:getChild("closeButton")
+    self:initCocosInputUI()
+end
+
+function UICompRename:onCloseBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_RENAME_MESSAGE_BOX)
+end
+
+function UICompRename:onBtnClick()
+    local name = self._nameInput:getText()
+    if name == "" then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {content = GReadText.KEY_CREATE_ROLE_TIPS5})
+        return
+    end
+
+    local byteLen = lt.CommonUtil:GetUTFWidth(name)
+    if byteLen < 4 or byteLen > 10 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {content = GReadText.KEY_CREATE_ROLE_TIPS15})
+        return
+    end
+    -- local heroData = lt.GameModule:getHeroData()
+    -- if name == heroData:getName() then
+    --     NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {content = "已被使用过的用户名（ID）。"})
+    --     return 
+    -- end
+    -- "含有非法词汇，请重新输入"
+    if not self._objId then
+        return
+    end
+    
+    yflog:Info("------------->>>>>name:%s,objId:%s",name,self._objId)
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {type = 2,
+        content = string.format(GReadText.KEY_RENAME_TIPS3, "\n" .. name),
+        confirmCallback = function()
+            lt.GameModule:changeRoleName(name,self._objId)
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_RENAME_MESSAGE_BOX)
+        end,
+    })
+end
+
+function UICompRename:initCocosInputUI()
+    if not self._nameInput then
+        self._nameInput = ccui.EditBox:create(cc.size(315, 40),"", ccui.TextureResType.localType)
+        self._nameInput:setAnchorPoint(cc.p(0, 0))
+        self._nameInput:setFontName(lt.Constant.FONT_4)
+        self._nameInput:setFontSize(22)
+        self._nameInput:setReturnType(cc.KEYBOARD_RETURNTYPE_SEND)
+        self._nameInput:setInputMode(cc.EDITBOX_INPUT_MODE_SINGLELINE)
+        self._nameInput:registerScriptEditBoxHandler(handler(self, self.editBoxEvent))
+        self:getChild("nameBg"):displayObject():addChild(self._nameInput)
+    end
+end
+
+function UICompRename:editBoxEvent(eventType,sender)
+    if eventType == "began" then
+    elseif eventType == "ended" then
+    elseif eventType == "changed" then
+        local str = sender:getText()
+        str = string.gsub(str," ","")--过滤掉空格
+        str = lt.CommonUtil:rmSpecChars(str)
+        local count = string.len(str)
+        local reCount = 0
+        local beginIndex = -1
+        local reString = ""
+        for i = 1, count do
+            local s = string.sub(str, i, i)
+            local t = string.byte(s)
+            if t < 128 then
+                reCount = reCount + 1--1字节文字，长度加1
+            elseif t >= 192 then
+                reCount = reCount + 2--1字节以上文字，长度加2
+            end
+            if reCount > 10 then
+                beginIndex = i - 1
+                break
+            end
+            beginIndex = i
+        end
+        reString = string.sub(str, 1, beginIndex)
+        sender:setText("")
+        self._nameInput:setText(reString)
+    elseif eventType == "return" then
+    end
+end
+
+function UICompRename:refreshTips(param)
+    if self._nameInput then
+        self._nameInput:setText("")
+    end
+
+    self._objId = param.objId
+end
+
+return UICompRename

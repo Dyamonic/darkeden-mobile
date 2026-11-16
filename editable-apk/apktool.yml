@@ -1,0 +1,20 @@
+version: 3.0.3
+apkFileName: com.yofijoy.tzlyby.apk
+usesFramework:
+  ids:
+  - 1
+sdkInfo:
+  minSdkVersion: 24
+  targetSdkVersion: 30
+versionInfo:
+  versionCode: 3
+  versionName: 1.0.3
+resourcesInfo:
+  packageId: 127
+doNotCompress:
+- arsc
+- jpg
+- mp3
+- png
+- androidsupportmultidexversion.txt
+- okhttp3/internal/publicsuffix/publicsuffixes.gz

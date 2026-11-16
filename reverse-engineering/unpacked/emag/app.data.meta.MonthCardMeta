@@ -1,0 +1,78 @@
+local MonthCardMeta = class("MonthCardMeta")
+
+function MonthCardMeta:ctor(row)
+    self:initWithRow(row)
+end
+
+function MonthCardMeta:initWithRow(row)
+    self._mapCode        = row.MapCode
+    self._mapName        = row.MapName
+    self._mapDescription = row.MapDescription
+    self._mapDifficulty  = row.MapDifficulty
+    self._recommendLevel = row.RecommendLevel
+    self._pKType         = row.PKType
+    self._freeEnter      = row.FreeEnter
+    self._iconDescribe   = row.IconDescribe
+    self._mapEnvironment = row.MapEnvironment
+
+    if row.MapPriceS == "" then
+        self._mapPriceS = nil
+    else
+        self._mapPriceS = json.decode(row.MapPriceS)
+    end
+    if row.MapPriceV == "" then
+        self._mapPriceV = nil
+    else
+        self._mapPriceV = json.decode(row.MapPriceV)
+    end
+    if row.MapPriceO == "" then
+        self._mapPriceO = nil
+    else
+        self._mapPriceO = json.decode(row.MapPriceO)
+    end
+    if row.EnterItem == "" then
+        self._enterItem = nil
+    else
+        self._enterItem = json.decode(row.EnterItem)
+    end
+end
+
+function MonthCardMeta:getMapPriceS()
+    return self._mapPriceS
+end
+
+function MonthCardMeta:getMapPriceV()
+    return self._mapPriceV
+end
+
+function MonthCardMeta:getMapPriceO()
+    return self._mapPriceO
+end
+
+function MonthCardMeta:getEnterItem()
+    return self._enterItem
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function MonthCardMeta:getMapCode() return self._mapCode end
+
+function MonthCardMeta:getMapName() return self._mapName end
+
+function MonthCardMeta:getMapDescription() return self._mapDescription end
+
+function MonthCardMeta:getMapDifficulty() return self._mapDifficulty end
+
+function MonthCardMeta:getRecommendLevel() return self._recommendLevel end
+
+function MonthCardMeta:getPKType() return self._pKType end
+
+function MonthCardMeta:getIconDescribe() return self._iconDescribe end
+
+function MonthCardMeta:getFreeEnter() return self._freeEnter end
+
+function MonthCardMeta:getMapEnvironment() return self._mapEnvironment end
+
+-- AUTO GENERATED GETTERS END
+return MonthCardMeta

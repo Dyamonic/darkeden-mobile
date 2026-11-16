@@ -1,0 +1,26 @@
+
+local ModelDao = {}
+--[[
+   模型表 -> 模型表|Model
+]]
+
+function ModelDao:query(id)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM Model WHERE Id=%d;", id)) do
+    	local modelMeta = lt.ModelMeta.new(row)
+        return modelMeta
+    end
+end
+
+function ModelDao:queryAll()
+    local modelTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM Model;") do
+    	local modelMeta = lt.ModelMeta.new(row)
+        modelTable[modelMeta:getId()] = modelMeta
+    end
+
+    return modelTable
+end
+
+return ModelDao

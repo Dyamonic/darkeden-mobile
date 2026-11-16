@@ -1,0 +1,23 @@
+
+local RankEXPInfoDao = {}
+
+function RankEXPInfoDao:query(id)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM ClassLevelExpInfo WHERE Level=%d;", id)) do
+        local rankExp = lt.RankEXPInfoMeta.new(row)
+        return rankExp
+    end
+end
+
+function RankEXPInfoDao:queryAll()
+    local rankExpTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM ClassLevelExpInfo ") do
+        local rankExp = lt.RankEXPInfoMeta.new(row)
+        table.insert(rankExpTable, rankExp)
+    end
+
+    return rankExpTable
+end
+
+return RankEXPInfoDao

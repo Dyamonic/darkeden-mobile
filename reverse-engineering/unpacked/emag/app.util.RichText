@@ -1,0 +1,634 @@
+-- function RichText:ctor(strOrTable, widthLimit, param)
+local RichText = class("RichText", lt.UIWidget)
+
+local utf8 = lt.utf8
+
+RichText.FONT_SIZE = 18
+-- RichText.DEFAULT_COLOR = lt.Constant.COLOR_TEXT_WHITE
+RichText.DEFAULT_COLOR = lt.Constant.COLOR_TEXT_WHITE_PURE
+RichText.DEFAULT_OUTLINE_COLOR = lt.Constant.COLOR_OUTLINE
+RichText.DEFAULT_FONT_NAME = lt.Constant.FONT_2
+
+RichText._param             = nil
+RichText._defaultColor      = nil
+RichText._defaultSize       = nil
+RichText._widthLimit        = nil
+RichText._rows              = nil
+RichText._rowsNode          = nil
+RichText._curLeftSpaceWidth = nil
+RichText._parseConfig       = nil
+RichText._callback          = nil
+
+RichText.COLORS = {
+    white = cc.c3b(255, 255, 255), -- white
+    green = cc.c3b(0x00, 0xFF, 0x00), -- green
+    blue = cc.c3b(0x00, 0x00, 0xFF), -- blue
+    black = cc.c3b(0x00, 0x00, 0x00), -- black
+    yellow = cc.c3b(0xE8, 0xC8, 0x00), -- yellow
+    red = cc.c3b(0xFF, 0x00, 0x00), -- red
+    orange = cc.c3b(0xFF, 0x80, 0x00), -- Orange
+    purple = cc.c3b(0xFF, 0x00, 0xFF), -- Purple
+    gray = cc.c3b(0xC0, 0xC0, 0xC0), -- Gray
+    gold = cc.c3b(0xFF, 0xFF, 0x00),
+    lightyellow = cc.c3b(255, 221, 0), -- yellow
+    pressBtn = cc.c3b(0xFF, 0x00, 0x00), -- press按鈕
+    title = cc.c3b(0xD6, 0x9A, 0x7B), -- press按鈕
+    text = cc.c3b(190, 140, 110),    -- 
+    d = nil,
+}
+
+local function getNodeSize(node)
+    return node:getBoundingBox()
+    -- return node:getContentSize()
+end
+
+local function createBmFont(itemcfg)
+    local label = cc.LabelBMFont:create(itemcfg.content, itemcfg.fontName)
+    if itemcfg.scale then  
+        label:setScale(itemcfg.scale)  
+    end
+    if itemcfg.gap then
+        label:setGap(itemcfg.gap)  
+    end
+    return label
+end
+
+local function drawUnLine(parent, widget, height)
+    local color4F = cc.convertColor(widget:getColor(), "4f")
+    color4F.a = 1
+    local pos = cc.p(widget:getPosition())
+    local drawNode = cc.DrawNode:create()
+    drawNode:setLineWidth(1)
+    drawNode:drawLine(cc.p(0, 0), cc.p(widget:getContentSize().width, 0), color4F)
+    drawNode:setPositionY(height or 0)
+    widget:addChild(drawNode)
+    return drawNode
+end
+
+local function drawBtnSign(parent, widget, itemcfg)
+    local sprite 
+    sprite = display.newSprite(itemcfg.fileSign)
+    sprite:setPosition(-3, widget:getContentSize().height/2)
+    sprite:setAnchorPoint(cc.p(1, 0.5))
+    widget:addChild(sprite)
+    return drawNode
+end
+
+local function drawBtn(parent, widget, callback, itemcfg, unLineNode)
+    local btn = ccui.Button:create("ui/init/none.png")
+    -- local btn = ccui.Button:create("ui/common/bg_black_gold.png")
+    btn:setScale9Enabled(true)
+    btn:setContentSize(widget:getContentSize().width, widget:getContentSize().height + (itemcfg.btnSpacing or 0))
+    btn:setAnchorPoint(cc.p(0, 0.5))
+    btn:setPosition(cc.p(widget:getPositionX(), widget:getContentSize().height/2))
+    btn:addTouchEventListener(function(sender, type)
+        if type == ccui.TouchEventType.began then
+            local color = RichText.COLORS.pressBtn
+            widget:setColor(color)
+            widget:setScale(0.9)
+            if unLineNode then
+                unLineNode:clear()
+                local color4F = cc.convertColor(color, "4f")
+                color4F.a = 1
+                unLineNode:setLineWidth(1)
+                unLineNode:drawLine(cc.p(0, 0), cc.p(widget:getContentSize().width, 0), color4F)
+            end
+        elseif type == ccui.TouchEventType.ended then
+            local color = itemcfg.color or rt._defaultColor
+            if RichText.COLORS[itemcfg.color] then
+                color = RichText.COLORS[itemcfg.color]
+            end 
+            widget:setColor(color)
+            widget:setScale(1)
+            if unLineNode then
+                unLineNode:clear()
+                local color4F = cc.convertColor(color, "4f")
+                color4F.a = 1
+                unLineNode:setLineWidth(1)
+                unLineNode:drawLine(cc.p(0, 0), cc.p(widget:getContentSize().width, 0), color4F)
+            end
+            callback(itemcfg)
+        elseif type == ccui.TouchEventType.canceled then
+            local color = itemcfg.color or rt._defaultColor
+            if RichText.COLORS[itemcfg.color] then
+                color = RichText.COLORS[itemcfg.color]
+            end 
+            widget:setColor(color)
+            widget:setScale(1)
+            if unLineNode then
+                unLineNode:clear()
+                local color4F = cc.convertColor(color, "4f")
+                color4F.a = 1
+                unLineNode:setLineWidth(1)
+                unLineNode:drawLine(cc.p(0, 0), cc.p(widget:getContentSize().width, 0), color4F)
+            end
+        end
+    end)
+    parent:addChild(btn)
+end
+
+local function createLabel(content, itemcfg, rt)
+
+    local label = cc.Label:createWithTTF(content, 
+                                         itemcfg.fontName or rt._defaultFontName,
+                                         itemcfg.size or rt._defaultSize, 
+                                         itemcfg.dimensions or cc.size(0, 0), 
+                                         itemcfg.hAlignment or cc.TEXT_ALIGNMENT_LEFT, 
+                                         itemcfg.vAlignment or cc.VERTICAL_TEXT_ALIGNMENT_TOP)
+
+
+
+    if itemcfg.color then
+        if RichText.COLORS[itemcfg.color] then
+            label:setColor(RichText.COLORS[itemcfg.color])
+        else
+            label:setColor(itemcfg.color)
+        end
+    else
+        label:setColor(rt._defaultColor)
+    end
+
+
+    if itemcfg.outline then
+        local color4b = itemcfg.outlineColor
+        local outlineSize = itemcfg.outlineSize
+
+        if not color4b then color4b = rt._defaultOutlineColor end
+        if not outlineSize then outlineSize = 2 end
+        label:enableOutline(color4b, outlineSize)
+    end
+
+    return label
+end
+
+local function createTTF(content, itemcfg, rt)
+    if rt._label and content then
+        return createLabel(content, itemcfg, rt)
+    end
+
+    local label = cc.LabelTTF:create(content, itemcfg.fontName or rt._defaultFontName, itemcfg.size or rt._defaultSize)
+
+    if itemcfg.dimensions then
+        label:setDimensions(itemcfg.dimensions)
+    end
+
+    if itemcfg.hAlignment then
+        label:setHorizontalAlignment(itemcfg.hAlignment)
+    end
+    if itemcfg.vAlignment then
+        label:setVerticalAlignment(itemcfg.vAlignment)
+    end
+
+    if itemcfg.color then
+        if RichText.COLORS[itemcfg.color] then
+            label:setColor(RichText.COLORS[itemcfg.color])
+        else
+            label:setColor(itemcfg.color)
+        end
+    else
+        label:setColor(rt._defaultColor)
+    end
+
+    return label
+end
+
+local function createImg(itemcfg)
+    local image 
+    if itemcfg.plistName then
+        cc.SpriteFrameCache:getInstance():addSpriteFrames(itemcfg.plistName)
+        local frame  = cc.SpriteFrameCache:getInstance():getSpriteFrame(itemcfg.fileName)
+        if itemcfg.isScale9 then
+            image = ccui.Scale9Sprite:createWithSpriteFrameName(frame)
+            if itemcfg.contentSize then
+                image:setContentSize(itemcfg.contentSize)
+            end
+        else
+            image = cc.Sprite:createWithSpriteFrame(frame)
+        end
+    else
+        image = cc.Sprite:create(itemcfg.fileName)
+    end
+
+    if itemcfg.opacity then
+        image:setOpacity(itemcfg.opacity)
+    end
+
+    if itemcfg.scale then  
+        image:setScale(itemcfg.scale)  
+    end
+    return image
+end
+
+--[[
+
+    param:
+        autoCenter :  每行自动居中 
+        lineHeight :  规定行高
+        lineSpacing:  行距
+        stringType : 支持 richtext格式
+        defaultColor: 默认字体颜色
+--]]
+
+function RichText:ctor(strOrTable, widthLimit, param)
+    if type(param) == "table" then
+        self._param = param
+    else
+        self._param = {}
+    end
+
+    if self._param.callback then
+        self:addEventListenerCallback(self._param.callback)
+    end
+
+    self._defaultColor = self._param.defaultColor or RichText.DEFAULT_COLOR
+    self._defaultSize = self._param.defaultSize or RichText.FONT_SIZE
+    self._defaultFontName = self._param.fontName or RichText.DEFAULT_FONT_NAME
+    self._defaultOutlineColor = self._param.outlineColor or RichText.DEFAULT_OUTLINE_COLOR
+
+    self._label = param.label
+    
+    self._widthLimit = widthLimit
+    self._rows = {}
+    self._rowsNode = {}
+    self._curLeftSpaceWidth = self._widthLimit
+
+    if type(strOrTable) == "table" then
+        self._parseConfig = strOrTable
+    else
+        return
+    end
+    self:renderString()
+end
+
+function RichText:clear()
+    self._rows = {}
+    self._parseConfig = {}
+    for k, v in pairs( self._rowsNode) do
+        v:removeAllChildren()
+    end
+    self._rowsNode = {}
+    self:removeAllChildren();
+    self._curLeftSpaceWidth = self._widthLimit
+end
+
+function RichText:renderString()
+    self:addNewRow()
+    if not self._widthLimit then
+        for index,itemcfg in pairs(self._parseConfig) do
+            if itemcfg.oType == "font" then
+                local label = createTTF(itemcfg.content, itemcfg, self)
+                label:setTag(index)
+                self:addNodetoRow(label)
+            elseif itemcfg.oType == "bmfont" then
+                local label = createBmFont(itemcfg)
+                label:setTag(index)
+                self:addNodetoRow(label)
+            elseif itemcfg.oType == "img" then
+                local image = createImg(itemcfg)
+                image:setTag(index)
+                self:addNodetoRow(image)
+            elseif itemcfg.oType == "node" then
+                itemcfg.node:setTag(index)
+                self:addNodetoRow(itemcfg.node)
+            elseif itemcfg.oType == "wrap" then
+                self:addNewRow()
+            else
+                lt.LogUtil:debugInfo("uiRichText not support this type "..v)
+            end
+        end
+    else
+        for index,itemcfg in pairs(self._parseConfig) do
+            if itemcfg.oType == "font" then
+                self:handleFontRender(itemcfg,index)
+            elseif itemcfg.oType == "bmfont" then
+                local label = createBmFont(itemcfg)
+                itemcfg.node = label
+                self:handleNodeRender(itemcfg,index) 
+            elseif itemcfg.oType == "img" then
+                local image = createImg(itemcfg)
+                itemcfg.node = image
+                self:handleNodeRender(itemcfg,index)  
+            elseif itemcfg.oType == "wrap" then
+                self:addNewRow();
+            elseif itemcfg.oType == "node" then
+                self:handleNodeRender(itemcfg,index) 
+            else
+                lt.LogUtil:debugInfo("uiRichText not support this type "..v)
+            end
+        end
+    end
+    self:formarRichText()
+end
+
+function RichText:handleFontRender(itemcfg, index, label, width)
+    if not width or not label then
+        label = createTTF(itemcfg.content,itemcfg, self)
+        width = (getNodeSize(label)).width
+    end
+    
+    local oldLeftSpaceWidth = math.max(self._defaultSize, self._curLeftSpaceWidth) 
+
+    self._curLeftSpaceWidth = self._curLeftSpaceWidth - width;
+    if self._curLeftSpaceWidth < 0 then
+        local percent = (self._curLeftSpaceWidth/width) * -1
+        local textLength = utf8.len(itemcfg.content)
+        local tempLabelLength = math.floor(textLength * (1- percent));
+        local curLabelLength 
+        local nextWidth
+
+        local specialStr = utf8.sub(itemcfg.content,tempLabelLength + 1,tempLabelLength + 1)
+        local isSpecial = self:isMatchChinesePunctuation(specialStr)
+        local tempLabelStr = utf8.sub(itemcfg.content,tempLabelLength + 1,textLength)
+        if isSpecial then
+            tempLabelStr = utf8.sub(itemcfg.content,tempLabelLength + 2,textLength)
+        end
+
+        local tempLabel = createTTF(tempLabelStr,itemcfg,self)
+        local tempWidth = (getNodeSize(tempLabel)).width
+        local nextLabelText 
+        local nextLabel 
+        --当前 计算的宽度大于 剩余宽度
+        if width - tempWidth > oldLeftSpaceWidth then
+            while tempLabelLength >0 do
+                tempLabelLength = tempLabelLength - 1;
+                tempLabelStr = utf8.sub(itemcfg.content,tempLabelLength + 1,textLength)
+                tempLabel = createTTF(tempLabelStr,itemcfg,self)
+                tempWidth = (getNodeSize(tempLabel)).width
+                if width - tempWidth <= oldLeftSpaceWidth then
+                    curLabelLength = tempLabelLength
+                    nextWidth = tempWidth
+                    nextLabelText = tempLabelStr
+                    nextLabel = tempLabel
+                    break;
+                end
+            end
+        elseif width - tempWidth < oldLeftSpaceWidth then
+            local lastTempWidth =  tempWidth
+            local lastTempLabelStr = tempLabelStr
+            local lastTempLabel = tempLabel
+            
+            while true do
+                tempLabelLength = tempLabelLength + 1;
+                tempLabelStr = utf8.sub(itemcfg.content,tempLabelLength + 1,textLength)
+                tempLabel = createTTF(tempLabelStr,itemcfg,self)
+
+                tempWidth = (getNodeSize(tempLabel)).width
+                if width - tempWidth >= oldLeftSpaceWidth then
+                    curLabelLength = tempLabelLength - 1
+                    nextWidth = lastTempWidth
+                    nextLabelText = lastTempLabelStr
+                    nextLabel = lastTempLabel
+                    break;
+                else
+                    lastTempWidth = tempWidth
+                    lastTempLabelStr = tempLabelStr
+                    lastTempLabel = tempLabel
+
+                    if tempLabelLength >= textLength then
+                        break
+                    end
+                end
+            end
+        else
+            curLabelLength = tempLabelLength
+            nextLabelText = tempLabelStr
+            nextLabel = tempLabel
+            nextWidth = tempWidth
+        end
+
+        local curLabelText = utf8.sub(itemcfg.content,1,curLabelLength)
+        itemcfg.content = nextLabelText
+        local curLabel =  createTTF(curLabelText , itemcfg , self)
+        curLabel:setTag(index)
+        self:addNodetoRow(curLabel)
+        
+        self:addNewRow();
+        self:handleFontRender(itemcfg,index,nextLabel,nextWidth)
+    else
+        label:setTag(index)
+        self:addNodetoRow(label)
+    end
+end
+
+-- 是否含有中文标点符号
+function RichText:isMatchChinesePunctuation(str)
+    local p = false
+    if string.match(str, "，") then return true
+    elseif string.match(str, "。") then return true
+    elseif string.match(str, "：") then return true
+    -- elseif string.match(str, "“") then return true
+    elseif string.match(str, "”") then return true
+    elseif string.match(str, "？") then return true
+    elseif string.match(str, "！") then return true
+    -- elseif string.match(str, "《") then return true
+    elseif string.match(str, "》") then return true
+    elseif string.match(str, "；") then return true
+    elseif string.match(str, "、") then return true
+    end
+    return false
+end
+
+function RichText:handleNodeRender(itemcfg,index)
+    -- itemcfg.node:setTag(index)
+    local nodeSize = getNodeSize(itemcfg.node);
+    self._curLeftSpaceWidth = self._curLeftSpaceWidth - nodeSize.width;
+    itemcfg.node:setTag(index)
+    if self._curLeftSpaceWidth < 0 then
+        self:addNewRow();
+        self:addNodetoRow(itemcfg.node);
+        self._curLeftSpaceWidth = self._curLeftSpaceWidth - nodeSize.width;
+    else
+        self:addNodetoRow(itemcfg.node);
+    end
+end
+
+function RichText:addNodetoRow(node)
+    local size = #self._rows 
+    if size < 1 then
+        return
+    end
+    table.insert(self._rows[size],node)
+end
+
+function RichText:addNewRow()
+    self._curLeftSpaceWidth = self._widthLimit
+    table.insert(self._rows,{})
+end
+
+function RichText:formarRichText()
+    local contentSize = {}
+    local contentWidth = 0;
+    local contentHeight = 0;
+
+    local lineSpacing = 8
+    if self._param.lineSpacing then
+        lineSpacing = self._param.lineSpacing
+    end
+    local heightTable = {}
+    if self._param.lineHeight then
+        contentHeight = #self._rows * self._param.lineHeight
+        for k,row in pairs(self._rows)do
+            heightTable[k] = self._param.lineHeight;
+        end
+    else
+        for k,row in pairs(self._rows)do
+            local tempHeight = 0
+            for _,v in pairs(row)do
+               local size = getNodeSize(v)
+               tempHeight = math.max(tempHeight,size.height) 
+            end
+            heightTable[k] = tempHeight;
+            contentHeight = contentHeight + tempHeight;
+        end
+    end
+    local nextPosY = 0;
+    local btnSpacing = 0
+    local btnTotalSpacing = 0
+    for i=#self._rows,1,-1 do
+        local row = self._rows[i]
+        local nextPosX = 0
+        local rowNode = display.newNode()
+        rowNode:setAnchorPoint(0,0)
+        rowNode:setPosition(0,nextPosY)
+        self._rowsNode[i] = rowNode
+        self:addChild(rowNode)
+        btnSpacing = 0
+        for _,v in pairs(row)do
+            local tag = v:getTag()
+            local cfg = self._parseConfig[tag]
+
+            local size = getNodeSize(v);
+            v:setAnchorPoint(cc.p(0, 0));
+            local posy = 0
+
+            if size.height < heightTable[i] then
+                posy = heightTable[i]-size.height
+            end
+            local offsetx = 0
+            local offsety = 0
+            if cfg.offset then
+                offsetx = cfg.offset.x
+                offsety = cfg.offset.y
+            end
+
+            v:setPosition(nextPosX + offsetx, posy + offsety)
+
+            local unLineNode = nil
+            if cfg.unLine then
+                unLineNode = drawUnLine(rowNode, v, cfg.unLineHeight)
+            end
+            if cfg.btnSign then
+                drawBtnSign(rowNode, v, cfg)
+            end
+            if cfg.button then
+                btnSpacing = cfg.btnSpacing or 0
+                drawBtn(rowNode, v, handler(self, self.onClickCallback), cfg, unLineNode)
+            end
+            rowNode:addChild(v)
+            nextPosX = nextPosX + size.width;
+        end
+        rowNode:setContentSize(nextPosX, heightTable[i])
+        if self._param.autoCenter and self._widthLimit then
+            if nextPosX < self._widthLimit then
+                rowNode:setPositionX((self._widthLimit - nextPosX)/2)
+            end
+        end
+
+        btnTotalSpacing = btnTotalSpacing + btnSpacing
+        nextPosY = nextPosY + heightTable[i] + lineSpacing + btnSpacing;
+    end
+    local contentWidth 
+    if self._widthLimit then
+        contentWidth = self._widthLimit;
+    else
+        local maxWidth = 0
+        for k, v in pairs(self._rowsNode) do
+            local tempWidth = v:getContentSize().width
+            if maxWidth < tempWidth then
+                maxWidth =  tempWidth
+            end
+        end
+        contentWidth = maxWidth
+    end
+    self:setContentSize(cc.size(contentWidth,contentHeight + lineSpacing * (#self._rows - 1) + btnTotalSpacing))
+end
+
+function RichText:setRichText(textStr)
+    if type(textStr) ~= "table" then
+        textStr = lt.TaskModule:parseTaskString(textStr.. "<>")
+    end
+    
+    self:setString(textStr)
+end
+
+function RichText:setString(strOrTable)
+    self:clear()
+    if type(strOrTable) == "table" then
+        self._parseConfig = strOrTable
+    else
+        return
+    end
+    self:renderString()    
+end
+
+function RichText:convertColorWithX1(colorStr)
+    local color = tonumber(string.format("%d",colorStr))
+    local r = 0 
+    local g = 0 
+    local b = 0
+    b = color%16
+    color = math.floor(color/16)
+    b = b + (color%16) * 16
+    color = math.floor(color/16)
+    g = color%16
+    color = math.floor(color/16)
+    g = g + (color%16) * 16
+    color = math.floor(color/16)
+    r = color%16
+    color = math.floor(color/16)
+    r = r + (color%16) * 16
+    return cc.c3b(r,g,b)
+end
+
+function RichText:convertColorWithX(colorStr)
+    -- 去掉前面的 # 符号
+    if colorStr:sub(1, 1) == "#" then
+        colorStr = colorStr:sub(2)
+    end
+
+    -- 将十六进制字符串转换为数字
+    local color = tonumber(colorStr, 16)
+    if not color then
+        error("Invalid color string")
+    end
+
+    local r = 0 
+    local g = 0 
+    local b = 0
+
+    -- 提取 RGB 值
+    b = color % 256
+    color = math.floor(color / 256)
+    g = color % 256
+    color = math.floor(color / 256)
+    r = color % 256
+
+    return cc.c3b(r, g, b)
+end
+
+function RichText:onClickCallback(param)
+    local callback = self._callback
+    if callback then
+        callback(param)
+    end
+end
+
+function RichText:addEventListenerCallback(callback)
+    self._callback = callback
+end
+
+function RichText:getCurNodeWidth()
+    return self._widthLimit - self._curLeftSpaceWidth
+end
+
+return RichText

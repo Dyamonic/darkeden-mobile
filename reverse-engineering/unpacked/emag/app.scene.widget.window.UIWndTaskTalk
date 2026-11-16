@@ -1,0 +1,103 @@
+--- npc对话任务界面
+---@class UIWndTaskTalk:UIWindowBase
+local UIWndTaskTalk = class("UIWndTaskTalk", lt.UIWindowBase)
+local NtfManager = lt.NtfManager
+local TaskModule = lt.TaskModule
+local CacheManager = lt.CacheManager
+local Constant = lt.Constant
+local ItemModule = lt.ItemModule
+
+UIWndTaskTalk.ChangeSkinConf = {
+    ["MessageBox"] = {
+        ["bg"] = "bg_tytanchuang_02",
+    },
+    ["CommonTL"] = {
+        ["btn_confirm"] = {bg  = "btn_common_anniu_01"},
+    }
+}
+
+function UIWndTaskTalk:ctor(param)
+    UIWndTaskTalk.super.ctor(self, param)
+    self._npcHead = nil
+    self._npcName = nil
+    self._npcDesc = nil
+    self._idx = nil
+    self._list = {}
+end
+
+function UIWndTaskTalk:onClear()
+    self._npcHead = nil
+    self._npcName = nil
+    self._npcDesc = nil
+    self._idx = nil
+    self._list = nil
+    UIWndTaskTalk.super.onClear(self)
+end
+
+function UIWndTaskTalk:onInit()
+    UIWndTaskTalk.super.onInit(self, _GURL.WndTaskTalk)
+
+    self._npcHead = self:getChild("npcHead")
+    self._npcName = self:getChild("title")
+    self._npcDesc = self:getChild("list"):getChildAt(0):getChild("intro")
+
+    local closeBtn = self:getChild("frame"):getChild("closeButton")
+    closeBtn:setVisible(false)
+end
+
+function UIWndTaskTalk:onShown()
+    local confirmBtn = self:getChild("btn_confirm")
+    confirmBtn:addClickListener(handler(self, self.onConfirmBtnClick))
+    
+    self:getChild("touchLayer"):addClickListener(handler(self, self.onLayerClick))
+
+    self._idx = 1
+    local param = self:getParam() or {}
+    local meta = CacheManager:getDialogueDaoMeta(param.missionId)
+    if meta then
+        local npcMeta = CacheManager:queryNpc(meta:getMissionNPC())
+        local headId = npcMeta:getNpcHeadId()
+        self._npcHead:setURL(string.format(_GURL.NPCHeadURL, headId))
+        self._npcName:setText(npcMeta:getNpcName())
+        self._list = string.split(meta:getDialogue(), "|")
+        self._npcDesc:setText(self._list[self._idx])
+    end
+end
+
+function UIWndTaskTalk:onHide()
+    local confirmBtn = self:getChild("btn_confirm")
+    confirmBtn:removeClickListener()
+
+    self:getChild("touchLayer"):removeClickListener()
+
+    UIWndTaskTalk.super.onHide(self)
+end
+
+function UIWndTaskTalk:onConfirmBtnClick()
+    if self._idx >= #self._list then
+        local param = self:getParam() or {}
+        local meta = CacheManager:getDialogueDaoMeta(param.missionId)
+        --先判断是否要扣除道具
+        local itemUse = meta:getItemUse()
+        if itemUse then
+            local enough = ItemModule:enoughItem(itemUse[1][1], itemUse[1][2], itemUse[1][3], {tips = true})
+            if enough then
+                local item = ItemModule:getItemByItemId(itemUse[1][2], itemUse[1][1])
+                ItemModule:sendUseItem(item:getObjId(), itemUse[1][3])
+            end
+        end
+        if param.confirmCallback then
+            param.confirmCallback()
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndTaskTalk", close = true})
+    else
+        self._idx = self._idx + 1
+        self._npcDesc:setText(self._list[self._idx])
+    end
+end
+
+function UIWndTaskTalk:onLayerClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndTaskTalk", close = true })
+end
+
+return UIWndTaskTalk

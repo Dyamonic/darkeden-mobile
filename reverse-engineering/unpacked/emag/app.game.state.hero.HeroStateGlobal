@@ -1,0 +1,32 @@
+
+local HeroStateGlobal = class("HeroStateGlobal", lt.HeroStateBase)
+
+function HeroStateGlobal:ctor(heroAgent)
+    HeroStateGlobal.super.ctor(self, heroAgent)
+end
+
+function HeroStateGlobal:onClear()
+    HeroStateGlobal.super.onClear(self)
+end
+
+function HeroStateGlobal:onEnter()
+end
+
+function HeroStateGlobal:onExit()
+end
+
+function HeroStateGlobal:onUpdate()
+end
+
+function HeroStateGlobal:onMessage(msg)
+end
+
+function HeroStateGlobal:getStateId()
+    return lt.Constant.HERO_STATE_GLOBAL
+end
+
+function HeroStateGlobal:getStateName()
+    return "HeroStateGlobal"
+end
+
+return HeroStateGlobal

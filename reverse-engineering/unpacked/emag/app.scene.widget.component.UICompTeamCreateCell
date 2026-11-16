@@ -1,0 +1,45 @@
+---@class UICompTeamCreateCell
+---
+local UICompTeamCreateCell = class("UICompTeamCreateCell", lt.UICompBase, lt.UICompChangeSkin)
+
+local TeamModule = lt.TeamModule
+local CacheManager = lt.CacheManager
+local Constant = lt.Constant
+
+function UICompTeamCreateCell:ctor()
+    --UI
+    UICompTeamCreateCell.super.ctor(self)
+    self._mapLoader = nil
+    self._nameLabel = nil
+    self._selectImg = nil
+end
+
+function UICompTeamCreateCell:onClear()
+    --UI
+    self._mapLoader = nil
+    self._nameLabel = nil
+    self._selectImg = nil
+    UICompTeamCreateCell.super.ctor(self)
+end
+
+function UICompTeamCreateCell:onConstruct()
+    self._mapLoader = self:getChild("loader_map")
+    self._nameLabel = self:getChild("label_name")
+    self._selectImg = self:getChild("img_select")
+end
+
+function UICompTeamCreateCell:setInfo(meta)
+    local minMapResPath = string.format(_GURL.GetMiniMap, meta:getMinimapId())
+    self._mapLoader:setURL(minMapResPath)
+    self._nameLabel:setText(meta:getPurposeName())
+end
+
+function UICompTeamCreateCell:setSelected(select)
+    self._selectImg:setVisible(select)
+end
+
+function UICompTeamCreateCell:onKickBtnClick()
+    
+end
+
+return UICompTeamCreateCell

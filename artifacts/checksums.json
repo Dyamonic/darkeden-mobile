@@ -1,0 +1,17 @@
+[
+  {
+    "path": "com.yofijoy.tzlyby.apk",
+    "bytes": 1424696404,
+    "sha256": "ebf01b11ef7019ee600ae4c9e92d8597be7a769beed27df5f0b923cb12d1c0aa"
+  },
+  {
+    "path": "artifacts/offline-launcher-unsigned.apk",
+    "bytes": 1425399396,
+    "sha256": "a6014ffa82882f3431c966b1d07a9f589a3c09a28c39c632f2b19c34aa9027c5"
+  },
+  {
+    "path": "artifacts/single-player-english.apk",
+    "bytes": 1416336468,
+    "sha256": "0ef9f112c036e89ece97a6a7401ef5ab3815f0140e98e6dc3084a2d28575ab1e"
+  }
+]

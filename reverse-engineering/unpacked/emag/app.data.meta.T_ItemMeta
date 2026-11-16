@@ -1,0 +1,284 @@
+local ItemMeta          = class("ItemMeta")
+local Constant          = lt.Constant
+
+ItemMeta._itemId        = nil
+ItemMeta._name          = nil
+ItemMeta._iconId        = nil
+ItemMeta._kind          = nil
+ItemMeta._type          = nil
+ItemMeta._typeValue     = nil
+ItemMeta._price         = nil
+ItemMeta._addLimit      = nil
+ItemMeta._quality       = nil
+ItemMeta._needLv        = nil
+ItemMeta._bound         = nil
+ItemMeta._des           = nil -- Description
+ItemMeta._useAudio      = nil 
+ItemMeta._moneyInterval = nil 
+ItemMeta._goldInterval  = nil 
+ItemMeta._saleType      = nil 
+ItemMeta._cfmDes        = nil 
+ItemMeta._dura          = nil 
+ItemMeta._typeEndValue  = nil 
+ItemMeta._runeid        = 0
+ItemMeta._putBelt       = 0   -- 是否放入腰带
+ItemMeta._sell          = 1   -- 是否可以出售
+ItemMeta._race          = nil -- 种族
+ItemMeta._access        = nil
+ItemMeta._isDrop        = nil
+
+
+function ItemMeta:ctor(row)
+    self:initWithRow(row)
+end
+
+function ItemMeta:initWithRow(row)
+    self._itemId      = row.ItemIdx
+    self._name        = row.Name
+    self._enName      = row.ENName
+    self._iconId      = row.IconId
+    self._kind        = row.Kind
+    self._type        = row.Type
+    self._price       = row.Price
+    self._addLimit    = row.AddLimit
+    self._quality     = row.Quality
+    self._needLv      = row.NeedLv
+    self._des         = row.Description
+    self._itemSize    = row.ItemSize
+    self._sell        = row.Sell
+    self._race        = row.Race
+    self._effectParam = row.EffectParam
+    self._access      = row.Access
+    self._putBelt     = row.PutBelt
+    self._requireSum  = row.RequireSum
+    self._maxSize     = row.MaxSize
+    self._isDrop      = row.IsDrop
+    self._name2       = row.Name2
+    self._monthCardBind = row.MonthCardBind
+    
+
+
+    -- 老传奇无用
+    self._iconeffect  = row.IconEffect
+    self._goto        = row.Goto
+    self._typeValue   = row.TypeValue
+    self._bound       = row.Bound
+    self._useAudio    = row.UseAudio
+    self._moneyInterval = row.PriceGoldInterval
+    self._goldInterval  = row.PriceMoneyInterval
+    self._saleType    = row.SaleType
+    self._cfmDes      = row.ConfirmDes
+    self._dura        = row.Dura
+    self._typeEndValue = row.TypeRelevance
+    self._fastUse     = row.FastUse
+    if self._effectParam ~= "" then
+        self._effectParamJson = json.decode(self._effectParam)
+    end
+
+    if self._effectParam ~= "" then
+        self._effectParamTable = {}
+        local effectParam = json.decode(self._effectParam)
+        for k, v in pairs(effectParam) do
+            self._effectParamTable[v[1]] = v
+            -- yflog:Info("-------------->>>>key:%s,value:%s",k,v)
+        end
+    end
+
+    if self._access == "" then
+        self._accessConvert = nil
+    else
+        self._accessConvert = json.decode(self._access)
+    end
+end
+
+function ItemMeta:getItemId()
+    return self._itemId
+end
+
+function ItemMeta:getItemType()
+    return 1
+end
+
+function ItemMeta:getName()
+    return self._name
+end
+
+function ItemMeta:getEnName()
+    return self._enName
+end
+
+function ItemMeta:getIconId()
+    return self._iconId
+end
+
+function ItemMeta:getKind()
+    return self._kind
+end
+
+function ItemMeta:getType()
+    return self._type
+end
+
+function ItemMeta:getTypeValue()
+    return self._typeValue
+end
+
+function ItemMeta:getTypeEndValue()
+    return self._typeEndValue
+end
+
+function ItemMeta:getFastUse()
+    return self._fastUse
+end
+
+function ItemMeta:getPrice()
+    return self._price
+end
+
+function ItemMeta:getAddLimit()
+    return self._addLimit
+end
+
+function ItemMeta:getQuality()
+    return self._quality or 0
+end
+
+function ItemMeta:getNeedLv()
+    return self._needLv or 0
+end
+
+function ItemMeta:getBound()
+    return self._bound or 0
+end
+
+function ItemMeta:getDes()
+    return self._des
+end
+
+function ItemMeta:getItemMeta()
+    return nil
+end
+
+function ItemMeta:getUseAudio()
+    return self._useAudio
+end
+
+function ItemMeta:getGoldInterval()
+    return self._goldInterval
+end
+
+function ItemMeta:getMoneyInterval()
+    return self._moneyInterval
+end
+
+function ItemMeta:getSaleType()
+    return self._saleType or 0
+end
+
+function ItemMeta:getCfmDes()
+    return self._cfmDes
+end
+
+function ItemMeta:getDura()
+    return self._dura
+end
+
+function ItemMeta:getSuitId()
+    return 0
+end
+
+function ItemMeta:setRuneId(id)
+    self._runeid = id
+end
+
+function ItemMeta:getRuneId()
+    return self._runeid
+end
+
+function ItemMeta:getIconEffect()
+    return self._iconeffect
+end
+
+function ItemMeta:getGoto()
+    return self._goto or ""
+end
+
+function ItemMeta:getIsBest()
+    return 0
+end
+
+function ItemMeta:getItemSize()
+    return self._itemSize
+end
+
+function ItemMeta:getPutBelt()
+    return self._putBelt
+end
+
+function ItemMeta:getSell()
+    return self._sell
+end
+
+function ItemMeta:getRace()
+    return self._race
+end
+
+--别名
+function ItemMeta:getNickName()
+    return self._name2
+end
+
+function ItemMeta:getEffectParam()
+ 
+    return self._effectParamJson
+end
+
+--月卡绑定
+function ItemMeta:getMonthCardBind()
+    return self._monthCardBind
+end
+
+function ItemMeta:getEffectParamJson()
+    -- 药水： hp,mp,cd,dissilver,transform
+    -- 子弹：ammo,silver,prop,needskill
+    -- 炸弹：damage
+    -- 经验药水:exp
+    -- 强化-祝福石：enchant
+    -- 强化-升级石：rateup
+
+    
+
+    return self._effectParamTable
+end
+
+--获得药水类持续时间
+function ItemMeta:getPotionTime()
+    local effectParam = self:getEffectParam()
+    local time = math.ceil(effectParam[1][2] / effectParam[1][4]) * effectParam[1][3] / 1000
+    return time
+end
+
+--获得宠物饲料时间(能整除一天的显示天，不能的显示小时)
+function ItemMeta:getPetFeedTime()
+    local effectParam = self:getEffectParam()
+    local last = effectParam[1][2] % Constant.WHOLE_DAY
+    if last == 0 then
+        return (effectParam[1][2] / Constant.WHOLE_DAY) .. GReadText.KEY_TIME_DAY
+    else
+        return (effectParam[1][2] / 3600) .. GReadText.KEY_EQUIP_TIPS41
+    end
+end
+
+function ItemMeta:getPocketCount()
+    return 0
+end
+
+function ItemMeta:getAccess()
+    return self._accessConvert
+end
+
+function ItemMeta:getIsDrop()
+    return self._isDrop
+end
+
+return ItemMeta

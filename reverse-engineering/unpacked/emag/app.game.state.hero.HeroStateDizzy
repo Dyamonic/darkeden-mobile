@@ -1,0 +1,87 @@
+
+local HeroStateDizzy = class("HeroStateDizzy", lt.HeroStateBase)
+--[[
+    眩晕
+]]
+
+HeroStateDizzy._timeTriggerHit    = nil
+HeroStateDizzy._timeTrigger = nil
+
+function HeroStateDizzy:ctor(heroAgent, time)
+    HeroStateDizzy.super.ctor(self, heroAgent)
+
+    self._timeTrigger = lt.TimeTrigger.new(time)
+
+    self._heroAgent:playAction(lt.Constant.ROLE_ACTION_IDLE)
+end
+
+function HeroStateDizzy:onClear()
+    HeroStateDizzy.super.onClear(self)
+end
+
+function HeroStateDizzy:onEnter()
+end
+
+function HeroStateDizzy:onExit()
+end
+
+function HeroStateDizzy:onUpdate()
+    if self._timeTrigger:tick(lt.GameBoard:getDeltaTime()) then
+        self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+        return
+    end
+
+    -- 判断技能
+    local skillId = lt.GameBoard:getSkillIdNext()
+    local canUse = false
+    local level = 0
+    if skillId then
+        canUse = true
+    else
+        skillId, level = self._heroAgent:getSkillId()
+
+        -- 自动释放技能
+        canUse = not self._heroAgent:getIsSkillIdUsed(skillId)
+    end
+
+    -- 坐骑状态下 不释放自动技能
+    if level == 0 then
+        canUse = false
+    end
+    -- 技能Cd完毕
+    if canUse then
+        canUse = canUse and lt.SkillCdManager:isReady(skillId)
+    end
+
+    -- print("skillId:",skillId,"canUse:",canUse)
+
+    if canUse and skillId then
+    	-- dump(skillId, "释放技能")
+        self:handleSkill(skillId, {level = level})
+        return
+    end
+end
+
+function HeroStateDizzy:handleSkill(skillId, params)
+    params = params or {}
+    params.showTips = self._handleSkillRet
+    self._handleSkillRet = self._heroAgent:handleSkill(skillId, params)
+    return self._handleSkillRet
+end
+
+function HeroStateDizzy:onMessage(msg)
+	if msg.msgId == lt.Constant.MSG_SKILL then
+        -- 技能
+        self._heroAgent:handleSkillMsg(msg)
+    end
+end
+
+function HeroStateDizzy:getStateId()
+    return lt.Constant.HERO_STATE_DIZZY
+end
+
+function HeroStateDizzy:getStateName()
+    return "HeroStateDizzy"
+end
+
+return HeroStateDizzy

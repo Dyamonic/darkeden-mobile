@@ -1,0 +1,21 @@
+local AltarOfBloodDao = {}
+
+function AltarOfBloodDao:query(dungeonId)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM AltarOfBlood WHERE DungeonId=%d;", tonumber(dungeonId))) do
+    	local meta = lt.AltarOfBloodMeta.new(row)
+        return meta
+    end
+end
+
+function AltarOfBloodDao:queryAll()
+    local map = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM AltarOfBlood") do
+        local meta = lt.AltarOfBloodMeta.new(row)
+        map[meta:getDungeonId()] = meta
+    end
+    return map
+end
+
+return AltarOfBloodDao

@@ -1,0 +1,887 @@
+
+local TeamModule = {}
+
+local SocketApi     = lt.SocketApi
+local netcmd_pb     = lt.netcmd_pb
+local ServerCmdDef  = lt.ServerCmdDef
+local Constant      = lt.Constant
+local NtfManager    = lt.NtfManager
+local GameModule    = lt.GameModule
+local CommonModule  = lt.CommonModule
+local ClientCmdDef  = lt.ClientCmdDef
+local CacheManager  = lt.CacheManager
+local TimeCounter   = lt.TimeCounter
+local MapModule     = lt.MapModule
+
+TeamModule._hallTeamList = nil
+TeamModule._teamNumMap   = nil
+TeamModule._hallTeamMeta = nil
+
+function TeamModule:init()
+    self._teamNumMap   = {}
+    self._hallTeamList = {}
+    self._hallTeamMeta = {}
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_HALL_INFO_RESP), handler(self, self.onTeamHallList), "TeamModule:onTeamHallList")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_APPLY_IN_TEAM_RESP), handler(self, self.onApplyInTeam), "TeamModule:onApplyInTeam")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_ONE_KEY_APPLY_IN_TEAM_RESP), handler(self, self.onOneKeyApplyInTeam), "TeamModule:onOneKeyApplyInTeam")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_MY_TEAM_INFO_RESP), handler(self, self.onMyTeamInfo), "TeamModule:onMyTeamInfo")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_SIGN_ALLOW_RESP), handler(self, self.onSignAllow), "TeamModule:onSignAllow")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_CREATE_TEAM_RESP), handler(self, self.onCreateTeam), "TeamModule:onCreateTeam")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_FAST_JOIN_IN_TEAM_RESP), handler(self, self.onFastJoinInTeam), "TeamModule:onFastJoinInTeam")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_APPLY_TEAM_LIST_RESP), handler(self, self.onApplyTeamList), "TeamModule:onApplyTeamList")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_AGREE_IN_TEAM_RESP), handler(self, self.onAgreeInTeam), "TeamModule:onAgreeInTeam")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_REJECT_IN_TEAM_RESP), handler(self, self.onRejectInTeam), "TeamModule:onRejectInTeam")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_CLEAR_APPLY_TEAM_LIST_RESP), handler(self, self.onClearApplyTeamList), "TeamModule:onClearApplyTeamList")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_KICK_TEAM_RESP), handler(self, self.onKickTeam), "TeamModule:onKickTeam")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_SET_TEAM_BASE_INFO_RESP), handler(self, self.onSetTeamBaseInfo), "TeamModule:onSetTeamBaseInfo")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_INVITE_TEAM_RESP), handler(self, self.onInviteTeam), "TeamModule:onInviteTeam")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_AGREE_TO_TEAM_RESP), handler(self, self.onAgreeToTeam), "TeamModule:onAgreeToTeam")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_REJECT_TO_TEAM_RESP), handler(self, self.onRejectToTeam), "TeamModule:onRejectToTeam")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_EXIT_TEAM_RESP), handler(self, self.onExitTeam), "TeamModule:onExitTeam")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_TRANSFER_CAPTAIN_RESP), handler(self, self.onTransferCaptain), "TeamModule:onTransferCaptain")
+
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_IN_TEAM_NTF), handler(self, self.onInTeamNtf), "TeamModule:onInTeamNtf")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_APPLY_TEAM_LIST_NTF), handler(self, self.onApplyTeamListNtf), "TeamModule:onApplyTeamListNtf")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_KICK_OF_TEAM_NTF), handler(self, self.onKickOfTeamNtf), "TeamModule:onKickOfTeamNtf")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_INVITE_TEAM_NTF), handler(self, self.onInviteTeamNtf), "TeamModule:onInviteTeamNtf")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_REJECT_INVITED_NTF), handler(self, self.onRejectInviteNtf), "TeamModule:onRejectInviteNtf")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_REJECTED_NTF), handler(self, self.onRejectedNtf), "TeamModule:onRejectedNtf")
+end
+
+function TeamModule:clear()
+    SocketApi:removeProtoListenerByTag("TeamModule:onTeamHallList")
+    SocketApi:removeProtoListenerByTag("TeamModule:onApplyInTeam")
+    SocketApi:removeProtoListenerByTag("TeamModule:onOneKeyApplyInTeam")
+    SocketApi:removeProtoListenerByTag("TeamModule:onMyTeamInfo")
+    SocketApi:removeProtoListenerByTag("TeamModule:onSignAllow")
+    SocketApi:removeProtoListenerByTag("TeamModule:onCreateTeam")
+    SocketApi:removeProtoListenerByTag("TeamModule:onFastJoinInTeam")
+    SocketApi:removeProtoListenerByTag("TeamModule:onApplyTeamList")
+    SocketApi:removeProtoListenerByTag("TeamModule:onAgreeInTeam")
+    SocketApi:removeProtoListenerByTag("TeamModule:onRejectInTeam")
+    SocketApi:removeProtoListenerByTag("TeamModule:onClearApplyTeamList")
+    SocketApi:removeProtoListenerByTag("TeamModule:onKickTeam")
+    SocketApi:removeProtoListenerByTag("TeamModule:onSetTeamBaseInfo")
+    SocketApi:removeProtoListenerByTag("TeamModule:onInviteTeam")
+    SocketApi:removeProtoListenerByTag("TeamModule:onAgreeToTeam")
+    SocketApi:removeProtoListenerByTag("TeamModule:onRejectToTeam")
+    SocketApi:removeProtoListenerByTag("TeamModule:onExitTeam")
+    SocketApi:removeProtoListenerByTag("TeamModule:onTransferCaptain")
+
+    SocketApi:removeProtoListenerByTag("TeamModule:onInTeamNtf")
+    SocketApi:removeProtoListenerByTag("TeamModule:onApplyTeamListNtf")
+    SocketApi:removeProtoListenerByTag("TeamModule:onKickOfTeamNtf")
+    SocketApi:removeProtoListenerByTag("TeamModule:onInviteTeamNtf")
+    SocketApi:removeProtoListenerByTag("TeamModule:onRejectInviteNtf")
+    SocketApi:removeProtoListenerByTag("TeamModule:onRejectedNtf")
+
+    self._teamNumMap   = nil
+    self._hallTeamList = nil
+    self._hallTeamMeta = nil
+end
+
+----------------------------组队大厅----------------------------
+
+--获取组队大厅队列
+function TeamModule:getHallTeamList()
+    return self._hallTeamList or {}
+end
+
+function TeamModule:getHallTeamByIdx(index)
+    local teamList = TeamModule:getHallTeamList()
+    return teamList[index]
+end
+
+--获取队伍队长信息
+function TeamModule:getTeamLeader(team)
+    if team == nil then return nil end
+    local teamMember = team.memberInfoArray
+    for i = 1, #teamMember do
+        if teamMember[i].playerId == team.captainId then
+            return teamMember[i]
+        end
+    end
+    return nil
+end
+
+function TeamModule:setCanInvite(canInvite)
+    local heroData = GameModule:getHeroData()
+    heroData:setAllowInviteTeam(canInvite)
+end
+
+--是否能被邀请
+function TeamModule:getCanInvite()
+    local heroData = GameModule:getHeroData()
+    local canInvite = heroData:getAllowInviteTeam()
+    return canInvite
+end
+
+function TeamModule:setCanAddTeam(allowSign)
+    if self._myTeam then
+        self._myTeam.allowSign = allowSign
+    end
+end
+
+--是否能申请加入(自己队)
+function TeamModule:getCanAddTeam()
+    local allowSign = true
+    if self._myTeam then
+        allowSign = self._myTeam.allowSign
+    end
+    return allowSign
+end
+
+function TeamModule:setTeamCfgId(configId)
+    if self._myTeam then
+        self._myTeam.configId = configId
+    end
+end
+
+--自己队伍的cfgId
+function TeamModule:getTeamCfgId()
+    local configId = 101
+    if self._myTeam then
+        configId = self._myTeam.configId
+    end
+    return configId or 101
+end
+
+--获得自己的队伍id
+function TeamModule:getTeamId()
+    local teamId = 0
+    if self._myTeam then
+        teamId = self._myTeam.teamId
+    end
+    return teamId or 0
+end
+
+--设置自己的队伍数据
+function TeamModule:setMyTeam(myTeam)
+    --对比队伍(登录的请求不显示tips)
+    if self._noTips then
+        self._noTips = false
+    else
+        self:compareTeamData(myTeam)
+    end
+    --保存我的队伍缓存
+    self._myTeam = myTeam
+    --排序
+    self:sortTeamMember(self._myTeam)
+    --查询队友位置
+    local playerIdList = self:getTeamMatePlayerId()
+    if #playerIdList > 0 then
+        MapModule:sendQueryTeamMatePos(playerIdList)
+    end
+end
+
+--获得自己的队伍数据
+function TeamModule:getMyTeam()
+    return self._myTeam or {}
+end
+
+--获取申请列表
+function TeamModule:getApplyTeamList()
+    return self._applyTeamList or {}
+end
+
+--申请列表排序
+function TeamModule:sorApplyTeamMember()
+    table.sort(self._applyTeamList, function(a, b)
+        return a.joinTime < b.joinTime
+    end)
+end
+
+--删除申请列表一条
+function TeamModule:deleteApplyMember()
+    for i = 1, #self._applyTeamList do
+        if self._applyTeamList[i].playerId == self._playerId then
+            table.remove(self._applyTeamList, i)
+            break
+        end
+    end
+end
+
+--改变队伍队长
+function TeamModule:changeTeamLeader(playerId)
+    self._myTeam.captainId = playerId
+end
+
+-- 获取头像图片URL
+function TeamModule:getHeadUrl(race, sex, faceShape)
+    local urlPath = ""
+    if race == Constant.RaceType.Ousters then
+        urlPath = _GURL.ImageOuterHead
+    elseif race == Constant.RaceType.Vampire then
+        urlPath = string.format(_GURL.GetImageVarHead, sex)
+    elseif race == Constant.RaceType.Slayer then
+        urlPath = string.format(_GURL.GetImageHead, faceShape)
+    end
+    return urlPath
+end
+
+--队伍成员排序
+function TeamModule:sortTeamMember(team)
+    if team and team.memberInfoArray then
+        table.sort(team.memberInfoArray, function(a, b)
+            if a.playerId == team.captainId then
+                return true
+            elseif b.playerId == team.captainId then
+                return false
+            elseif a.joinTime ~= b.joinTime then
+                return a.joinTime < b.joinTime
+            end
+        end)
+    end
+end
+
+--队伍数据对比(弹提示)
+function TeamModule:compareTeamData(myTeam)
+    local tipStr = ""
+    --老队伍数据
+    local oldTeamData = self._myTeam
+    local oldTeamId = (oldTeamData and oldTeamData.teamId or 0) or 0
+    --新队伍数据
+    local newTeamData = myTeam
+    local newTeamId = (newTeamData and newTeamData.teamId or 0) or 0
+    if oldTeamId == 0 and newTeamId ~= 0 then
+        --自己加入新队伍
+        local newLeaderInfo = self:getTeamLeader(newTeamData)
+        if newLeaderInfo then
+            local heroData = GameModule:getHeroData()
+            local playerId = heroData and heroData:getPlayerId() or 0
+            if newTeamData.captainId == playerId then
+                --自己创建队伍
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_HALL_TIPS25})
+            else
+                --加入别人队伍
+                tipStr = string.format(GReadText.KEY_TEAM_HALL_TIPS21, newLeaderInfo.playerName)
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = tipStr})
+            end
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_NEW_TEAM_CHANGE)
+        end
+        return
+    end
+    if oldTeamId ~= 0 and newTeamId ~= 0 then
+        local oldTeamMember = oldTeamData.memberInfoArray
+        local newTeamMember = newTeamData.memberInfoArray
+        if #newTeamMember >= #oldTeamMember then
+            for i = 1, #newTeamMember do
+                local oldInfo = nil
+                local newInfo = newTeamMember[i]
+                --找到对应数据
+                for j = 1, #oldTeamMember do
+                    if newInfo.playerId == oldTeamMember[j].playerId then
+                        oldInfo = oldTeamMember[j]
+                        break
+                    end
+                end
+                if oldInfo == nil then
+                    --新加入队员
+                    tipStr = string.format(GReadText.KEY_TEAM_HALL_TIPS22, newInfo.playerName)
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = tipStr})
+                else
+                    --老队员数据比对
+                    self:checkOnlineChange(oldInfo, newInfo)
+                end
+            end
+        else
+            for i = 1, #oldTeamMember do
+                local oldInfo = oldTeamMember[i]
+                local newInfo = nil
+                --找到对应数据
+                for j = 1, #newTeamMember do
+                    if oldInfo.playerId == newTeamMember[j].playerId then
+                        newInfo = newTeamMember[j]
+                        break
+                    end
+                end
+                if newInfo == nil then
+                    --新离开队员
+                    if oldTeamData.captainId == oldInfo.playerId then
+                        --队长离开
+                        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = string.format(GReadText.KEY_TEAM_HALL_TIPS17, oldInfo.playerName)})
+                    else
+                        --队员离开
+                        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = string.format(GReadText.KEY_TEAM_HALL_TIPS15, oldInfo.playerName)})
+                    end
+                    self:setQuitPlayerId(oldInfo.playerId)
+                else
+                    --老队员数据比对
+                    self:checkOnlineChange(oldInfo, newInfo)
+                end
+            end
+        end
+        if oldTeamData.captainId ~= newTeamData.captainId then
+            --队长不一样
+            local newLeaderInfo = self:getTeamLeader(newTeamData)
+            if newLeaderInfo then
+                tipStr = string.format(GReadText.KEY_TEAM_HALL_TIPS18, newLeaderInfo.playerName)
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = tipStr})
+            end
+        end
+    end
+end
+
+--判断在线状态变化
+function TeamModule:checkOnlineChange(oldInfo, newInfo)
+    local tipStr = ""
+    if oldInfo.online ~= newInfo.online then
+        --在线状态改变
+        if oldInfo.online == CommonModule:GetNetCmdEnum("ON_OFF_LINE_ONLINE_ENUM") then
+            --在线→不在线
+            tipStr = string.format(GReadText.KEY_TEAM_HALL_TIPS24, newInfo.playerName)
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = tipStr})
+        else
+            --不在线→在线
+            tipStr = string.format(GReadText.KEY_TEAM_HALL_TIPS23, newInfo.playerName)
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = tipStr})
+        end
+    end
+end
+
+--获得符合的等级metaIdx
+function TeamModule:getFilterLevelIdx()
+    local idx = 1
+    local hallTeamMeta = self:getHallTeamMeta(Constant.TEAMHALL_TYPES.LEVEL)
+    local heroData = GameModule:getHeroData()
+    if heroData then
+        local level = heroData:getLevel()
+        local isAdvanve = heroData:getAdvanceState()
+        if isAdvanve == Constant.AdvState.Adv then
+            level = Constant.TransferLevel + heroData:getAdvanceLevel()
+        end
+        for i = 1, #hallTeamMeta do
+            local meta = hallTeamMeta[i]
+            local lvlist = meta:getPurposeLevel()
+            if level >= tonumber(lvlist[1]) and level <= tonumber(lvlist[2]) then
+                idx = i
+                break
+            end
+        end
+    end
+    return idx
+end
+
+--获得符合的副本metaIdx
+function TeamModule:getFilterDungeonIdx(mapcode)
+    if not mapcode then
+        return 1
+    end
+    local idx = 1
+    local hallTeamMeta = self:getHallTeamMeta(Constant.TEAMHALL_TYPES.DUNGEON)
+    for i = 1, #hallTeamMeta do
+        local meta = hallTeamMeta[i]
+        local mapId = meta:getMapCode()
+        if tonumber(mapId) == tonumber(mapcode) then
+            idx = i
+            break
+        end
+    end
+    
+    return idx
+end
+
+
+function TeamModule:getOneKeyApplyInCdTime()
+    local serverTime = TimeCounter:serverTime()
+    local cdTime = self._oneKeyApplyInCdTime or 0
+    local lastTime = cdTime - serverTime
+    return lastTime
+end
+
+function TeamModule:getFastJoinInCdTime()
+    local serverTime = TimeCounter:serverTime()
+    local cdTime = self._fastJoinInCdTime or 0
+    local lastTime = cdTime - serverTime
+    return lastTime
+end
+
+function TeamModule:setSendInviteCdTime()
+    --60秒cd
+    self._setSendInviteCdTime = TimeCounter:serverTime() + 60
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_TEAM_MY)
+end
+
+function TeamModule:getSendInviteCdTime()
+    local serverTime = TimeCounter:serverTime()
+    local cdTime = self._setSendInviteCdTime or 0
+    local lastTime = cdTime - serverTime
+    return lastTime
+end
+
+--通过playerId获得队伍成员数据
+function TeamModule:getTeamMateByPlayerId(playerId)
+    if self._myTeam and self._myTeam.memberInfoArray then
+        local teamMember = self._myTeam.memberInfoArray
+        for i = 1, #teamMember do
+            --找到对应数据
+            if teamMember[i].playerId == playerId then
+                return teamMember[i]
+            end
+        end
+    end
+    return nil
+end
+
+--获得队伍内人员数
+function TeamModule:getTeamMateNumbers()
+    local numbers = 0
+    if self._myTeam and self._myTeam.memberInfoArray then
+        local teamMember = self._myTeam.memberInfoArray
+        numbers = #teamMember
+    end
+    return numbers
+end
+
+--获得所有队友的id
+function TeamModule:getTeamMatePlayerId()
+    local list = {}
+    if self._myTeam and self._myTeam.memberInfoArray then
+        local teamMember = self._myTeam.memberInfoArray
+        local heroData = GameModule:getHeroData()
+        if heroData then
+            local playerId = heroData:getPlayerId()
+            for i = 1, #teamMember do
+                if teamMember[i].playerId ~= playerId then
+                    table.insert(list, teamMember[i].playerId)
+                end
+            end
+        end
+    end
+    return list
+end
+
+--设置已退队的队友playerId
+function TeamModule:setQuitPlayerId(playerId)
+    self._quitPlayerIds = self._quitPlayerIds or {}
+    table.insert(self._quitPlayerIds, playerId)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_TEAM_MATE_INFO, {playerId = playerId})
+end
+
+--获得已退队的队友playerId
+function TeamModule:getQuitPlayerId()
+    return self._quitPlayerIds or {}
+end
+
+--清空退队信息
+function TeamModule:resetQuitPlayerId()
+    self._quitPlayerIds = {}
+end
+
+--设置邀请组队列表
+function TeamModule:setInviteList(teamId)
+    if self._inviteList == nil then
+        self._inviteList = {}
+    end
+    --重复的不添加
+    for i = 1, #self._inviteList do
+        if self._inviteList[i] == teamId then
+            return
+        end
+    end
+    table.insert(self._inviteList, teamId)
+end
+
+--删除邀请列表
+function TeamModule:deleteInviteList()
+    table.remove(self._inviteList, 1)
+    NtfManager:dispatchNtf(NtfManager.NTF.NFT_SYSTEM_TIPS_CHANGE, {key = Constant.SYSTEMTIPS.INVITETEAM, visible = #self:getInviteList() > 0})
+end
+
+--获得邀请组队列表
+function TeamModule:getInviteList()
+    return self._inviteList or {}
+end
+
+--通过分类获得组队大厅配置
+function TeamModule:getHallTeamMeta(teamType)
+    if self._hallTeamMeta == nil then
+        self._hallTeamMeta = {}
+    end
+    if self._hallTeamMeta[teamType] == nil then
+        self._hallTeamMeta[teamType] = {}
+        local hallTeamMeta = CacheManager:getTeamHallMeta(teamType)
+        local race = GameModule:getHeroRace()
+        for k, v in ipairs(hallTeamMeta) do
+            if v:getDisplayRace() == 0 or race == v:getDisplayRace() then
+                table.insert(self._hallTeamMeta[teamType], v)
+            end
+        end
+    end
+    return self._hallTeamMeta[teamType]
+end
+
+--快速创建队伍
+function TeamModule:fastCreateTeam(playerId)
+    --默认创建玩家当前等级队伍
+    local hallTeamMeta = self:getHallTeamMeta(Constant.TEAMHALL_TYPES.LEVEL)
+    local idx = self:getFilterLevelIdx()
+    local configId = hallTeamMeta[idx]:getIdxId()
+    self._invitePlayerId = playerId
+    self:sendCreateTeam(configId, true)
+end
+
+--队伍大厅
+function TeamModule:sendTeamHallList(configId)
+    local msg = netcmd_pb.CS_HallInfoReq()
+    msg.configId = configId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_HALL_INFO_REQ), msg)
+end
+
+--队伍大厅回调
+function TeamModule:onTeamHallList(event)
+    lt.LogUtil:debugInfo("TeamModule:onTeamHallList")
+    local proto = event.param
+    self._hallTeamList = proto.teamInfoArray
+    local teamNumMap = proto.teamNumMap or {}
+    for _,v in ipairs(teamNumMap) do
+        self._teamNumMap[v.key] = v.value
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_TEAM_HALL)
+end
+
+-- 根据分类id获取对应数量
+function TeamModule:getHallTeamNum(idx)
+    return self._teamNumMap[idx]
+end
+
+--申请加入队伍
+function TeamModule:sendApplyInTeam(teamId)
+    if self:getTeamId() ~= 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_HALL_TIPS16})
+        return
+    end
+    local msg = netcmd_pb.CS_ApplyInTeamReq()
+    msg.teamId = teamId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_APPLY_IN_TEAM_REQ), msg)
+end
+
+--申请加入队伍回调
+function TeamModule:onApplyInTeam(event)
+    lt.LogUtil:debugInfo("TeamModule:onApplyInTeam")
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_HALL_TIPS5})
+end
+
+--一键申请加入队伍
+function TeamModule:sendOneKeyApplyInTeam(configId)
+    if self:getTeamId() ~= 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_HALL_TIPS16})
+        return
+    end
+    if self:getOneKeyApplyInCdTime() > 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_HALL_TIPS28})
+        return
+    end
+    local msg = netcmd_pb.CS_OneKeyApplyInTeamReq()
+    msg.configId = configId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_ONE_KEY_APPLY_IN_TEAM_REQ), msg)
+end
+
+--一键申请加入队伍回调
+function TeamModule:onOneKeyApplyInTeam(event)
+    lt.LogUtil:debugInfo("TeamModule:onOneKeyApplyInTeam")
+    local proto = event.param
+    self._oneKeyApplyInCdTime = proto.cdTime
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_ONE_KEY_APPLY)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_HALL_TIPS5})
+end
+
+--我的队伍信息
+function TeamModule:sendMyTeamInfo(noTips)
+    self._noTips = noTips or false
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_MY_TEAM_INFO_REQ))
+end
+
+--我的队伍信息回调
+function TeamModule:onMyTeamInfo(event)
+    lt.LogUtil:debugInfo("TeamModule:onMyTeamInfo")
+    local proto = event.param
+    TeamModule:setMyTeam(proto.teamInfo)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_TEAM_MY)
+end
+
+--是否允许被邀请标记
+function TeamModule:sendSignAllow(allow)
+    local msg = netcmd_pb.CS_SignAllowReq()
+    msg.allow = allow
+    self._allow = allow
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_SIGN_ALLOW_REQ), msg)
+end
+
+--是否允许被邀请标记回调
+function TeamModule:onSignAllow(event)
+    lt.LogUtil:debugInfo("TeamModule:onSignAllow")
+    self:setCanInvite(self._allow)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_TEAM_SELECT)
+end
+
+--创建队伍
+function TeamModule:sendCreateTeam(configId, isOpen)
+    local msg = netcmd_pb.CS_CreateTeamReq()
+    msg.configId = configId
+    self._isOpen = isOpen or false
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_CREATE_TEAM_REQ), msg)
+end
+
+--创建队伍回调
+function TeamModule:onCreateTeam(event)
+    lt.LogUtil:debugInfo("TeamModule:onCreateTeam")
+    local proto = event.param
+    self:setMyTeam(proto.teamInfo)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_TEAM_MY)
+    if self._isOpen then
+        --需要打开我的队伍界面
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndTeam", param = {index = 2}})
+    end
+    if self._invitePlayerId then
+        --有id再邀请入队
+        TeamModule:sendInviteTeam(self._invitePlayerId)
+        self._invitePlayerId = nil
+    end
+end
+
+--快速组队
+function TeamModule:sendFastJoinInTeam()
+    if self:getTeamId() ~= 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_HALL_TIPS16})
+        return
+    end
+    if self:getFastJoinInCdTime() > 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_HALL_TIPS28})
+        return
+    end
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_FAST_JOIN_IN_TEAM_REQ))
+end
+
+--快速组队回调
+function TeamModule:onFastJoinInTeam(event)
+    lt.LogUtil:debugInfo("TeamModule:onFastJoinInTeam")
+    local proto = event.param
+    self._fastJoinInCdTime = proto.cdTime
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FAST_JOIN_TEAM)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_HALL_TIPS5})
+end
+
+--组队申请列表
+function TeamModule:sendApplyTeamList()
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_APPLY_TEAM_LIST_REQ))
+end
+
+--组队申请列表回调
+function TeamModule:onApplyTeamList(event)
+    lt.LogUtil:debugInfo("TeamModule:onApplyTeamList")
+    local proto = event.param
+    self._applyTeamList = proto.memberInfoArray
+    self:sorApplyTeamMember()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_TEAM_APPLY_LIST)
+end
+
+--(申请列表)同意入队
+function TeamModule:sendAgreeInTeam(playerId)
+    local msg = netcmd_pb.CS_AgreeInTeamReq()
+    msg.playerId = playerId
+    self._playerId = playerId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_AGREE_IN_TEAM_REQ), msg)
+end
+
+--(申请列表)同意入队回调
+function TeamModule:onAgreeInTeam(event)
+    lt.LogUtil:debugInfo("TeamModule:onAgreeInTeam")
+    TeamModule:sendApplyTeamList()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_TEAM_MY)
+end
+
+--(申请列表)拒绝入队
+function TeamModule:sendRejectInTeam(playerId)
+    local msg = netcmd_pb.CS_RejectInTeamReq()
+    msg.playerId = playerId
+    self._playerId = playerId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_REJECT_IN_TEAM_REQ), msg)
+end
+
+--(申请列表)拒绝入队回调
+function TeamModule:onRejectInTeam(event)
+    lt.LogUtil:debugInfo("TeamModule:onRejectInTeam")
+    self:deleteApplyMember()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_APPLY_LIST)
+end
+
+--清空申请列表
+function TeamModule:sendClearApplyTeamList()
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_CLEAR_APPLY_TEAM_LIST_REQ))
+end
+
+--清空申请列表回调
+function TeamModule:onClearApplyTeamList(event)
+    lt.LogUtil:debugInfo("TeamModule:onClearApplyTeamList")
+    self._applyTeamList = {}
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_APPLY_LIST)
+end
+
+--踢出队伍
+function TeamModule:sendKickTeam(playerInfo)
+    local msg = netcmd_pb.CS_KickTeamReq()
+    msg.playerId = playerInfo.playerId
+    self._kickPlayer = playerInfo
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_KICK_TEAM_REQ), msg)
+end
+
+--踢出队伍回调
+function TeamModule:onKickTeam(event)
+    lt.LogUtil:debugInfo("TeamModule:onKickTeam")
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_TEAM_MY)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = string.format(GReadText.KEY_TEAM_HALL_TIPS13, self._kickPlayer.playerName)})
+end
+
+--设置队伍信息
+function TeamModule:sendSetTeamBaseInfo(allowSign, configId)
+    local msg = netcmd_pb.CS_SetTeamBaseInfoReq()
+    msg.allowSign = allowSign
+    msg.configId = configId
+    self._canAddTeam = allowSign
+    self._configId = configId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_SET_TEAM_BASE_INFO_REQ), msg)
+end
+
+--设置队伍信息回调
+function TeamModule:onSetTeamBaseInfo(event)
+    lt.LogUtil:debugInfo("TeamModule:onSetTeamBaseInfo")
+    self:setCanAddTeam(self._canAddTeam)
+    self:setTeamCfgId(self._configId)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_TEAM_OTHER)
+end
+
+--邀请组队
+function TeamModule:sendInviteTeam(playerId)
+    local msg = netcmd_pb.CS_InviteTeamReq()
+    msg.playerId = playerId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_INVITE_TEAM_REQ), msg)
+end
+
+--邀请组队回调
+function TeamModule:onInviteTeam(event)
+    local proto = event.param
+    local ret = proto.ret -- 0 成功
+    if ret == 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_INVITE_TIPS})
+    end
+end
+
+--(邀请入队)同意入队
+function TeamModule:sendAgreeToTeam(inviteId, teamId)
+    local msg = netcmd_pb.CS_AgreeToTeamReq()
+    msg.inviteId = inviteId
+    msg.teamId = teamId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_AGREE_TO_TEAM_REQ), msg)
+end
+
+--(邀请入队)同意入队回调
+function TeamModule:onAgreeToTeam(event)
+    lt.LogUtil:debugInfo("TeamModule:onAgreeToTeam")
+end
+
+--(邀请入队)拒绝入队
+function TeamModule:sendRejectToTeam(inviteId, teamId)
+    local msg = netcmd_pb.CS_RejectToTeamReq()
+    msg.inviteId = inviteId
+    msg.teamId = teamId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_REJECT_TO_TEAM_REQ), msg)
+end
+
+--(邀请入队)拒绝入队回调
+function TeamModule:onRejectToTeam(event)
+    lt.LogUtil:debugInfo("TeamModule:onRejectToTeam")
+end
+
+--退出队伍
+function TeamModule:sendExitTeam()
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_EXIT_TEAM_REQ))
+end
+
+--退出队伍回调
+function TeamModule:onExitTeam(event)
+    lt.LogUtil:debugInfo("TeamModule:onExitTeam")
+    self._myTeam = nil
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_TEAM_MY)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_HALL_TIPS14})
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_TEAM_MATE_INFO, {})
+end
+
+--转让队长
+function TeamModule:sendTransferCaptain(newCaptainPlayerId)
+    local msg = netcmd_pb.CS_TransferCaptainReq()
+    msg.newCaptainPlayerId = newCaptainPlayerId
+    self._newCaptainPlayerId = newCaptainPlayerId
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_TRANSFER_CAPTAIN_REQ), msg)
+end
+
+--转让队长回调
+function TeamModule:onTransferCaptain(event)
+    lt.LogUtil:debugInfo("TeamModule:onTransferCaptain")
+    TeamModule:changeTeamLeader(self._newCaptainPlayerId)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_TEAM_MY)
+end
+
+--进入队伍成功通知
+function TeamModule:onInTeamNtf(event)
+    lt.LogUtil:debugInfo("TeamModule:onInTeamNtf")
+    local proto = event.param
+    self:setMyTeam(proto.teamInfo)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_TEAM_MY)
+end
+
+--申请列表变动通知
+function TeamModule:onApplyTeamListNtf(event)
+    lt.LogUtil:debugInfo("TeamModule:onApplyTeamListNtf")
+    self:checkRedTips(true)
+end
+
+--被踢出队伍通知
+function TeamModule:onKickOfTeamNtf(event)
+    lt.LogUtil:debugInfo("TeamModule:onKickOfTeamNtf")
+    self._myTeam = nil
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_TEAM_MY)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_HALL_TIPS6})
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_TEAM_MATE_INFO, {})
+end
+
+--(邀请入队)通知被邀请人
+function TeamModule:onInviteTeamNtf(event)
+    lt.LogUtil:debugInfo("TeamModule:onInviteTeamNtf")
+    local proto = event.param
+    self:setInviteList(proto)
+    NtfManager:dispatchNtf(NtfManager.NTF.NFT_SYSTEM_TIPS_CHANGE, {key = Constant.SYSTEMTIPS.INVITETEAM, visible = #self:getInviteList() > 0})
+end
+
+--(邀请入队)通知邀请人被拒绝
+function TeamModule:onRejectInviteNtf(event)
+    lt.LogUtil:debugInfo("TeamModule:onRejectInviteNtf")
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_HALL_TIPS48})
+end
+
+--通知被拒绝的人
+function TeamModule:onRejectedNtf(event)
+    lt.LogUtil:debugInfo("TeamModule:onRejectedNtf")
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_HALL_TIPS48})
+end
+
+------------------红点------------------
+function TeamModule:checkRedTips(bool)
+    self:setTeamApplyRedTips(bool)
+    NtfManager:dispatchNtf(NtfManager.NTF.NFT_SYSTEM_TIPS_CHANGE, {key = Constant.SYSTEMTIPS.APPLYTEAM, visible = bool})
+end
+
+function TeamModule:initRedTips()
+    self:checkRedTips(false)
+end
+
+function TeamModule:setTeamApplyRedTips(bool)
+    lt.RedDotModule:setTipsStateByName("TeamApplyRedTips", bool)
+end
+
+function TeamModule:getRedPoint()
+    local isShowRedDot = lt.RedDotModule:getTipsStateByName("TeamApplyRedTips")
+    return isShowRedDot
+end
+
+return TeamModule

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animation-list android:oneshot="false"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:duration="50" android:drawable="@drawable/qk_game_load01" />
+    <item android:duration="50" android:drawable="@drawable/qk_game_load02" />
+    <item android:duration="50" android:drawable="@drawable/qk_game_load03" />
+    <item android:duration="50" android:drawable="@drawable/qk_game_load04" />
+    <item android:duration="50" android:drawable="@drawable/qk_game_load05" />
+    <item android:duration="50" android:drawable="@drawable/qk_game_load06" />
+    <item android:duration="50" android:drawable="@drawable/qk_game_load07" />
+    <item android:duration="50" android:drawable="@drawable/qk_game_load08" />
+</animation-list>

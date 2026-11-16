@@ -1,0 +1,208 @@
+---@class CompBuff 主界面-buff
+local CompBuff = class("CompBuff", lt.UICompBase)
+
+local NtfManager = lt.NtfManager
+local GameModule = lt.GameModule
+local TimeCounterManager = lt.TimeCounterManager
+local CacheManager = lt.CacheManager
+local ScheduleUtil = lt.ScheduleUtil
+
+function CompBuff:ctor(view)
+    CompBuff.super.ctor(self)
+    self._view = view
+    self._btnShow = nil
+    self._num = nil
+    self._perNum = 8
+    self._lineNum = 4
+    self._finalList = nil
+    self._selectBuff = nil
+    self._buffItemCacheList = {}
+    self:initUI()
+end
+
+function CompBuff:onClear()
+    self:removeBuffItemCache()
+    self._buffItemCacheList = nil
+    self._finalList = nil
+    self._btnShow = nil
+    self._num = nil
+end
+
+function CompBuff:onEnter()
+    self:refreshBuffList()
+    self:addAllListener()
+end
+
+function CompBuff:initUI()
+    self._btnShow = self._view:getChild("btnShow")
+    self._num = self._view:getChild("num")
+
+    for i = 1, self._lineNum do
+        local base = self._view:getChild("base" .. i)
+        base:setItemRenderer(handler(self, self.renderListItem))
+    end
+end
+
+function CompBuff:onExit()
+    self:removeAllListener()
+    self:clearTimeCounter()
+end
+
+function CompBuff:onUpdate(dt)
+    for i, v in ipairs(self._buffItemCacheList) do
+        if v then
+            v:cdTimer(dt)
+        end
+    end
+end
+
+function CompBuff:addAllListener()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_HERO_DIE, handler(self, self.refreshHeroDie), "CompBuff:NTF_HERO_DIE")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_HERO_RELIVE, handler(self, self.refreshBuffList), "CompBuff:NTF_HERO_RELIVE")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_BUFF_UPDATE, handler(self, self.refreshBuffList), "CompBuff:NTF_BUFF_UPDATE")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_HERO_EVENT, handler(self, self.refreshBuffList), "CompBuff:NTF_UPDATE_HERO_EVENT")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_BUFF_SELECT, handler(self, self.onBuffSelect), "CompBuff:NTF_BUFF_SELECT")
+    
+end
+
+function CompBuff:removeAllListener()
+    NtfManager:removeNtfListenerByTag("CompBuff:NTF_HERO_DIE")
+    NtfManager:removeNtfListenerByTag("CompBuff:NTF_HERO_RELIVE")
+    NtfManager:removeNtfListenerByTag("CompBuff:NTF_BUFF_UPDATE")
+    NtfManager:removeNtfListenerByTag("CompBuff:NTF_UPDATE_HERO_EVENT")
+    NtfManager:removeNtfListenerByTag("CompBuff:NTF_BUFF_SELECT")
+end
+
+
+function CompBuff:refreshHeroDie()
+    if self._remainTs then
+        return
+    end
+    self:clearTimeCounter()
+    self._remainTs = lt.Constant.ReviveShowTime
+    TimeCounterManager:startTimeCounter(TimeCounterManager.TC.HERO_REFRESH_BUFF_LIST, {callback = function()
+        self._remainTs = self._remainTs - 1
+        if self._remainTs <= 0 then
+            -- 死亡显示
+            self:refreshBuffList()
+            self:clearTimeCounter()
+        end
+    end })
+end
+
+function CompBuff:clearTimeCounter()
+    TimeCounterManager:stopTimeCounter(TimeCounterManager.TC.HERO_REFRESH_BUFF_LIST)
+    self._remainTs = nil
+end
+
+function CompBuff:refreshBuffList()
+    local heroData = GameModule:getHeroData()
+    if not heroData then
+        return
+    end
+    local isAlive = heroData:isAlive()
+    -- 死亡隐藏buff列表
+    if not isAlive then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_TEXT_TIPS)
+        self._view:setVisible(false)
+    else
+        self._view:setVisible(true)
+    end
+
+    local bufferTable = GameModule:getBufferTable() or {}
+    -- bufferTable = {[1]=1,[2]=2,[3]=1,[4]=2,[5]=1,[6]=2,[7]=1,[10]=2,[11]=1,[12]=2,[13]=1,[14]=2,[8]=2,[9]=1,[15]=1,[16]=2}
+
+    for i = 1, self._lineNum do
+        local base = self._view:getChild("base" .. i)
+        base:setVisible(false)
+    end
+
+    -- buff列表排序
+    local buffList = {}
+    for k,v in pairs(bufferTable) do
+        --spriteId等于0的不显示buff
+        local buffCfg = CacheManager:getBuffById(k)
+        if buffCfg and buffCfg:getSpriteId() ~= 0 then
+            table.insert(buffList,k)
+        end
+    end
+
+    local bufferAddTime = GameModule:getBufferAddTime()
+    table.sort(buffList,function(a,b)
+        return bufferAddTime[a] < bufferAddTime[b]
+    end)
+
+    -- yflog:Info("---------------->>>>>>>>>>>>>%s",#buffList)
+
+    -- buff列表分类
+    local finalList = {}
+    local index = 1
+    for _,buffId in ipairs(buffList) do
+        if not finalList[index] then
+            finalList[index] = {}
+        end
+
+        table.insert(finalList[index],buffId)
+
+        if #finalList[index] >= self._perNum then
+            index = index + 1
+        end
+    end
+    self._finalList = finalList
+    self:removeBuffItemCache()
+    -- 列表显示
+    for i = 1, self._lineNum do
+        local base = self._view:getChild("base" .. i)
+        if finalList[i] and (#finalList[i] > 0) then
+            base.index = i
+            base:setVisible(true)
+            
+            -- base:setItemRenderer(handler(self, self.renderListItem))
+            base:setNumItems(#finalList[i])
+            base:setSize(#finalList[i]*40, 38)
+        else
+            base:setNumItems(0)
+            base:setVisible(true)
+            base:setSize(0*40, 38)
+        end
+    end
+
+    self._btnShow:setVisible(self._perNum <= #buffList)
+    self._num:setVisible(self._perNum <= #buffList)
+    self._num:setText("+" .. (#buffList-self._perNum))
+end
+
+function CompBuff:removeBuffItemCache()
+    for i, v in ipairs(self._buffItemCacheList) do
+        self._buffItemCacheList[i] = nil
+    end
+    self._buffItemCacheList = {}
+end
+
+function CompBuff:renderListItem(index, obj)
+    if type(self._finalList) ~= "table" then return end
+
+    local list = obj:getParent()
+    if not list.index then return end
+
+    if not self._finalList[list.index] then return end
+
+    local buffId = self._finalList[list.index][index+1]
+    if not buffId then
+        return
+    end
+    obj:setBuffId(buffId)
+    table.insert(self._buffItemCacheList, obj)
+end
+
+function CompBuff:onBuffSelect(evt)
+    if self._selectBuff then
+        self._selectBuff:setSelect(false)
+    end
+    if evt.param then
+        self._selectBuff = evt.param.obj
+        self._selectBuff:setSelect(true)
+    end
+end
+
+return CompBuff

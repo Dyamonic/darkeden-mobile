@@ -1,0 +1,180 @@
+
+local GAME_URL_KEY = "QLp2cVZ61SqckEA5H8PSiy8fc1aOEnYE"
+
+local HttpClient = class("HttpClient")
+
+HttpClient._url = nil
+HttpClient._params = nil
+HttpClient._onSuccess = nil
+HttpClient._onFailed = nil
+
+function HttpClient:ctor(url, params, onSuccess, onFailed)
+    self._url = url
+    self._params = params
+    self._onSuccess = onSuccess
+    self._onFailed = onFailed
+end
+
+
+function HttpClient:get(encrypt)
+    local url = self._url
+    if encrypt then
+        if self._params and table.nums(self._params) > 0 then
+            local params = ""
+
+            local idx = 1
+            for k,v in pairs(self._params) do
+                if idx == 1 then
+                    url = url .. "?_MODE=1&"
+                end
+
+                params = params .. k .. "=" .. string.urlencode(v) .. "&"
+
+                idx = idx + 1
+            end
+
+            -- 加密
+            params = cpp.Utils:aesEncode(params, GAME_URL_KEY)
+            -- params = crypto.encodeBase64(params)
+            params = string.gsub(params, "+", "-")
+            params = string.gsub(params, "/", "_")
+            params = string.gsub(params, "=", "~")
+
+            url = url .. params
+
+        end
+
+        print("encrypt url is ", url)
+    else
+        if self._params and table.nums(self._params) > 0 then
+            local idx = 1
+            for k, v in pairs(self._params) do
+                if idx == 1 then
+                    url = url .. "?"
+                end
+
+                url = url .. k .. "=" .. string.urlencode(v) .. "&"
+                idx = idx + 1
+            end
+        end
+
+        print("url is ", url)
+    end
+
+    self:_get(url)
+end
+
+function HttpClient:_get(url)
+    local request = network.createHTTPRequest(handler(self, self._onRequestFinished), url, "GET")
+    request:start()
+end
+
+function HttpClient:post(encrypt)
+    if device.platform == "windows" then
+        encrypt = false
+    end
+
+    local url = self._url
+    if encrypt then
+        url = self._url.."?_MODE=1&"
+    end
+    print("url is %s", url)
+    local request = network.createHTTPRequest(handler(self, self._onRequestFinished), url, "POST")
+    if encrypt then
+        local postData = ""
+        if self._params and table.nums(self._params) > 0 then
+            for k,v in pairs(self._params) do
+                postData = postData .. k .. "=" .. string.urlencode(v) .. "&"
+            end
+        end
+
+        -- 加密
+        postData = cpp.Utils:aesEncode(postData, GAME_URL_KEY)
+        -- postData = crypto.encodeBase64(postData)
+        postData = string.gsub(postData, "+", "-")
+        postData = string.gsub(postData, "/", "_")
+        postData = string.gsub(postData, "=", "~")
+
+        request:setPOSTData(postData)
+    else
+        if self._params then
+            if type(self._params) == "string" then
+                request:setPOSTData(self._params)
+            else
+                for k,v in pairs(self._params) do
+                    request:addPOSTValue(k, v)
+                end
+            end
+        end
+    end
+
+    request:start()
+end
+
+function HttpClient:uploadFile(filePath)
+    -- 发送文件
+    local url = self._url
+    if encrypt then
+        url = self._url.."?_MODE=1&"
+    end
+    local request = network.createHTTPRequest(handler(self, self._onRequestFinished), url, "POST")
+
+    request:addFormFile("avatar_file", filePath, "Image/png")
+
+    if encrypt then
+        local postData = ""
+        if self._params and table.nums(self._params) > 0 then
+            for k,v in pairs(self._params) do
+                postData = postData .. k .. "=" .. string.urlencode(v) .. "&"
+            end
+        end
+
+        -- 加密
+        postData = cpp.Utils:aesEncode(postData, GAME_URL_KEY)
+        -- postData = crypto.encodeBase64(postData)
+        postData = string.gsub(postData, "+", "-")
+        postData = string.gsub(postData, "/", "_")
+        postData = string.gsub(postData, "=", "~")
+
+        request:setPOSTData(postData)
+    else
+        if self._params then
+            for k,v in pairs(self._params) do
+                request:addFormContents(k, v)
+            end
+        end
+    end
+
+    request:start()
+end
+
+function HttpClient:_onRequestFinished(event)
+    local request = event.request
+    local name    = event.name
+    if name == "failed" then
+        -- 请求失败
+        print("server error", request:getErrorCode(), request:getErrorMessage())
+        if self._onFailed then
+            self._onFailed(request:getErrorCode())
+        end
+        return
+    end
+
+    if name ~= "completed" then
+        return
+    end
+
+    local request = event.request
+    local code = request:getResponseStatusCode()
+    if code == 200 then
+        if self._onSuccess then
+            self._onSuccess(request:getResponseString())
+        end
+    else
+        if self._onFailed then
+            self._onFailed(code)
+        end
+    end
+end
+
+return HttpClient

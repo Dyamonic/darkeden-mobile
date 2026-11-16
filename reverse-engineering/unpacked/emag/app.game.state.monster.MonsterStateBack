@@ -1,0 +1,109 @@
+
+-- 被冲撞
+local MonsterStateBack = class("MonsterStateBack", lt.MonsterStateBase)
+
+local Constant = lt.Constant
+
+MonsterStateBack._mTarget       = nil
+MonsterStateBack._nTarget       = nil
+MonsterStateBack._xTarget       = nil
+MonsterStateBack._yTarget       = nil
+MonsterStateBack._needDisappear = nil
+
+MonsterStateBack._timeElapsed = nil
+
+function MonsterStateBack:ctor(monsterAgent, mTarget, nTarget, needDisappear, skillId)
+    print("MonsterStateBack:ctor:", mTarget, nTarget, needDisappear)
+    MonsterStateBack.super.ctor(self, monsterAgent)
+
+    self._needDisappear = needDisappear
+    self._timeElapsed = 0
+    self._skillId = skillId
+
+    self:initMove(mTarget, nTarget)
+end
+
+function MonsterStateBack:onClear()
+end
+
+function MonsterStateBack:onEnter()
+    -- if self._skillId and self._skillId == 31300 then
+    --     local xHero, yHero = self._monsterAgent:getPosition()
+    --     local directionV = cc.pSub(cc.p(self._xTarget, self._yTarget), cc.p(xHero, yHero))
+    --     self._armatureAniHit = lt.ArmatureAni.new("effect/skill/skill31300/skill31300.ExportJson", "skill31300")
+    --     self._armatureAniHit:setPosition(0, self._monsterAgent:getModelHeight() * Constant.MODEL_HIT_Y_RATIO)
+    --     self._armatureAniHit:play("fx" .. lt.MapUtil:calcDirectionXY(-directionV.x, -directionV.y), true)
+    --     self._monsterAgent:getActor():addChild(self._armatureAniHit, 10000)
+    -- elseif self._skillId and self._skillId == 21500 then
+    --     local xHero, yHero = self._monsterAgent:getPosition()
+    --     local directionV = cc.pSub(cc.p(self._xTarget, self._yTarget), cc.p(xHero, yHero))
+    --     self._armatureAniHit = lt.ArmatureAni.new("effect/skill/skill21500/skill21500.ExportJson", "skill21500")
+    --     self._armatureAniHit:setPosition(0, self._monsterAgent:getModelHeight() * Constant.MODEL_HIT_Y_RATIO)
+    --     self._armatureAniHit:play("fx" .. lt.MapUtil:calcDirectionXY(-directionV.x, -directionV.y), true)
+    --     self._monsterAgent:getActor():addChild(self._armatureAniHit, 10000)
+    -- end
+end
+
+function MonsterStateBack:onExit()
+end
+
+function MonsterStateBack:onUpdate()
+    local deltaTime = lt.GameBoard:getDeltaTime()
+    self._timeElapsed = self._timeElapsed + deltaTime
+
+    local xMonster, yMonster = self._monsterAgent:getPosition()
+    local directionV = cc.pSub(cc.p(self._xTarget, self._yTarget), cc.p(xMonster, yMonster))
+
+    local step = Constant:getStateBackSpeed(lt.MapUtil:calcDirectionXY(directionV.x, directionV.y)) * deltaTime
+    if cc.pGetLength(directionV) < step then
+        -- 到达
+        self._monsterAgent:setPosition(self._xTarget, self._yTarget)
+
+        if self._needDisappear then
+            local worldAgent = lt.AgentManager:getWorldAgent()
+            worldAgent:deleteAgent(self._monsterAgent:getObjId())
+        else
+            local delta = Constant.SHOULDERDASH_DELAYTIME - self._timeElapsed
+            if delta > 0 then
+                self._monsterAgent:changeState(lt.MonsterStateDizzy.new(self._monsterAgent, delta))
+            else
+                self._monsterAgent:changeState(lt.MonsterStateIdle.new(self._monsterAgent))
+            end
+        end
+    else
+        -- 未到
+        directionV = cc.pMul(cc.pNormalize(directionV), step)
+        self._monsterAgent:setPosition(xMonster + directionV.x, yMonster + directionV.y)
+    end
+end
+
+function MonsterStateBack:onMessage(msg)
+end
+
+function MonsterStateBack:getStateId()
+    return Constant.MONSTER_STATE_BACK
+end
+
+function MonsterStateBack:getStateName()
+    return "MonsterStateBack"
+end
+
+function MonsterStateBack:initMove(mNext, nNext)
+    self._mTarget = mNext
+    self._nTarget = nNext
+    self._xTarget, self._yTarget = lt.MapUtil:calcMNMid(self._mTarget, self._nTarget)
+
+    -- 设置方向
+    local xMonster, yMonster = self._monsterAgent:getPosition()
+    local direction = lt.MapUtil:calcDirectionXY(xMonster - self._xTarget, yMonster - self._yTarget)
+    self._monsterAgent:setDirection(direction)
+
+    -- 修改MapAgent的AgentSystem
+    local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+    mapAgent:changeAgentMN(self._monsterAgent, self._mTarget, self._nTarget)
+
+    -- 播放动画
+    self._monsterAgent:playAction(Constant.ROLE_ACTION_IDLE)
+end
+
+return MonsterStateBack

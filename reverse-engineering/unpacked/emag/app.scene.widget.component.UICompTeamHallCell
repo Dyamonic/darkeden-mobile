@@ -1,0 +1,93 @@
+---@class UICompTeamHallCell
+---
+local UICompTeamHallCell = class("UICompTeamHallCell",lt.UICompBase)
+
+UICompTeamHallCell.ChangeSkinConf = {
+    ["Team"] = {
+        ["img_bg"] = "bg_zuduixitong_zuduiliebiaodi",
+    },
+    ["CommonTL"] = {
+        ["btn_apply"] = {bg = "sort"},
+    }
+}
+
+local TeamModule = lt.TeamModule
+local CacheManager = lt.CacheManager
+local Constant = lt.Constant
+
+function UICompTeamHallCell:ctor()
+    self:registerComponent("UICompTeamHallPlayer")
+    UICompTeamHallCell.super.ctor(self)
+    --UI
+    self._nameLabel = nil
+    self._filterLabel = nil
+    self._applyBtn = nil
+    for i = 1, Constant.MAX_TEAM_NUMBER do
+        self["_comPlayer"..i] = nil
+    end
+    --数据
+    self._teamInfo = nil
+end
+
+function UICompTeamHallCell:onClear()
+    --UI
+    self._nameLabel = nil
+    self._filterLabel = nil
+    self._applyBtn = nil
+    for i = 1, Constant.MAX_TEAM_NUMBER do
+        self["_comPlayer"..i] = nil
+    end
+    --数据
+    self._teamInfo = nil
+    self:unregisterAllComponent()
+    UICompTeamHallCell.super.onClear(self)
+end
+
+function UICompTeamHallCell:onConstruct()
+    self:startSkin()
+    self._nameLabel = self:getChild("label_name")
+    self._filterLabel = self:getChild("label_filter")
+    self._applyBtn = self:getChild("btn_apply")
+    for i = 1, Constant.MAX_TEAM_NUMBER do
+        self["_comPlayer"..i] = self:getChild("com"..i)
+    end
+end
+
+function UICompTeamHallCell:onEnter()
+    UICompTeamHallCell.super.onEnter(self)
+    self._applyBtn:addClickListener(handler(self, self.onApplyBtnClick))
+
+end
+function UICompTeamHallCell:onExit()
+    self._applyBtn:removeClickListener()
+    UICompTeamHallCell.super.onExit(self)
+end
+
+function UICompTeamHallCell:setInfo(teamInfo)
+    --排序
+    TeamModule:sortTeamMember(teamInfo)
+    local leaderInfo = TeamModule:getTeamLeader(teamInfo)
+    if leaderInfo then
+        self._nameLabel:setText(string.format(GReadText.KEY_TEAM_HALL_TIPS3, leaderInfo.playerName).."("..#teamInfo.memberInfoArray.."/"..Constant.MAX_TEAM_NUMBER..")")
+        local teamMeta = CacheManager:getTeamHallMetaByIdx(teamInfo.configId)
+        local filterName = teamMeta:getPurposeType() == Constant.TEAMHALL_TYPES.LEVEL and GReadText.KEY_TEAM_HALL_TIPS1 or GReadText.KEY_TEAM_HALL_TIPS2
+        self._filterLabel:setText(filterName..teamMeta:getPurposeName())
+        self._applyBtn:setGrayed(TeamModule:getTeamId() ~= 0)
+        --队伍成员信息
+        for i = 1, Constant.MAX_TEAM_NUMBER do
+            local playerInfo = teamInfo.memberInfoArray[i]
+            local isLeader = false
+            if playerInfo then
+                isLeader = teamInfo.captainId == playerInfo.playerId
+            end
+            self["_comPlayer"..i]:setInfo(playerInfo, isLeader)
+        end
+    end
+    self._teamInfo = teamInfo
+end
+
+function UICompTeamHallCell:onApplyBtnClick()
+    TeamModule:sendApplyInTeam(self._teamInfo.teamId)
+end
+
+return UICompTeamHallCell

@@ -1,0 +1,25 @@
+local MessageFilterMeta = class("MessageFilterMeta")
+
+function MessageFilterMeta:ctor(row)
+    self:initWithRow(row)
+end
+
+function MessageFilterMeta:initWithRow(row)
+    self._idxId          = row.IdxId
+    self._name           = row.Name
+    self._describe       = row.Describe
+    self._displayType    = row.DisplayType
+    self._displayContent = row.DisplayContent
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function MessageFilterMeta:getIdxId() return self._idxId end
+function MessageFilterMeta:getName() return self._name end
+function MessageFilterMeta:getDescribe() return self._describe end
+function MessageFilterMeta:getDisplayType() return self._displayType end
+function MessageFilterMeta:getDisplayContent() return self._displayContent end
+
+-- AUTO GENERATED GETTERS END
+return MessageFilterMeta

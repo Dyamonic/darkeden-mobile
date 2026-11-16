@@ -1,0 +1,152 @@
+--- 我要变强界面
+---@class UIWndStrong:UIWindowBase
+local UIWndStrong          = class("UIWndStrong", lt.UIWindowBase)
+
+local NtfManager = lt.NtfManager
+local GameModule = lt.GameModule
+local CacheManager = lt.CacheManager
+local Constant = lt.Constant
+local FunctionToggleModule = lt.FunctionToggleModule
+
+UIWndStrong.ChangeSkinConf = {
+    ["Strong"] = {
+        ["bg"] = "bg_wybq_tcd",
+    },
+    ["CommonTL"] = {
+        ["frame"] = {
+            closeButton = { bg = "bg_beibao_anniu01", bgup = "bg_beibao_anniu02" },
+        }
+    }
+}
+
+function UIWndStrong:ctor(param)
+    UIWndStrong.super.ctor(self, param)
+    self._mainIdx = nil
+    self._strongMap = nil
+    self._targetList = nil
+    self._listContent = nil
+end
+
+function UIWndStrong:onShown()
+    self:initUI()
+    self._targetList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+end
+
+function UIWndStrong:onHide()
+    self._targetList:removeEventListener(fgui.UIEventType.ClickItem)
+    UIWndStrong.super.onHide(self)
+end
+
+function UIWndStrong:onClear()
+    self:unregisterAllComponent()
+    self._mainIdx = nil
+    self._strongMap = nil
+
+    if self._targetList then
+        self._targetList:removeChildrenToPool()
+        self._targetList:removeItemRenderer()
+        self._targetList = nil
+    end
+    if self._listContent then
+        self._listContent:removeChildrenToPool()
+        self._listContent:removeItemRenderer()
+        self._listContent = nil
+    end
+
+    UIWndStrong.super.onClear(self)
+end
+
+function UIWndStrong:onInit()
+    self:registerComponent("UICompStrongFilterCell","UICompStrongCell")
+    UIWndStrong.super.onInit(self, _GURL.UIWndStrong)
+
+end
+
+function UIWndStrong:initUI()
+    self._mainIdx = 1
+    local race = GameModule:getHeroRace()
+    local strongMap = CacheManager:getStrongMapByRace(race)
+    self._strongMap = {}
+    local _index
+    for k, v in pairs(strongMap) do
+        for k2,v2 in pairs(v.metas) do
+            local jumpTarget = v2:getJumpTarget()
+            if jumpTarget > 0 then
+                local isopen = FunctionToggleModule:checkOpen(jumpTarget)
+                if isopen then
+                    table.insert(self._strongMap, v)
+                    break
+                end
+            else
+                table.insert(self._strongMap, v)
+                break
+            end
+        end
+    end
+    table.sort(self._strongMap, function (a, b)
+        return a.idx < b.idx
+    end)
+    
+    self._targetList = self:getChild("list_filter")
+    self._targetList:setItemRenderer(handler(self, self.targetRender))
+    self._targetList:setScrollItemToViewEnabled(false)
+    self._listContent = self:getChild("list_content")
+    self._listContent:setItemRenderer(handler(self, self.contentRender))
+    self._listContent:setScrollItemToViewEnabled(false)
+    self._targetList:setNumItems(#self._strongMap)
+    self:selectMainIdx(self._mainIdx)
+end
+
+function UIWndStrong:targetRender(index, obj)
+    local index = index + 1
+    local data = self._strongMap[index]
+    obj.index = index
+    obj:setObjInfo(data, index)
+    obj:insertObjectToFactory(self)
+end
+
+--选中一级按钮回调
+function UIWndStrong:selectMainIdx(mainIdx)
+    local childIndex = self._targetList:itemIndexToChildIndex(self._mainIdx-1)
+    local context = self._targetList:getChildAt(childIndex)
+    context:getController("button"):setSelectedIndex(0)
+
+    self._mainIdx = mainIdx
+    local metas = {}
+    for k2,v2 in pairs(self._strongMap[self._mainIdx].metas) do
+        local jumpTarget = v2:getJumpTarget()
+        if jumpTarget > 0 then
+            local isopen = FunctionToggleModule:checkOpen(jumpTarget)
+            if isopen then
+                table.insert(metas, v2)
+            end
+        else
+            table.insert(metas, v2)
+        end
+    end
+    childIndex = self._targetList:itemIndexToChildIndex(self._mainIdx-1)
+    context = self._targetList:getChildAt(childIndex)
+    context:getController("button"):setSelectedIndex(1)
+
+    self._listContent:setNumItems(#metas)
+end
+
+function UIWndStrong:contentRender(index, obj)
+    local index = index + 1
+    local metas = self._strongMap[self._mainIdx].metas
+    local data = metas[index]
+    obj:setObjInfo(data, index)
+    obj:insertObjectToFactory(self)
+end
+
+function UIWndStrong:onClickItem(context)
+    local data = context:getData()
+    local index = data.index
+    self:selectMainIdx(index)
+end
+
+function UIWndStrong:onLayerClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndStrong", close = true })
+end
+
+return UIWndStrong

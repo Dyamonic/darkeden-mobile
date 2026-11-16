@@ -1,0 +1,488 @@
+---@宠物技能
+---@class UICompPetSkill
+local UICompPetSkill = class("UICompPetSkill", lt.UICompBase)
+
+local PetUIActor   = lt.PetUIActor
+local PetModule    = lt.PetModule
+local CacheManager = lt.CacheManager
+local ItemModule   = lt.ItemModule
+local Constant     = lt.Constant
+local NtfManager   = lt.NtfManager
+
+local DELAYTIMES1 = {7, 7, 7, 7, 7, 6, 6, 5.67, 4, 2, 1.6, 1.2, 1, 0.83, 0.56, 0.4}   --延迟时间
+
+UICompPetSkill.ChangeSkinConf = {
+    ["CommonTL"] = {
+        ["btn_skill_use"] = {bg = "sort"},
+    },
+    ["Task"] = {
+        ["capsule_item_bg"]   = "bg_cwrw_djk",
+        ["race_item_bg"]      = "bg_cwrw_djk",
+    },
+    ["Pet"] = {
+        ["race_item_quality"] = "bg_cwjn_zzjndi",
+        ["race_skill_bg"]     = "bg_cwjn_zzjnh",
+    },
+}
+
+local SKILLTYPE = Constant.PET_SKILL_TYPE
+
+local SKILLLIST = {
+    [SKILLTYPE.CAPSULE] = { -- 胶囊技能
+        select  = "capsule_skill_select",
+        select2 = "capsule_item_select",
+        skillBg = "capsule_skill_bg"
+    },
+    [SKILLTYPE.RACE]    = { -- 种族技能
+        select  = "race_skill_select",
+        select2 = "race_item_select",
+        skillBg = "race_skill_bg",
+    },
+}
+
+local CAPSULECOST = {
+    [SKILLTYPE.CAPSULE] = 1006003,
+    [SKILLTYPE.RACE]    = 1006004,
+}
+
+local COST2CAPSULE = {
+    [1006003] = SKILLTYPE.CAPSULE,
+    [1006004] = SKILLTYPE.RACE,
+}
+
+function UICompPetSkill:ctor()
+    self._modelNode   = nil
+    self._petActor1   = nil
+    self._selectIndex = nil
+    self._petInfo     = nil
+    self._skillBtnList = nil
+
+    self._nameT  = nil
+    self._levelT = nil
+    self._capsuleSkillTxt = nil
+    self._capsuleSkillBg = nil
+    self._raceSkillTxt = nil
+    self._raceSkillBg = nil
+    self._capsuleItemText = nil
+    self._capsuleItemDesc = nil
+    self._capsuleItemQuality = nil
+    self._capsuleItemNumText = nil
+    self._raceItemText = nil
+    self._raceItemDesc = nil
+    self._raceItemQuality = nil
+    self._raceItemNumText = nil
+
+    UICompPetSkill.super.ctor(self)
+end
+
+function UICompPetSkill:onClear()
+    if self._petActor1 then
+        self._petActor1:onClear()
+        self._petActor1   = nil
+    end
+
+    self._modelNode   = nil
+    self._selectIndex = nil
+    self._petInfo     = nil
+
+    self._nameT  = nil
+    self._levelT = nil
+    self._capsuleSkillTxt = nil
+    self._capsuleSkillBg = nil
+    self._raceSkillTxt = nil
+    self._raceSkillBg = nil
+    self._capsuleItemText = nil
+    self._capsuleItemDesc = nil
+    self._capsuleItemQuality = nil
+    self._capsuleItemNumText = nil
+    self._raceItemText = nil
+    self._raceItemDesc = nil
+    self._raceItemQuality = nil
+    self._raceItemNumText = nil
+    self._capsuleItemIcon = nil
+    self._raceItemIcon    = nil
+    
+    UICompPetSkill.super.onClear(self)
+end
+
+function UICompPetSkill:onEnter()
+    self._capsuleSkillBg.index = SKILLTYPE.CAPSULE
+    self._capsuleSkillBg:addClickListener(handler(self, self.onSelectCallBack))
+    self._raceSkillBg.index = SKILLTYPE.RACE
+    self._raceSkillBg:addClickListener(handler(self, self.onSelectCallBack))
+    self._capsuleItemQuality.index = SKILLTYPE.CAPSULE
+    self._capsuleItemQuality:addClickListener(handler(self, self.onSelectCallBackEx))
+    self._raceItemQuality.index = SKILLTYPE.RACE
+    self._raceItemQuality:addClickListener(handler(self, self.onSelectCallBackEx))
+    self._btnSkillUse:addClickListener(handler(self, self.onUseCallBack))
+
+    self:stopAnim()
+end
+
+function UICompPetSkill:onExit()
+    self._capsuleSkillBg:removeClickListener()
+    self._raceSkillBg:removeClickListener()
+    self._capsuleItemQuality:removeClickListener()
+    self._raceItemQuality:removeClickListener()
+    self._btnSkillUse:removeClickListener()
+
+    self:stopAnim()
+end
+
+function UICompPetSkill:onConstruct()
+    self:startSkin()
+    self:initUI()
+end
+
+function UICompPetSkill:onUpdate(dt)
+    if self._petActor1 then
+        self._petActor1:onUpdate(dt)
+    end
+end
+
+function UICompPetSkill:initUI()
+    self._modelNode = self:getChild("node_model")
+    
+    self._petActor1 = PetUIActor.new(2)
+    self._modelNode:displayObject():addChild(self._petActor1)
+    self._nameT = self:getChild("label_namet")
+    self._levelT = self:getChild("label_levelt")
+    self._capsuleSkillTxt = self:getChild("capsule_skill_txt")
+    self._capsuleSkillBg = self:getChild("capsule_skill_bg")
+    self._raceSkillTxt = self:getChild("race_skill_txt")
+    self._raceSkillBg = self:getChild("race_skill_bg")
+    self._capsuleItemText = self:getChild("capsule_item_text")
+    self._capsuleItemDesc = self:getChild("capsule_item_desc")
+    self._capsuleItemQuality = self:getChild("capsule_item_quality")
+    self._capsuleItemNumText = self:getChild("capsule_item_num")
+    self._raceItemText = self:getChild("race_item_text")
+    self._raceItemDesc = self:getChild("race_item_desc")
+    self._raceItemQuality = self:getChild("race_item_quality")
+    self._raceItemNumText = self:getChild("race_item_num")
+    self._btnSkillUse = self:getChild("btn_skill_use")
+    self._capsuleItemIcon = self:getChild("capsule_item_icon")
+    self._raceItemIcon = self:getChild("race_item_icon")
+
+    self._animNode1 = self:getChild("pet_anim1")
+    self._anim1 = self._animNode1:getTransition("t0")
+    
+    self._animNode2 = self:getChild("pet_anim2")
+    self._anim2 = self._animNode2:getTransition("t0")
+
+    if not self._selectIndex then
+        self._selectIndex = SKILLTYPE.CAPSULE
+    end
+
+    ------------------------------------------------------------------------
+    -- 将胶囊和种族技能分类
+    local capsuleMap = CacheManager:getPetCapsuleMap()
+    self._allSkillByType = {}
+    for _,v in pairs(capsuleMap) do
+        local curType = v:getType()
+        if not self._allSkillByType[curType] then
+            self._allSkillByType[curType] = {}
+        end
+        
+        table.insert(self._allSkillByType[curType], v)
+    end
+end
+
+function UICompPetSkill:onSelectCallBack(obj)
+    local target = obj:getSender()
+    local index = target.index
+
+    self._selectIndex = index
+    self:refreshSelect()
+end
+
+function UICompPetSkill:onSelectCallBackEx(obj)
+    local target = obj:getSender()
+    local index = target.index
+    
+    if self._selectIndex == index then
+        local itemId = CAPSULECOST[self._selectIndex]
+        local itemMeta = CacheManager:getItemMeta(itemId)
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,{itemInfo = itemMeta, tipsType = Constant.PROPTIPS_FORM.Display})
+        return
+    end
+
+    self._selectIndex = index
+    self:refreshSelect()
+end
+
+function UICompPetSkill:onUseCallBack()
+    if self._animTimes then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS90})
+        return
+    end
+
+    yflog:Info("onUseCallBack %s",self._selectIndex)
+    local itemId = CAPSULECOST[self._selectIndex]
+    local isEnough = ItemModule:enoughItem(Constant.ItemType.ITEM_TYPE_PROP, itemId, 1, {tips = true})
+    -- yflog:Info("----->>>>>> %s %s %s",self._petInfo.data:getUid(), self._mergePetInfo2.data:getUid(), itemId)
+    local itemMeta = CacheManager:getItemMeta(itemId)
+    if isEnough then
+        local tipsStr = ""
+        if itemMeta then
+            tipsStr = string.format(GReadText.KEY_PET_TIPS89,itemMeta:getName())
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+            content = tipsStr,
+            confirmCallback = function()
+                PetModule:sendPetCapsule(self._petInfo.data:getUid(), itemId)
+            end,
+        })
+    end
+end
+
+function UICompPetSkill:refreshView(petInfo)
+    local petMeta = petInfo.meta
+    local petData = petInfo.data
+    self._petInfo = petInfo
+    if petData then
+        self._petActor1:setDirection(petMeta:getModleDir())
+        self._petActor1:playAction(petData:getPetModel())
+
+        local petLevel = petData:getLevel()
+        self._nameT:setText(GReadText.KEY_TEAM_HALL_TIPS8.."[color=#ffff00]"..petMeta:getPetName().."[/color]")
+        self._levelT:setText(GReadText.KEY_ROLE_INFO_TIPS43.."[color=#ffff00]"..petLevel.."[/color]")
+
+        -- 胶囊数据
+        local capsuleItem = CAPSULECOST[SKILLTYPE.CAPSULE]
+        local capsuleIteMeta = ItemModule:getItemMetaByItemId(Constant.ItemType.ITEM_TYPE_PROP, capsuleItem)
+        local capsule = petData:getCapsule()
+        local capsuleCfg = CacheManager:getPetCapsuleById(capsule)
+        local capsuleName = GReadText.KEY_PET_TIPS87
+
+        -- 种族数据
+        local raceItem = CAPSULECOST[SKILLTYPE.RACE]
+        local raceItemMeta = ItemModule:getItemMetaByItemId(Constant.ItemType.ITEM_TYPE_PROP, raceItem)
+	    local capsuleRace = petData:getCapsuleRace()
+        local capsuleRaceCfg = CacheManager:getPetCapsuleById(capsuleRace)
+        local raceName = GReadText.KEY_PET_TIPS88
+        
+        -- 胶囊技能显示
+        local capsuleSkillStr = nil
+        if capsuleCfg then
+            capsuleSkillStr = capsuleName .. ": [color=#ffffff]" .. capsuleCfg:getDesc() .."[/color]"
+            self._capsuleSkillBg:setURL(string.format(_GURL.GetImagePet,capsuleCfg:getImage()))
+            self._capsuleSkillBg:setGrayed(false)
+        else
+            capsuleSkillStr = capsuleName .. ": [color=#ff0000]" .. GReadText.KEY_PET_TIPS43 .."[/color]"
+            self._capsuleSkillBg:setURL(string.format(_GURL.GetImagePet,"bg_cwjn_zzjnh_v"))
+            self._capsuleSkillBg:setGrayed(true)
+        end
+        self._capsuleSkillTxt:setText(capsuleSkillStr)
+
+        -- 种族技能显示
+        local raceSkillStr = nil
+        if capsuleRaceCfg then
+            raceSkillStr = raceName .. ": [color=#ffffff]" .. capsuleRaceCfg:getDesc() .."[/color]"
+            self._raceSkillBg:setURL(string.format(_GURL.GetImagePet,capsuleRaceCfg:getImage()))
+            self._raceSkillBg:setGrayed(false)
+        else
+            raceSkillStr = raceName .. ": [color=#ff0000]" .. GReadText.KEY_PET_TIPS43 .."[/color]"
+            self._raceSkillBg:setURL(string.format(_GURL.GetImagePet,"bg_cwjn_zzjnh_v"))
+            self._raceSkillBg:setGrayed(true)
+        end
+        self._raceSkillTxt:setText(raceSkillStr)
+
+        -- 胶囊技能消耗
+        self._capsuleItemText:setText(capsuleName)
+        
+        local capsuleDescStr = nil
+        if capsuleCfg then
+            capsuleDescStr = capsuleCfg:getDesc()
+            self._capsuleItemDesc:setColor(Constant.COLOR_TEXT_WHITE)
+            self._capsuleItemQuality:setURL(string.format(_GURL.GetImagePet,capsuleCfg:getImage2()))
+            self._capsuleItemQuality:setGrayed(false)
+        else
+            capsuleDescStr = GReadText.KEY_PET_TIPS43
+            self._capsuleItemDesc:setColor(Constant.COLOR_TEXT_RED)
+            self._capsuleItemQuality:setURL(string.format(_GURL.GetImagePet,"bg_cwjn_zzjndi_v"))
+            self._capsuleItemQuality:setGrayed(true)
+        end
+        self._capsuleItemDesc:setText(capsuleDescStr)
+
+        if capsuleIteMeta then
+            self._capsuleItemIcon:setURL(string.format("ui://Item/prop_%s", capsuleIteMeta:getIconId()))
+        end
+
+        -- 种族技能消耗
+        self._raceItemText:setText(raceName)
+
+        local raceDescStr = nil
+        if capsuleRaceCfg then
+            raceDescStr = capsuleRaceCfg:getDesc()
+            self._raceItemDesc:setColor(Constant.COLOR_TEXT_WHITE)
+            self._raceItemQuality:setURL(string.format(_GURL.GetImagePet,capsuleRaceCfg:getImage2()))
+            self._raceItemQuality:setGrayed(false)
+        else
+            raceDescStr = GReadText.KEY_PET_TIPS43
+            self._raceItemDesc:setColor(Constant.COLOR_TEXT_RED)
+            self._raceItemQuality:setURL(string.format(_GURL.GetImagePet,"bg_cwjn_zzjndi_v"))
+            self._raceItemQuality:setGrayed(true)
+        end
+        self._raceItemDesc:setText(raceDescStr)
+
+        if raceItemMeta then
+            self._raceItemIcon:setURL(string.format("ui://Item/prop_%s", raceItemMeta:getIconId()))
+        end
+    end
+
+    self:refreshCost()
+    self:refreshSelect()
+end
+
+function UICompPetSkill:refreshCost()
+    local petInfo = self._petInfo
+    if not petInfo then
+        return
+    end
+
+    local petData = petInfo.data
+    if petData then
+
+        -- 胶囊数据
+        local capsuleItem = CAPSULECOST[SKILLTYPE.CAPSULE]
+        local capsuleItemNum = ItemModule:getItemNum(capsuleItem)
+
+        -- 种族数据
+        local raceItem = CAPSULECOST[SKILLTYPE.RACE]
+        local raceItemNum = ItemModule:getItemNum(raceItem)
+
+        self._capsuleItemNumText:setText(capsuleItemNum .. "/1")
+        if capsuleItemNum < 1 then
+            self._capsuleItemNumText:setColor(Constant.COLOR_TEXT_RED)
+        else
+            self._capsuleItemNumText:setColor(Constant.COLOR_GREEN)
+        end
+
+        self._raceItemNumText:setText(raceItemNum .. "/1")
+        if raceItemNum < 1 then
+            self._raceItemNumText:setColor(Constant.COLOR_TEXT_RED)
+        else
+            self._raceItemNumText:setColor(Constant.COLOR_GREEN)
+        end
+    end
+end
+
+function UICompPetSkill:refreshViewByAnim(petInfo)
+    self._petInfo = petInfo
+    if not self._animTimes then
+        -- self:stopAnim()
+        -- 刷新动画
+        local itemId = PetModule:getLearnSkillItem()
+        if itemId and COST2CAPSULE[itemId] then
+            self:runNewSkillAnim(itemId,COST2CAPSULE[itemId])
+            PetModule:clearLearnSkillItem()
+        else
+            if petInfo then
+                self:refreshView(petInfo)
+            end
+        end
+    end
+end
+
+function UICompPetSkill:refreshSelect()
+    for k,v in pairs(SKILLLIST) do
+        local select = self:getChild(v.select)
+        select:setVisible(self._selectIndex == k)
+
+        local select2 = self:getChild(v.select2)
+        select2:setVisible(self._selectIndex == k)
+    end
+end
+
+function UICompPetSkill:stopAnim()
+    self._anim1:stop()
+    self._anim2:stop()
+    self._animNode1:setVisible(false)
+    self._animNode2:setVisible(false)
+    self._animTimes = nil
+    self._showIndex = nil
+end
+
+function UICompPetSkill:getAnimTimes()
+    return self._animTimes
+end
+
+function UICompPetSkill:runNewSkillAnim(itemId,curAnimType)
+    if self._animTimes and self._animTimes > #DELAYTIMES1 then
+        self:stopAnim()
+        self:refreshView(self._petInfo)
+        return
+    end
+    local anim = self._anim1
+    local animNode = self._animNode1
+    local capsuleName = "[color=#00FF00]" .. GReadText.KEY_PET_TIPS87 ..": [/color]"
+    if curAnimType == SKILLTYPE.RACE then
+        anim = self._anim2
+        animNode = self._animNode2
+        capsuleName ="[color=#00FFFF]" .. GReadText.KEY_PET_TIPS88 ..": [/color]"
+    end
+
+    self._animNode1:setVisible(curAnimType == SKILLTYPE.CAPSULE)
+    self._animNode2:setVisible(curAnimType == SKILLTYPE.RACE)
+
+    local maxNum = #self._allSkillByType[curAnimType]
+    if not self._animTimes then
+        self._animTimes = 1
+    end
+
+    if not self._showIndex then
+        self._showIndex = 1
+    end
+    if DELAYTIMES1[self._animTimes] then
+        anim:setTimeScale(DELAYTIMES1[self._animTimes])
+    end
+    
+    -------------------------------------------------------------------------------------------------
+    -- 属性1
+    if self._showIndex > maxNum then
+        self._showIndex = 1
+    end
+    local attr1 = animNode:getChild("label_attr1")
+    local loaderAttr1 = animNode:getChild("loader_attr1")
+    local capsuleCfg = self._allSkillByType[curAnimType][self._showIndex]
+    -- 胶囊技能显示
+    local capsuleSkillStr = nil
+    if capsuleCfg then
+        capsuleSkillStr = capsuleName .. "[color=#ffffff]" .. capsuleCfg:getDesc() .."[/color]"
+        loaderAttr1:setURL(string.format(_GURL.GetImagePet,capsuleCfg:getImage()))
+    end
+    attr1:setText(capsuleSkillStr)
+
+    -------------------------------------------------------------------------------------------------
+    -- 属性2
+    local attr2 = animNode:getChild("label_attr2")
+    local loaderAttr2 = animNode:getChild("loader_attr2")
+    local nextId = self._showIndex + 1
+    if nextId > maxNum then
+        nextId = 1
+    end
+    local capsuleCfg = self._allSkillByType[curAnimType][nextId]--CacheManager:getPetCapsuleById(nextId)
+    if self._animTimes >= #DELAYTIMES1 then
+        if self._petInfo and self._petInfo.data then
+            if curAnimType == SKILLTYPE.CAPSULE then
+                capsuleCfg = CacheManager:getPetCapsuleById(self._petInfo.data:getCapsule())
+            elseif curAnimType == SKILLTYPE.RACE then
+                capsuleCfg = CacheManager:getPetCapsuleById(self._petInfo.data:getCapsuleRace())
+            end
+        end
+    end
+    local capsuleSkillStr = nil
+    if capsuleCfg then
+        capsuleSkillStr = capsuleName .. "[color=#ffffff]" .. capsuleCfg:getDesc() .."[/color]"
+        loaderAttr2:setURL(string.format(_GURL.GetImagePet,capsuleCfg:getImage()))
+    end
+    attr2:setText(capsuleSkillStr)
+
+    self._showIndex = self._showIndex + 1
+    self._animTimes = self._animTimes + 1
+    anim:play(function()
+        self:runNewSkillAnim(itemId,curAnimType)
+    end)
+end
+
+return UICompPetSkill

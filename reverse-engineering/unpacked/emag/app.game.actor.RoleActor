@@ -1,0 +1,625 @@
+
+local RoleActor = class("RoleActor", function()
+    return display.newNode()
+end)
+local Constant = lt.Constant
+local TimeTrigger = lt.TimeTrigger
+local CacheManager = lt.CacheManager
+
+RoleActor._forceDirection = nil
+RoleActor._direction      = nil
+RoleActor._modelId	      = nil
+RoleActor._actionId       = nil
+RoleActor._actionInfo     = nil
+
+RoleActor._nameNode = nil
+RoleActor._spriteSelected = nil
+
+-- 隐藏自身
+RoleActor._hideSprite = nil
+-- 选中标记
+RoleActor._targetMark = nil
+
+RoleActor._timeTrigger    = nil
+RoleActor._nextFrameIndex = nil
+RoleActor._initFrame = false
+RoleActor._loopCount      = nil
+
+RoleActor.ANCHOR_DOWN   = 0
+RoleActor.ANCHOR_MIDDLE = 0.5
+RoleActor.ANCHOR_TOP    = 1
+
+
+function RoleActor:ctor(roleData, direction)
+	self._roleData = roleData
+    self._direction = direction
+
+    self._modelId   = roleData:getModelId()
+
+    self._actionId  = Constant.ACTION_MAX
+
+    self._timeTrigger = TimeTrigger.new()
+    self._nextFrameIndex = 1
+    self._initFrame = false
+    self._loopCount = 0
+
+    self._targetMark = false
+
+    self._armatureNode1 = display.newNode()
+    self:addChild(self._armatureNode1, 10000)
+
+    self._armatureNode2 = display.newNode()
+    self:addChild(self._armatureNode2, -10000)
+    self._pCreature = lt.Creature.new()
+
+    self._fastMove = false
+    self._fasetMoveTrigger = TimeTrigger.new()
+    self._shadowsGroupArr = {}
+    self._selectColor = nil
+    self._pixelSize = nil
+end
+
+function RoleActor:addChild(child, zorder, tag, onParent)
+    zorder = zorder or 0
+    tag = tag or 0
+
+    if not onParent and iskindof(child, "ArmatureAni") then
+        if zorder >= 0 then
+            self._armatureNode1:addChild(child, zorder, tag)
+        else
+            self._armatureNode2:addChild(child, zorder, tag)
+        end
+    else
+        cc.Node.addChild(self, child, zorder, tag)
+    end
+end
+
+function RoleActor:onClear()
+    if self._nameNode and not tolua.isnull(self._nameNode) then
+        self._nameNode:removeSelf()
+        self._nameNode = nil
+    end
+
+    if self._shadowActor and not tolua.isnull(self._shadowActor)  then
+        self._shadowActor:removeSelf()
+        self._shadowActor = nil
+    end
+    if self._shadowsGroupArr then
+        for i = #self._shadowsGroupArr, 1, -1 do
+            if self._shadowsGroupArr[i] then
+                self._shadowsGroupArr[i]:removeFromParent()
+            end
+            table.remove(self._shadowsGroupArr, i)
+        end
+
+        self._shadowsGroupArr = nil
+    end
+
+    self:removeSelf()
+    self._pCreature = nil
+    self._nameNode = nil
+
+
+    self._modelId = nil
+    self._actionId = nil
+    self._actionInfo = nil
+
+    self._roleData = nil
+    self._direction = nil
+    self._timeTrigger = nil
+    self._selectColor = nil
+    self._pixelSize = nil
+end
+
+function RoleActor:onUpdate()
+    if self._nameNode and self._nameNode.onUpdatEx then
+        self._nameNode:onUpdatEx()
+    end
+
+    if self._spriteSelected then
+        local IsTargetMark = self._targetMark
+        self._spriteSelected:setVisible(IsTargetMark)
+
+        if self._nameNode then
+            self._nameNode:updateTargetMark(IsTargetMark)
+        end
+    end
+
+    if self._pCreature then
+        self._pCreature:updateTurning()
+    end
+end
+
+function RoleActor:getActionInfo()
+    return self._actionInfo
+end
+
+function RoleActor:onUpdateAction()
+
+    if not self._actionInfo or not self._actionInfo:getLoop() then
+        return
+    end
+
+    local frameCount = self._actionInfo:getSpriteFrameCount()
+    local loop = self._actionInfo:getLoop()
+
+    if loop ~= -1 and (self._loopCount >= loop or self._nextFrameIndex > frameCount) then
+        -- 非站立动作 && 如跑步或者attack动作每循环一次就要重新发起动作执行 startAction()
+        return
+    end
+
+    -- -- 刷新死亡并且未完成挖掘，死亡动作保留最后一帧,直到完成尸体挖掘
+    -- if self:isDie() and  not self:isDieFinishDig()then
+    --     -- 下一帧为最后一帧时 保留帧等完成挖掘后再播放
+    --     if self._nextFrameIndex == frameCount then
+    --         return
+    --     end
+    -- end
+
+    -- -- 死亡后重进游戏
+    -- if self:isDead() then
+    --     self._nextFrameIndex = frameCount
+    -- end
+
+    if self._timeTrigger:tick() then
+        self:gotoNextFrame()
+
+        if self._nextFrameIndex > self._actionInfo:getSpriteFrameCount() then
+            self._nextFrameIndex = 1
+
+            self._loopCount = self._loopCount + 1
+        end
+    end
+end
+
+function RoleActor:setPositionEx(x, y)
+	self:setPosition(x, y)
+
+    local _, n = lt.MapUtil:calcMN(x, y)
+    if self._nameNode then
+        self._nameNode:setPosition(x, y)
+        self._nameNode._originZOrder = n
+        self._nameNode:setLocalZOrder(n)
+    end
+
+    if self._shadowActor then
+        self._shadowActor:setPosition(x, y)
+    end
+end
+
+function RoleActor:setDirection(direction)
+    if direction == self._direction then
+        return
+    end
+    self:_setDirection(direction)
+end
+
+function RoleActor:setForceDirection(forceDirection)
+    self._forceDirection = forceDirection
+end
+
+function RoleActor:_setDirection(direction)
+	self._direction = self._forceDirection or direction
+
+    self:startAction()
+end
+
+function RoleActor:playAction(actionId, skillId)
+    self._actionId = actionId
+    self._skillId = skillId
+    self:playActionSound()
+    self:startAction()
+end
+
+function RoleActor:playActionSound()
+        --动作音效
+    if self:getAgent() then
+        local actionCombId = self:getAgent():getActionCombId()
+        if actionCombId then
+            local soundName = CacheManager:getSoundNameByActionInfo(actionCombId, self._actionId)
+            if soundName then
+                -- yflog:Info("playAction Sound Name:%s",soundName)
+                lt.AudioManager:playBattleSound(soundName)
+            end
+        end
+    end
+end
+
+function RoleActor:playUIAction(actionId)
+    self._actionId = actionId
+
+    self:startAction()
+end
+
+function RoleActor:startAction()
+	-- 创建ActionInfo
+    self:initActionInfo()
+    self:initExtraActionInfo()
+
+    -- 设置控制参数
+    if not self._actionInfo then return end
+
+    self:resetActionStep()
+    self._loopCount = 0
+    self._nextFrameIndex = 1
+
+    self:gotoNextFrame()
+end
+
+function RoleActor:resetActionStep()
+
+end
+
+function RoleActor:lastActionStep()
+    self._nextFrameIndex = self._actionInfo:getSpriteFrameCount() - 1
+
+    self:gotoNextFrame()
+end
+
+function RoleActor:setNextFrameIndex(nextFrameIndex)
+    self._nextFrameIndex = nextFrameIndex
+end
+
+function RoleActor:getNextFrameIndex()
+    return self._nextFrameIndex
+end
+
+function RoleActor:addNextFrameIndex(value)
+    self._nextFrameIndex = self._nextFrameIndex + value or 0
+end
+
+function RoleActor:changeAppr(appr)
+    self._modelId = appr
+    -- yflog:Error(" self._modelId:%s", tostring(self._modelId))
+   
+   	self:initActionInfo()
+end
+
+function RoleActor:initActionInfo()
+end
+
+function RoleActor:initExtraActionInfo()
+end
+
+function RoleActor:changeHp()
+    if not self._nameNode then
+        return
+    end
+    self._nameNode:updateHp(self._roleData)
+end
+
+-- 更新名字
+function RoleActor:changeName()
+    if not self._nameNode then
+        return
+    end
+    self._nameNode:updateUI(self._roleData)
+end
+
+-- 更新名字颜色
+function RoleActor:changeNameColor()
+    if not self._nameNode then
+        return
+    end
+    self._nameNode:updateUI(self._roleData)
+end
+
+function RoleActor:hideNameNode()
+    if not self._nameNode then
+        return
+    end
+    self._nameNode:setVisible(false)
+end
+
+function RoleActor:setActionPause(acionPause)
+    self._actionPause = acionPause
+end
+
+function RoleActor:getActionPause()
+    return self._actionPause
+end
+
+function RoleActor:gotoNextFrame()
+    if self._actionPause and self._initFrame then
+        return
+    end
+
+    self._initFrame = true
+    
+    self:updateFrame(true)
+end
+
+function RoleActor:updateFrame(update)
+end
+
+function RoleActor:setHideSprite(isHide)
+    self._hideSprite = isHide
+end
+
+function RoleActor:getHideSprite()
+    return self._hideSprite
+end
+
+function RoleActor:showSprite()
+    self._hideSprite = false
+
+    self._armatureNode1:setVisible(true)
+    self._armatureNode2:setVisible(true)
+
+    self:updateFrame()
+end
+
+function RoleActor:hideSprite()
+    self._hideSprite = true
+
+    self._armatureNode1:setVisible(false)
+    self._armatureNode2:setVisible(false)
+
+    self:updateFrame()
+end
+
+function RoleActor:setColor(color)
+end
+
+function RoleActor:setColorAll(color)
+end
+--[[
+    bg_xttsxt_xuanzhongdi01 角色 
+    bg_xttsxt_xuanzhongdi02 怪物 
+]]
+function RoleActor:showTargetMark()
+    local agent = self:getAgent()
+    -- self._selectColor = lt.SkillModule:getSelectColor() --FIXME 暂时屏蔽描边功能
+    if agent:isNpcAgent() then
+        return 
+    end
+    self._targetMark = true
+    if not self._spriteSelected then
+        self._spriteSelected = display.newSprite("game/common/bg_xttsxt_xuanzhongdi01.png")
+        self:addChild(self._spriteSelected, -999999)
+    end
+end
+
+function RoleActor:hideTargetMark()
+    self._targetMark = false
+    self._selectColor = nil
+end
+
+function RoleActor:setAlpha(alpha)
+end
+
+-- Setter && Getter
+function RoleActor:getDirection()
+    return self._direction or Constant.DIRECTION_DOWN
+end
+
+function RoleActor:getNameNode()
+    if not self._nameNode then
+        return nil
+    end
+    
+    return self._nameNode
+end
+
+function RoleActor:playEffect()
+end
+
+function RoleActor:getShadowActor()
+    return self._shadowActor
+end
+
+function RoleActor:getSkillActor()
+    return self._skillActor
+end
+
+
+function RoleActor:getShadowActorTurret()
+    return self._shadowActorTurret
+end
+
+-- ********** 死亡 分两个动作 死亡(尸体可被挖掘)与死亡完成 *************
+function RoleActor:setDie()
+    self._die = true
+    self._dieFinishDig = false
+end
+
+-- die 是刚死，dead是重新进入地图，已死
+function RoleActor:setDead()
+    self._die = true
+    self._dead = true
+    self._dieFinishDig = false
+end
+-- 刷新死亡完成挖掘 播放死亡动作的最后一帧
+function RoleActor:dieFinishDig()
+    self._dieFinishDig = true
+end
+
+function RoleActor:clearDead()
+    self._die = false
+    self._dead = false
+end
+
+function RoleActor:isDie()
+    return self._die
+end
+
+function RoleActor:isDead()
+    return self._dead
+end
+
+function RoleActor:isDieFinishDig()
+    return self._dieFinishDig
+end
+
+-- ********** 死亡 分两个动作 死亡(尸体可被挖掘)与死亡完成 *************
+
+function RoleActor:CreateSprite(anchorX, anchorY, zorder, node)
+    local sp = display.newSprite()
+    sp:setAnchorPoint(anchorX, anchorY)
+    if not node then
+        self:addChild(sp, zorder)
+        return sp
+    end
+
+    -- self._spriteWeaponAlpha:setLocalZOrder(zorder)
+    node:addChild(sp, zorder)
+    return sp
+end
+
+--[[
+    天炼换算偏移值坐标
+    天炼坐标系     手游坐标系
+   ├──────────     │ 
+   │      x        │y
+   │y              │     x
+   │               ├──────────
+
+    newX = x + offsetX + width/2
+    newY = x + offsetY + height/2
+]]
+function RoleActor:conversionOffsetPoint(point, offset, size)
+    local conX, conY
+    conX = point.x + offset.x + size.width/2
+    conY = point.y - offset.y - size.height/2
+    return cc.p(conX, conY)
+end
+
+function RoleActor:getActionId()
+    return self._actionId
+end
+
+function RoleActor:setAgent(agent)
+    self._agent = agent
+end
+function RoleActor:getAgent()
+    return self._agent
+end
+
+function RoleActor:setTurning()
+    local ownerObjId = self:getAgent():getObjId()
+    self._pCreature:setTurning( 16, ownerObjId );
+end
+function RoleActor:isTurning()
+    return self._pCreature:isTurning()
+end
+
+function RoleActor:getCreature()
+    return self._pCreature
+end
+
+--- 虚影实现
+function RoleActor:setStop()
+    self._fastMove = false
+    self:clearMonsterShadows()
+end
+
+function RoleActor:clearMonsterShadows()
+    for index, shadow in pairs(self._shadowsGroupArr) do
+        if shadow and not tolua.isnull(shadow) then
+            shadow:removeFromParent()
+        end
+        self._shadowsGroupArr[index] = nil
+
+    end
+    self._shadowsGroupArr = {}
+end
+
+function RoleActor:fastMovePosition(x, y, param)
+    self:setStop()
+
+    self._fastMove = true;
+    local ox, oy = param.mHero, param.nHero
+    
+    local m_sX = (ox - x) * Constant.TILE_X;
+    local m_sY = (y - oy) * Constant.TILE_Y; --y轴是相反的
+    local moveTimesDiv = param.moveTimesDiv or 2
+    self._fastMoveCX = -m_sX / moveTimesDiv
+    self._fastMoveCY = -m_sY / moveTimesDiv
+end
+
+function RoleActor:updateFastMove()
+    if self._fastMove then
+        self:clearMonsterShadows()
+        local fastMoveShadowMax = 1
+        local pointTemp = {}
+        local pointTemp2 = {}
+        local x, y = self:getPosition()
+        pointTemp.x = x 
+        pointTemp.y = y + 12
+        if self._roleData:getFakeCreatureType() == Constant.FAKE_CREATURE_TYPE.WILD_WOLF then
+            fastMoveShadowMax = 6
+        end
+        if self._agent and self._agent:isInStateId(Constant.HERO_STATE_AFIRE) then
+            fastMoveShadowMax = 2 
+            pointTemp.y = pointTemp.y + 24
+        end
+        local function rshift(value, num)
+            local sign = value < 0 and -1 or 1 --标记符号位
+            local ret = bit.rshift(math.abs(value), num) * sign
+            return ret 
+        end
+
+        for fastMoveShadow = fastMoveShadowMax, 1, -1 do
+            --m_cX >> 1
+            local resultX = rshift(self._fastMoveCX, 1)
+            local resultY =  rshift(self._fastMoveCY, 1)
+
+            pointTemp2.x = pointTemp.x - (resultX) * fastMoveShadow
+            pointTemp2.y = pointTemp.y - (resultY) * fastMoveShadow
+            local darkbit = fastMoveShadow > 1 and 2 or 1
+            local phantom = self:clone(darkbit)  
+            phantom:setPosition(cc.p(pointTemp2.x, pointTemp2.y))
+            -- phantom:setOpacity(100)  -- 设置透明度
+            local worldAgent = lt.AgentManager:getWorldAgent()
+            if worldAgent then
+                local mapActor = worldAgent:getMapAgent():getMapActor()
+                -- 添加到场景
+                mapActor:addPhantom(phantom)
+            end
+            table.insert(self._shadowsGroupArr, phantom)
+        end
+    end
+end
+
+function RoleActor:getRotateEffectActorArr()
+    return self._rotateEffectActorArr
+end
+
+function RoleActor:getQueueEffectNode()
+    return self._queueEffectNode
+end
+
+function RoleActor:getParabEffectActorArr()
+    return self._parabEffectActorArr
+end
+
+function RoleActor:getRoleData()
+    return self._roleData
+end
+
+function RoleActor:getQueueEffectActorArr()
+    return self._queueEffectActorArr
+end
+
+function RoleActor:addParabEffectActor(parabEffectActor)
+    if self._parabEffectActorArr then
+        table.insert(self._parabEffectActorArr, parabEffectActor)
+    end
+end
+
+-- 清理removeTable
+function RoleActor:removeEffectFromRemoveTable(originEffectArr, removeTable)
+    if  #originEffectArr == 0 or table.nums(removeTable) == 0 then
+        return
+    end
+
+    for i = #originEffectArr, 1, -1 do
+        if removeTable[i] then
+            originEffectArr[i]:onClear()
+            table.remove(originEffectArr,i)
+        end
+    end
+end
+    
+
+return RoleActor

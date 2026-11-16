@@ -1,0 +1,84 @@
+
+-- 连接启动器和游戏的界面
+local InitLauncherLayer = class("InitLauncherLayer", lt.BaseLayer)
+
+function InitLauncherLayer:ctor()
+	InitLauncherLayer.super.ctor(self)
+end
+
+function InitLauncherLayer:onEnter()
+    lt.LogUtil:debug("InitLauncherLayer:onEnter")
+    lt.ConnectManager:setDelegate(self)
+end
+
+function InitLauncherLayer:onExit()
+    lt.LogUtil:debug("InitLauncherLayer:onExit")
+    lt.ConnectManager:clearDelegate(self)
+end
+
+function InitLauncherLayer:onConnFail(event)
+    print("InitLauncherLayer:onConnFail")
+    local scene = display.getRunningScene()
+    if scene and scene.onConnFail then
+        scene:onConnFail(1)
+    end
+end
+
+function InitLauncherLayer:onLoginGameAck(event)
+    print("---------------------- InitLauncherLayer:onLoginGameAck ----------------------")
+    local data = event.param
+    local errCode = nil
+    if data then
+        if data._byResult == lt.CliGgProto.PROTO_SUCCESS then
+            lt.RoleModule:setPID(data._stReply._szPTID)
+            lt.RoleModule:refreshData(data._stReply._stRoleList)
+
+            if data._stReply and data._stReply._stLoginData and data._stReply._stLoginData._szDataBuf and data._stReply._stLoginData._szDataBuf ~= "" then
+                local dataValue = json.decode(data._stReply._stLoginData._szDataBuf) or {}
+                if dataValue.invite then
+                    -- 邀请码
+                    print("邀请码:", dataValue.invite)
+                    lt.RoleModule:setInviteCode(dataValue.invite)
+                end
+            end
+
+            local roleScene = lt.RoleScene.new()
+            display.runScene(roleScene)
+            return
+        elseif data._byResult == lt.CliGgProto.PROTO_FAILURE then
+            if data._stReply then
+                errCode = data._stReply._wErrCode
+            end
+        end
+    end
+
+    -- 主动断开
+    lt.SocketApi:disconnect()
+
+    local scene = display.getRunningScene()
+    if scene and scene.onConnFail then
+        scene:onConnFail(2, errCode)
+    end
+end
+
+function InitLauncherLayer:connectServer(domain, ip, port)
+	return lt.SocketApi:connect(domain, ip, port)
+end
+
+function InitLauncherLayer:setServerName(serverName)
+    lt.SocketApi:setServerName(serverName)
+end
+
+function InitLauncherLayer:setServerId(serverId)
+    lt.SocketApi:setServerId(serverId)
+end
+
+function InitLauncherLayer:setUserId(userId)
+    lt.SocketApi:setUserId(userId)
+end
+
+function InitLauncherLayer:setClientVer(clientVer)
+    lt.SocketApi:setClientVer(clientVer)
+end
+
+return InitLauncherLayer

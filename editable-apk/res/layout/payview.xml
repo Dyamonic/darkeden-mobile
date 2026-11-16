@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout android:background="@android:color/white" android:fitsSystemWindows="true" android:layout_width="match_parent" android:layout_height="match_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <RelativeLayout android:id="@id/top_layout" android:background="@color/titlebg" android:layout_width="match_parent" android:layout_height="45.0dp">
+        <Button android:id="@id/wypay_bt_close" android:background="@drawable/btn_webpay_close_2x" android:layout_width="15.0dp" android:layout_height="15.0dp" android:layout_marginLeft="15.0dp" android:layout_centerVertical="true" />
+    </RelativeLayout>
+    <LinearLayout android:orientation="vertical" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="60.0dp">
+        <RelativeLayout android:orientation="vertical" android:layout_width="match_parent" android:layout_height="40.0dp">
+            <TextView android:textSize="18.0sp" android:textColor="@color/gray" android:gravity="center_vertical" android:id="@id/tx_product_title" android:layout_width="85.0dp" android:layout_height="match_parent" android:layout_marginLeft="20.0dp" android:text="@string/product_name" />
+            <TextView android:textSize="18.0sp" android:textColor="@color/gray" android:gravity="center_vertical" android:id="@id/tx_product_name" android:layout_width="200.0dp" android:layout_height="match_parent" android:layout_toRightOf="@id/tx_product_title" />
+            <ImageView android:background="@drawable/img_bg_line_2x" android:layout_width="match_parent" android:layout_height="1.0dp" android:layout_marginBottom="0.0dp" android:layout_alignParentBottom="true" />
+        </RelativeLayout>
+        <RelativeLayout android:orientation="vertical" android:layout_width="match_parent" android:layout_height="40.0dp">
+            <TextView android:textSize="18.0sp" android:textColor="@color/gray" android:gravity="center_vertical" android:id="@id/tx_amount_title" android:layout_width="85.0dp" android:layout_height="match_parent" android:layout_marginLeft="20.0dp" android:text="@string/order_amount" />
+            <TextView android:textSize="18.0sp" android:textColor="@color/red" android:gravity="center_vertical" android:id="@id/tx_amount" android:layout_width="200.0dp" android:layout_height="match_parent" android:layout_toRightOf="@id/tx_amount_title" />
+            <ImageView android:background="@drawable/img_bg_line_2x" android:layout_width="match_parent" android:layout_height="1.0dp" android:layout_marginBottom="0.0dp" android:layout_alignParentBottom="true" />
+        </RelativeLayout>
+        <TextView android:textSize="18.0sp" android:textColor="@color/gray" android:gravity="center_vertical" android:layout_width="match_parent" android:layout_height="40.0dp" android:layout_marginLeft="20.0dp" android:text="@string/pay_type" />
+        <RelativeLayout android:orientation="vertical" android:id="@id/layout_ali" android:background="@drawable/img_bg_light_blue_2x" android:layout_width="match_parent" android:layout_height="40.0dp">
+            <ImageView android:id="@id/iv_ali" android:background="@drawable/icon_ali_pay_2x" android:layout_width="30.0dp" android:layout_height="30.0dp" android:layout_marginLeft="30.0dp" android:layout_centerVertical="true" />
+            <TextView android:textSize="18.0sp" android:textColor="@color/gray" android:gravity="center_vertical" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_marginLeft="10.0dp" android:text="@string/ali_pay" android:layout_toRightOf="@id/iv_ali" />
+            <RadioButton android:id="@id/radio_ali" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginRight="10.0dp" android:checked="true" android:drawablePadding="8.0dp" android:layout_alignParentRight="true" />
+            <ImageView android:background="@drawable/img_bg_line_2x" android:layout_width="match_parent" android:layout_height="1.0dp" android:layout_marginBottom="0.0dp" android:layout_alignParentBottom="true" />
+        </RelativeLayout>
+        <RelativeLayout android:orientation="vertical" android:id="@id/layout_wechat" android:layout_width="match_parent" android:layout_height="40.0dp">
+            <ImageView android:id="@id/iv_wechat" android:background="@drawable/icon_wechat_pay_2x" android:layout_width="30.0dp" android:layout_height="30.0dp" android:layout_marginLeft="30.0dp" android:layout_centerVertical="true" />
+            <TextView android:textSize="18.0sp" android:textColor="@color/gray" android:gravity="center_vertical" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_marginLeft="10.0dp" android:text="@string/wechat_pay" android:layout_toRightOf="@id/iv_wechat" />
+            <RadioButton android:id="@id/radio_wechat" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginRight="10.0dp" android:checked="false" android:drawablePadding="8.0dp" android:layout_alignParentRight="true" />
+            <ImageView android:background="@drawable/img_bg_line_2x" android:layout_width="match_parent" android:layout_height="1.0dp" android:layout_marginBottom="0.0dp" android:layout_alignParentBottom="true" />
+        </RelativeLayout>
+        <RelativeLayout android:orientation="vertical" android:id="@id/layout_sandbox" android:visibility="gone" android:layout_width="match_parent" android:layout_height="40.0dp">
+            <TextView android:textSize="18.0sp" android:textColor="@color/gray" android:gravity="center_vertical" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_marginLeft="30.0dp" android:text="@string/sandbox_pay" />
+            <RadioButton android:id="@id/radio_sandbox" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginRight="10.0dp" android:checked="false" android:drawablePadding="8.0dp" android:layout_alignParentRight="true" />
+            <ImageView android:background="@drawable/img_bg_line_2x" android:layout_width="match_parent" android:layout_height="1.0dp" android:layout_marginBottom="0.0dp" android:layout_alignParentBottom="true" />
+        </RelativeLayout>
+    </LinearLayout>
+    <Button android:textSize="16.0sp" android:textColor="@color/white" android:id="@id/btn_pay" android:background="@drawable/btn_webpay_pay_2x" android:layout_width="100.0dp" android:layout_height="35.0dp" android:layout_marginBottom="15.0dp" android:text="@string/pay_now" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" />
+</RelativeLayout>

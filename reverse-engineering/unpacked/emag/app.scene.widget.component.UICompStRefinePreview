@@ -1,0 +1,164 @@
+---@首饰套精炼预览
+---@class UICompStRefinePreview
+local UICompStRefinePreview = class("UICompStRefinePreview", lt.UIGButtonBase, lt.UICompChangeSkin)
+
+UICompStRefinePreview.ChangeSkinConf = {
+    ["Strengthen"] = {
+        ["img_di2"] = "bg_zhuangbei_di",
+    },
+    ["MessageBox"] = {
+        ["img_di"] = "bg_tytanchuang_03",
+    },
+    ["CommonTL"] = {
+        ["btn_cancel"] = {bg = "sort"},
+        ["btn_confirm"] = {bg = "sort"},
+    }
+}
+
+local NtfManager = lt.NtfManager
+local Constant = lt.Constant
+local StrengthenModule = lt.StrengthenModule
+local ServerClientEnum = lt.ServerClientEnum
+local SkeletonManager = lt.SkeletonManager
+
+function UICompStRefinePreview:ctor()
+    UICompStRefinePreview.super.ctor(self)
+    --UI
+    self._titleLabel = nil
+    self._equipIcon = nil
+    self._attrlist = nil
+    self._btnCancel = nil
+    self._btnConfirm = nil
+    self._icon = nil
+    self._middleNode = nil
+    self._nameLabel = nil
+    self._curAttrLabel = nil
+    self._nextAttrLabel = nil
+    --数据
+    self._newItemInfo = nil
+    self._attr = nil
+end
+
+function UICompStRefinePreview:onClear()
+    --UI
+    self._titleLabel = nil
+    self._equipIcon = nil
+    self._btnCancel = nil
+    self._btnConfirm = nil
+    self._icon = nil
+    self._middleNode = nil
+    self._nameLabel = nil
+    self._curAttrLabel = nil
+    self._nextAttrLabel = nil
+    --数据
+    self._newItemInfo = nil
+    self._attr = nil
+
+    if self._attrlist then
+        self._attrlist:removeChildrenToPool()
+        self._attrlist:removeItemRenderer()
+        self._attrlist = nil
+    end
+    
+end
+
+function UICompStRefinePreview:onConstruct()
+    self:startSkin()
+    self:initUI()
+end
+
+function UICompStRefinePreview:initUI()
+    self._titleLabel = self:getChild("label_title")
+    self._equipIcon = self:getChild("panel_icon")
+    self._attrlist = self:getChild("list_attr")
+    self._attrlist:setItemRenderer(handler(self, self.renderListItem))
+    self._btnCancel = self:getChild("btn_cancel")
+    self._btnConfirm = self:getChild("btn_confirm")
+
+    self._middleNode = self:getChild("node_middle")
+    self._nameLabel = self:getChild("label_name")
+    self._curAttrLabel = self:getChild("label_curattr")
+    self._nextAttrLabel = self:getChild("label_nextattr")
+
+    if self._icon == nil then
+        self._icon = fgui.UIPackage:createObject("Item", "Item")
+        self._icon:setPivot(0.5, 0.5, true)
+        self._equipIcon:addChild(self._icon)
+    end
+
+    local upImg = self:getChild("img_up")
+    self:createArrowEffect(upImg)
+end
+
+function UICompStRefinePreview:onEnter()
+    self._icon:insertObjectToFactory(self:getRegClass())
+    self:getChild("panel_btn"):addClickListener(handler(self, self.onEquipClick))
+    self._btnCancel:addClickListener(handler(self, self.onCancelBtnClick))
+    self._btnConfirm:addClickListener(handler(self, self.onConfirmBtnClick))
+    self:getChild("touchLayer"):addClickListener(handler(self, self.onCancelBtnClick))
+end
+
+function UICompStRefinePreview:onExit()
+    self:getChild("panel_btn"):removeClickListener()
+    self._btnCancel:removeClickListener()
+    self._btnConfirm:removeClickListener()
+    self:getChild("touchLayer"):removeClickListener()
+end
+
+function UICompStRefinePreview:refreshView(itemInfo, newItemInfo)
+    self._newItemInfo = newItemInfo
+    self._icon:setItemInfo(newItemInfo)
+    local level = newItemInfo:getILevel()
+    local name = newItemInfo:getName().."+"..level
+    self._nameLabel:setText(name)
+    self._attr = StrengthenModule:transformAffix(newItemInfo)
+    self._attrlist:setNumItems(#self._attr)
+    --属性
+    local prop = StrengthenModule:getActiveProp(itemInfo, itemInfo:getILevel())
+    local nextProp = StrengthenModule:getNextProp(itemInfo, itemInfo:getILevel())
+    local curProp = string.split(prop[1], "|")
+    local curPropNum = curProp[2]
+    local nextPorp = tonumber(curProp[2]) + nextProp[curProp[1]]
+    local nextPorpNum = nextPorp
+    if curProp[1] == GReadText.KEY_EQUIP_TIPS45 or curProp[1] == GReadText.KEY_EQUIP_TIPS46 then
+        curPropNum = curPropNum.."%"
+        nextPorpNum = nextPorpNum.."%"
+    end
+    self._curAttrLabel:setText(curProp[1]..":"..curPropNum.." ")
+    self._curAttrLabel:setX(375 + (136 - self._curAttrLabel:getWidth())/2)
+    self._nextAttrLabel:setText(nextPorpNum)
+    --位置适配
+    self._titleLabel:setY(#self._attr > 0 and 162 or 202)
+    self._middleNode:setY(#self._attr > 0 and 184 or 264)
+end
+
+function UICompStRefinePreview:closeView()
+    self:setVisible(false)
+end
+
+function UICompStRefinePreview:onEquipClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS, {itemInfo = self._newItemInfo, tipsType = Constant.EquipShowTipsType.Display})
+end
+
+function UICompStRefinePreview:onConfirmBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_CONFIRM_FUSION)
+    self:closeView()
+end
+
+function UICompStRefinePreview:onCancelBtnClick()
+    self:closeView()
+end
+
+function UICompStRefinePreview:renderListItem(index, obj)
+    local equipProp = self._attr[index + 1]
+    obj:setAttr(equipProp)
+end
+
+function UICompStRefinePreview:createArrowEffect(parent)
+    local spine = SkeletonManager:createSkeletonEffectWithFile("ShengJiXiTong", "ShengJiXiTong_Skeleton")
+    parent:displayObject():addChild(spine)
+    spine:setAnimationScale(0.2)
+    spine:setAnimation(0, "ShengJiTiShi", true)
+end
+
+return UICompStRefinePreview

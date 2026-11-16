@@ -1,0 +1,870 @@
+---@class UICompShowEquipTips 角色装备tips
+---
+local UICompShowEquipTips = class("UICompShowEquipTips", lt.UICompBase)
+
+local topHeightOffset = 130
+local constWidth = 309
+local ItemModule = lt.ItemModule
+local Constant = lt.Constant
+local GameModule = lt.GameModule
+local NtfManager = lt.NtfManager
+local WndLockManager = lt.WndLockManager
+local NpcModule = lt.NpcModule
+local RechargeModule = lt.RechargeModule
+local AutoFightManager = lt.AutoFightManager
+local StringManager = lt.StringManager
+local CacheManager = lt.CacheManager
+
+local EquipName = Constant.EquipName
+local EquipIconName = Constant.EquipIconName
+
+local operateTableByTipsType = {
+    [Constant.EquipShowTipsType.Bag] = {
+        [1] = Constant.EquipTipBtns.Equip,
+        [2] = Constant.EquipTipBtns.Strengthen,
+        [3] = Constant.EquipTipBtns.Discard,
+        [4] = Constant.EquipTipBtns.Share,
+        [5] = Constant.EquipTipBtns.Sell,
+    },
+    [Constant.EquipShowTipsType.RoleEquip] = {
+        [1] = Constant.EquipTipBtns.UnEquip,
+        [2] = Constant.EquipTipBtns.UnEquipSuit,
+    },
+    [Constant.EquipShowTipsType.WareHouse] = {
+        [1] = Constant.EquipTipBtns.TakeOut,
+    },
+    [Constant.EquipShowTipsType.Buy] = {
+        [1] = Constant.EquipTipBtns.Buy,
+    },
+    [Constant.EquipShowTipsType.Sell] = {
+        [1] = Constant.EquipTipBtns.Equip,
+        [2] = Constant.EquipTipBtns.Sell,
+    },
+    [Constant.EquipShowTipsType.Repair] = {
+        [1] = Constant.EquipTipBtns.Repair,
+        [2] = Constant.EquipTipBtns.AllRepair,
+    },
+    [Constant.EquipShowTipsType.Chat] = {
+        [1] = Constant.EquipTipBtns.Share,
+    },
+    [Constant.EquipShowTipsType.Silver] = {
+        [1] = Constant.EquipTipBtns.Silver,
+    },
+    --纯展示
+    [Constant.EquipShowTipsType.Display] = {
+        
+    },
+}
+
+local btnInfoCfg = {
+    [Constant.EquipTipBtns.Equip] = { name = "装备" },
+    [Constant.EquipTipBtns.UnEquip] = { name = "卸载"},
+    [Constant.EquipTipBtns.UnEquipSuit] = { name = "卸载套件"},
+    [Constant.EquipTipBtns.Discard] = { name = "丢弃"},
+    [Constant.EquipTipBtns.Replace] = { name = "替换"},
+    [Constant.EquipTipBtns.Deposit] = { name = "存入"},
+    [Constant.EquipTipBtns.TakeOut] = { name = "取出"},
+    [Constant.EquipTipBtns.PutInBelt] = { name = "放入腰带"},
+    [Constant.EquipTipBtns.Buy] = { name = "购买"},
+    [Constant.EquipTipBtns.Sell] = { name = "出售"},
+    [Constant.EquipTipBtns.Repair] = { name = "维修"},
+    [Constant.EquipTipBtns.AllRepair] = { name = "一键维修"},
+    [Constant.EquipTipBtns.Strengthen] = { name = "强化"},
+    [Constant.EquipTipBtns.Silver] = { name = "镀银"},
+    [Constant.EquipTipBtns.Share] = { name = "分享"},
+}
+
+--人族首饰套映射
+local slayerSuitMapping = {
+    [Constant.SlayerEquipPos.CircletSuit1] = Constant.SlayerEquipPos.Ring1,
+    [Constant.SlayerEquipPos.CircletSuit2] = Constant.SlayerEquipPos.Ring2,
+    [Constant.SlayerEquipPos.CircletSuit3] = Constant.SlayerEquipPos.Ring3,
+    [Constant.SlayerEquipPos.CircletSuit4] = Constant.SlayerEquipPos.Ring4,
+    [Constant.SlayerEquipPos.PendantsSuit] = Constant.SlayerEquipPos.Necklace,
+    [Constant.SlayerEquipPos.WristletSuit1] = Constant.SlayerEquipPos.Bracelet1,
+    [Constant.SlayerEquipPos.WristletSuit2] = Constant.SlayerEquipPos.Bracelet2,
+}
+
+--鬼族首饰套映射
+local vampireSuitMapping = {
+    [Constant.VampireEquipPos.CircletSuit1] = Constant.VampireEquipPos.Ring1,
+    [Constant.VampireEquipPos.CircletSuit2] = Constant.VampireEquipPos.Ring2,
+    [Constant.VampireEquipPos.CircletSuit3] = Constant.VampireEquipPos.Ring3,
+    [Constant.VampireEquipPos.CircletSuit4] = Constant.VampireEquipPos.Ring4,
+    [Constant.VampireEquipPos.PendantsSuit] = Constant.VampireEquipPos.Necklace,
+    [Constant.VampireEquipPos.WristletSuit1] = Constant.VampireEquipPos.Bracelet1,
+    [Constant.VampireEquipPos.WristletSuit2] = Constant.VampireEquipPos.Bracelet2,
+}
+
+--魔族首饰套映射
+local oustersSuitMapping = {
+    [Constant.OustersEquipPos.CircletSuit1] = Constant.OustersEquipPos.ElfStone1,
+    [Constant.OustersEquipPos.CircletSuit2] = Constant.OustersEquipPos.ElfStone2,
+    [Constant.OustersEquipPos.CircletSuit3] = Constant.OustersEquipPos.ElfStone3,
+    [Constant.OustersEquipPos.CircletSuit4] = Constant.OustersEquipPos.ElfStone4,
+    [Constant.OustersEquipPos.PendantsSuit] = Constant.OustersEquipPos.Necklace2,
+    [Constant.OustersEquipPos.WristletSuit1] = Constant.OustersEquipPos.Ring1,
+    [Constant.OustersEquipPos.WristletSuit2] = Constant.OustersEquipPos.Ring2,
+}
+
+-- 使用按钮操作
+local operateFunc = {
+    [Constant.EquipTipBtns.Equip] = function(target,itemInfo)
+        local equipPos = target:getEquipPosTable() or {}
+        -- print("equip pos: " .. equipPos[target:getSelectEquipPos()])
+        if #equipPos > 0 and equipPos[target:getSelectEquipPos()] then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_EQUIP_AUTOUSE_RMV,{ itemInfo = itemInfo})
+            ItemModule:sendEquipItem(itemInfo:getObjId(), equipPos[target:getSelectEquipPos()],Constant.ItemTypePos.Item_InPackage)
+        else
+            NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_WEAR_EQUIP_TIPS1})
+            return
+        end
+    end,
+    [Constant.EquipTipBtns.UnEquip] = function(target,itemInfo)
+        ItemModule:sendUnEquipItem(itemInfo:getObjId(), itemInfo:getPos())
+    end,
+    [Constant.EquipTipBtns.UnEquipSuit] = function(target,itemInfo)
+        local curRace = GameModule:getHeroRace()
+        local suitPos = nil
+        if curRace == Constant.RaceType.Slayer then
+            suitPos = Constant.SlayerSuitMapping[itemInfo:getPos()]
+        elseif curRace == Constant.RaceType.Vampire then
+            suitPos = Constant.VampireSuitMapping[itemInfo:getPos()]
+        elseif curRace == Constant.RaceType.Ousters then
+            suitPos = Constant.OustersSuitMapping[itemInfo:getPos()]
+        end
+        if suitPos then
+            local suitInfo = UICompShowEquipTips:getEquipItemInfoByPos(suitPos)
+            if suitInfo then
+                ItemModule:sendUnEquipItem(suitInfo:getObjId(), suitInfo:getPos())
+            end
+        end
+    end,
+    [Constant.EquipTipBtns.Discard] = function(target,itemInfo)
+        --判断有没有月卡
+        if itemInfo:getBound() == Constant.BOUND_TYPE.MONTH_BOUND then
+            local isMonthCard = RechargeModule:checkMonthCard(true)
+            if not isMonthCard then
+                return
+            end
+        end
+        local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.DISCARD_SURE)
+        if editTable.switch == 1 then
+            local content = GReadText.KEY_TASK_TIPS6
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {type = 2, content = content,
+            confirmCallback = function()
+                ItemModule:sendPeckItem(itemInfo:getObjId())
+            end,
+            cancelCallback = function()
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_CANCEL_SELECT_STATE_ITEM)
+            end})
+        else
+            ItemModule:sendPeckItem(itemInfo:getObjId())
+        end
+    end,
+    [Constant.EquipTipBtns.Replace] = function(target,itemInfo)
+        local equipPos = target:getEquipPosTable() or {}
+        if #equipPos > 0 and equipPos[target:getSelectEquipPos()] then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_EQUIP_AUTOUSE_RMV,{ itemInfo = itemInfo})
+            ItemModule:sendEquipItem(itemInfo:getObjId(), equipPos[target:getSelectEquipPos()],Constant.ItemTypePos.Item_InPackage)
+        else
+            NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_WEAR_EQUIP_TIPS1})
+            return
+        end
+    end,
+    [Constant.EquipTipBtns.Deposit] = function(target,itemInfo)
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_WEARHOUSE_DEPOSIT,{ itemInfo = itemInfo})
+    end,
+    [Constant.EquipTipBtns.TakeOut] = function(target,itemInfo)
+        ItemModule:sendFromDepotOut(itemInfo:getObjId(),itemInfo:getPos(),1)
+    end,
+    [Constant.EquipTipBtns.PutInBelt] = function(target,itemInfo)
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_PUT_IN_BELT_EVENT,{ itemInfo = itemInfo})
+    end,
+
+    [Constant.EquipTipBtns.Buy] = function(target,itemInfo,itemConfig)
+        target:btnUseFunc(Constant.EquipTipBtns.Buy, itemInfo, itemConfig)
+    end,
+
+    [Constant.EquipTipBtns.Sell] = function(target,itemInfo)
+        target:btnUseFunc(Constant.EquipTipBtns.Sell, itemInfo)
+    end,
+
+    --维修
+    [Constant.EquipTipBtns.Repair] = function(target,itemInfo)
+        target:btnUseFunc(Constant.EquipTipBtns.Repair, itemInfo)
+    end,
+
+    --镀银
+    [Constant.EquipTipBtns.Silver] = function(target,itemInfo)
+        target:btnUseFunc(Constant.EquipTipBtns.Silver, itemInfo)
+    end,
+
+
+    [Constant.EquipTipBtns.AllRepair] = function(target,itemInfo)
+        target:btnUseFunc(Constant.EquipTipBtns.AllRepair, itemInfo)
+    end,
+
+    [Constant.EquipTipBtns.Share] = function(target,itemInfo,itemConfig)
+        if lt.ChatModule._isChating == false then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndInventory", close = true})
+            lt.ChatModule:openChatUI()
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_CHAT_ADDKINK_POST, {items = itemInfo,index = 1})
+    end,
+    
+    --装备强化
+    [Constant.EquipTipBtns.Strengthen] = function(target,itemInfo)
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrengthen", param = {index = 1, subIdx = 1, objId = itemInfo:getObjId()}})
+    end,
+}
+
+function UICompShowEquipTips:ctor()
+    self._selectEquipPos = nil
+    self._param = nil
+    self._itemInfo = nil
+    self._tipsType = nil
+    self._operate = nil
+    self._itemKind = nil
+    self._useList = nil
+    self._equipPosList = nil
+    self._myEquip = nil
+    self._selectEquip = nil
+    self._equipPosTable = nil
+    self._equipPosItem = nil
+    self._myEquipInfo = nil
+    UICompShowEquipTips.super.ctor(self)
+end
+
+function UICompShowEquipTips:onClear()
+    self:unregisterAllComponent()
+    self._selectEquipPos = nil
+    self._param = nil
+    self._itemInfo = nil
+    self._tipsType = nil
+    self._operate = nil
+    self._itemKind = nil
+    self._useList = nil
+    self._equipPosList = nil
+    self._myEquip = nil
+    self._selectEquip = nil
+    self._equipPosTable = nil
+    self._equipPosItem = nil
+    self._myEquipInfo = nil
+    UICompShowEquipTips.super.onClear(self)
+end
+
+function UICompShowEquipTips:onEnter()
+    local touchLayer = self:getChild("touchLayer") -- 触摸关闭
+    local function btnClik()
+        self:hideSelf(true)
+        if self._tipsType == Constant.EquipShowTipsType.Buy or self._tipsType == Constant.EquipShowTipsType.Sell 
+        or self._tipsType == Constant.EquipShowTipsType.Display then
+            --判断如果是买卖界面取消选中
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_CANCEL_TRADE_CHOOSE)
+        elseif self._tipsType == Constant.EquipShowTipsType.Repair then
+            --判断如果是维修界面取消选中
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_CANCEL_REPAIR_CHOOSE)
+        end
+    end
+    touchLayer:addClickListener(handler(self, btnClik))
+    self:addAllListener()
+end
+
+function UICompShowEquipTips:onExit()
+    local touchLayer = self:getChild("touchLayer") -- 触摸关闭
+    touchLayer:removeClickListener()
+    self:removeAllListener()
+end
+
+function UICompShowEquipTips:addAllListener()
+    if self._addAllListener then return end
+    self._addAllListener = true
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_DURABILITY, handler(self, self.updateDurability), "UICompShowEquipTips:updateDurability")
+end
+
+function UICompShowEquipTips:removeAllListener()
+    NtfManager:removeNtfListenerByTag("UICompShowEquipTips:updateDurability")
+    self._addAllListener = false
+end
+
+function UICompShowEquipTips:getSelectEquipPos()
+    return self._selectEquipPos
+end
+
+function UICompShowEquipTips:getEquipPosTable()
+    return self._equipPosTable
+end
+
+function UICompShowEquipTips:refreshTips(param,selectEquipPos)
+    self._selectEquipPos = selectEquipPos
+    if not param then
+        return
+    end
+
+    self._itemInfo = param.itemInfo
+    self._tipsType = param.tipsType
+    self._isBag = param.isBag or false
+
+    local offsetValue = lt.AutoFightManager:getEditConfOffsetValue()
+
+    --是否为真实数据
+    self._isReal = param.itemConfig and false or true
+    local itemConfig = param.itemConfig or self._itemInfo:getItemMeta()
+
+    -- local itemName = itemConfig:getName()
+    -- local itemEnName = itemConfig:getEnName()
+    -- local itemNum = item:getNum()
+    -- local itemDecr = itemConfig:getDes()
+    local itemKind = itemConfig:getKind()
+    self._itemKind = itemKind
+    self._itemRace = tonumber(itemConfig:getRace())
+    -- 圣书纯显示
+    if self._itemKind == Constant.EquipKind.Bible then
+        self._tipsType = Constant.EquipShowTipsType.Display
+    end
+    self._operate = clone(operateTableByTipsType[self._tipsType] or {})
+
+    self._useList = self:getChild("useList")
+    self._equipPosList = self:getChild("equipPosList")
+    self._myEquip = self:getChild("myEquip")
+
+    self._selectEquip = self:getChild("selectEquip")
+
+    -- 清理按钮防止重复添加
+    self._useList:removeChildren()
+    self._equipPosList:removeChildren()
+    self._equipPosItem = {}
+    
+    local size = self:getSize()
+    local visibleCount = 1 -- 用于两侧列表位置调整
+    local equipPosTable,equipPosNameKeyTable = self:GetEquipPos()
+    self._equipPosTable = equipPosTable
+    
+    -- 默认选中没穿的位置
+    if not self._selectEquipPos then
+        for index,v in ipairs(equipPosTable) do
+            local equipData = ItemModule:getEquipItemByPos(v)
+            if not equipData then
+                self._selectEquipPos = index or 1
+                break
+            end
+        end
+    end
+    if not self._selectEquipPos then self._selectEquipPos = 1 end
+
+    -----------------------------------------------------------------------------
+    -- 左侧装备tips的显示逻辑
+    local myEquipInfo = nil
+    if param.compareItemInfo then
+        --传入对比装备数据优先对比
+        self._myEquip:refreshTipsInfo({itemInfo = param.itemInfo, compareItem = param.compareItemInfo})
+        self._myEquip:setVisible(true)
+        myEquipInfo = param.itemInfo
+        param.itemInfo = param.compareItemInfo
+    elseif equipPosTable[self._selectEquipPos] then
+        local curEquipPos = equipPosTable[self._selectEquipPos]
+        if curEquipPos and curEquipPos < 0 then
+            self._myEquip:setVisible(false)
+        else
+            local equipData = ItemModule:getEquipItemByPos(curEquipPos)
+            if equipData and equipData:getItemUid() ~= self._itemInfo:getItemUid() then
+                self._myEquip:refreshTipsInfo({itemInfo = equipData,compareItem = param.itemInfo})
+                self._myEquip:setVisible(true)
+                myEquipInfo = equipData
+            else
+                self._myEquip:setVisible(false)
+            end
+        end
+    else
+        self._myEquip:setVisible(false)
+    end
+
+    -- 装备栏类型的时候不需要重复显示自己的tips
+    if self._tipsType == Constant.EquipShowTipsType.RoleEquip
+    or self._tipsType == Constant.EquipShowTipsType.Repair
+    or self._tipsType == Constant.EquipShowTipsType.Silver then
+        self._myEquip:setVisible(false)
+        myEquipInfo = nil
+    end
+    if self._tipsType == Constant.EquipShowTipsType.RoleEquip then
+        self._myEquipInfo = param.itemInfo
+    else
+        self._myEquipInfo = myEquipInfo
+    end 
+    -----------------------------------------------------------------------------
+
+    -- 点击tips的显示
+    if param.compareItemInfo ~= nil then
+        --不为空的添加已放入标识
+        param.isPutIn = true
+    end
+    param.compareItem = myEquipInfo
+    self._selectEquip:refreshTipsInfo(param)
+
+    if self._myEquip:isVisible() then
+        visibleCount = visibleCount + 1
+    end
+
+    local centerOffset = constWidth/2 + 2
+    if visibleCount == 2 then
+        centerOffset = constWidth + 2
+    end
+
+    self._param = param
+
+    ---------------------------------------------------------------------
+    -- 对应装备位置按钮的显示与位置
+    local itemSizeWidth = 0
+    local itemSizeHeight = 0
+    local curRace = GameModule:getHeroRace()
+    if #equipPosTable > 1 then
+        for i=1,#equipPosTable do
+            local equipPosItem = fgui.UIPackage:createObject("EquipTips", "EquipPosItem")
+            itemSizeWidth = equipPosItem:getSize().width or 0
+            itemSizeHeight = equipPosItem:getSize().height + 2
+
+            local equipKey = equipPosNameKeyTable[equipPosTable[i]] or ""
+
+            local equipName = EquipName[Constant.RaceToJobPanel[curRace] .. "ShowEquipPos"]
+            local equipIconName = EquipIconName[Constant.RaceToJobPanel[curRace] .. "EquipPos"]
+            
+            local name = equipName[equipKey] or ""
+            equipPosItem:getChild("name"):setText(name..StringManager:getRomeNumber(i))
+
+            --首饰套
+            local suitIcon = equipPosItem:getChild("suitIcon")
+            local suitPos = nil
+            if curRace == Constant.RaceType.Slayer then
+                suitPos = slayerSuitMapping[equipPosTable[i]]
+            elseif curRace == Constant.RaceType.Vampire then
+                suitPos = vampireSuitMapping[equipPosTable[i]]
+            elseif curRace == Constant.RaceType.Ousters then
+                suitPos = oustersSuitMapping[equipPosTable[i]]
+            end
+
+            local iconName = equipIconName[equipKey] -- 默认ICON
+            local itemInfo = self:getEquipItemInfoByPos(equipPosTable[i])
+            local icon = equipPosItem:getChild("icon")
+            if icon._sprite then
+                icon._sprite:removeFromParent()
+                icon._sprite = nil
+            end
+            local sprite = nil
+            if itemInfo then
+                local itemMeta = itemInfo:getItemMeta()
+                local iconId = itemMeta:getIconId()
+                -- icon:setURL(string.format(_GURL.GetImageItemEquip, iconId))
+                local affixId = itemInfo:getFirstAffixId() or 0
+                local affixLevel = itemInfo:getFirstAffixLevel() or 0
+                sprite = lt.CommonFunc.createEquipById(iconId,affixId,affixLevel)
+            elseif not suitPos and iconName then
+                icon:setURL(string.format(_GURL.GetImageRoleEquip,iconName))
+            end
+            if sprite then
+                sprite:setPosition(icon:getSize().width /2 ,icon:getSize().height /2)
+                icon:displayObject():addChild(sprite)
+                icon._sprite = sprite
+                local scale = CacheManager:getVariableById(Constant.Variable.MultipleEquipSlotsIconScale) or 1
+                icon._sprite:setScale(tonumber(scale))
+            end
+
+            if suitPos then
+                if suitIcon._sprite then
+                    suitIcon._sprite:removeFromParent()
+                    suitIcon._sprite = nil
+                end
+                local suitInfo = self:getEquipItemInfoByPos(suitPos)
+                local sprite = nil
+                if suitInfo then
+                    local itemMeta = suitInfo:getItemMeta()
+                    local iconId = itemMeta:getIconId()
+                    -- suitIcon:setURL(string.format(_GURL.GetImageItemEquip, iconId))
+                    suitIcon:setAlpha(0.5)
+                    local affixId = suitInfo:getFirstAffixId() or 0
+                    local affixLevel = suitInfo:getFirstAffixLevel() or 0
+                    sprite = lt.CommonFunc.createEquipById(iconId,affixId,affixLevel)
+                elseif iconName then
+                    suitIcon:setURL(string.format(_GURL.GetImageRoleEquip,iconName))
+                    suitIcon:setAlpha(1)
+                end
+
+                if sprite then
+                    sprite:setPosition(suitIcon:getSize().width /2 ,suitIcon:getSize().height /2)
+                    suitIcon:displayObject():addChild(sprite)
+                    suitIcon._sprite = sprite
+                    local scale = CacheManager:getVariableById(Constant.Variable.MultipleEquipSlotsIconScale) or 1
+                    suitIcon._sprite:setScale(tonumber(scale))
+                end
+                suitIcon:setVisible(true)
+            end
+            
+            equipPosItem.index = i
+            self._equipPosList:addChild(equipPosItem)
+            equipPosItem:setPosition(0,0+(equipPosItem:getSize().height+1)*(i-1))
+            equipPosItem:addClickListener(handler(self, self.onClickEquipPosItem))
+            self._equipPosItem[i] = equipPosItem
+        end
+        self._equipPosList:setVisible(true)
+        self._equipPosList:setPosition(size.width/2+offsetValue-centerOffset-itemSizeWidth,topHeightOffset)
+        local originalSize = self._equipPosList:getSize()
+        self._equipPosList:setSize(originalSize.width,itemSizeHeight*#equipPosTable)
+    else
+        self._equipPosList:setVisible(false)
+    end
+    -- 装备栏类型的时候不需要显示自己的其他位置
+    self._equipPosList:setVisible(false)
+    -- if self._tipsType == Constant.EquipShowTipsType.RoleEquip and (#equipPosTable <= 1) then
+    --     self._equipPosList:setVisible(false)
+    -- else
+    local wndLockType = WndLockManager:getWndLockType()
+    if self._tipsType == Constant.EquipShowTipsType.Bag and (#equipPosTable > 1) and (wndLockType ~= Constant.WndLockType.WareHouse) then
+        self._equipPosList:setVisible(true)
+    end
+    -- 刷新图标状态
+    self:refreshAllEquipPosItem()
+
+    ---------------------------------------------------------------------
+    -- 使用按钮的显示与位置
+    if self._tipsType == Constant.EquipShowTipsType.Bag then -- 背包装备和替换按钮显示
+        --or self._tipsType == Constant.EquipShowTipsType.WareHouse then 
+        for k,v in pairs(self._operate) do
+            local curEquipPos = equipPosTable[self._selectEquipPos]
+            if v == Constant.EquipTipBtns.Equip and equipPosTable[self._selectEquipPos] and ItemModule:getEquipItemByPos(curEquipPos) then
+                self._operate[k] = Constant.EquipTipBtns.Replace
+            elseif v == Constant.EquipTipBtns.Discard then
+                -- 限时绑定道具没有丢弃
+                if self._itemInfo:getDeadline() > 0 or
+                self._itemInfo:getBound() == Constant.BOUND_TYPE.FIXED_BOUND or
+                self._itemInfo:getBound() == Constant.BOUND_TYPE.DOUBLE_BOUND then
+                    table.remove(self._operate, k)
+                end
+            end
+        end
+        yflog:Info("is bag")
+        
+        local pocketCount = ItemModule:getPocketCount()
+        if pocketCount > 0 then
+            -- 魔族精灵石显示放入按钮
+            if curRace == Constant.RaceType.Ousters and self._itemKind == Constant.EquipKind.ElfStone and self._itemRace == Constant.RaceType.Ousters then
+                yflog:Info("insert----->>>>>%s",#self._operate)
+                table.insert(self._operate,#self._operate,Constant.EquipTipBtns.PutInBelt)
+            end
+        end
+
+        local wndLockType = WndLockManager:getWndLockType()
+        if wndLockType == Constant.WndLockType.WareHouse then -- 当背包在仓库界面
+            self._operate = {[1] = Constant.EquipTipBtns.Deposit}
+        end
+    elseif self._tipsType == Constant.EquipShowTipsType.WareHouse then -- 仓库取出按钮
+        self._operate = {[1] = Constant.EquipTipBtns.TakeOut}
+    elseif self._tipsType == Constant.EquipShowTipsType.Repair then -- 维修界面如果装备耐久已满或者没有耐久值无需显示维修按钮 
+        if self._isReal then
+            local maxStatus = self._itemInfo:getTotalDurability()
+            local curStatus = self._itemInfo:getDurability()
+            if maxStatus == 0 or curStatus >= maxStatus then
+                self._operate = {}
+            elseif self._isBag then
+                table.remove(self._operate, 2)
+            end
+        end
+    elseif self._tipsType == Constant.EquipShowTipsType.Silver then -- 镀银界面如果装备耐久已满或者没有耐久值无需显示维修按钮 
+        if self._isReal then
+            local maxStatus = self._itemInfo:getTotalSilverMax()
+            local curStatus = self._itemInfo:getSilver()
+            if maxStatus == 0 or curStatus >= maxStatus then
+                self._operate = {}
+            elseif self._isBag then
+                table.remove(self._operate, 2)
+            end
+        end
+    elseif self._tipsType == Constant.EquipShowTipsType.Sell then
+        for k,v in pairs(self._operate) do
+            local curEquipPos = equipPosTable[self._selectEquipPos]
+            if v == Constant.EquipTipBtns.Equip and equipPosTable[self._selectEquipPos] and ItemModule:getEquipItemByPos(curEquipPos) then
+                self._operate[k] = Constant.EquipTipBtns.Replace
+            end
+        end
+    elseif self._tipsType == Constant.EquipShowTipsType.RoleEquip then
+        local curEquipPos = self._myEquipInfo:getPos()
+        for k,v in pairs(self._operate) do
+            if v == Constant.EquipTipBtns.UnEquipSuit then
+                --有首饰又有首饰套的有卸下套件
+                local noSuit = true
+                local suitPos = nil
+                if curRace == Constant.RaceType.Slayer then
+                    suitPos = Constant.SlayerSuitMapping[curEquipPos]
+                elseif curRace == Constant.RaceType.Vampire then
+                    suitPos = Constant.VampireSuitMapping[curEquipPos]
+                elseif curRace == Constant.RaceType.Ousters then
+                    suitPos = Constant.OustersSuitMapping[curEquipPos]
+                end
+                if suitPos then
+                    local suitInfo = self:getEquipItemInfoByPos(suitPos)
+                    if suitInfo then
+                        noSuit = false
+                    end
+                end
+                if noSuit then
+                    table.remove(self._operate, 2)
+                end
+            end
+            if v == Constant.EquipTipBtns.Equip and equipPosTable[self._selectEquipPos] and ItemModule:getEquipItemByPos(curEquipPos) then
+                self._operate[k] = Constant.EquipTipBtns.Replace
+            elseif v == Constant.EquipTipBtns.Discard then
+                -- 限时装备没有丢弃
+                if self._itemInfo:getDeadline() > 0 then
+                    table.remove(self._operate, k)
+                end
+            end
+        end
+    end
+
+    local itemHeightOffset = 2
+    local useItemData = self._operate
+    local useItemSizeHeight = 0
+    local maxNumbers = #useItemData
+    if #useItemData > 0 then
+        for i=1,#useItemData do
+            --判断是否需要按钮
+            local isFilter = 1
+            if useItemData[i] == Constant.EquipTipBtns.Strengthen and self._isReal and lt.StrengthenModule:checkShowBtn(self._itemInfo) == 0 then
+                isFilter = 0
+            elseif useItemData[i] == Constant.EquipTipBtns.Strengthen and not lt.FunctionToggleModule:checkOpen(lt.FunctionToggleModule.FunctionHelpId.EnhancementSystem) then
+                isFilter = 0
+            end
+            if isFilter == 1 then
+                local useItem = fgui.UIPackage:createObject("EquipTips", "UseBtn")
+                useItemSizeHeight = useItem:getSize().height + 2
+                useItem.index = i
+                local btnInfoCfg = btnInfoCfg[useItemData[i]] or {}
+                local nameT = useItem:getChild("name")
+                nameT:setText(btnInfoCfg.name or "")
+                self._useList:addChild(useItem)
+                local index = #self._useList:getChildren()
+                useItem:setPosition(0,0+(useItem:getSize().height+itemHeightOffset)*(index-1))
+                useItem:addClickListener(handler(self, self.onClickUseItem))
+            else
+                --隐藏的按钮不计算高度
+                maxNumbers = maxNumbers - 1
+            end
+        end
+        self._useList:setVisible(true)
+        self._useList:setPosition(size.width/2+offsetValue+centerOffset+1,topHeightOffset)
+        local originalSize = self._useList:getSize()
+        self._useList:setSize(originalSize.width,useItemSizeHeight*maxNumbers)
+    else
+        self._useList:setVisible(false)
+    end
+
+    -- 两边tips的位置调整
+    local selectSize = self._selectEquip:getSize()
+    local myEquipSize = self._myEquip:getSize()
+    local pt = param.pt -- 位置
+    if pt then
+        local size = cc.size(1136, 640)
+        local ptOffset = display.width/2 - size.width/2
+        if not self._myEquip:isVisible() then
+            self._selectEquip:setPosition(math.floor(pt.x)-ptOffset,math.floor(pt.y)-selectSize.height/2)
+        else
+            local offset = 1    
+            local offsetY = selectSize.height > myEquipSize.height and selectSize.height or myEquipSize.height
+            self._myEquip:setPosition(math.floor(pt.x)-offset-ptOffset,math.floor(pt.y)-offsetY/2)
+            self._selectEquip:setPosition(math.floor(pt.x)+myEquipSize.width+offset-ptOffset,math.floor(pt.y)-offsetY/2)
+        end
+    else
+        if not self._myEquip:isVisible() then
+            self._selectEquip:setPosition(size.width/2+offsetValue-selectSize.width/2,topHeightOffset)
+        else
+            local offset = 1
+            self._myEquip:setPosition(size.width/2+offsetValue-myEquipSize.width-offset,topHeightOffset)
+            self._selectEquip:setPosition(size.width/2+offsetValue+offset,topHeightOffset)
+        end
+    end
+end
+
+function UICompShowEquipTips:GetEquipPos()
+    local kindNam = nil
+    local equipKind = Constant.EquipKind
+    for k,v in pairs(equipKind) do
+        if v == self._itemKind then
+            kindNam = k
+            break
+        end
+    end
+    local equipPosTable = {}--{1,1,1,1}
+    local equipPosNameKeyTable = {}
+    if kindNam then
+        local curRace = GameModule:getHeroRace()-- Constant.RaceType.Slayer
+        local equipPos = Constant[Constant.RaceToJobPanel[curRace] .. "EquipPos"] or {}
+        for k,v in pairs(equipPos) do
+            if string.find(k,kindNam) and k ~= "Arms_same" then
+                table.insert(equipPosTable,v)
+                equipPosNameKeyTable[v] = k
+            end
+        end
+    end
+    -- print("self._itemKind----------->",self._itemKind)
+    -- print("kindNam----------->",kindNam)
+    -- for k,v in ipairs(equipPosTable) do
+    --     print(k,v)
+    -- end
+
+    table.sort(equipPosTable, function(a,b) return a < b end)
+
+    return equipPosTable,equipPosNameKeyTable
+end
+
+function UICompShowEquipTips:onClickUseItem(context)
+    local sender = context:getSender()
+    self:clickUseItem(sender.index)
+end
+
+function UICompShowEquipTips:clickUseItem(index)
+    local operateType = self._operate[index or 0]
+    if not operateType then
+        return
+    end
+
+    if operateFunc[operateType] and (self._itemInfo or self._param.itemConfig) then
+        operateFunc[operateType](self, self._itemInfo, self._param.itemConfig)
+    end
+    self:hideSelf()
+
+    if operateType == Constant.EquipTipBtns.AllRepair then
+        --判断如果是一键选择
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_CANCEL_REPAIR_CHOOSE)
+    end
+end
+
+function UICompShowEquipTips:hideSelf(hide)
+    self._selectEquip:stopBlinkAnimation()
+    if self._myEquip then
+        self._myEquip:stopBlinkAnimation()
+    end
+    if not hide and self._tipsType == Constant.EquipShowTipsType.Bag and WndLockManager:getWndLockType() == Constant.WndLockType.WareHouse then
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_CANCEL_SELECT_STATE_ITEM)
+    end
+    self:setVisible(false)
+end
+
+function UICompShowEquipTips:onClickEquipPosItem(context)
+    local sender = context:getSender()
+    self._selectEquipPos = sender.index or 1
+
+    self:refreshTips(self._param,self._selectEquipPos)
+    -- yflog:Info("---->>>>>>>" .. self._equipPosTable[self._selectEquipPos])
+end
+
+function UICompShowEquipTips:refreshAllEquipPosItem()
+    for _,v in pairs(self._equipPosItem or {}) do
+        -- yflog:Info("---->>>>>>>%s----->>>>>>>%s" ,v.index,self._selectEquipPos)
+        
+        local pos = self._equipPosTable[v.index]
+        local itemInfo = self:getEquipItemInfoByPos(pos)
+        local bg = v:getChild("bg")
+        if v.index == self._selectEquipPos then
+            bg:setURL(string.format(_GURL.GetImageCommonTL,"bg_djtips_xuanzhong"))
+        else
+            if itemInfo then
+                bg:setURL(string.format(_GURL.GetImageCommonTL,"bg_djtips_weixuanzhong"))
+            else
+                bg:setURL(string.format(_GURL.GetImageCommonTL,"bg_djtips_xuanzhongzhihui"))
+            end
+        end
+    end
+end
+
+function UICompShowEquipTips:getEquipItemInfoByPos(pos)
+    local equipData = lt.ItemModule:getEquipArray()
+    for k,v in ipairs(equipData) do
+        local equipPos = v:getPos()
+        if pos == equipPos then
+            return v
+        end
+    end
+end
+
+function UICompShowEquipTips:btnUseFunc(types, itemInfo, itemConfig)
+    if types == Constant.EquipTipBtns.Buy then
+        --购买
+        local tradeItem = WndLockManager:getTradeItemInfo()
+        if not tradeItem then
+            return
+        end
+        local tradeMeta = tradeItem.meta
+        local isMeta = itemInfo:getItemMeta() == nil
+        itemInfo = itemInfo or itemConfig
+        --叠加数量为1显示二次弹窗
+        local nameStr = (tradeMeta and tradeMeta.getItemName) and tradeMeta:getItemName() or itemInfo:getItemMeta():getName()
+        local price = NpcModule:getShopBuyPrice(self._param.itemType, not isMeta and itemInfo or nil, isMeta and itemInfo or nil)
+        local enoughMoney = ItemModule:enoughItem(Constant.ItemType.ITEM_TYPE_PROP, Constant.TYPE_VAULE_ITEM.COIN, price, {tips = false})
+        local colorStr = (not enoughMoney) and "[color=#ff0000]" or "[color=#00ff00]"
+        local descStr = string.format(GReadText.KEY_NPC_TRADE_TIPS11, colorStr..price.."[/color]", nameStr)
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {type = 2, content = descStr, confirmCallback = function()
+            local enoughMoney = ItemModule:enoughItem(Constant.ItemType.ITEM_TYPE_PROP, Constant.TYPE_VAULE_ITEM.COIN, price, {tips = true})
+            if not enoughMoney then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_CANCEL_TRADE_CHOOSE)
+                return
+            end
+            NpcModule:sendExchangeItem(tradeMeta:getItemId(), tradeItem.types, tradeMeta:getSite(), 1)
+        end, cancelCallback = function()
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_CANCEL_TRADE_CHOOSE)
+        end})
+    elseif types == Constant.EquipTipBtns.Sell then
+        --出售
+        local coinNum = ItemModule:getValueItem(Constant.ItemType.ITEM_TYPE_PROP, Constant.TYPE_VAULE_ITEM.COIN)
+        local price = NpcModule:getShopSellPrice(Constant.ItemType.ITEM_TYPE_EQUIP, itemInfo, nil)
+        local totalPrice = price
+        --卖东西先判断金币是否超过20亿
+        if coinNum + totalPrice >= Constant.COIN_LIMITE then
+            local str = string.format(GReadText.KEY_NPC_TRADE_TIPS5, Constant.COIN_LIMITE)
+            lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_FLOAT_TIP,{content = str})
+            return
+        end
+        --取消选中
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_CANCEL_TRADE_CHOOSE)
+        local wndLockType = WndLockManager:getWndLockType()
+        if not wndLockType or (wndLockType ~= Constant.WndLockType.Trade) then
+            NpcModule:setNpcId(nil)
+        end 
+        --服务器交互
+        NpcModule:sendSellItem(0, itemInfo:getObjId(), 1, itemInfo)
+    elseif types == Constant.EquipTipBtns.Repair then
+        --维修
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_REPAIR_VIEW)
+    elseif types == Constant.EquipTipBtns.Silver then
+        --镀银
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_REPAIR_VIEW)
+    elseif types == Constant.EquipTipBtns.AllRepair then
+        --一键维修
+        local totalPrice = NpcModule:getAllEquipRepairPrice()
+        local haveCoin = GameModule:getHeroData():getJinBi() or 0
+        local colorStr = totalPrice > haveCoin and "[color=#ff0000]" or "[color=#00ff00]"
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {type = 2, content = GReadText.KEY_NPC_REPAIR_TIPS12..colorStr..totalPrice.."[/color]", confirmCallback = function()
+            --服务器交互
+            local enoughMoney = ItemModule:enoughItem(Constant.ItemType.ITEM_TYPE_PROP, Constant.TYPE_VAULE_ITEM.COIN, totalPrice, {tips = true})
+            if enoughMoney then
+                NpcModule:sendEquipRepair(0, 1)
+            end
+        end})
+    end
+end
+
+--刷新耐久度
+function UICompShowEquipTips:updateDurability(event)
+    if self._myEquipInfo == nil then
+        return
+    end
+    local uid = event.param.uid
+    local myUid = self._myEquipInfo:getItemUid()
+    if uid ~= myUid then
+        return
+    end
+    if not self._myEquip:isVisible() then
+        self._selectEquip:refreshTipsInfo(self._param)
+    end
+end
+
+return UICompShowEquipTips

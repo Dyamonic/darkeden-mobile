@@ -1,0 +1,22 @@
+local BufferDarkBluePoison = class("BufferDarkBluePoison", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+
+--[[
+    幽暗之毒
+]]
+function BufferDarkBluePoison:ctor(time, actor, skilllevel)    
+    BufferDarkBluePoison.super.ctor(self, BuffEnum.EFFECT_CLASS_DARKBLUE_POISON, time, actor)
+
+    -- 播放特效 1为目标对象
+    actor:playQueueEffect(SkillEnum.SKILL_DARKBLUE_POISON, 1)
+end
+
+function BufferDarkBluePoison:onClear()
+    -- stop 幽暗之毒播放
+    self._actor:stopQueueEffect(SkillEnum.SKILL_DARKBLUE_POISON)
+
+    BufferDarkBluePoison.super.onClear(self)
+end
+
+return BufferDarkBluePoison

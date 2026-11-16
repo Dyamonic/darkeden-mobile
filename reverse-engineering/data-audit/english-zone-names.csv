@@ -1,0 +1,184 @@
+﻿map,english,source_english
+11,Eslania Northeast,eslania_NE
+12,Eslania Northwest,eslania_NW
+13,Eslania Southeast,eslania_SE
+14,Eslania Southwest,eslania_SW
+21,Limbo Lair Northeast,limbo_lair_NE
+22,Limbo Lair Northwest,limbo_lair_NW
+23,Limbo Lair Southeast,limbo_lair_SE
+24,Limbo Lair Southwest,limbo_lair_SW
+31,Drobeta Northeast,drobeta_NE
+32,Drobeta Northwest,drobeta_NW
+33,Drobeta Southeast,drobeta_SE
+34,Drobeta Southwest,drobeta_SW
+41,Rodin Northeast,rodin_NE
+42,Rodin Northwest,rodin_NW
+43,Rodin Southeast,rodin_SE
+44,Rodin Southwest,rodin_SW
+51,Timore Northeast,timore_NE
+52,Timore Northwest,timore_NW
+53,Timore Southeast,timore_SE
+54,Timore Southwest,timore_SW
+61,Perona Northeast,perona_NE
+62,Perona Northwest,perona_NW
+63,Perona Southeast,perona_SE
+64,Perona Southwest,perona_SW
+71,Adam New East,adam_new_e
+72,Adam New C,adam_new_c
+73,Adam New West,adam_new_w
+74,Adam New C North,adam_new_c_n
+75,Adam New C South,adam_new_c_s
+81,Castalo Northeast,castalo_NE
+91,Vranco Northeast,vranco_NE
+92,Vranco Northwest,vranco_NW
+93,Vranco Southeast,vranco_SE
+94,Vranco Southwest,vranco_SW
+1001,Slayers Training,slayers_training
+1002,Eslania Dungeon,eslania_dungeon
+1003,Vampire Village,vampire_village
+1004,Limbo Dungeon,limbo_dungeon
+1005,Drobeta OX,drobeta_OX
+1006,Drobeta Stadium1,drobeta_stadium1
+1007,Rasen Yard,rasen_yard
+1008,Kali Cave,kali_cave
+1009,Rasen Training,rasen_training
+1010,Tunnel Peiac,tunnel_peiac
+1011,Losttaiyan B1,losttaiyan_b1f
+1012,Losttaiyan B2,losttaiyan_b2f
+1013,Asylion Dungeon Low,Asylion dungeon Low
+1020,Drobeta Stadium2,drobeta_stadium2
+1100,Bathory Dungeon B1,bathory_dungeon_B1F
+1101,Bathory Dungeon B2,bathory_dungeon_B2F
+1102,Bathory Dungeon B3,bathory_dungeon_B3F
+1103,Bathory Dungeon B4F,bathory_dungeon_B4F
+1104,Bathory Lair,bathory_lair
+1105,Tunnel Ghorgova,tunnel_ghorgova
+1106,Bathory Lair Clon,bathory_lair_clon
+1111,Castle Rasen 1 1,castle_rasen_1_1
+1112,Castle Rasen 1 2,castle_rasen_1_2
+1113,Castle Rasen 2 2,castle_rasen_2_2
+1114,Tepes Lair,tepes_lair
+1115,Tepes Lair Clon,tepes_lair_clon
+1122,Slayer Battlezone2,slayer_battlezone2
+1123,Bathory Battlezone,bathory_battlezone
+1126,Drobeta Dungeon V1f,drobeta_dungeon_v1f
+1124,Rasen Battlezone,rasen_battlezone
+1127,Icen Dungeon3f,icen_dungeon3f
+1125,Drobeta Dungeon S1f,drobeta_dungeon_s1f
+1121,Slayer Battlezone1,slayer_battlezone1
+1128,Laom Dungeon3F,laom_Dungeon3F
+1129,Laom Dungeon4f,laom_dungeon4f
+1130,Laom Dungeon5f,laom_dungeon5f
+1131,Caligo Dungeon1,caligo_dungeon1
+1132,Caligo Dungeon2,caligo_dungeon2
+1133,Caligo Dungeon3,caligo_dungeon3
+1134,Caligo Dungeon4,caligo_dungeon4
+1201,Castle Octavus,castle_octavus
+1202,Castle Tertius,castle_tertius
+1203,Castle Septimus,castle_septimus
+1204,Castle Quartus,castle_quartus
+1205,Castle Pentanus,castle_pentanus
+1206,Castle Hexserius,castle_hexserius
+1211,Octavus Dungeon1f,octavus_dungeon1f
+1212,Octavus Dungeon2f,octavus_dungeon2f
+1221,Tertius Dungeon1f,tertius_dungeon1f
+1222,Tertius Dungeon2f,tertius_dungeon2f
+1231,Septimus Dungeon1f,septimus_dungeon1f
+1232,Septimus Dungeon2f,septimus_dungeon2f
+1241,Quartus Dungeon1f,quartus_dungeon1f
+1242,Quartus Dungeon2f,quartus_dungeon2f
+1251,Pentanus Dungeon1f,pentanus_dungeon1f
+1252,Pentanus Dungeon2f,pentanus_dungeon2f
+1261,Hexserius Dungeon1f,hexserius_dungeon1f
+1262,Hexserius Dungeon2f,hexserius_dungeon2f
+1301,Slayerpk,slayerpk
+1302,Vampirepk,vampirepk
+1303,Freepk,freepk
+1311,Ousters Village,ousters_village
+1321,Ousters Dungeon01,ousters_dungeon01
+1322,Ousters Dungeon02,ousters_dungeon02
+1323,Ousters Dungeon03,ousters_dungeon03
+1324,Ousters Dungeon04,ousters_dungeon04
+1401,Lusttower 1F,lusttower_1f
+1402,Lusttower 2F,lusttower_2f
+1410,Gdr Illusion 01,Gdr_illusion_01
+1411,Gdr Illusion 02,Gdr_illusion_02
+1412,Gdr Lair 01,Gdr_lair_01
+1413,Gdr Lair Hard,Gdr_lair_hard
+1500,Siege Warfare1,siege_warfare1
+1501,Siege Warfare2,siege_warfare2
+1502,Siege Warfare3,siege_warfare3
+1503,Siege Warfare4,siege_warfare4
+1504,Siege Warfare5,siege_warfare5
+1505,Siege Warfare6,siege_warfare6
+1506,Siege Warfare7,siege_warfare7
+1600,Path To Fears,path_to_fears
+1601,Ik Offic,ik_offic
+1602,Ik Lab,ik_lab
+1603,Ik Lab B1,ik_lab_b1f
+1604,Ik Lab B2,ik_lab_b2f
+1611,Under Pass 1F,under_pass_1f
+1612,Under Pass 2F,under_pass_2f
+1621,Castellum,castellum
+1701,Menegroth 1F Slayer,menegroth_1f_slayer
+1702,Menegroth 2F Slayer,menegroth_2f_slayer
+1703,Menegroth 3F Slayer,menegroth_3f_slayer
+1704,Menegroth 4f Slayer,menegroth_4f_slayer
+1705,Menegroth 5f Slayer,menegroth_5f_slayer
+1706,Menegroth 6f Slayer,menegroth_6f_slayer
+1707,Menegroth 1F Vampire,menegroth_1f_vampire
+1708,Menegroth 2F Vampire,menegroth_2f_vampire
+1709,Menegroth 3F Vampire,menegroth_3f_vampire
+1710,Menegroth 4f Vampire,menegroth_4f_vampire
+1711,Menegroth 5f Vampire,menegroth_5f_vampire
+1712,Menegroth 6f Vampire,menegroth_6f_vampire
+1713,Menegroth 1F Ousters,menegroth_1f_ousters
+1714,Menegroth 2F Ousters,menegroth_2f_ousters
+1715,Menegroth 3F Ousters,menegroth_3f_ousters
+1716,Menegroth 4f Ousters,menegroth_4f_ousters
+1717,Menegroth 5f Ousters,menegroth_5f_ousters
+1718,Menegroth 6f Ousters,menegroth_6f_ousters
+2000,Guild Army B1,guild_army_B1
+2001,Guild Army 1F,guild_army_1F
+2002,Guild Army 2F,guild_army_2F
+2003,Guild Army 3F,guild_army_3F
+2010,Guild Cleric B1,guild_cleric_B1
+2011,Guild Cleric 1F,guild_cleric_1F
+2012,Guild Cleric 2F,guild_cleric_2F
+2013,Guild Cleric 3F,guild_cleric_3F
+2020,Guild Knight B1,guild_knight_B1
+2021,Guild Knight 1F,guild_knight_1F
+2022,Guild Knight 2F,guild_knight_2F
+2023,Guild Knight 3F,guild_knight_3F
+2101,Tutorial North,tutorial_N
+2102,Tutorial South,tutorial_S
+4001,Gate Of Alter,gate_of_alter
+4002,Alter Of Blood,alter_of_blood
+4003,Gate Of alter-S,gate_of_alter-S
+4004,Gate Of alter-V,gate_of_alter-V
+4005,Gate Of alter-O,gate_of_alter-O
+5000,Hell Garden 1F,hell_garden_1f
+5001,Hell Garden tower-1F-01,hell_garden_tower-1F-01
+5002,Hell Garden tower-1F-02,hell_garden_tower-1F-02
+5003,Hell Garden tower-1F-03,hell_garden_tower-1F-03
+5004,Hell Garden tower-1F-04,hell_garden_tower-1F-04
+5010,Hell Garden 2F,hell_garden_2f
+5011,Hell Garden tower-2F-01,hell_garden_tower-2F-01
+5012,Hell Garden tower-2F-02,hell_garden_tower-2F-02
+5013,Hell Garden tower-2F-03,hell_garden_tower-2F-03
+5014,Hell Garden tower-2F-04,hell_garden_tower-2F-04
+5020,Hell Garden 3F,hell_garden_3f
+5021,Hell Garden tower-3F-01,hell_garden_tower-3F-01
+5022,Hell Garden tower-3F-02,hell_garden_tower-3F-02
+5023,Hell Garden tower-3F-03,hell_garden_tower-3F-03
+5024,Hell Garden tower-3F-04,hell_garden_tower-3F-04
+5030,Hell Garden 4f,hell_garden_4f
+5031,Hell Garden tower-4F-01,hell_garden_tower-4F-01
+5032,Hell Garden tower-4F-02,hell_garden_tower-4F-02
+5033,Hell Garden tower-4F-03,hell_garden_tower-4F-03
+5034,Hell Garden tower-4F-04,hell_garden_tower-4F-04
+5040,Hell Garden 5f,hell_garden_5f
+5041,Hell Garden tower-5F-01,hell_garden_tower-5F-01
+5042,Hell Garden tower-5F-02,hell_garden_tower-5F-02
+5043,Hell Garden tower-5F-03,hell_garden_tower-5F-03
+5044,Hell Garden tower-5F-04,hell_garden_tower-5F-04

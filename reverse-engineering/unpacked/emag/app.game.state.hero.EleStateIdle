@@ -1,0 +1,84 @@
+
+local EleStateIdle = class("EleStateIdle", lt.HeroStateBase)
+local Constant = lt.Constant
+EleStateIdle._timeTriggerHit    = nil
+EleStateIdle._timeTriggerPickUp = nil
+EleStateIdle._timeTriggerLarash = nil
+
+EleStateIdle._handleSkillRet = nil
+EleStateIdle._isHit = false
+
+function EleStateIdle:ctor(heroAgent, delayHandle)
+    EleStateIdle.super.ctor(self, heroAgent)
+    self._timeTriggerPickUp = lt.TimeTrigger.new(0.5)
+    self._delayHandle = delayHandle
+    heroAgent:setIsRoute(false)
+end
+
+function EleStateIdle:onClear()
+    EleStateIdle.super.onClear(self)
+
+end
+
+function EleStateIdle:onEnter()
+
+end
+
+function EleStateIdle:onExit()
+end
+
+function EleStateIdle:onUpdate()
+    
+end
+
+function EleStateIdle:onMessage(msg)
+    if msg.msgId == Constant.MSG_ON_HIT then
+        -- 受击
+        if self._isHit then
+            return
+        end
+        self._isHit = true
+        
+        self._heroAgent:playAction(Constant.ROLE_ACTION_Hit)
+        self._timeTriggerHit = lt.TimeTrigger.new(0.3)
+        
+    elseif msg.msgId == Constant.MSG_MOVE_JOYSTICK or msg.msgId == Constant.MSG_MOVE_TOUCH then
+        -- 无法移动
+        if not self._heroAgent:canMove() then
+            return
+        end
+
+        if msg.msgId == Constant.MSG_MOVE_TOUCH and msg.moveType == Constant.MOVE_NONE then
+            return
+        end
+
+        -- 摇杆控制移动/点击控制移动
+        self._heroAgent:changeState(lt.HeroStateMove.new(self._heroAgent, msg.moveType, msg.moveDirection, msg.mNext, msg.nNext))
+        return
+
+    elseif msg.msgId == Constant.MSG_SKILL then
+        -- 技能
+        self._heroAgent:handleSkillMsg(msg)
+        
+    elseif msg.msgId == Constant.MSG_ROUTE then
+        -- 寻路处理
+        self._heroAgent:handleRouteMsg(msg)
+    end
+end
+
+function EleStateIdle:getStateId()
+    return Constant.HERO_STATE_IDLE
+end
+
+function EleStateIdle:getStateName()
+    return "EleStateIdle"
+end
+
+function EleStateIdle:handleSkill(skillId, params)
+    params = params or {}
+    params.showTips = self._handleSkillRet
+    self._handleSkillRet = self._heroAgent:handleSkill(skillId, params)
+    return self._handleSkillRet
+end
+
+return EleStateIdle

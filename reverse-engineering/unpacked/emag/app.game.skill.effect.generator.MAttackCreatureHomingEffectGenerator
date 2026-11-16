@@ -1,0 +1,151 @@
+-- MAttackCreatureHomingEffectGenerator.lua
+
+local MAttackCreatureHomingEffectGenerator = class("MAttackCreatureHomingEffectGenerator", lt.MEffectGenerator)
+local SkillEnum = lt.SkillEnum
+local Constant = lt.Constant
+local MapUtil = lt.MapUtil
+
+function MAttackCreatureHomingEffectGenerator:generate(egInfo)
+    -- local bltType = g_pEffectSpriteTypeTable[egInfo.effectSpriteType].BltType
+    -- local frameID = g_pEffectSpriteTypeTable[egInfo.effectSpriteType].FrameID
+    local skillId = egInfo.skillId
+
+    -- creature的坐标
+    local cx, cy, cz
+
+    -- 目标位置 Pixel坐标
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    local pCreature = worldAgent:getAgent(egInfo.creatureID)
+
+    if pCreature == nil then
+        return false
+    end
+
+    local currentAngle, stepAngle
+
+    local angles = {
+        180,  -- left
+        225,
+        270,
+        315,
+        0,
+        45,
+        90,
+        135
+    }
+
+
+    -- 起始角度
+    currentAngle = angles[egInfo.direction + 1]  -- Lua数组索引从1开始
+
+    -- 转向角度
+    stepAngle = 13
+
+    local fixZPos = Constant.TILE_Y
+    local tempEndFrame = egInfo.count
+    local TempDir = egInfo.direction
+
+    if skillId == SkillEnum.SKILL_HALO then
+        -- fixZPos = 0
+        stepAngle = 30
+        if egInfo.direction == 2 or egInfo.direction == 6 then
+            stepAngle = 45
+            tempEndFrame = 8
+        end
+        if math.random() > 0.5 then
+            TempDir = (TempDir + 2) % 8
+        else
+            TempDir = (TempDir + 6) % 8
+        end
+        -- TempDir = (TempDir + 2) % 8
+        -- if egInfo.direction == 6 or egInfo.direction == 2 then
+        --     local direction = egInfo.direction == 2 and 6 or 2 -- 坐标系转化
+        --     TempDir = (direction + 2) % 8
+        --     if egInfo.direction == 2 then
+        --         TempDir = (TempDir + 2) % 8
+        --     end
+
+        -- else
+        --     TempDir = (TempDir + 6) % 8
+
+        -- end
+        currentAngle = angles[TempDir + 1]  -- Lua数组索引从1开始
+    end
+
+    local nDir = {
+        [3] = {[1] = {angle = 135, nDir = -1}, [2] = {angle = 270, nDir = 1}},
+        [5] = {[1] = {angle = 45, nDir = -1}, [2] = {angle = 225, nDir = 1}},
+
+        [1] = {[1] = {angle = 225, nDir = -1}, [2] = {angle = 45, nDir = 1}},
+        [7] = {[1] = {angle = 135, nDir = 1}, [2] = {angle = 325, nDir = -1}},
+
+        [6] = {[1] = {angle = 0, nDir = -1}, [2] = {angle = 180, nDir = 1}},
+        [2] = {[1] = {angle = 0, nDir = 1}, [2] = {angle = 180, nDir = -1}},
+
+        [0] = {[1] = {angle = 270, nDir = -1}, [2] = {angle = 90, nDir = 1}},
+        [4] = {[1] = {angle = 90, nDir = -1}, [2] = {angle = 270, nDir = 1}},
+
+
+
+
+    }
+    -- 抛物线 Effect生成
+    --[[
+     左上 135(-1)  270(1) direction :3
+     左下 45（-1） 225（1）direction :5
+
+     右上 
+
+    ]]
+    local specialDir = nDir[egInfo.direction]
+    local nDir = nil
+    if specialDir then
+        local random = specialDir[math.random(1,2)]
+        currentAngle = random.angle
+        nDir = random.nDir
+    end
+    -- yflog:Info("MAttackCreatureHomingEffectGenerator:初始化角度:%s %s",currentAngle, nDir)
+
+    local pEffect = lt.BulletHomingEffect.new(skillId, currentAngle, stepAngle)
+    pEffect:setRotateDir(nDir)
+
+    -- local maxFrame = g_pTopView:GetMaxEffectFrame(bltType, frameID)
+    -- pEffect:SetFrameID(frameID, maxFrame)
+    local pCreatureM, pCreatureN = pCreature:getMNExactly()
+    cx = MapUtil:MapToPixelX(pCreatureM)
+    cy = MapUtil:MapToPixelY(pCreatureN)
+    cz = fixZPos  -- 一个Tile的高度
+
+    -- pEffect:setPixelPosition(egInfo.x0, egInfo.y0 +egInfo.z0 + fixZPos, egInfo.z0 + fixZPos)
+    pEffect:setPixelPosition(egInfo.x0, egInfo.y0, egInfo.z0 + fixZPos)
+
+
+    pEffect:setDirection(egInfo.direction)
+    pEffect:setTraceCreatureID(egInfo.creatureID)
+	pEffect:setCount(tempEndFrame);
+
+
+    -- pEffect:setTarget(cx, cy + cz, cz, egInfo.step)
+    pEffect:setTarget(cx, cy, cz, egInfo.step)
+    pEffect:setEndCallBack(egInfo.callback)
+    lt.BulletManager:addBulletToMap(pEffect)
+    -- -- 持续的 Frame (目标存在时关系不大)
+    -- pEffect:SetCount(tempEndFrame, egInfo.linkCount)
+
+    -- -- 威力
+    -- pEffect:SetPower(egInfo.power)
+
+    -- pEffect:SetMulti(true)
+
+    -- 光的亮度
+    -- pEffect:SetLight(light)
+
+    -- if g_pZone:AddEffect(pEffect) then
+    --     pEffect:SetLink(egInfo.nActionInfo, egInfo.pEffectTarget)
+    --     return true
+    -- end
+
+    return false
+end
+
+return MAttackCreatureHomingEffectGenerator

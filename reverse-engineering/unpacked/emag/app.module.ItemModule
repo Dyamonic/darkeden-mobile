@@ -1,0 +1,4763 @@
+
+local ItemModule = {}
+
+local SocketApi = lt.SocketApi
+local ServerCmdDef = lt.ServerCmdDef
+local Constant = lt.Constant
+local StringManager = lt.StringManager
+local netcmd_pb = lt.netcmd_pb
+local GameModule = lt.GameModule
+local ServerClientEnum = lt.ServerClientEnum
+local GuideModule = lt.GuideModule
+local NtfManager = lt.NtfManager
+local SoundEffect = Constant.SoundEffect
+local ItemType = Constant.ItemType
+local PropType = Constant.PropType
+local PrefManager = lt.PrefManager
+local CommonModule = lt.CommonModule
+local ClientCmdDef = lt.ClientCmdDef
+local CacheManager = lt.CacheManager
+local CommonFunc = lt.CommonFunc
+local WndLockManager = lt.WndLockManager
+local FilterEquipType = Constant.FilterEquipType
+local VipModule = lt.VipModule
+
+ItemModule.MAX_GRID_NUM      = 80
+ItemModule.MAX_GRID_HEIGHT   = 100  --装备强化背包最大上限高度
+ItemModule._itemData         = nil
+ItemModule._packageArray     = {}   -- 背包列表
+ItemModule._lockCount        = 0    -- 用于拾取流畅性使用 所有修改 _packageArray 的地方重置 _lockCount 为0
+ItemModule._equipArray       = {}   -- 装备位列表
+ItemModule._equipArrayCombat = {}
+ItemModule._depotArray       = {}    -- 仓库列表
+-- ItemModule._sealArray        = {}
+ItemModule._spiritArray      = {}
+ItemModule._beltArray        = {}    -- 腰带列表
+ItemModule._beltPosNum       = 0     -- 腰带位数量
+
+ItemModule._taskItemArr      = {}
+ItemModule._fastOutIn        = nil   --仓库背包的快速存取
+
+ItemModule._hpArr            = {}
+ItemModule._mpArr            = {}
+ItemModule._hpMpArr          = {}
+ItemModule._expandsPosRecord = {}
+ItemModule._addGridH         = 0
+ItemModule._unEquipObjId     = 0     -- 卸载装备objId
+
+ItemModule._useItemTips      = nil -- 使用道具成功提示文本
+
+ItemModule._autoEquipList     = {}     -- 自动装备List
+
+ItemModule.FAST_TASK_ITEM = "FAST_TASK_ITEM"
+
+ItemModule._holyPotionArr    = {}
+ItemModule._holyPotionDoctorArr    = {}
+
+ItemModule._autoRecycleFlag  = false -- 自动回收
+ItemModule._isAutoBuyChange  = false -- 自动购买背包是否变化
+ItemModule._equipListChange  = true -- 背包装备是否有变化
+
+ItemModule._rewardNtfArray   = nil
+
+local ContractPos = {23, 24, 25}
+local potionType1 = "Hp"
+local potionType2 = "Mp"
+local potionType3 = "HpMp"
+local EXPAND_BAG_CODE = {
+    ["0"]  = GReadText.KEY_INVENTORY_TIPS10,
+    ["-1"] = GReadText.KEY_INVENTORY_TIPS11,
+    ["-2"] = GReadText.KEY_INVENTORY_TIPS12,
+    ["-3"] = GReadText.KEY_INVENTORY_TIPS13,
+    ["-5"] = GReadText.KEY_INVENTORY_TIPS14,
+    ["-6"] = GReadText.KEY_INVENTORY_TIPS15,
+    ["-11"] = GReadText.KEY_INVENTORY_TIPS16,
+    ["-12"] = GReadText.KEY_INVENTORY_TIPS17,
+}
+
+function ItemModule:init()
+    SocketApi:addProtoListener(ServerCmdDef.CLEAR_PACK, handler(self, self.onClearPackage), "ItemModule:onClearPackage")
+    SocketApi:addProtoListener(ServerCmdDef.PACKAGEITEM, handler(self, self.onItemDataInfoAck), "ItemModule:PACKAGEITEM")
+    SocketApi:addProtoListener(ServerCmdDef.EQUIPMENT, handler(self, self.onItemDataInfoAck), "ItemModule:EQUIPMENT")
+    SocketApi:addProtoListener(ServerCmdDef.STORAGEITEM, handler(self, self.onItemDataInfoAck), "ItemModule:STORAGEITEM")
+    SocketApi:addProtoListener(ServerCmdDef.S_BELT_ITEM, handler(self, self.onItemDataInfoAck), "ItemModule:S_BELT_ITEM")
+    SocketApi:addProtoListener(ServerCmdDef.S_BELT_ITEM_OPERATE, handler(self, self.onBeltItemAck), "ItemModule:onBeltItemAck")
+    SocketApi:addProtoListener(ServerCmdDef.ITEM_INTO_PACKAGE, handler(self, self.onRefreshPackageAck), "ItemModule:onRefreshPackageAck")
+    SocketApi:addProtoListener(ServerCmdDef.ITEM_EQUIP_ACK, handler(self, self.onRefreshEquipAck), "ItemModule:onRefreshEquipAck")
+    SocketApi:addProtoListener(ServerCmdDef.ITEM_UNEQUIP_ACK, handler(self, self.onRefreshUnEquipAck), "ItemModule:onRefreshUnEquipAck")
+    SocketApi:addProtoListener(ServerCmdDef.S_USEITEM_ACK, handler(self, self.onUseItemAck), "ItemModule:onUseItemAck")
+    SocketApi:addProtoListener(ServerCmdDef.ITEM_AUTOTIDY, handler(self, self.onItemAutoTidyAck), "ItemModule:onItemAutoTidyAck")
+    SocketApi:addProtoListener(ServerCmdDef.ITEM_TAKEN_ACK, handler(self, self.onItemTakenAck), "ItemModule:onItemTakenAck") -- 取出仓库
+    SocketApi:addProtoListener(ServerCmdDef.ITEM_STORED_ACK, handler(self, self.onItemStoredAck), "ItemModule:onItemStoredAck") -- 存入仓库
+    SocketApi:addProtoListener(ServerCmdDef.POP_BAG, handler(self, self.onPopBagAck), "ItemModule:onPopBagAck")
+    SocketApi:addProtoListener(ServerCmdDef.ITEM_RECYCLE_ACK, handler(self, self.onItemRecycleAck), "ItemModule:onItemRecycleAck")
+    SocketApi:addProtoListener(ServerCmdDef.TAKEBACK_ITEM, handler(self, self.onTakeBackAck), "ItemModule:onTakeBackAck")
+    SocketApi:addProtoListener(ServerCmdDef.ITEM_PROPERTY_CHANGE, handler(self, self.onPropertyChangeAck), "ItemModule:onPropertyChangeAck")
+    SocketApi:addProtoListener(ServerCmdDef.PECK_ITEM_ACK, handler(self, self.onPeckItemAck), "ItemModule:onPeckItemAck")
+    SocketApi:addProtoListener(ServerCmdDef.EXPAND_BAG, handler(self, self.onExpandBag), "ItemModule:onExpandBag")
+    SocketApi:addProtoListener(ServerCmdDef.EXPAND_BAG_LIST, handler(self, self.onExpandBagList), "ItemModule:onExpandBagList")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_VIP_AUTO_SELL_RESP),handler(self, self.onVipAutoSellResp), "ItemModule:onVipAutoSellResp")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.CS_USE_ITEM_BY_INDEX_RESP),handler(self, self.onUseItemByIndex), "ItemModule:onUseItemByIndex")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.S_REWARD_NTF),handler(self, self.onRewardNtf), "ItemModule:onRewardNtf")
+    -- NtfManager:addNtfListener(NtfManager.NTF.NTF_USE_ITEM_EVENT, handler(self, self.useFastItem), "ItemModule:useFastItem")
+    -- NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT, handler(self, self.autoUnpackItem), "ItemModule:autoUnpackItem")
+    -- NtfManager:addNtfListener(NtfManager.NTF.NET_SETTING_CHANGE, handler(self, self.autoUnpackItem), "ItemModule:NET_SETTING_CHANGE")
+    -- SocketApi:addProtoListener(ServerCmdDef.S_SpiritEquipCreat, handler(self, self.onSpiritItemAck), "ItemModule:onSpiritItemAck")
+
+    local autoRecycleCD = CacheManager:getVariableById(Constant.Variable.AutoRecycleRequireCoolDown) or 0
+    self._tickHandler = lt.ScheduleUtil:scheduleGlobal(handler(self, self.onUpdate), tonumber(autoRecycleCD))
+
+    self._rewardNtfArray = {}
+    self._beltArray = {}
+end
+
+function ItemModule:clear()
+    SocketApi:removeProtoListenerByTag("ItemModule:onClearPackage")
+    SocketApi:removeProtoListenerByTag("ItemModule:PACKAGEITEM")
+    SocketApi:removeProtoListenerByTag("ItemModule:EQUIPMENT")
+    SocketApi:removeProtoListenerByTag("ItemModule:STORAGEITEM")
+    SocketApi:removeProtoListenerByTag("ItemModule:S_BELT_ITEM")
+    SocketApi:removeProtoListenerByTag("ItemModule:onBeltItemAck")
+    SocketApi:removeProtoListenerByTag("ItemModule:onRefreshPackageAck")
+    SocketApi:removeProtoListenerByTag("ItemModule:onRefreshEquipAck")
+    SocketApi:removeProtoListenerByTag("ItemModule:onRefreshUnEquipAck")
+    SocketApi:removeProtoListenerByTag("ItemModule:onUseItemAck")
+    SocketApi:removeProtoListenerByTag("ItemModule:onItemAutoTidyAck")
+    SocketApi:removeProtoListenerByTag("ItemModule:onItemTakenAck")
+    SocketApi:removeProtoListenerByTag("ItemModule:onItemStoredAck")
+    SocketApi:removeProtoListenerByTag("ItemModule:onPopBagAck")
+    SocketApi:removeProtoListenerByTag("ItemModule:onItemRecycleAck")
+    SocketApi:removeProtoListenerByTag("ItemModule:onTakeBackAck")
+    SocketApi:removeProtoListenerByTag("ItemModule:onPropertyChangeAck")
+    SocketApi:removeProtoListenerByTag("ItemModule:onPeckItemAck")
+    SocketApi:removeProtoListenerByTag("ItemModule:onVipAutoSellResp")
+    SocketApi:removeProtoListenerByTag("ItemModule:onUseItemByIndex")
+    SocketApi:removeProtoListenerByTag("ItemModule:onRewardNtf")
+    -- NtfManager:removeNtfListenerByTag("ItemModule:useFastItem")
+    -- NtfManager:removeNtfListenerByTag("ItemModule:autoUnpackItem")
+    -- NtfManager:removeNtfListenerByTag("ItemModule:NET_SETTING_CHANGE")
+    -- SocketApi:removeProtoListenerByTag("ItemModule:onSpiritItemAck")
+    self._itemData      = nil
+    self._packageArray  = {}
+    self._equipArray    = {}
+    self._depotArray    = {}
+    -- self._sealArray     = {}
+    self._spiritArray   = {}
+    self._beltArray = {}
+    self._spiritEquipType = nil
+    self._fastOutIn     = nil
+    self._addGridH = 0
+    self._hpArr = {}
+    self._mpArr = {}
+    self._hpMpArr = {}
+    self._expandsPosRecord = {}
+    if self._tickHandler then
+        lt.ScheduleUtil:unscheduleGlobal(self._tickHandler)
+        self._tickHandler = nil
+    end
+    self._autoEquipList = {}
+    self._isAutoBuyChange  = false
+    self._rewardNtfArray = nil
+    self._recycleSettingsFilterMap = nil
+    self._recycleSettingsTypeFilterMap = nil
+    self._autoRecycleFlag = false
+    self._equipListChange  = true
+end
+
+--  从包裹到角色
+function ItemModule:sendEquipItem(objId, pos, fromType)
+    lt.LogUtil:debugTable("ItemModule:sendExchange")
+    local equip = netcmd_pb.Equip()
+    equip.objID = objId
+    equip.pos = pos
+    equip.fromType = fromType
+    SocketApi:sendToGs(lt.ClientCmdDef.EQUIP, equip)
+end
+
+-- 从角色到包裹
+function ItemModule:sendUnEquipItem(objId, pos)
+    self._unEquipObjId = objId
+    local msg = netcmd_pb.UnEquip()
+    msg.objID = objId
+    msg.pos = pos
+    SocketApi:sendToGs(lt.ClientCmdDef.UNEQUIP, msg)
+end
+
+-- 从包裹到仓库
+function ItemModule:sendToDepot(objId,pos,num)
+    local msg = netcmd_pb.StoreItem()
+    msg.objID = objId
+    msg.pos = pos
+    msg.num = num or 1
+    SocketApi:sendToGs(lt.ClientCmdDef.STORE_ITEM, msg)
+end
+
+-- 从仓库到包裹
+function ItemModule:sendFromDepotOut(objId,pos,num)
+    local msg = netcmd_pb.CS_TakeoutStorageItemReq()
+    msg.objID = objId
+    msg.pos = pos
+    msg.num = num or 1
+    SocketApi:sendToGs(lt.ClientCmdDef.TAKEOUT_STORAGE_ITEM, msg)
+end
+
+-- 使用物品
+function ItemModule:sendUseItem(objId,number)
+    local msg = netcmd_pb.CS_UseItemReq()
+    msg.itemObjId = tonumber(objId)
+    msg.count = number or 1
+    SocketApi:sendToGs(lt.ClientCmdDef.C_USE_ITEM, msg)
+end
+
+-- 染色使用物品
+function ItemModule:sendUseItemHairColor(objId,number)
+    self._useItemTips = GReadText.KEY_APPEARANCE_TIPS6
+    ItemModule:sendUseItem(objId,number)
+end
+
+-- 使用物品客户端限制逻辑
+function ItemModule:sendUseItemLimit(itemInfo,number)
+    if not itemInfo then return end
+    local objId = itemInfo:getObjId()
+    
+    local itemMeta = itemInfo:getItemMeta()
+    if not itemMeta then return end
+    
+    local kind = itemMeta:getKind()
+    local itemType = itemMeta:getType()
+    local itemId = itemMeta:getItemId()
+    yflog:Info("UseItemLimit: itemId %s kind: %s itemType: %s",itemId,kind,itemType)
+    if kind == Constant.PropType.PERSONALIZATION then -- 重置道具 kind8
+        if not self:checkUseItemPersonalization(itemInfo,number) then
+            return
+        end
+    elseif kind == Constant.PropType.STRENGTHEN then -- 强化道具 kind7(只跳转界面不使用)
+        if not self:checkUseItemStrengthen(itemInfo,number) then
+            return
+        end
+    elseif kind == Constant.PropType.AMMUNITION then -- 弹药
+        if not self:checkUseItemAmmunition(itemInfo,true) then
+            return Constant.ClientErrorCode.AMMUNITION_NO_USE
+        end
+    elseif kind == Constant.PropType.CONSUMABLES then -- 消耗品
+        if not self:checkUseItemConsumables(itemInfo,number) then
+            return
+        end
+    elseif kind == Constant.PropType.SKILLRESET then -- 技能重置液
+        if not self:checkUseItemSkillReset(itemInfo,number) then
+            return
+        end
+    elseif kind == Constant.PropType.TRANSFER then -- 传送道具
+        if not self:checkUseItemTranster(itemInfo,number) then
+            return
+        end
+    elseif kind == Constant.PropType.PET_CULTIVATE then -- 宠物养成道具(只跳转界面不使用)
+        if not self:checkUseItemPetCultivate(itemInfo,number) then
+            return
+        end
+    elseif table.keyof(lt.SkillEnum.USE_SKILL_ITEMS,itemId) then
+        local isCanUse, msg = lt.SkillModule:skillItemUseLimit(itemId)
+        if not isCanUse then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = msg})
+            return 
+        end
+    elseif itemId == Constant.SLAYER_MOUNTID.SCORPION_KEY then
+        local mountId = GameModule:getHeroData():getMountId()
+        if mountId == Constant.SLAYER_MOUNTID.SCORPION_KEY then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_MOUNT_TIPS7})
+            return 
+        end
+    else
+        yflog:Info("TODO itemId %s kind: %s itemType: %s",itemId,kind,itemType)
+    end
+
+    self:sendUseItem(objId,number)
+end
+
+-- 重置道具
+function ItemModule:checkUseItemPersonalization(itemInfo,number)
+    local objId = itemInfo:getObjId()
+    local itemMeta = itemInfo:getItemMeta()
+    local itemType = itemMeta:getType()
+    local itemId = itemMeta:getItemId()
+    local heroData = GameModule:getHeroData()
+    if not heroData then
+        return false
+    end
+
+    if itemType == Constant.PropTypeSub_8.ClassSkillClear then
+        --重置道具	8	阶级技能清除液	07
+        local passiveSkillList = lt.SkillModule:getPassiveSkillList()
+        if #passiveSkillList <= 0 then -- 阶级列表为空不能
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_USE_ITEM_LIMIT1})
+            return false
+        end
+        -- 已成功完成阶级技能的重置
+        self._useItemTips = GReadText.KEY_USE_ITEM_LIMIT5
+
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+            content = GReadText.KEY_USE_ITEM_LIMIT9,
+            confirmCallback = function()
+                self:sendUseItem(objId,number)
+            end,
+        })
+
+        return false
+    elseif itemType == Constant.PropTypeSub_8.ChangeSex then
+        --重置道具    8    性别重置液    06
+        -- 已成功完成性别重置
+        self._useItemTips = GReadText.KEY_APPEARANCE_TIPS2
+
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+            content = string.format(GReadText.KEY_APPEARANCE_TIPS3, itemMeta:getName()),
+            confirmCallback = function()
+                self:sendUseItem(objId,number)
+            end,
+        })
+
+        return false
+    elseif itemType == Constant.PropTypeSub_8.ClearPoint then
+        --重置道具	8	古代忘却水晶	09
+        local race = heroData:getRace()
+        if race == Constant.RaceType.Ousters then
+            if (heroData:getAddSTR() <= 0) and (heroData:getAddDEX() <= 0) and (heroData:getAddINT() <= 0) then
+                local total = heroData:getInitSTR() + heroData:getInitDEX() + heroData:getInitINT()
+                if total <= 30 then
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_USE_ITEM_LIMIT3})
+                    return false
+                end
+            end
+        else
+            if (heroData:getAddSTR() <= 0) and (heroData:getAddDEX() <= 0) and (heroData:getAddINT() <= 0) then
+                if race == Constant.RaceType.Slayer then
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_USE_ITEM_LIMIT4})
+                else
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_USE_ITEM_LIMIT3})
+                end
+                return false
+            end
+        end
+        
+        -- 已成功完成属性重置
+        self._useItemTips = GReadText.KEY_USE_ITEM_LIMIT6
+
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+            content = GReadText.KEY_USE_ITEM_LIMIT10,
+            confirmCallback = function()
+                self:sendUseItem(objId,number)
+            end,
+        }) 
+
+        return false
+    elseif itemType == Constant.PropTypeSub_8.ClearEvil then
+        --重置道具	8	善恶值清除液	10
+        local maxValue = Constant.MaxTendency
+        if heroData:getTendencies() >= maxValue then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_USE_ITEM_LIMIT2})
+            return false
+        end
+
+        local needNum = maxValue - heroData:getTendencies()
+        local effectParam = itemMeta:getEffectParam()
+        local addNum = effectParam[1][2]
+        if type(addNum) == "number" and addNum > needNum then
+            addNum = needNum
+        end
+
+        -- 善恶值已增加%s，目前为%s
+        local perNum = addNum + heroData:getTendencies()
+        if perNum > maxValue then
+            perNum = maxValue
+        end
+        local tendencyName = CacheManager:getTendencyNameByValue(perNum)
+        self._useItemTips = string.format(GReadText.KEY_USE_ITEM_LIMIT7,addNum,tendencyName)
+
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+            content = string.format(GReadText.KEY_USE_ITEM_LIMIT8,addNum),
+            confirmCallback = function()
+                self:sendUseItem(objId,number)
+            end,
+        })
+
+        return false
+    elseif itemType == Constant.PropTypeSub_8.Rename then
+        -- 签名卡
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_RENAME_MESSAGE_BOX, {objId = objId})
+        return false
+    elseif itemType == Constant.PropTypeSub_8.TransformBox then
+        --Trans工具箱
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrengthen", param = {index = 4, subIdx = 3}})
+        return false
+    elseif itemType == Constant.PropTypeSub_8.Color then
+        local race = GameModule:getHeroRace()
+        if race == Constant.RaceType.Vampire then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_APPEARANCE_TIPS5})
+            return false
+        end
+        
+        -- 角色外观 - 染发剂
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndAppearance", reopen = true, param ={
+            index = Constant.Appearance.Hair,
+            selectItemId = itemId,
+        }})
+        return false
+    end
+
+    return true
+end
+
+-- 强化道具
+function ItemModule:checkUseItemStrengthen(itemInfo,number)
+    local itemMeta = itemInfo:getItemMeta()
+    local itemType = itemMeta:getType()
+    
+    if itemType == Constant.PropTypeSub_7.Strengthen then
+        --装备词条强化
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrengthen", param = {index = 2, subIdx = 1, filterType = FilterEquipType.BagEquip}})
+    elseif itemType == Constant.PropTypeSub_7.Compose then
+        --装备合成
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrengthen", param = {index = 3, subIdx = 1, filterType = FilterEquipType.BagEquip}})
+    elseif itemType == Constant.PropTypeSub_7.Recasting then
+        --装备重铸
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrengthen", param = {index = 4, subIdx = 1, filterType = FilterEquipType.BagEquip}})
+    elseif itemType == Constant.PropTypeSub_7.Purify then
+        --装备净化
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrengthen", param = {index = 4, subIdx = 2, filterType = FilterEquipType.BagEquip}})
+    elseif itemType == Constant.PropTypeSub_7.Blessing then
+        --装备祝福
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrengthen", param = {index = 2, subIdx = 2, filterType = FilterEquipType.BagEquip}})
+    elseif itemType == Constant.PropTypeSub_7.Inherit then
+        --装备传承
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrengthen", param = {index = 3, subIdx = 2, filterType = FilterEquipType.BagEquip}})
+    elseif itemType == Constant.PropTypeSub_7.Levelup or itemType == Constant.PropTypeSub_7.Evolution then
+        --装备升级/进阶
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrengthen", param = {index = 1, subIdx = 1, filterType = FilterEquipType.BagEquip}})
+    elseif itemType == Constant.PropTypeSub_7.Transform then
+        --装备转换石
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrengthen", param = {index = 4, subIdx = 3}})
+    end
+    return false
+end
+
+--宠物养成道具
+function ItemModule:checkUseItemPetCultivate(itemInfo,number)
+    local itemMeta = itemInfo:getItemMeta()
+    local itemType = itemMeta:getType()
+    if itemType == Constant.PropTypeSub_10.RedBird
+    or itemType == Constant.PropTypeSub_10.RedBird2
+    or itemType == Constant.PropTypeSub_10.CutHead
+    or itemType == Constant.PropTypeSub_10.ShockCapsule
+    or itemType == Constant.PropTypeSub_10.CombinationDevice
+    or itemType == Constant.PropTypeSub_10.IceCapsule
+    or itemType == Constant.PropTypeSub_10.Combination
+    or itemType == Constant.PropTypeSub_10.DigSpeed
+    or itemType == Constant.PropTypeSub_10.AddLvl
+    or itemType == Constant.PropTypeSub_10.AddExp
+    or itemType == Constant.PropTypeSub_10.Food
+    or itemType == Constant.PropTypeSub_10.Revival7
+    or itemType == Constant.PropTypeSub_10.Revival14 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndPet", param = {index = 1, light = true}})
+    end
+    return false
+end
+
+-- 弹药
+function ItemModule:checkUseItemAmmunition(itemInfo, needTips)
+    local itemMeta = itemInfo:getItemMeta()
+    local itemType = itemMeta:getType()
+
+    -- 子弹
+    if itemType == Constant.PropTypeSub_4.Bullet then
+        local effectParam = itemMeta:getEffectParamJson() or {}
+        local curArms = self:getEquipItemByPos(Constant.SlayerEquipPos.Arms)
+        if not curArms then
+            -- 当前武器不存在
+            if needTips then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_USE_ITEM_LIMIT11})
+            end
+            return false
+        end
+        
+        local armsConfig = curArms:getItemMeta()
+        local itemType = armsConfig:getType()
+        local isGun = Constant.IsGun[itemType]
+        if not isGun then
+            -- 当前武器不是枪
+            if needTips then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_USE_ITEM_LIMIT11})
+            end
+            return false
+        end
+
+        -- -- 子弹适配枪的类型
+        -- -- AMMO
+        -- yflog:Info("not equip AMMO %s",effectParam["AMMO"][2] )
+
+        if type(effectParam["Ammo"]) == "table" and effectParam["Ammo"][2] ~= itemType then
+            if needTips then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_USE_ITEM_LIMIT13})
+            end
+            return false
+        end
+        -- yflog:Info("equip AMMO %s",itemType)
+
+        -- 需要学习过技能
+        if type(effectParam["NeedSkill"]) == "table" and effectParam["NeedSkill"][2] then
+            -- 需要学习过技能
+            local skillId = effectParam["NeedSkill"][2]
+            local hasSkill = lt.SkillModule:hasSkill(skillId)
+            if not hasSkill then
+                -- 未学习过技能
+                if needTips then
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_USE_ITEM_LIMIT12})
+                end
+                return false
+            end
+        end
+
+        -- TRANSFORM:使用技能后转换成某个物品
+        -- TODO
+        -- if TRANSFORM then
+        -- end
+        -- yflog:Info("is bullet %s",effectParam)
+
+        -- 子弹装填中提示
+        self._useItemTips = GReadText.KEY_USE_ITEM_LIMIT20
+        lt.AudioManager:playSound(SoundEffect.ItemUseMagazineSound)
+        return true
+    end
+end
+
+-- 消耗品 CONSUMABLES
+function ItemModule:checkUseItemConsumables(itemInfo,number)
+    local objId = itemInfo:getObjId()
+    local itemMeta = itemInfo:getItemMeta()
+    local itemType = itemMeta:getType()
+    
+    -- 药水使用限制
+    -- 药品类道具仅玩家血量或法力值不满时才可以使用
+    -- 特殊情况：拥有消除镀银属性的药水，在存在镀银减益时，即使满血也可以使用
+    local canUse = true
+
+    -- 需提示框使用
+    if itemType == Constant.PropTypeSub_3.DoubleExp or itemType == Constant.PropTypeSub_3.MulExp then
+        self._useItemTips = string.format(GReadText.KEY_USE_ITEM_LIMIT16,itemMeta:getName())
+
+        self:sendUseItem(objId,number)
+
+        return false
+    elseif itemType == Constant.PropTypeSub_3.SlayerPotion or itemType == Constant.PropTypeSub_3.VampirePotion or
+        itemType == Constant.PropTypeSub_3.OustersPotion or itemType == Constant.PropTypeSub_3.CommonPotion then
+        local param = itemMeta:getEffectParam()
+        local potionType = ""
+        local dissilver = false
+        local heroData = GameModule:getHeroData()
+        local race = heroData:getRace()
+        for i = 1, #param do
+            if param[i][1] == "Hp" then
+                potionType = potionType .. param[i][1]
+            elseif param[i][1] == "Mp" then
+                potionType = potionType .. param[i][1]
+            elseif param[i][1] == "DISSILVER" and heroData:getSilver() > 0 then
+                dissilver = true
+            end
+        end
+        if potionType == potionType1 then
+            --只加血(没有镀银伤害)
+            if heroData:isFullHp() and not dissilver then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_USE_ITEM_LIMIT21})
+                canUse = false
+            end
+        elseif potionType == potionType2 then
+            if heroData:getMpPercent() == 1 then
+                if race == Constant.RaceType.Ousters then
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_USE_ITEM_LIMIT23})
+                else
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_USE_ITEM_LIMIT22})
+                end
+                canUse = false
+            end
+        elseif potionType == potionType3 then
+            if heroData:isFullHp() and heroData:getMpPercent() == 1 then
+                if race == Constant.RaceType.Ousters then
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_USE_ITEM_LIMIT25})
+                else
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_USE_ITEM_LIMIT24})
+                end
+                canUse = false
+            end
+        end
+    end
+
+    if not canUse then
+        -- 无需消耗提示
+        return false
+    end
+
+    return true
+end
+
+-- 技能重置液
+function ItemModule:checkUseItemSkillReset(itemInfo,number)
+    local objId = itemInfo:getObjId()
+    local itemMeta = itemInfo:getItemMeta()
+    local itemType = itemMeta:getType()
+    local heroData = GameModule:getHeroData()
+    if not heroData then
+        return false
+    end
+
+    if heroData:getAdvanceState() == 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_ITEMTIPS_TIPS20})
+        return false
+    end
+
+    local race = heroData:getRace()
+    if race == Constant.RaceType.Slayer and
+        (itemType == Constant.PropTypeSub_15.Sword or
+        itemType == Constant.PropTypeSub_15.Blade or
+        itemType == Constant.PropTypeSub_15.Gun or
+        itemType == Constant.PropTypeSub_15.Heal or
+        itemType == Constant.PropTypeSub_15.Bless) then -- 人族
+        
+        -- 当前如果是相同的领域无法使用
+        local domainType = Constant.DomainType or {}
+        for k,v in pairs(domainType) do
+            if v == itemType and heroData:getSlayerLevelByDomain(v) > 0 then
+                local str = GReadText.KEY_ITEMTIPS_TIPS21
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = str})
+                return false
+            end
+        end
+
+        local str = {
+            [Constant.PropTypeSub_15.Blade] = "刀",
+            [Constant.PropTypeSub_15.Sword] = "剑",
+            [Constant.PropTypeSub_15.Gun] = "枪",
+            [Constant.PropTypeSub_15.Heal] = "医生",
+            [Constant.PropTypeSub_15.Bless] = "祝福",
+        }
+
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+            content = string.format(GReadText.KEY_USE_ITEM_LIMIT17,GReadText["KEY_NPC_DOMAIN_NAME" .. itemType]),
+            confirmCallback = function()
+                self._useItemTips =  string.format("使用成功，职业更变为%s", str[itemType])
+                self:sendUseItem(objId,number)
+            end,
+        })
+
+        return false
+    elseif race == Constant.RaceType.Vampire and
+        itemType == Constant.PropTypeSub_15.Vampire then -- 鬼族
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+            content = GReadText.KEY_USE_ITEM_LIMIT18,
+            confirmCallback = function()
+                self._useItemTips = GReadText.KEY_USE_ITEM_LIMIT19
+                self:sendUseItem(objId,number)
+            end,
+        })
+
+        return false
+    elseif race == Constant.RaceType.Ousters and
+        itemType == Constant.PropTypeSub_15.Ousters then -- 魔族
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+            content = GReadText.KEY_USE_ITEM_LIMIT18,
+            confirmCallback = function()
+                self._useItemTips = GReadText.KEY_USE_ITEM_LIMIT19
+                self:sendUseItem(objId,number)
+            end,
+        })
+
+        return false
+    end
+
+    return true
+end
+
+-- 传送道具
+function ItemModule:checkUseItemTranster(itemInfo,number)
+    local objId = itemInfo:getObjId()
+    local itemMeta = itemInfo:getItemMeta()
+    local itemType = itemMeta:getType()
+    local heroData = GameModule:getHeroData()
+    if not heroData then
+        return
+    end
+    local race = heroData:getRace()
+    if itemType == Constant.PropTypeSub_6.SlayerTransform then
+        local worldAgent = lt.AgentManager:getWorldAgent()
+        local myMapMeta = worldAgent:getMapAgent():getMapMeta()
+        if myMapMeta:getTestInterphone() == 0 then
+            --0不能用对讲机
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_TRANSMIT_MAP_TIPS5})
+            return
+        end
+        --先扣道具
+        if race ==  Constant.RaceType.Slayer then
+            local useCount = itemInfo:getUseCount()
+            if useCount <= 0 then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_TRANSMIT_MAP_TIPS2})
+                return false
+            end
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndSlayerTransmitMap", param = {objId = objId}})
+            return true
+        end
+        return false
+    elseif itemType == Constant.PropTypeSub_6.BACKHOME then
+        return true
+    end
+    return false
+end
+
+-- 腰带放入、卸下
+function ItemModule:sendBeltItemOperate(operateType,objId,pos)
+    local msg = netcmd_pb.CS_BeltItemOpReq()
+    msg.opType = operateType
+    msg.itemObjId = tonumber(objId)
+    msg.pos = pos
+    SocketApi:sendToGs(lt.ClientCmdDef.C_BELT_ITEM_OPERATE, msg)
+end
+
+-- 批量使用物品
+function ItemModule:sendUseOverlayItem(objId, num,itemid)
+    lt.LogUtil:debugTable("num = "..tostring(num))
+    local msg = netcmd_pb.BatchUseItem()
+    msg.objID = tonumber(objId)
+    msg.num = num
+    if itemid then
+        msg.Idx = itemid
+    end
+    SocketApi:sendToGs(lt.ClientCmdDef.BATCH_USE_ITEM, msg)
+end
+
+function ItemModule:sendFastUseItems(array)
+    local msg = netcmd_pb.UseItems()
+
+    local obj = {}
+    for i,v in ipairs(array) do
+        local pb = netcmd_pb.BatchUseItem()
+        pb.objID = tonumber(v.objID)
+        pb.num = v.num
+        obj[#obj + 1] = pb
+    end
+    msg.items = obj
+    SocketApi:sendToGs(lt.ClientCmdDef.FAST_USE_ITEMS, msg)
+end
+
+-- 丢弃物品
+function ItemModule:sendPeckItem(objId, peckNum)
+    local msg = netcmd_pb.Peck()
+    msg.objID = tonumber(objId)
+    -- msg.packId = pkg and pkg or lt.Constant.ItemTypePos.Item_InPackage
+    msg.peckNum = tonumber(peckNum) or 1
+    SocketApi:sendToGs(lt.ClientCmdDef.PECK, msg)
+end
+
+-- 丢弃金币
+function ItemModule:requestPeckMoney(money)
+    local msg = netcmd_pb.DiscardJinbi()
+    msg.discardNum = money
+    SocketApi:sendToGs(lt.ClientCmdDef.DISCARD_JINBI, msg)
+end
+
+function ItemModule:requestComposeItem(objId, targetObjId)
+    local msg = netcmd_pb.UseKunShengItem()
+    msg.objID = objId
+    msg.TargetObjID = targetObjId
+    SocketApi:sendToGs(lt.ClientCmdDef.USE_KUN_YAO_ITEM, msg)
+end
+
+function ItemModule:goBackToTown()
+    --local msg = netcmd_pb.Peck()
+    SocketApi:sendToGs(lt.ClientCmdDef.BACK_TO_TOWN)
+end
+
+function ItemModule:OneKeyRecycle()
+    SocketApi:sendToGs(lt.ClientCmdDef.RECOVERY_ITEM)
+end
+
+function ItemModule:sendExpandBag(param)
+    local msg = netcmd_pb.ExpansionPackageOperate()
+    msg.operateId = param.operateId
+    msg.pos = param.pos
+    msg.objId = param.objId
+    SocketApi:sendToGs(lt.ClientCmdDef.EXPAND_BAG, msg)
+end
+
+--[[
+    网络接收
+]]
+
+-- uint32 operateId = 1;    //操作Id 0装备 1卸下
+-- uint32 pos = 2; // 扩容背包位置
+-- uint32 objId = 3; // 扩容背包道具Id 当OperateId为0时需要填
+
+function ItemModule:onExpandBag(event)
+    lt.LogUtil:debugInfo("ItemModule:onExpandBag")
+    local proto = event.param
+    local ret = proto.ret
+    local pos = proto.pos
+    local operateId = proto.operateId
+    if ret == 0 then
+        local isChange, isAdd, newGirds = self:getExpandChange(pos, operateId)
+        if isChange then
+            local addStr = isAdd == true and GReadText.KEY_ADD or GReadText.KEY_SUB
+            local successStr = string.format(GReadText.TIPS_EXPAND_RPLACE_SUCCESS, addStr, newGirds)
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = successStr})
+        else
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = EXPAND_BAG_CODE[tostring(ret)]})
+        end
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = EXPAND_BAG_CODE[tostring(ret)]})
+    end
+end
+
+
+function ItemModule:getExpandChange(pos, operateId)
+    local isChange, isAdd, newGrid
+    local pos = pos + 1
+    local origin = Constant.INVENTORY_DEFUAL_SIZE.WIDTH * (Constant.INVENTORY_DEFUAL_SIZE.HEIGHT + ItemModule:getExpandGridH())
+    local operateH = ItemModule:getOperateExpandItemH()
+    local expandArr = ItemModule:getExpandArray()
+    if operateId == 0 then
+        if expandArr[pos] then
+            --替换
+            local originH = expandArr[pos]:getItemMeta():getEffectParam()[1][2]
+            if originH > operateH then
+                isChange = true 
+                isAdd = false
+                newGrid = origin - (originH - operateH) * Constant.INVENTORY_DEFUAL_SIZE.WIDTH
+            elseif originH < operateH then
+                isChange = true
+                isAdd = true
+                newGrid = origin + (operateH - originH) * Constant.INVENTORY_DEFUAL_SIZE.WIDTH
+            elseif originH == operateH then
+                isChange = false 
+            end
+        else
+            --装上
+            isChange = true
+            isAdd = true
+            newGrid = origin + operateH * Constant.INVENTORY_DEFUAL_SIZE.WIDTH
+        end
+    else
+        --卸下
+        isChange = true
+        isAdd = false
+        newGrid = origin - operateH * Constant.INVENTORY_DEFUAL_SIZE.WIDTH
+    end
+
+    return isChange, isAdd, newGrid
+end
+
+function ItemModule:setOperateExpandItemH(itemH)
+    self._operateItemH = itemH
+end
+function ItemModule:getOperateExpandItemH()
+    return self._operateItemH
+end
+
+function ItemModule:onExpandBagList(event)
+    lt.LogUtil:debugInfo("ItemModule:onExpandBagList")
+    local proto = event.param
+    if proto.expansionPackageItem then
+        self._expandPackageArray = {}
+        for i = 1, #proto.expansionPackageItem do
+            local objprop = proto.expansionPackageItem[i]
+            if objprop then
+                local item = lt.ItemData.new(objprop.objID, objprop.objprops)
+                item:setTypePos(Constant.ItemTypePos.Item_InExpandBag)
+                local expandPos = item:getPos()
+                self._expandPackageArray[expandPos] = item
+                -- table.insert(self._expandPackageArray, item)
+            end
+        end
+    end
+    self:calcExpand()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_INVENTORY_EXPAND_LIST,{ ret = proto.ret})
+    self:fiterBagItems()
+end
+
+function ItemModule:calcExpand()
+    self:setExpandH(0)
+    local expand = ItemModule._expandPackageArray or {}
+    self._expandsPosRecord = {}
+    for _, info in pairs(expand) do
+        local pos = info:getPos()
+        table.insert(self._expandsPosRecord, pos)
+        local config = info:getItemMeta()
+        local addH = config:getEffectParam()[1][2]
+        self:setExpandH(self:getExpandGridH() + tonumber(addH))
+    end
+end
+function ItemModule:getExpandGridH()
+    if self._addGridH < 0 then
+        self._addGridH = 0
+    end
+    return self._addGridH
+end
+function ItemModule:setExpandH(h)
+    self._addGridH = h
+end
+function ItemModule:getExpandArray()
+    return self._expandPackageArray or {}
+end
+
+--一键清除
+function ItemModule:onClearPackage(event)
+    lt.LogUtil:debugInfo("ItemModule:onClearPackage")
+    self._packageArray = {}
+    self._lockCount = 0
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT)
+end
+
+function ItemModule:onItemDataInfoAck(event)
+    lt.LogUtil:debugInfo("ItemModule:onItemDataInfoAck")
+    local proto = event.param
+    -- dump(proto)
+    -- lt.LogUtil:debugTable(proto,"proto",6)
+    -- 装备位列表
+    if proto.equipItem then
+        self._equipArray = {}
+
+        for i = 1, #proto.equipItem do
+            local objprop = proto.equipItem[i]
+            if objprop then
+                local item = lt.ItemData.new(objprop.objID, objprop.objprops)
+                item:setTypePos(Constant.ItemTypePos.Item_InEquip)
+                table.insert(self._equipArray, item)
+            end
+        end
+
+        -- 装备位列表更新时计算跟装备相关的数值
+        self:calcEquipValue()
+        local heroData = GameModule:getHeroData()
+        if not heroData then
+            return
+        end
+        heroData:setEquipArray(self._equipArray)
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_MEDAL_REPUTE_POST)
+    end
+
+    -- 背包列表
+    if proto.pakageItem then
+        self._packageArray = {}
+        -- local change = self:ComparisonTable(self._packageArray,proto.pakageItem)
+        for i = 1, #proto.pakageItem do
+            local objprop = proto.pakageItem[i]
+            if objprop then
+                local item = lt.ItemData.new(objprop.objID, objprop.objprops)
+                item:setTypePos(Constant.ItemTypePos.Item_InPackage)
+                item:setPos(i)
+                self:insertPackageItem(item)
+                self._lockCount = 0
+            end
+        end
+        
+        self:fiterBagItems()
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT)
+    end
+
+    -- 仓库列表
+    if proto.storageItem then
+        self._depotArray = {}
+
+        for i = 1, #proto.storageItem do
+            local objprop = proto.storageItem[i]
+            if objprop then
+                local item = lt.ItemData.new(objprop.objID, objprop.objprops)
+                item:setTypePos(Constant.ItemTypePos.Item_InDepot)
+                -- item:setPos(i)
+                table.insert(self._depotArray, item)
+            end
+        end
+        -- self:tidyDepot()
+    end
+
+    -- 腰带位列表
+    if proto.objProperty and #proto.objProperty > 0 then
+        self._beltArray = {}
+        for i = 1, #proto.objProperty do
+            local objprop = proto.objProperty[i]
+            if objprop then
+                local item = lt.ItemData.new(objprop.objID, objprop.objprops)
+                item:setTypePos(Constant.ItemTypePos.Item_InBelt)
+                table.insert(self._beltArray, item)
+            end
+        end
+
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_BELT_EVENT)
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT)
+    end
+end
+
+-- 位置新增item
+function ItemModule:onRefreshPackageAck(event)
+    local proto = event.param
+    local ret = proto.ret
+    -- yflog:Info("ItemModule onRefreshPackageAck ret",ret)
+
+    if ret == -1 then
+        yflog:Info("ItemModule onRefreshPackageAck ret -1 背包空间不足")
+        return
+    elseif ret == -2 then
+        yflog:Info("ItemModule onRefreshPackageAck ret -2 道具不存在")
+        return
+    end
+    local heroData = GameModule:getHeroData()
+    if not heroData then
+        return
+    end
+    if proto.parcelId == Constant.ItemTypePos.Item_InPackage then
+        local objprop = proto.newItem
+        if objprop then
+            local item = lt.ItemData.new(objprop.objID, objprop.objprops)
+            item:setNew(true)
+            item:setTypePos(Constant.ItemTypePos.Item_InPackage)
+            item:setPos(-1)
+            self:insertPackageItem(item)
+            local content = string.format(StringManager:getString(StringManager.KEY_ADD_ITEM_TIP), item:getName())
+            if (item:getItemType() ~= 1 and item:getIsTaskItem() and heroData:getLevel() <= 25)
+                or (item:getItemType() == 1 and item:getMetaFastUse())
+                or (item:getItemType() == 3 and item:getMetaFastUse() 
+                    and lt.SkillModule:hasSkill(item:getSkillId()) == nil 
+                    and item:getMetaNeedJob() == lt.GameModule:getHeroData():getJob()
+                    and item:getMetaNeedLv() <= lt.GameModule:getHeroData():getLevel()) 
+                or (item:getItemType() == 2 )
+                then
+                self:useTaskItem(item)
+            end
+
+            -- 圣水瓶标记，新增物品(人祝)
+            self:createHolyPotion(item)
+            -- 圣水瓶标记，新增物品(人医)
+            self:createHolyPotionDoctor(item)
+
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_NOTICE,{content = content})
+            -- NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT)--道具变化:[数量新增]
+            self._lockCount = 0
+            -- 播放音效
+            self:playSoundByItemInfo(item)
+            -- 检测是否显示变强
+            heroData:checkAddPoint()
+        end
+    elseif proto.parcelId == Constant.ItemTypePos.Item_InEquip then
+        local objprop = proto.newItem
+        if objprop then
+            local item = lt.ItemData.new(objprop.objID, objprop.objprops)
+            item:setTypePos(Constant.ItemTypePos.Item_InPackage)
+            table.insert(self._equipArray, item)
+
+            -- 装备位列表更新时计算跟装备相关的数值
+            -- self:calcEquipValue()
+            heroData:setEquipArray(self._equipArray)
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_HERO_EQUIP_EVENT)
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_AUTO_EQUIP_EVENT, {itemInfo = item})
+            if item:getPos() == Constant.EQUIP_ITEM_POS.pos_horse then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHEILDINFO_POST,{content = "openstrengh"})
+            end
+
+            local content = string.format(StringManager:getString(StringManager.KEY_ADD_ITEM_TIP), item:getName())
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_NOTICE,{content = content})
+            -- 播放音效
+            self:playSoundByItemInfo(item)
+        end
+    elseif proto.parcelId == Constant.ItemTypePos.Item_InDepot then
+        local objprop = proto.newItem
+        if objprop then
+            local item = lt.ItemData.new(objprop.objID, objprop.objprops)
+            item:setTypePos(Constant.ItemTypePos.Item_InDepot)
+            -- item:setPos(#self._depotArray + 1)
+            table.insert(self._depotArray, item)
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_DEPOT_EVENT)
+        end
+    end
+end
+
+-- 穿装备
+function ItemModule:onRefreshEquipAck(event)
+    yflog:Info("ItemModule:onRefreshEquipAck")
+    local proto = event.param
+    if proto.ret == 0 then
+        local objId = proto.objID
+        local pos = proto.pos
+        local fromType = proto.fromType -- Constant.ItemTypePos
+        local equipOld, indexEquip = self:getEquipItemByPos(pos)
+        local equipNew, indexNew = self:getItemByObjId(objId) -- 背包穿装备
+        local equipBelt, _ = self:getBeltItemByObjId(objId)   -- 腰带穿装备
+        local item = nil
+        if equipOld and fromType == Constant.ItemTypePos.Item_InPackage then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_EQUIP_AUTOUSE_RMV_EQUIP_LATER,{ itemInfo = equipOld})
+            item = equipOld
+        end
+        if equipNew and fromType == Constant.ItemTypePos.Item_InPackage  then --背包到装备位
+            -- equipNew:setPos(pos)
+            -- if indexEquip then
+            --     equipNew:setTypePos(Constant.ItemTypePos.Item_InEquip)
+            --     self._equipArray[indexEquip] = equipNew
+            -- else
+            --     equipNew:setTypePos(Constant.ItemTypePos.Item_InEquip)
+            --     table.insert(self._equipArray, equipNew)
+            -- end
+
+            -- if equipOld then
+            --     equipOld:setPos(-1)
+            --     equipOld:setTypePos(Constant.ItemTypePos.Item_InPackage)
+            --     -- self:insertPackageItem(equipOld)
+            --     -- table.insert(self._packageArray, equipOld)
+            --     local content = string.format(StringManager:getString(StringManager.KEY_ADD_ITEM_TIP), equipOld:getName())
+            --     NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_NOTICE,{content = content})
+            -- end
+            item = equipNew
+        elseif equipBelt and fromType == Constant.ItemTypePos.Item_InBelt then -- 腰带到装备位
+            local equipBeltPos = equipBelt:getPos()
+            equipBelt:setPos(pos)
+            if indexEquip then
+                equipBelt:setTypePos(Constant.ItemTypePos.Item_InEquip)
+                self._equipArray[indexEquip] = equipBelt
+            else
+                equipBelt:setTypePos(Constant.ItemTypePos.Item_InEquip)
+                table.insert(self._equipArray, equipBelt)
+            end
+            yflog:Info("ItemModule:onRefreshEquipAck======>>>>>" .. equipBeltPos)
+            if equipOld then
+                equipOld:setPos(equipBeltPos)
+                equipOld:setTypePos(Constant.ItemTypePos.Item_InBelt)
+                table.insert(self._beltArray, equipBelt)
+                local content = string.format(StringManager:getString(StringManager.KEY_ADD_ITEM_TIP), equipOld:getName())
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_NOTICE,{content = content})
+                yflog:Info("ItemModule:onRefreshEquipAck======>>>>> equipOld" .. equipBeltPos)
+            else
+                yflog:Info("ItemModule:onRefreshEquipAck======>>>>> not equipOld" .. equipBeltPos)
+            end
+            item = equipBelt
+        end
+
+        -- 装备位列表更新时计算跟装备相关的数值
+        self:calcEquipValue()
+
+        -- local config = equipNew:getItemMeta()
+        -- if pos == Constant.EQUIP_ITEM_POS.pos_clothes then
+        --     lt.GameModule._heroData:setModelClothId(config:getModle())
+        -- elseif pos == Constant.EQUIP_ITEM_POS.pos_weapon then
+        --     lt.GameModule._heroData:setWeapon(config:getModle())
+        --     lt.GameModule._heroData:setWeaponAppr(config:getAppr())
+        -- elseif pos == Constant.EQUIP_ITEM_POS.pos_hat then
+        --     lt.GameModule._heroData:setHelmet(config:getModle())
+        -- end
+        local heroData = GameModule:getHeroData()
+        if not heroData then
+            return
+        end
+        heroData:setEquipArray(self._equipArray)
+
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_HERO_EQUIP_EVENT)
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_AUTO_EQUIP_EVENT, {itemInfo = item})
+        -- NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT)
+        self._lockCount = 0
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = "装备失败！"})
+        -- NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT)
+    end
+end
+
+function ItemModule:onRefreshUnEquipAck(event)
+    lt.LogUtil:debugInfo("ItemModule:onRefreshUnEquipAck")
+    local proto = event.param
+    if proto.ret == 0 then
+        local objId = proto.objID
+        local equip, index = self:getItemByObjId(objId)
+        -- local pos = -1
+        -- if equip then
+        --     pos = equip:getPos()
+            
+        --     equip:setPos(-1)
+        --     equip:setTypePos(Constant.ItemTypePos.Item_InPackage)
+        --     -- self:insertPackageItem(equip) --需要服务器更新物品位置信息（不能这样直接入背包）
+        --     -- table.insert(self._packageArray, equip)
+        --     local content = string.format(StringManager:getString(StringManager.KEY_ADD_ITEM_TIP), equip:getName())
+        --     NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_NOTICE,{content = content})
+        --     self._lockCount = 0
+        -- end
+        -- table.remove(self._equipArray, index)
+
+        -- -- 装备位列表更新时计算跟装备相关的数值
+        -- self:calcEquipValue()
+        
+        -- -- if pos == Constant.EQUIP_ITEM_POS.pos_clothes then
+        -- --     lt.GameModule._heroData:setModelClothId()
+        -- -- elseif pos == Constant.EQUIP_ITEM_POS.pos_weapon then
+        -- --     lt.GameModule._heroData:setWeapon()
+        -- --     lt.GameModule._heroData:setWeaponAppr()
+        -- -- elseif pos == Constant.EQUIP_ITEM_POS.pos_hat then
+        -- --     lt.GameModule._heroData:setHelmet()
+        -- -- end
+        -- -- lt.GameModule._heroData:setEquipArray(self._equipArray)
+        self:calcEquipValue()
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_HERO_EQUIP_EVENT)
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_AUTO_EQUIP_EVENT, {itemInfo = equip})
+        -- NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT)
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = "卸装失败！" .. proto.ret})
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_HERO_EQUIP_EVENT)
+    end
+end
+
+function ItemModule:onUseItemAck(event)
+    lt.LogUtil:debugInfo("ItemModule:onUseItemAck")
+    local proto = event.param
+    if proto.ret == 0 and self._useItemTips then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = self._useItemTips or ""})
+        
+        if self._useItemTips == GReadText.KEY_APPEARANCE_TIPS2 or --转性关闭所有界面
+           self._useItemTips == GReadText.KEY_APPEARANCE_TIPS6 then --染发关闭所有界面
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_CLOSE_ALL)
+        end
+
+        self._useItemTips = nil
+    end
+end
+
+function ItemModule:onItemAutoTidyAck(event)
+    lt.LogUtil:debugInfo("ItemModule:onItemAutoTidyAck")
+    local proto = event.param
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_INVENTORY_AUTOSORT,{ret = proto.ret})
+end
+--取出仓库成功
+function ItemModule:onItemTakenAck(event)
+    lt.LogUtil:debugInfo("ItemModule:onItemTakenAck")
+    local proto = event.param
+    if proto.ret == 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_WAREHOUSE_TIPS8})
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_DEPOT_EVENT)
+    end
+end
+
+--放入仓库成功
+function ItemModule:onItemStoredAck(event)
+    lt.LogUtil:debugInfo("ItemModule:onItemStoredAck")
+    local proto = event.param
+    if proto.ret == 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_WAREHOUSE_TIPS7})
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_DEPOT_EVENT)
+    end
+end
+
+-- 存入腰带取出腰带
+function ItemModule:onBeltItemAck(event)
+    lt.LogUtil:debugInfo("ItemModule:onBeltItemAck")
+    local proto = event.param
+    if proto.ret == 0 then
+        local type = proto.opType
+        local objId = proto.itemObjId
+        local pos = proto.pos
+        
+        if type == Constant.BeltOperateType.PutIn then
+            -- 如果位置上有东西就先删除之前位置上的物品
+            local item, index = self:getBeltIndexByPos(pos)
+            if item then
+                table.remove(self._beltArray, index)
+            end
+            local item, index = self:getItemByObjId(objId)
+            if item then
+                item:setTypePos(Constant.ItemTypePos.Item_InBelt)
+                table.insert(self._beltArray, item)
+            end
+            self:removePackageItem(index)
+
+        elseif type == Constant.BeltOperateType.TakeOut then
+            local item, index = self:getBeltItemByObjId(objId)
+            table.remove(self._beltArray, index)
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_BELT_EVENT)
+    end
+end
+
+function ItemModule:onPopBagAck(event)
+    lt.LogUtil:debugInfo("ItemModule:onPopBagAck")
+end
+
+function ItemModule:onItemRecycleAck(event)
+    lt.LogUtil:debugInfo("ItemModule:onItemRecycleAck")
+end
+
+-- 位置取出item操作
+function ItemModule:onTakeBackAck(event)
+    lt.LogUtil:debugInfo("ItemModule:onTakeBackAck")
+    local proto = event.param
+    local typePos = proto.parcelId
+    -- 要删除item 由单个改为list
+    local itemList = proto.itemList
+    if typePos == Constant.ItemTypePos.Item_InPackage then
+        local removeArray = {}
+        for i,v in ipairs(itemList or {}) do
+            local objId = v.objID
+            local item, index = self:getItemByObjId(objId)
+            if item then
+                table.insert(removeArray, index)
+            end
+        end
+        -- 这边要从小到大排序
+        table.sort(removeArray)
+        for i = #removeArray, 1, -1 do
+            ItemModule:removePackageItem(removeArray[i])
+        end
+        -- self._lockCount = 0
+        -- 检测是否显示变强
+        local heroData = GameModule:getHeroData()
+        heroData:checkAddPoint()
+    elseif typePos == Constant.ItemTypePos.Item_InDepot then
+        local removeArray = {}
+        for i,v in ipairs(itemList or {}) do
+            local objId = v.objID
+            local item, index = self:getDepotItemByObjId(objId)
+            if item then
+                table.insert(removeArray, index)
+            end
+        end
+        -- 这边要从小到大排序
+        table.sort(removeArray)
+        for i = #removeArray, 1, -1 do
+            table.remove(self._depotArray, removeArray[i])
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_DEPOT_EVENT)
+    elseif typePos == Constant.ItemTypePos.Item_InEquip then
+        local removeArray = {}
+        for i,v in ipairs(itemList or {}) do
+            local objId = v.objID
+            local item, index = self:getEquipItemByObjId(objId)
+            if item then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_AUTO_EQUIP_EVENT, {itemInfo = item}) 
+                table.insert(removeArray, index)
+            end
+        end
+        -- 这边要从小到大排序
+        table.sort(removeArray)
+        for i = #removeArray, 1, -1 do
+            table.remove(self._equipArray, removeArray[i])
+        end
+        -- 装备位列表更新时计算跟装备相关的数值
+        -- self:calcEquipValue()
+        local heroData = GameModule:getHeroData()
+        if not heroData then
+            return
+        end
+        heroData:setEquipArray(self._equipArray)
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_HERO_EQUIP_EVENT)
+    elseif typePos == Constant.ItemTypePos.Item_InBelt then
+        local removeArray = {}
+        for i,v in ipairs(itemList or {}) do
+            local objId = v.objID
+            local item, index = self:getBeltItemByObjId(objId)
+            if item then
+                table.insert(removeArray, index)
+            end
+        end
+        -- 这边要从小到大排序
+        table.sort(removeArray)
+        for i = #removeArray, 1, -1 do
+            table.remove(self._beltArray, removeArray[i])
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_BELT_EVENT)
+    end
+end
+
+-- item属性改变
+function ItemModule:onPropertyChangeAck(event)
+    yflog:Info("ItemModule:onPropertyChangeAck")
+    local proto = event.param
+    local typePos = proto.parcelId
+    -- 这边改成list
+    local itemPropArray  = proto.itemProp_list
+    if typePos == Constant.ItemTypePos.Item_InPackage then
+        for i,v in ipairs(self._packageArray) do
+             for ii,vv in ipairs(itemPropArray or {}) do
+                local objId = vv.objID
+                local objprop = vv.objprops
+                if v:getObjId() == objId then
+                    v:setPropertyArray(objprop)
+                    self:addNumItemTip(v, objprop)
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_CHANGE_EVENT, {typePos = Constant.ItemTypePos.Item_InPackage,item = v})
+                    break
+                end
+            end
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT)
+    elseif typePos == Constant.ItemTypePos.Item_InEquip then
+        local item = nil
+        for i,v in ipairs(self._equipArray) do
+            for ii,vv in ipairs(itemPropArray or {}) do
+                local objId = vv.objID
+                local objprop = vv.objprops
+                if v:getObjId() == objId then
+                    item = v
+                    v:setPropertyArray(objprop)
+                    self:propertyChangeNotice(v, objprop)
+                    break
+                end
+            end
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_HERO_EQUIP_EVENT)
+    elseif typePos == Constant.ItemTypePos.Item_InDepot then
+        for i,v in ipairs(self._depotArray) do
+            for ii,vv in ipairs(itemPropArray or {}) do
+                local objId = vv.objID
+                local objprop = vv.objprops
+                if v:getObjId() == objId then
+                    v:setPropertyArray(objprop)
+                    break
+                end
+            end
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_DEPOT_EVENT)
+    elseif typePos == Constant.ItemTypePos.Item_InBelt then
+        for i,v in ipairs(self._beltArray) do
+            for ii,vv in ipairs(itemPropArray or {}) do
+                local objId = vv.objID
+                local objprop = vv.objprops
+                if v:getObjId() == objId then
+                    v:setPropertyArray(objprop)
+                    self:addNumItemTip(v, objprop)
+                    break
+                end
+            end
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_BELT_EVENT,{type = 2})
+    end
+end
+
+--丢弃物品回调
+function ItemModule:onPeckItemAck(event)
+    lt.LogUtil:debugInfo("ItemModule:onPeckItemAck")
+    local proto = event.param
+    if proto.ret ~= 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT)
+    end
+end
+
+function ItemModule:queryItem(iId, iType)
+    local item
+
+    iType = iType or 1
+
+    for _, v in ipairs(self._packageArray) do
+
+        local type = v:getItemType()
+        local id = v:getItemId()
+
+        if type == iType and id == iId then
+            if not item then
+                item = v
+            elseif item:getNum() >= v:getNum() then
+                item = v
+            end
+        end
+    end
+
+    return item
+end
+
+function ItemModule:getFastPotion(btnId, useItemId)
+    -- print("ItemModule:getFastPotion ", index, "useItemId:", useItemId)
+    local item = nil
+    if useItemId then
+        for _, itemData in ipairs(self._packageArray) do
+            if itemData:getItemType() == 1 and itemData:getItemId() == useItemId then
+                item = itemData
+                break
+            end
+        end
+    else
+        -- local uiConfig = lt.UIConfigDao:query(btnId)
+        local uiConfig = lt.CacheManager:getUIConfig(btnId)
+        if not uiConfig then return item end
+        local itemStr = uiConfig:getItemIdString()
+
+        if not itemStr then return item end
+
+        local arr = string.split(itemStr, ";")
+        if arr then
+            for _, itemId in ipairs(arr) do
+                for _, itemData in ipairs(self._packageArray) do
+                    if itemData:getItemType() == 1 and itemData:getItemId() == tonumber(itemId) then
+                        item = itemData
+                        break
+                    end
+                end
+                if item then
+                    break
+                end
+            end
+        end
+    end
+    return item
+end
+
+function ItemModule:getPackageArray()
+    return self._packageArray
+end
+
+function ItemModule:getEquipArray()
+    return self._equipArray
+end
+
+function ItemModule:getDepotArray()
+    return self._depotArray
+end
+
+function ItemModule:getSortDepotArray()
+    local depotArray = clone(self._depotArray)
+    table.sort(depotArray,function (a,b)
+        return (a:getPos() or 0) < (b:getPos() or 0)
+    end)
+
+    return depotArray
+end
+
+function ItemModule:getSealArray()
+    return self._sealArray
+end
+
+function ItemModule:getLavePackageGrid()
+    -- return math.max(0, ItemModule.MAX_GRID_NUM - table.nums(self._packageArray) - self._lockCount)
+    return math.max(0, lt.GameModule:getHeroData():getMaxPackage() - self:getUsedPackageNums())
+end
+
+---已使用的格子数
+function ItemModule:getUsedPackageNums()
+    local num = 0
+    for _,itemInfo in ipairs(self._packageArray) do
+        local itemConfig = itemInfo:getItemMeta()
+        local gridSizeIndex = itemConfig:getItemSize()
+        local size = lt.Constant.ITEMSIZE[gridSizeIndex or 1]
+        num = num + size.width * size.height
+    end
+    return num
+end
+
+function ItemModule:addLockCount()
+    self._lockCount = self._lockCount + 1
+end
+
+function ItemModule:addNumItemTip(item, objprop)
+    for _,v in ipairs(objprop) do
+        if v.properCode and v.properCode == lt.ServerClientEnum.ItemValueDef.Attr_SuperposeCount then
+            local addNum = item:getChangeValueByKey(lt.ServerClientEnum.ItemValueDef.Attr_SuperposeCount) 
+            if addNum and addNum > 0 then
+                local content = string.format(StringManager:getString(StringManager.KEY_ADD_ITEM_TIP), item:getName())
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_NOTICE,{content = content})
+
+                -- 圣水瓶标记, 数量变更(人祝)
+                self:createHolyPotion(item)
+                -- 圣水瓶标记，新增物品(人医)
+                self:createHolyPotionDoctor(item)
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_NUMB,{content = string.format("%d_%d",item:getItemType(),item:getItemId()),item = item})
+                break;
+            end
+        end
+    end
+end
+
+function ItemModule:propertyChangeNotice(item, objprop)
+    for _,v in ipairs(objprop) do
+        if v.properCode and v.properCode == ServerClientEnum.ItemValueDef.Attr_Durability then
+            --耐久度变化
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_DURABILITY, {uid = item:getItemUid()})
+            local change = item:getChangeValueByKey(v.properCode) or 0
+            if change ~= 0 then
+                self:AutoRepair(item)
+            end
+            if change >= 0 then -- 只有降低
+                return
+            end
+            local partName = self:getEquipPartName(item:getMetaKind())
+            if partName == "" then
+                return
+            end
+            local preProp = string.format("%.0f",item:getPreValue(ServerClientEnum.ItemValueDef.Attr_Durability)/item:getTotalDurability()*100)
+            local curProp = string.format("%.0f",item:getDurability()/item:getTotalDurability()*100)
+            local intCurProp = tonumber(curProp)
+            local intPreProp = tonumber(preProp)
+            if intPreProp ~= intCurProp  and (intCurProp == 25 or intCurProp <= 10) then --
+                local content = string.format(GReadText.KEY_AUTO_RECYCLE_TIPS3, partName,intCurProp)
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = content})
+            end
+            break
+        end
+    end
+end
+
+-- 自动维修
+function ItemModule:AutoRepair(item)
+    if not item then
+        return
+    end
+
+    local meta = VipModule:getCurVipMeta()
+    if not meta or meta:getRepair() ~= 1 then
+        return
+    end
+
+    local durabilityTotal = item:getTotalDurability()
+    local durability = item:getDurability()
+    local curProp = string.format("%.0f", durability / durabilityTotal * 100)
+    local privilegeUpkeep = CacheManager:getVariableById(Constant.Variable.PrivilegeUpkeep) or 10
+    if tonumber(curProp) <= tonumber(privilegeUpkeep) then
+        local costNum = lt.NpcModule:getRepairPrice(item)
+        local enoughMoney = self:enoughItem(Constant.ItemType.ITEM_TYPE_PROP, Constant.TYPE_VAULE_ITEM.COIN, costNum, {tips = false})
+        if enoughMoney then
+            --服务器交互
+            lt.NpcModule:sendEquipRepair(0, 0, item:getItemUid(), true)
+        end
+    end
+end
+
+
+function ItemModule:initUnpackItem()
+    self._hpArr = self:getUnpakcItemArr(4001)
+    self._mpArr = self:getUnpakcItemArr(4002)
+    self._hpMpArr = self:getUnpakcItemArr(4003)
+end
+
+function ItemModule:getUnpakcItemArr(id)
+    -- local uiConfig = lt.CacheManager:getUIConfig(id)
+    -- local itemStr = uiConfig:getUnpackItemId()
+    -- local arr = string.split(itemStr, ",")
+    -- return arr
+    return {}
+end
+
+function ItemModule:unpackItemType(id)
+    -- 红
+    for i,v in ipairs(self._hpArr) do
+        if tonumber(v) == id then
+            return 1
+        end
+    end
+    -- 蓝
+    for i,v in ipairs(self._mpArr) do
+        if tonumber(v) == id then
+            return 2
+        end
+    end
+    -- 瞬药
+    for i,v in ipairs(self._hpMpArr) do
+        if tonumber(v) == id then
+            return 3
+        end
+    end
+
+    return 0
+end
+
+-- function ItemModule:autoUnpackItem(event)
+--     -- lt.LogUtil:debugTable("ItemModule:autoUnpackItem")
+
+--     local hasHp = false
+--     local hasMp = false
+--     local hasHpMP = false
+--     local curArr = {}
+
+--     if lt.AutoManager:getAutoUnpack() then
+        
+--         local maxP = lt.GameModule:getHeroData():getMaxPackage() 
+--         if table.nums(self._packageArray) > (maxP - 5) then
+--             return
+--         end
+
+--         for _,v in ipairs(self._packageArray) do
+--             if v:getItemType() == 1 and v:getMetaKind() == 5 and v:getMetaType() == 1 then
+--                 local msgReturn = string.split(v:getMateTypeEndValue(), ":")
+--                 local itemType = tonumber(msgReturn[1])
+--                 local id = tonumber(msgReturn[2])
+--                 local num = self:getItemNumByIdAndType(itemType, id)
+--                 local uType = self:unpackItemType(v:getItemId())
+--                 if num > 0 then
+--                     if uType == 1 then
+--                         hasHp = true
+--                     elseif uType == 2 then
+--                         hasMp = true
+--                     elseif uType == 3 then
+--                         hasHpMP = true
+--                     end
+--                 end
+--                 curArr[#curArr + 1] = v
+--             end
+--         end
+
+--         if not hasHp then
+--             for _, itemId in ipairs(self._hpArr) do
+--                 for _, itemData in ipairs(curArr) do
+--                     if itemData:getItemId() == tonumber(itemId) then
+--                         self:sendUseItem(itemData:getObjId())
+--                         return
+--                     end
+--                 end
+--             end
+--         end
+
+--         if not hasMp then
+--             local UseType = true
+--             if lt.GameModule:getHeroData():getJob() == 1 and lt.GameModule:getHeroData():getLevel() < 27 then
+--                 UseType = false
+--             end
+--             if UseType then
+--                 for _, itemId in ipairs(self._mpArr) do
+--                     for _, itemData in ipairs(curArr) do
+--                         if itemData:getItemId() == tonumber(itemId) then
+--                             self:sendUseItem(itemData:getObjId())
+--                             return
+--                         end
+--                     end
+--                 end
+--             end
+--         end
+
+--         if not hasHpMP then
+--             for _, itemId in ipairs(self._hpMpArr) do
+--                 for _, itemData in ipairs(curArr) do
+--                     if itemData:getItemId() == tonumber(itemId) then
+--                         self:sendUseItem(itemData:getObjId())
+--                         return
+--                     end
+--                 end
+--             end
+--         end
+--     end
+--     NtfManager:dispatchNtf(NtfManager.NTF.NTF_YUANYIN_UPT_INFO, {content = "item"})
+-- end
+
+function ItemModule:getDestroyArray(types)
+    local itemArray = {}
+    if not self._packageArray then 
+        return itemArray 
+    end
+    for k,v in pairs(self._packageArray) do
+        if self:checkDestroyItem(v:getItemType(), v:getItemId()) and v:getSheildLevel() == 0 then
+            if types then
+                if not self:checkHasItem(v:getItemType(), v:getItemId(),itemArray) then
+                    itemArray[#itemArray+1] = v
+                end
+            else
+                itemArray[#itemArray+1] = v
+            end
+           
+        end 
+    end
+    return itemArray
+end
+
+function ItemModule:getChatArray()
+    local itemArray = {}
+    if not self._packageArray then 
+        return itemArray 
+    end
+    for k,v in pairs(self._packageArray) do
+        if not v:getIsBind() then
+            itemArray[#itemArray+1] = v
+        end 
+    end
+    return itemArray
+end
+
+function ItemModule:checkCurEquipIsGun()
+    local curArms = self:getEquipItemByPos(Constant.SlayerEquipPos.Arms)
+    if not curArms then
+        return false
+    end
+    
+    local armsConfig = curArms:getItemMeta()
+    local itemType = armsConfig:getType()
+    return Constant.IsGun[itemType] or false
+end
+
+-- 获取自身枪武器
+function ItemModule:getEquipGun()
+    local curArms = self:getEquipItemByPos(Constant.SlayerEquipPos.Arms)
+    if not curArms then
+        return nil
+    end
+    
+    local armsConfig = curArms:getItemMeta()
+    local itemType = armsConfig:getType()
+    if Constant.IsGun[itemType] then
+        return curArms
+    end
+
+    return nil
+end
+
+function ItemModule:getRefineArray(index)
+    local itemArray = {}
+    if index == 1 then
+        if self._equipArray then 
+            for k,v in pairs(self._equipArray) do
+                 if v then
+                    if lt.RareConsumeDao:queryDefault(v:getMetaEquipPos(),0) then
+                        itemArray[#itemArray+1] = v
+                    end
+                 end
+            end 
+         end
+         for k,v in pairs(self._packageArray) do
+             if v then
+                 if v:getItemType() == 2 then
+                     if v:getMetaEquipPos() > 0 and v:getMetaEquipPos() < Constant.EQUIP_ITEM_POS.pos_horse then
+                        if lt.RareConsumeDao:queryDefault(v:getMetaEquipPos(),0) then
+                            itemArray[#itemArray+1] = v
+                        end
+                     end 
+                 end    
+             end
+         end
+         --[[
+         for k,v in pairs(self._depotArray) do
+             if v then
+                 if v:getItemType() == 2 then
+                    if v:getMetaEquipPos() > 0 and v:getMetaEquipPos() < Constant.EQUIP_ITEM_POS.pos_horse then
+                        if lt.RareConsumeDao:queryDefault(v:getMetaEquipPos(),0) then
+                            itemArray[#itemArray+1] = v
+                        end
+                    end 
+                 end 
+             end
+         end
+         --]]
+    elseif index == 2 then
+        local info = lt.RareUpDao:queryAll()
+        for i=1,#info do
+            local v,k = self:getItemByItemId(info[i]:getItemID(),info[i]:getItemType())
+            if v then
+                itemArray[#itemArray+1] = v
+            end
+        end 
+    end
+    return itemArray
+end
+
+function ItemModule:getSpiritEquipArray(types,index)
+    local array = {}
+    if types then
+        for k,v in pairs(self._spiritArray) do
+            if v and not v:isSpiritEquip() and not v:isSpiritEquipLock() then
+                array[#array+1] = v
+            end
+        end
+        return array
+    else
+        if index == 0 then
+            for k,v in pairs(self._spiritArray) do
+                if v and v:getItemMeta():getEquipPos() < 7 then
+                    array[#array+1] = v
+                end
+            end
+            return array
+        else
+            for k,v in pairs(self._spiritArray) do
+                if v and v:getItemMeta():getEquipPos() == index then
+                    array[#array+1] = v
+                end
+            end
+            return array
+        end
+    end 
+end
+
+function ItemModule:getSpiritEquipItem(objid)
+    if self._spiritArray then
+        for k,v in pairs(self._spiritArray) do
+            if objid ==  v:getSpecialObjId() then
+                return v
+            end
+        end
+    end
+    return nil
+end
+
+function ItemModule:useTaskItem(item)
+    item:setTaskItem(0)  -- 任务物品 id到了客户端 就为0
+    local ret = false
+    for i,v in ipairs(self._taskItemArr) do
+        if item:getObjId() == v:getObjId() then
+            ret = true
+            break
+        end
+    end
+    if not ret then
+        self._taskItemArr[#self._taskItemArr + 1] = item
+
+        self:saveTaskItemToUser()
+        if #self._taskItemArr == 1 then
+            -- NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIDlgTaskEquip", reopen = true, item = item})
+        end
+    end
+end
+
+function ItemModule:removeTaskItem(item)
+    for i=#self._taskItemArr, 1, -1 do
+        local v = self._taskItemArr[i]
+        if item:getObjId() == v:getObjId() then
+            table.remove(self._taskItemArr, i)
+        elseif not self:getItemByObjId(v:getObjId()) then
+            table.remove(self._taskItemArr, i)
+        end
+    end
+
+    self:saveTaskItemToUser()
+
+    if #self._taskItemArr > 0 then
+        -- NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIDlgTaskEquip", reopen = true, item = self._taskItemArr[1]})
+    end
+end
+
+function ItemModule:gameStartTaskItem()
+    local objIdArr = self:getTaskItemFromUser()
+    if not objIdArr then return end
+
+    self._taskItemArr = {}
+    for _,v in ipairs(self._packageArray) do
+        local str = v:getItemType() .. "," .. v:getItemId()
+        for j,objStr in ipairs(objIdArr) do
+            if str == objStr then
+                self._taskItemArr[#self._taskItemArr + 1] = v
+                break
+            end
+        end
+    end
+
+    if #self._taskItemArr > 0 then
+        -- NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIDlgTaskEquip", reopen = true, item = self._taskItemArr[1]})
+    end
+end
+
+function ItemModule:getTaskItemFromUser()
+    local objIdStr = lt.PrefManager:getUserValueByKey(ItemModule.FAST_TASK_ITEM)
+    local objIdArr = nil
+    if objIdStr and objIdStr ~= "" then
+        objIdArr = string.split(objIdStr, ";")
+    end
+    return objIdArr
+end
+
+function ItemModule:saveTaskItemToUser()
+    local objIdStr = ""
+    local num = #self._taskItemArr
+
+    for i,v in ipairs(self._taskItemArr) do
+        objIdStr = objIdStr .. v:getItemType() .. "," .. v:getItemId()
+        if i < num then
+            objIdStr = objIdStr .. ";"
+        end
+    end
+    lt.PrefManager:setUserValueByKey(ItemModule.FAST_TASK_ITEM, objIdStr)
+end
+
+function ItemModule:setFastOutIn(bool)
+    self._fastOutIn = bool
+end
+
+function ItemModule:getFastOutIn()
+    return self._fastOutIn
+end
+
+function ItemModule:getItemByObjId(objId)
+    for k,v in ipairs(self._packageArray) do
+        if v:getObjId() == objId then
+            return v, k
+        end
+    end
+    return nil, nil
+end
+
+function ItemModule:getEquipItemByObjId(objId)
+    for k,v in ipairs(self._equipArray) do
+        if v:getObjId() == objId then
+            return v, k
+        end
+    end
+    return nil, nil
+end
+
+function ItemModule:getDepotItemByObjId(objId)
+    for k,v in ipairs(self._depotArray) do
+        if v:getObjId() == objId then
+            return v, k
+        end
+    end
+    return nil, nil
+end
+
+function ItemModule:getBeltItemByObjId(objId)
+    for k,v in ipairs(self._beltArray) do
+        if v:getObjId() == objId then
+            return v, k
+        end
+    end
+    return nil, nil
+end
+
+
+function ItemModule:getEquipItemByPos(pos)
+    for k,v in ipairs(self._equipArray) do
+        if v:getPos() == pos then
+            return v, k
+        end
+    end
+    return nil, nil
+end
+
+function ItemModule:getItemByUid(uid)
+    for k,v in ipairs(self._packageArray) do
+        if v:getItemUid() == uid then
+            return v, k
+        end
+    end
+    return nil, nil
+end
+
+function ItemModule:getEquipItemByUid(uid)
+    for k,v in ipairs(self._equipArray) do
+        if v:getItemUid() == uid then
+            return v, k
+        end
+    end
+    return nil, nil
+end
+-- 按物品大类ItemType从前到后（分类相同按照小类Kind排序），
+-- 物品小类Kind从前到后（小类相同按道具品质Quality排序）
+-- 道具品质Quality从大到小（品质相同按道具种类Type排序）
+-- 道具种类Type从前到后（道具种类相同按Id排序）
+-- 道具Id从前到后（Id相同按绑定属性排序）
+-- 绑定属性从小到大（绑定属性相同按叠加数量排序）
+-- 叠加数量从大到小
+
+function ItemModule:tidyPackage()
+    table.sort(self._packageArray, function (a, b)
+        local ta = 1
+        local aMeta = a:getItemMeta()
+        local bMeta = b:getItemMeta()
+        if a:getItemType() == 2 then
+            ta = 3*100000000 + a:getMetaEquipPos() * 1000000 + aMeta:getQuality() * 100000 + a:getItemId() + a:getBind()/10
+        elseif a:getItemType() == 1 then
+            ta = 2*100000000 + a:getMetaKind()*1000000 + aMeta:getQuality() * 100000 + a:getMetaType()*10000 + a:getItemId()/100 + a:getBind()/1000 + a:getNum()/10000000
+        elseif a:getItemType() == 3 then
+            ta = 1*100000000 + a:getItemId()
+        end
+        local tb = 1
+        if b:getItemType() == 2 then
+            tb = 3*100000000 + b:getMetaEquipPos() * 1000000 + bMeta:getQuality() * 100000 + b:getItemId() + b:getBind()/10
+        elseif b:getItemType() == 1 then
+            tb = 2*100000000 + b:getMetaKind()*1000000 + bMeta:getQuality() * 100000 + b:getMetaType()*10000 + b:getItemId()/100 + b:getBind()/1000 + b:getNum()/10000000
+        elseif a:getItemType() == 3 then
+            tb = 1*100000000 + b:getItemId()
+        end
+        return ta > tb
+    end)
+    for i,v in ipairs(self._packageArray) do
+        v:setPos(-1)
+        v:setPage((i%40 == 0) and i/40 or (math.floor(i/40) + 1))
+    end
+end
+
+
+function ItemModule:fiterBagItems()
+    if self.gridPropManager then
+        self.gridPropManager:clear()
+    end
+    self.gridPropManager = lt.InventoryGridManger.new(Constant.INVENTORY_DEFUAL_SIZE.WIDTH, Constant.INVENTORY_DEFUAL_SIZE.HEIGHT + ItemModule:getExpandGridH())
+    if self.gridEquipManager then
+        self.gridEquipManager:clear()
+    end
+    self.gridEquipManager = lt.InventoryGridManger.new(Constant.INVENTORY_DEFUAL_SIZE.WIDTH, Constant.INVENTORY_DEFUAL_SIZE.HEIGHT + ItemModule:getExpandGridH())
+    self._fiterPropArr = {}
+    self._fiterEquipArr = {}
+    --按位置排序
+    table.sort(self._packageArray,function (a,b)
+        if a:getItemY() == b:getItemY() then
+            return a:getItemX() < b:getItemX()
+        end
+        return a:getItemY() < b:getItemY()
+    end)
+    
+    for _,itemInfo in ipairs(self._packageArray) do
+        local itemType = itemInfo:getItemType()
+        if itemType ==  Constant.ItemType.ITEM_TYPE_PROP then
+            table.insert(self._fiterPropArr, itemInfo)
+        elseif itemType ==  Constant.ItemType.ITEM_TYPE_EQUIP then
+            table.insert(self._fiterEquipArr, itemInfo)
+        end
+    end
+
+    self:fiterSort(self._fiterPropArr)
+    self:fiterSort(self._fiterEquipArr)
+
+    self:calcItemsXY(self._fiterPropArr, self.gridPropManager)
+    self:calcItemsXY(self._fiterEquipArr,self.gridEquipManager)
+end
+
+function ItemModule:fiterStrengthenItems(index, item, filterEquipType)
+    index = index or 1
+    if self.gridStrengthManager then
+        self.gridStrengthManager:clear()
+    end
+    self.gridStrengthManager = lt.InventoryGridManger.new(Constant.STRENGTHEN_SIZE.WIDTH, ItemModule.MAX_GRID_HEIGHT, true)
+    self._fiterStrengthArr = {}
+
+    --装备合成/传承/转换只能操作背包里的装备
+    if index ~= Constant.TYPEFILTER.LEVELUP and index ~= Constant.TYPEFILTER.STRENGTHNEN and
+    index ~= Constant.TYPEFILTER.BLESSING and index ~= Constant.TYPEFILTER.RECASTING and
+    index ~= Constant.TYPEFILTER.PURIFY and index ~= Constant.TYPEFILTER.MOTIVATE then
+        filterEquipType = FilterEquipType.BagEquip
+    end
+
+    if filterEquipType == FilterEquipType.BagEquip then
+        for _,itemInfo in ipairs(self._packageArray) do
+            local itemType = itemInfo:getItemType()
+            if itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+                local isFilter = lt.StrengthenModule:getFilterEquips(index, itemInfo, item)
+                itemInfo:setFilter(isFilter)
+                table.insert(self._fiterStrengthArr, itemInfo)
+            elseif (index == Constant.TYPEFILTER.REFINERIGHT or index == Constant.TYPEFILTER.REFINELEFT) and itemType == Constant.ItemType.ITEM_TYPE_PROP then
+                --如果是精炼副材料可以用通用石头
+                local itemKind = itemInfo:getMetaKind()
+                local subType = itemInfo:getMetaType()
+                if itemKind == Constant.PropType.STRENGTHEN and subType == Constant.PropTypeSub_7.Refine then
+                    local isFilter = lt.StrengthenModule:getFilterItems(index, itemInfo, item)
+                    itemInfo:setFilter(isFilter)
+                    table.insert(self._fiterStrengthArr, itemInfo)
+                end
+            end
+        end
+    else
+        for _,itemInfo in ipairs(self._equipArray) do
+            local itemType = itemInfo:getItemType()
+            if itemType ==  Constant.ItemType.ITEM_TYPE_EQUIP then
+                local isFilter = lt.StrengthenModule:getFilterEquips(index, itemInfo, item)
+                itemInfo:setFilter(isFilter)
+                table.insert(self._fiterStrengthArr, itemInfo)
+            end
+        end
+    end
+    
+    self:fiterStrengthenSort(self._fiterStrengthArr)
+
+    local maxHeight = self:calcItemsMaxXY(self._fiterStrengthArr, self.gridStrengthManager)
+    return maxHeight
+end
+
+function ItemModule:fiterStrengthenItemsSp(index, itemInfo1, itemInfo2)
+    if self.gridStrengthManager then
+        self.gridStrengthManager:clear()
+    end
+    self.gridStrengthManager = lt.InventoryGridManger.new(Constant.STRENGTHEN_SIZE.WIDTH, ItemModule.MAX_GRID_HEIGHT, true)
+    self._fiterStrengthArr = {}
+    
+    for _,itemInfo in ipairs(self._packageArray) do
+        local itemType = itemInfo:getItemType()
+        if itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+            local isFilter = lt.StrengthenModule:getFilterEquipsSp(itemInfo, itemInfo1, itemInfo2)
+            itemInfo:setFilter(isFilter)
+            table.insert(self._fiterStrengthArr, itemInfo)
+        elseif (index == Constant.TYPEFILTER.REFINERIGHT or index == Constant.TYPEFILTER.REFINELEFT) and itemType == Constant.ItemType.ITEM_TYPE_PROP then
+            --如果是精炼副材料可以用通用石头
+            local itemKind = itemInfo:getMetaKind()
+            local subType = itemInfo:getMetaType()
+            if itemKind == Constant.PropType.STRENGTHEN and subType == Constant.PropTypeSub_7.Refine then
+                local isFilter = lt.StrengthenModule:getFilterEquipsSp(itemInfo, itemInfo1, itemInfo2)
+                itemInfo:setFilter(isFilter)
+                table.insert(self._fiterStrengthArr, itemInfo)
+            end
+        end
+    end
+
+    self:fiterStrengthenSort(self._fiterStrengthArr)
+
+    local maxHeight = self:calcItemsMaxXY(self._fiterStrengthArr, self.gridStrengthManager)
+    return maxHeight
+end
+
+function ItemModule:fiterTransactionItems(index, item)
+    index = index or 1
+    if self.gridTransactionManager then
+        self.gridTransactionManager:clear()
+    end
+    self.gridTransactionManager = lt.InventoryGridManger.new(Constant.TRANSACTION_SIZE.WIDTH, ItemModule.MAX_GRID_HEIGHT, true)
+    self._fiterTransactionArr = {}
+    
+    for _,itemInfo in ipairs(self._packageArray) do
+        -- local transactionsMeta = CacheManager:getTransactionsById(itemInfo:getItemId())
+        local sid = itemInfo:getItemId()
+        local itemType = itemInfo:getItemType()
+        local transactionsMeta = lt.TransactionModule:getTransactionDataByItemIdAndType(sid, itemType)
+        if transactionsMeta then
+            itemInfo:setFilter(1)
+            table.insert(self._fiterTransactionArr, itemInfo)
+        end
+    end
+    local maxHeight = self:calcItemsMaxXY(self._fiterTransactionArr, self.gridTransactionManager)
+    return maxHeight
+end
+
+function ItemModule:getFiterPropArr()
+    return self._fiterPropArr
+end
+function ItemModule:getFiterEquipArr()
+    return self._fiterEquipArr
+end
+
+function ItemModule:getFiterStrengthenArr()
+    return self._fiterStrengthArr
+end
+
+function ItemModule:getFiterTransactionArr()
+    return self._fiterTransactionArr
+end
+
+function ItemModule:calcItemsXY(itemArr, manager)
+    local gridX = 1
+    local gridY = 1
+    local maxHeight = 1
+
+    for _, itemInfo in ipairs(itemArr) do
+        -- 找到可以放置道具的起始位置
+        local aMeta = itemInfo:getItemMeta()
+        local itemSizeIndex = aMeta:getItemSize()
+        local gridWidth = lt.Constant.ITEMSIZE[itemSizeIndex].width
+        local gridHeight = lt.Constant.ITEMSIZE[itemSizeIndex].height
+
+        while true do
+            if manager:isAreaFree(gridX, gridY, gridWidth, gridHeight) then
+                itemInfo:setFiterXY(gridX, gridY)
+                manager:placeItem(gridX, gridY, gridWidth, gridHeight)
+                local height = gridY + gridHeight - 1
+                if height > maxHeight then
+                    maxHeight = height
+                end
+                break
+            end
+
+            -- 如果当前位置不合适，移动到下一个位置
+            local totalWidth, totalHeight = manager:getGridWH()
+            gridX = gridX + 1
+            if gridX > totalWidth then
+                gridX = 1
+                gridY = gridY + 1
+            end
+            -- 如果超出背包范围，停止查找
+            if gridY > totalHeight then
+                print("背包已满，无法放置更多道具")
+                return 
+            end
+        end
+    end
+    return maxHeight
+end
+
+function ItemModule:calcItemsMaxXY(itemArr, manager)
+    local gridX = 1
+    local gridY = 1
+    local maxHeight = 1
+
+    for _, itemInfo in ipairs(itemArr) do
+        -- 找到可以放置道具的起始位置
+        local aMeta = itemInfo:getItemMeta()
+        local itemSizeIndex = aMeta:getItemSize()
+        local gridWidth = lt.Constant.ITEMSIZE[itemSizeIndex].width
+        local gridHeight = lt.Constant.ITEMSIZE[itemSizeIndex].height
+
+        while true do
+            if manager:isAreaFree(gridX, gridY, gridWidth, gridHeight) then
+                itemInfo:setFiterXY(gridX, gridY)
+                manager:placeItem(gridX, gridY, gridWidth, gridHeight)
+                local height = gridY + gridHeight - 1
+                if height > maxHeight then
+                    maxHeight = height
+                end
+                break
+            end
+
+            -- 如果当前位置不合适，移动到下一个位置
+            local totalWidth, totalHeight = manager:getGridWH()
+            gridX = gridX + 1
+            if gridX > totalWidth then
+                gridX = 1
+                gridY = gridY + 1
+            end
+        end
+    end
+    return maxHeight
+end
+
+--[[
+道具分页签排序规则：
+1. 空间大小排序，1、2、4、3、6
+2. 道具大类
+3. 道具小类
+4. 稀有度排序
+--]]
+--[[
+装备分页签排序规则：
+1. 空间大小排序，1、2、4、3、6
+2. 装备类型（大类）
+3. 武器类型（小类）
+4. 稀有度排序(从大到小，其他从小到大)
+--]]
+
+function ItemModule:fiterSort(sortArr)
+    table.sort(sortArr, function(a, b)
+        local aMeta = a:getItemMeta()
+        local bMeta = b:getItemMeta()
+        if aMeta:getItemSize() ~= bMeta:getItemSize() then
+            if aMeta:getItemSize() == 3 and bMeta:getItemSize() == 4 then
+                return false 
+            end
+            if aMeta:getItemSize() == 4 and bMeta:getItemSize() == 3 then
+                return true 
+            end
+            return aMeta:getItemSize() < bMeta:getItemSize()    
+        elseif aMeta:getKind() ~= bMeta:getKind() then
+            return aMeta:getKind() < bMeta:getKind()
+        elseif aMeta:getType() ~= bMeta:getType() then
+            return aMeta:getType() < bMeta:getType()
+        elseif aMeta:getItemId() ~= bMeta:getItemId() then
+            return aMeta:getItemId() < bMeta:getItemId()
+        elseif a:getQuality() ~= b:getQuality() then
+            return a:getQuality() > b:getQuality()
+        elseif a:getILevel() ~= b:getILevel() then
+            return a:getILevel() > b:getILevel()
+        end
+    end)
+end
+
+--[[
+强化装备排序规则：
+0. 符合要求的装备
+1. 装备类型（大类）
+2. 武器类型（小类）
+3. 空间大小排序，1、2、4、3、6
+4. 稀有度排序(从大到小，其他从小到大)
+--]]
+function ItemModule:fiterStrengthenSort(sortArr)
+    table.sort(sortArr, function(a, b)
+        local aMeta = a:getItemMeta()
+        local bMeta = b:getItemMeta()
+
+        if a:getFilter() ~= b:getFilter() then
+            return a:getFilter() > b:getFilter()
+        elseif a:getItemType() ~= b:getItemType() then
+            return a:getItemType() > b:getItemType()
+        elseif aMeta:getKind() ~= bMeta:getKind() then
+            return aMeta:getKind() < bMeta:getKind()
+        elseif aMeta:getType() ~= bMeta:getType() then
+            return aMeta:getType() < bMeta:getType()
+        elseif a:getILevel() ~= b:getILevel() then
+            return a:getILevel() > b:getILevel()
+        elseif aMeta:getItemSize() ~= bMeta:getItemSize() then
+            if aMeta:getItemSize() == 3 and bMeta:getItemSize() == 4 then
+                return false 
+            end
+            if aMeta:getItemSize() == 4 and bMeta:getItemSize() == 3 then
+                return true 
+            end
+            return aMeta:getItemSize() < bMeta:getItemSize()    
+        elseif a:getQuality() ~= b:getQuality() then
+            return a:getQuality() > b:getQuality()
+        elseif aMeta:getItemId() ~= bMeta:getItemId() then
+            return aMeta:getItemId() > bMeta:getItemId()
+        end
+    end)
+end
+
+function ItemModule:getEmptyPos()
+    local table2 = self._expandsPosRecord
+    local table1 = {1,2,3,4,5}
+        
+    local notInTable2 = {}
+
+    local function existsInTable(value, tbl)
+        for _, v in ipairs(tbl) do
+            if tonumber(v) == tonumber(value) then
+                return true
+            end
+        end
+        return false
+    end
+
+    for _, value in ipairs(table1) do
+        if not existsInTable(value, table2) then
+            table.insert(notInTable2, value)
+        end
+    end
+    if #table1 == 0 then
+        notInTable2 = table1
+    end
+
+    local function findMinValue(t)
+        if #t == 0 then return nil end
+        local minValue = t[1] 
+        for i = 2, #t do     
+            if t[i] < minValue then
+                minValue = t[i]
+            end
+        end
+        return minValue
+    end
+    
+    local minValue = findMinValue(notInTable2)
+    return minValue
+end
+
+function ItemModule:calcPage(array)
+    local pageNums = {}
+    local vPage
+    for i,v in ipairs(array) do
+        pageNums[v:getPage()] = pageNums[v:getPage()] and (pageNums[v:getPage()] + 1) or 1
+    end
+
+    for i,v in ipairs(pageNums) do
+        if v < 40 then
+            return i
+        end
+    end
+
+    return #pageNums + 1
+end
+
+function ItemModule:insertPackageItem(item)
+    table.insert(self._packageArray, item)
+    self:fiterBagItems()
+
+    local itemType = item:getItemType()
+    if itemType ==  Constant.ItemType.ITEM_TYPE_EQUIP then
+        --自动穿戴
+        if self._unEquipObjId ~= item:getObjId() and item:getNew() then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_EQUIP_AUTOUSE,{item = item})
+        end
+    end
+
+    self:setIsEquipListChange(true)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_NUMB,{content = string.format("%d_%d",item:getItemType(),item:getItemId()),item = item})
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_CHANGE_EVENT, {typePos = Constant.ItemTypePos.Item_InPackage,item = item})
+    -- print("物品添加",item:getObjId())
+end
+
+function ItemModule:removePackageItem(index)
+    local content,objId = "",nil
+    local item = nil
+    if self._packageArray and self._packageArray[index] then
+        item = self._packageArray[index]
+        content = string.format("%d_%d",self._packageArray[index]:getItemType(),self._packageArray[index]:getItemId())
+        objId = self._packageArray[index]:getObjId()
+    end
+    table.remove(self._packageArray, index)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_NUMB,{content = content ,item = item})
+    if objId then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_CHANGE_EVENT, {typePos = Constant.ItemTypePos.Item_InPackage,objId = objId})
+    end
+    self:fiterBagItems()
+end
+
+function ItemModule:getDepotEmptyPos(curIndex)
+    local depotArray = ItemModule:getDepotArray() or {}
+    local heroData = GameModule:getHeroData()
+    local getMaxDepotPos = heroData:getMaxDepot()
+    local maxGroup = math.floor(getMaxDepotPos / 20)
+    local groupIndexTable = {}
+    for i = 1,maxGroup do
+        groupIndexTable[i] = true
+    end
+    
+    local function checkEmptyPos(index)
+        local emptyPos = nil
+        local startPos = (index-1)*20
+        local endPos = (index*20)-1
+        for i = startPos, endPos do
+            local isExist = false
+            for j = 1, #depotArray do
+                local depot = depotArray[j]
+                if depot:getPos() == i then
+                    isExist = true
+                    break
+                end
+            end
+            if not isExist then
+                emptyPos = i
+                break
+            end
+        end
+
+        
+        if emptyPos and emptyPos > getMaxDepotPos then
+            emptyPos = nil
+        end
+
+        return emptyPos
+    end
+
+    local emptyPos = nil
+    -- 是否有制定页查询
+    if curIndex and groupIndexTable[curIndex] then
+        emptyPos = checkEmptyPos(curIndex)
+        if emptyPos then
+            return emptyPos
+        end
+        groupIndexTable[curIndex] = false
+    end
+
+    -- 从1开始查询
+    for i = 1,maxGroup do
+        if groupIndexTable[i] then
+            emptyPos = checkEmptyPos(i)
+            if emptyPos then
+                return emptyPos
+            end
+        end
+    end
+
+    return emptyPos
+end
+
+function ItemModule:setPackageItemUsing(objId, bool)
+    for k,v in ipairs(self._packageArray) do
+        if v:getObjId() == objId then
+            v:setSellItem(bool)
+            return
+        end
+    end
+end
+
+function ItemModule:getItemByItemId(itemId,types)
+    for k,v in ipairs(self._packageArray) do
+        if v:getItemId() == itemId and v:getItemType() == types then
+            return v, k
+        end
+    end
+    for k,v in ipairs(self._beltArray) do
+        if v:getItemId() == itemId and v:getItemType() == types then
+            return v, k
+        end
+    end
+    return nil, nil
+end
+
+-- 从背包里查询第一个物品id相同的物品
+function ItemModule:getPackageByItemId(itemId,types)
+    for k,v in ipairs(self._packageArray) do
+        if v:getItemId() == itemId and v:getItemType() == types then
+            return v, k
+        end
+    end
+
+    return nil, nil
+end
+
+
+-- 通过itemid 获取总量
+function ItemModule:getItemAllCountByItemId(itemId, types)
+    local count = 0
+    for k,v in ipairs(self._packageArray) do
+        if v:getItemId() == itemId and v:getItemType() == types then
+            count = count + v:getNum()
+        end
+    end
+    return count
+end
+
+function ItemModule:getNotMarkItemById(itemId,types)
+    for k,v in ipairs(self._packageArray) do
+        if v:getItemId() == itemId 
+            and v:getItemType() == types 
+            and (v:getMarkMapId() == nil or tonumber(v:getMarkMapId()) == 0)
+            then
+            return v, k
+        end
+    end
+    return nil, nil
+end
+
+function ItemModule:getMarkItemById(itemId,types)
+    for k,v in pairs(self._packageArray) do
+        if v:getItemId() == itemId 
+            and v:getItemType() == types 
+            and (v:getMarkMapId() and tonumber(v:getMarkMapId()) > 0)
+            then
+            return v, k
+        end
+    end
+    return nil, nil
+end
+
+function ItemModule:getWholeItems(itemId, types)
+    local ret = {}
+    for i,v in ipairs(self._packageArray) do
+        if v:getItemId() == itemId and v:getItemType() == types then
+            ret[#ret + 1] = { objId = v:getObjId(), num = v:getNum() }
+        end
+    end
+    return ret
+end
+
+function ItemModule:getSingalItemByItemId(itemId,itemType)
+    for k,v in ipairs(self._packageArray) do
+        if v:getItemId() == itemId and not v:getUseType() and v:getItemType() == itemType then
+            return v
+        end
+    end
+    return nil
+end
+
+function ItemModule:checkHasItem(itemType, itemid, array)
+    if not itemid then 
+        return false 
+    end
+
+    for k,v in pairs(array) do
+        if v:getItemType() == itemType and v:getItemId() == itemid then
+            return true
+        end
+    end
+    return false
+end
+
+function ItemModule:checkDestroyItem(itemType, itemid)
+    local destroyTabel = lt.WeaponDestroyDao:queryAll()
+    if not destroyTabel then 
+        return false 
+    end
+    for k,v in pairs(destroyTabel) do
+        if k == itemid and itemType == v:getItemType() then
+            return true
+        end
+    end
+end
+
+function ItemModule:getItemNum(itemId)
+    local num = 0
+    for k,v in ipairs(self._packageArray) do
+        if v:getItemId() == itemId then
+            num = num + v:getNum()
+        end
+    end
+    return num
+end
+
+function ItemModule:getItemNumByIdAndType(itemType, itemId, itemBind)
+    local num = self:getValueItem(itemType, itemId)
+    if num == 0 then
+        -- if itemType == Constant.ItemType.ITEM_TYPE_RUNE then
+        --     for k,v in ipairs(self._sealArray) do
+        --         if v:getItemId() == itemId and (itemBind == nil or (itemBind == v:getIsBind())) then
+        --             num = num + v:getNum()
+        --         end
+        --     end
+        -- else
+        for k,v in ipairs(self._packageArray) do
+            if v:getItemId() == itemId and v:getItemType() == itemType and (itemBind == nil or (itemBind == v:getIsBind())) then
+                num = num + v:getNum()
+            end
+        end
+        -- end
+    end
+    return num
+end
+
+function ItemModule:checkItemInPackage(itemType, itemId)
+    if itemId == 0 then return false end
+
+    for _,v in ipairs(self._packageArray) do
+        if v:getItemId() == itemId and v:getItemType() == itemType then
+            return true
+        end
+    end
+    return false
+end
+
+function ItemModule:getValueItem(itemType, itemId)
+    local value = 0
+    if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+        local hero = lt.GameModule:getHeroData()
+        if itemId == Constant.TYPE_VAULE_ITEM.COIN then
+            return hero:getJinBi()
+        -- elseif itemId == Constant.TYPE_VAULE_ITEM.BIND_GOLD then
+        --     return hero:getBindGold()
+        -- elseif itemId >= Constant.TYPE_VAULE_ITEM.COIN1 and itemId <= Constant.TYPE_VAULE_ITEM.COIN5 then
+        --     return hero:getMoney()
+        -- elseif itemId == Constant.TYPE_VAULE_ITEM.LEVEL then
+        --     return hero:getLevel()
+        -- elseif itemId == Constant.TYPE_VAULE_ITEM.VIP_LEVEL then
+        --     -- return hero:getLevel()
+        -- elseif itemId == Constant.TYPE_VAULE_ITEM.TURN_LEVEL then
+
+        -- elseif itemId == Constant.TYPE_VAULE_ITEM.EXP then
+        --     return hero:getExp()
+        -- elseif itemId == Constant.TYPE_VAULE_ITEM.MOON_EXP then
+
+        -- elseif itemId == Constant.TYPE_VAULE_ITEM.PRESTIGE then
+        --     return hero:getRepute()
+        -- elseif itemId == Constant.TYPE_VAULE_ITEM.ANIMA then
+        --     return hero:getCurAnima()
+        -- elseif itemId == Constant.TYPE_VAULE_ITEM.DUST then
+        --     return hero:getCurDust()
+        -- elseif itemId == Constant.TYPE_VAULE_ITEM.FLY_SHOES then
+        --     return hero:getFlyShoes()
+        -- elseif itemId == Constant.TYPE_VAULE_ITEM.XIU_WEI then
+        --     return hero:getTransLiveXiuWei()
+        end
+    end
+    return value
+end
+
+function ItemModule:getItemMetaByStr(str)
+    local msg = string.split(str, ":")
+    local itemType = tonumber(msg[1])
+    local itemIdx = msg[2]
+    local num = msg[3]
+    local itemMeta = nil
+    if itemType == 1 then
+        itemMeta = lt.ItemDao:query(itemIdx)
+    elseif itemType == 2 then
+        itemMeta = lt.EquipDao:query(itemIdx)
+    elseif itemType == 3 then
+        itemMeta = lt.BookDao:query(itemIdx)
+    end
+    return itemMeta, num
+end
+
+function ItemModule:getItemMetaByItemId(itemType, itemId)
+    local itemMeta = nil
+    local itemType = tonumber(itemType)
+    if itemType == 1 then
+        itemMeta = lt.ItemDao:query(itemId)
+    elseif itemType == 2 then
+        itemMeta = lt.EquipDao:query(itemId)
+    elseif itemType == 3 then
+        itemMeta = lt.BookDao:query(itemId)
+    elseif itemType == lt.Constant.ItemType.ITEM_TYPE_RUNE then
+        itemMeta = lt.RuneDao:queryGood(itemId)
+    elseif itemType == 5 then
+        itemMeta = lt.SpiritEquipDao:queryItem(itemId)
+    end
+    return itemMeta
+end
+
+function ItemModule:getExchangeStr(items,idx)
+    local linkstr = ""
+    if not items then
+        return linkstr
+    end
+    local strs = StringManager:getString(StringManager.KEY_EXCHANGE_TIPSTR)
+    local array = string.split(items:getMateTypeValue(),",")
+    for k,v in pairs(array) do
+        if v and v ~= "" then
+            local data = string.split(v,":")
+            if k == #array then
+                linkstr = linkstr..self:getItemMetaByItemId(tonumber(data[1]),tonumber(data[2])):getName().."*"..data[3]
+            else
+                linkstr = linkstr..self:getItemMetaByItemId(tonumber(data[1]),tonumber(data[2])):getName().."*"..data[3]..","
+            end
+        end
+    end
+    return string.format(strs[idx],items:getName(),linkstr)
+end
+
+--[[
+@parma str              数据库item配置字符串
+@parma propertyED       属性分割符 默认":"
+@parma groupED          物品组分割符
+]]
+function ItemModule:parse2ItemData(str, propertyED, groupED)
+    if not str or str == "" then
+        return {}
+    end
+
+    propertyED = propertyED or ":"
+
+    local ret = {}
+    if groupED then
+        local groupData = string.split(str, groupED)
+        for i=1, #groupData do
+            local temp = string.split(groupData[i], propertyED)
+            ret[#ret+1] = { itemType=tonumber(temp[1]), itemId=tonumber(temp[2]), itemNum=tonumber(temp[3]), bind = tonumber(temp[4]), ext1=tonumber(temp[5]), ext2=tonumber(temp[6]) }
+        end
+    else
+        local temp = string.split(str, propertyED)
+        ret = { itemType=tonumber(temp[1]), itemId=tonumber(temp[2]), itemNum=tonumber(temp[3]), bind = tonumber(temp[4]), ext1=tonumber(temp[5]), ext2=tonumber(temp[6]) }
+    end
+
+    return ret
+end
+
+function ItemModule:parseJson2ItemData(str)
+    if not str or str == "" then
+        return {}
+    end
+    local ret = {}
+    for k,v in pairs(json.decode(str)) do
+        if v then
+            ret[#ret+1] = {itemType=tonumber(v.Type), itemId=tonumber(v.ID), itemNum=tonumber(v.Num), bind = tonumber(v.Bind), times = v.Deadline}
+        end
+    end
+    return ret
+end
+
+function ItemModule:parseServerPhaseItemData(str, kvED, serverPhaseED, propertyED, groupED)
+    local ret = {}
+    if not str or str == "" then
+        return ret
+    end
+
+    if not kvED or not serverPhaseED then
+        return ret
+    end
+
+    local serverPhase = lt.CommonModule:getServerPrase()
+    local last = nil
+
+    for i,v in ipairs(string.split(str, serverPhaseED)) do
+        local tmp = string.split(v, kvED)
+
+        if tmp[1] and tonumber(tmp[1]) <= serverPhase then
+            if last and tonumber(tmp[1]) > last then
+                ret = lt.ItemModule:parse2ItemData(tmp[2], propertyED, groupED)
+                last = tonumber(tmp[1])
+            elseif not last then
+                ret = lt.ItemModule:parse2ItemData(tmp[2], propertyED, groupED)
+                last = tonumber(tmp[1])
+            end
+        end
+    end
+
+    return ret
+end
+
+-- 判断物品是否足够
+function ItemModule:enoughItem(itemType, itemId, needNum, param)
+    param = param or {}
+    itemId = tonumber(itemId)
+    local itemNum = 0
+    if itemId == Constant.TYPE_VAULE_ITEM.COIN then                 --金币
+        itemNum = lt.GameModule:getHeroData():getJinBi() or 0
+    elseif itemId == Constant.TYPE_VAULE_ITEM.TICKET then           --点券
+        itemNum = lt.GameModule:getHeroData():getGold() or 0
+    else
+        if param.total then
+            itemNum = self:getItemAllCountByItemId(itemId, itemType)
+        else
+            itemNum = self:getItemNum(itemId)
+        end
+    end
+    -- if itemId == 60000 then                 -- 元宝
+    --     itemNum = lt.GameModule:getHeroData():getValue(ServerClientEnum.PlayerValueDef.Attr_YuanBao) or 0
+    -- elseif itemId == 60001 then             -- 金锭
+    --     itemNum = lt.GameModule:getHeroData():getValue(ServerClientEnum.PlayerValueDef.Attr_BindYuanBao) or 0
+    -- elseif itemId >= 60002 and itemId <= 60006 then         -- 金币
+    --     itemNum = lt.GameModule:getHeroData():getValue(ServerClientEnum.PlayerValueDef.Attr_JinBi) or 0
+    -- else
+    --     if itemType == nil then
+    --         itemNum = self:getItemNum(itemId)
+    --     else
+    --         itemNum = self:getItemNumByIdAndType(itemType, itemId)
+    --     end
+    -- end
+    local enough = itemNum >= needNum
+    -- if not enough and param.quickBuy then
+    --     local itemMeta = self:getItemMetaByItemId(itemType, itemId)
+    --     if itemMeta then
+    --         NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MASK_VIEW, {class = "UIDlgQuicklyWay", item = itemMeta})
+    --     end
+    -- end
+
+    if not enough and param.tips then
+        local itemMeta = self:getItemMetaByItemId(itemType, itemId)
+        if itemMeta then
+            if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,{itemInfo = itemMeta, tipsType = Constant.PROPTIPS_FORM.Display})
+            end
+
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = itemMeta:getName()..GReadText.KEY_STRENGTHEN_TIPS31})
+        end
+    end
+    
+    return enough
+end
+
+function ItemModule:getSealItem()
+    local sealArray = {}
+    for k,v in pairs(self._packageArray) do
+        if v:getSeal() == 1 and v:getItemType() == 2 and v:getItemMeta():getRuneGroup() ~= "" then
+            sealArray[#sealArray+1] = v
+        end
+    end
+    return sealArray
+end
+
+function ItemModule:getInlayItem()
+    local Array = {}
+     for k,v in pairs(self._equipArray) do
+        if v:getItemMeta():getRuneGroup() and v:getItemMeta():getRuneGroup() ~= ""then
+            Array[#Array+1] = v
+        end
+    end
+    for k,v in pairs(self._packageArray) do
+        if v:getItemType() ==2 then
+            if v:getItemMeta():getRuneGroup() and v:getItemMeta():getRuneGroup() ~= "" then
+                Array[#Array+1] = v
+            end
+        end
+    end
+    return Array
+end
+
+function ItemModule:getIdentifyItem()
+    local Array = {}
+    for k,v in pairs(self._equipArray) do
+        if v:getItemMeta():getIdentify() == 1 then
+            Array[#Array+1] = v
+        end
+    end
+    for k,v in pairs(self._packageArray) do
+        if v:getItemType() ==2 then
+            if v:getItemMeta():getIdentify() == 1 then
+                Array[#Array+1] = v
+            end
+        end
+    end
+    return Array
+end
+
+function ItemModule:checkBeltInBag()
+    for k,v in pairs(self._packageArray) do
+        if v:getItemMeta():getPocketCount() > 0 then
+            return true
+        end
+    end
+    return false
+end
+
+function ItemModule:getSkillBook()
+    local Array = {}
+    for k,v in pairs(self._packageArray) do
+        if v:getItemType() ==3 then
+            Array[#Array+1] = v
+        end
+    end
+    return Array
+end
+
+function ItemModule:deserializeAttr(buffer)
+    local attrs = {}
+
+    if type(buffer) == "string" and string.len(buffer) ~= 0 then
+        local attr = string.split(buffer, ";")
+        for _,v in ipairs(attr) do
+            if string.len(v) ~= 0 then
+                local tmp = string.split(v, ",")
+                attrs[tonumber(tmp[1])] = tonumber(tmp[2])
+            end
+        end
+    end
+
+    return attrs
+end
+
+-- 装备在身上的pos值与配置表的值的转化   装备->物品表
+function ItemModule:equipPos2Type(pos)
+    return Constant.EQUIP_TYPE_POS_MAP[pos]
+end
+
+function ItemModule:equipType2Pos(etype)
+    return Constant.EQUIP_POS_TYPE_MAP[etype]
+end
+
+------------------------------------------------------------------------------------------------------
+-- 腰带相关 start
+
+--[[
+    和装备相关的更新都可以写到这边
+]]
+function ItemModule:calcEquipValue()
+    -- 装备更新后计算当前的腰带位个数
+    self:calcPocketCount()
+end
+
+--[[
+    获取当前腰带位置个数
+]]
+function ItemModule:calcPocketCount()
+    self._beltPosNum = 0
+    for _,v in pairs(self._equipArray or {}) do
+        local equipMeta = v:getItemMeta()
+        local pocketCount = equipMeta:getPocketCount()
+        if pocketCount > 0 then
+            self._beltPosNum = self._beltPosNum + equipMeta:getPocketCount()
+            -- yflog:Info("pocketCount---------------->>>>%s",equipMeta:getPocketCount())
+        end
+    end
+    -- 特殊处理
+    if self._beltPosNum <= 0 then
+        self._beltArray = {}
+    end
+
+    -- local beltSize = lt.GameModule._heroData:getBeltSize()
+    -- yflog:Info("beltSize---------------->>>>%s",beltSize)
+end
+
+function ItemModule:getPocketCount()
+    return self._beltPosNum or 0
+end
+
+function ItemModule:getBeltArray()
+    return self._beltArray
+end
+
+function ItemModule:getBeltByPos(pos)
+    for k,v in ipairs(self._beltArray) do
+        if v:getPos() == pos then
+            return v
+        end
+    end
+end
+
+function ItemModule:getBeltIndexByPos(pos)
+    for k,v in ipairs(self._beltArray) do
+        if v:getPos() == pos then
+            return v, k
+        end
+    end
+    return nil, nil
+end
+
+function ItemModule:getBeltItemByObjId(objId)
+    for k,v in ipairs(self._beltArray) do
+        if v:getObjId() == objId then
+            return v, k
+        end
+    end
+    return nil, nil
+end
+
+-- 腰带相关 end
+------------------------------------------------------------------------------------------------------
+
+--根据道具id获得objId
+function ItemModule:getObjIdById(id)
+    for k,v in ipairs(self._packageArray) do
+        if v:getItemId() == id then
+            return v:getObjId()
+        end
+    end
+    return nil
+end
+
+--根据道具id获得uid
+function ItemModule:getUidById(id)
+    for k,v in ipairs(self._packageArray) do
+        if v:getItemId() == id then
+            return v:getItemUid()
+        end
+    end
+    return nil
+end
+
+-- 根据装备配置创建一个临时的的ItemData
+function ItemModule:getItemDataByConfig(itemConfig, limitTime, num)
+    limitTime = limitTime or 0
+    local itemValueDef = lt.ServerClientEnum.ItemValueDef or {}
+    local propertyArray = {}
+    for k,v in pairs(itemValueDef) do
+        local value = 0
+        if v == lt.ServerClientEnum.ItemValueDef.Attr_ItemIdx then
+            value = itemConfig:getItemId()
+        elseif v == lt.ServerClientEnum.ItemValueDef.Attr_ItemType then
+            value = itemConfig:getItemType()
+        elseif v == lt.ServerClientEnum.ItemValueDef.Attr_ILevel then
+            value = 4
+        elseif v == lt.ServerClientEnum.ItemValueDef.Attr_Deadline then
+            if limitTime > 0 then
+                local serverTime = lt.TimeCounter:serverTime()
+                value = serverTime + limitTime
+            end
+        elseif v == lt.ServerClientEnum.ItemValueDef.Attr_Bound then
+            value = 0
+        elseif v == lt.ServerClientEnum.ItemValueDef.Attr_Durability then
+            if itemConfig:getItemType() == Constant.ItemType.ITEM_TYPE_EQUIP then
+                value = itemConfig:getDurability()
+            end
+        elseif v == lt.ServerClientEnum.ItemValueDef.Attr_UseCount then
+            if itemConfig:getKind() == Constant.PropType.TRANSFER and itemConfig:getType() == Constant.PropTypeSub_6.SlayerTransform then
+                local maxCount = itemConfig:getEffectParam()[1][2]
+                value = maxCount
+            end
+        elseif v == lt.ServerClientEnum.ItemValueDef.Attr_SuperposeCount then
+            value = num or 1
+        end
+        table.insert(propertyArray, {properCode = v, intValue = value, strValue = ""})
+    end
+    local item = lt.ItemData.new(0, propertyArray)
+    return item
+end
+
+-- 根据objProperty创建一个ItemData
+function ItemModule:getItemDataByProperty(objProperty)
+    local item = lt.ItemData.new(0, objProperty.objprops)
+    return item
+end
+
+function ItemModule:getObjIdBySkillId(skillId)
+    local itemIds = lt.SkillEnum.USE_SKILL_ITEMS[skillId]
+    if type(itemIds) ~= "table" then
+        return nil
+    end
+
+    local itemObjId = nil
+    for _,v in ipairs(itemIds) do
+        local item = lt.ItemModule:getItemByItemId(v,Constant.ItemType.ITEM_TYPE_PROP)
+        if item then
+            itemObjId = item:getObjId()
+            break
+        end
+    end
+
+    return itemObjId
+end
+
+function ItemModule:getWeaponColor()
+    local curRace = lt.GameModule:getHeroRace()
+    local equipName = Constant.RaceToJobPanel[curRace] .. "EquipPos"
+    local armsPos = Constant[equipName].Arms
+    local item = lt.ItemModule:getEquipItemByPos(armsPos)
+    if item then
+        return self:getAffixColor(item:getFirstAffixId())
+    end
+end
+
+function ItemModule:getAffixColor(affixId)
+    if affixId and tonumber(affixId) > 0 then
+        local affixData = lt.CacheManager:getEnchantingAffixMeta(affixId)
+        if affixData then
+            return affixData:getColor()
+        else
+            return Constant.DEFALUT_CLOTH_COLOR
+        end
+    else
+        return Constant.DEFALUT_CLOTH_COLOR
+    end
+end
+
+--检测背包和腰带是否有可安装的子弹
+function ItemModule:autoAddBullet()
+    for k,v in pairs(self._beltArray) do
+        if v:getMetaKind() == Constant.PropType.AMMUNITION then
+            if self:checkUseItemAmmunition(v) then
+                local objId = v:getObjId()
+                self:sendUseItem(objId, 1)
+                return true
+            end
+        end
+    end
+    for k,v in pairs(self._packageArray) do
+        if v:getMetaKind() == Constant.PropType.AMMUNITION then
+            if self:checkUseItemAmmunition(v) then
+                local objId = v:getObjId()
+                self:sendUseItem(objId, 1)
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+------------------------------------------------------------------
+-- 标记圣水制造（人祝）
+function ItemModule:createHolyPotion(item)
+    local itemId = item:getItemId()
+    local itemIds = { 303001 , 303002 , 303003 }
+    -- for _,v in ipairs(itemIds) do
+    --     if itemId == v and item:getObjId() then
+    --         table.insert(self._holyPotionArr, item:getObjId())
+    --         break
+    --     end
+    -- end
+end
+
+function ItemModule:getCreateHolyPotion()
+    return self._holyPotionArr or {}
+end
+
+function ItemModule:clearCreateHolyPotion(objId)
+    -- if objId and self._holyPotionArr then
+    --     for k = #self._holyPotionArr,-1,1 do
+    --         if self._holyPotionArr[k] == objId then
+    --             table.remove(self._holyPotionArr, k)
+    --         end
+    --     end
+    -- end
+end
+
+------------------------------------------------------------------
+-- 标记圣水制造（人医）
+function ItemModule:createHolyPotionDoctor(item)
+    local itemId = item:getItemId()
+    local itemIds = { 301015 , 301016 , 301017, 301018 }
+    for _,v in ipairs(itemIds) do
+        if itemId == v and item:getObjId() then
+            table.insert(self._holyPotionDoctorArr, item:getObjId())
+            break
+        end
+    end
+end
+
+function ItemModule:getCreateHolyPotionDoctor()
+    return self._holyPotionDoctorArr or {}
+end
+
+function ItemModule:clearCreateHolyPotionDoctor(objId)
+    if objId and self._holyPotionDoctorArr then
+        for i, objvalue in ipairs(self._holyPotionDoctorArr) do
+            if objId == objvalue then
+                table.remove(self._holyPotionDoctorArr, i)
+                break
+            end
+        end
+    end
+end
+
+-- 装备部位 (类型,种族 -> 部位)
+function ItemModule:getEquipPartName(kind)
+    if not kind  then
+        return ""
+    end
+    local heroData = GameModule:getHeroData()
+    if not heroData then
+        return ""
+    end
+    local race = heroData:getRace()
+    if kind == Constant.EquipKind.Helmet then
+        if race == Constant.RaceType.Ousters then
+            return "发圈"
+        else
+            return "头盔"
+        end
+    elseif kind == Constant.EquipKind.Clothes or 
+        kind == Constant.EquipKind.TransferEquipmentLeft or
+        kind == Constant.EquipKind.TransferEquipmentRight then
+        return "上身装备"
+    elseif kind == Constant.EquipKind.Necklace then
+        return "项链"
+    elseif kind == Constant.EquipKind.Shield then
+        return "副手武器"
+    elseif kind == Constant.EquipKind.Glove then
+        return "手套"
+    elseif kind == Constant.EquipKind.Bracelet then
+        return "手镯"
+    elseif kind == Constant.EquipKind.Ring then
+        return "戒指"
+    elseif kind == Constant.EquipKind.Shoes then
+        return "鞋子"
+    elseif kind == Constant.EquipKind.Trousers then
+        if race == Constant.RaceType.Ousters then
+            return "靴子"
+        else
+            return "裤子"
+        end
+    elseif kind == Constant.EquipKind.Belt then
+        if race == Constant.RaceType.Ousters then
+            return "臂环"
+        else
+            return "腰带"
+        end
+    elseif kind == Constant.EquipKind.Arms then
+        return "主武器"
+    elseif kind == Constant.EquipKind.ElfStone then
+        return "精灵石"
+    elseif kind == Constant.EquipKind.Amulet then
+        return "护身符"
+    elseif kind == Constant.EquipKind.Earrings then
+        return "耳环"
+    end
+    
+    return ""
+end
+
+-- 自动售卖 筛选
+-- 根据种族分类
+function ItemModule:getAutoRecycleMap()
+    local heroData = GameModule:getHeroData()
+    if not heroData then
+        return
+    end
+    local myrace = heroData:getRace()
+    local list = CacheManager:getRecycleSettingsMap()
+    local mapTable = {}
+    for _, meta in ipairs(list or {}) do
+        local race = meta:getOccupation() or 0
+        if race == 0 or myrace == race then
+            local first = meta:getClass() -- 大类
+            local second = meta:getType() -- 小类
+            if not mapTable[first] then
+                mapTable[first] = {}
+            end
+            if not mapTable[first][second] then
+                mapTable[first][second] = {}
+            end
+            table.insert(mapTable[first][second], meta)
+        end
+    end
+
+    local function remapNestedTable(t)
+        local result = {}
+        local keys = {}
+
+        -- 提取所有 key 并排序以保证顺序一致
+        for k in pairs(t) do
+            table.insert(keys, k)
+        end
+        -- table.sort(keys)
+
+        local idx = 1
+        for _, k in ipairs(keys) do
+            local subTable = t[k]
+            local subResult = {}
+            local subKeys = {}
+
+            -- 子级 key 同样提取并排序
+            for sk in pairs(subTable) do
+                table.insert(subKeys, sk)
+            end
+            -- table.sort(subKeys)
+
+            local subIdx = 1
+            for _, sk in ipairs(subKeys) do
+                subResult[subIdx] = subTable[sk] -- 第三层数据保持不变
+                subIdx = subIdx + 1
+            end
+
+            result[idx] = subResult
+            idx = idx + 1
+        end
+
+        return result
+    end
+
+    return remapNestedTable(mapTable)
+end
+
+function ItemModule:getAutoRecycleFilterMap()
+    if not self._recycleSettingsFilterMap then
+		self._recycleSettingsFilterMap = self:getAutoRecycleMap()
+	end
+	return self._recycleSettingsFilterMap
+end
+-- 装备或道具音效
+function ItemModule:playSoundByItemInfo(itemInfo)
+    if itemInfo == nil then return end
+    local itemType = itemInfo:getItemType()
+    local kind = itemInfo:getMetaKind()
+    local type = itemInfo:getMetaType()
+    local soundName = nil
+    if itemType == ItemType.ITEM_TYPE_PROP then
+        if kind == PropType.AMMUNITION then
+            --弹药
+            soundName = SoundEffect.MagazineItemMoveSound
+        elseif kind == PropType.STRENGTHEN then
+            --强化类道具
+            soundName = SoundEffect.JewelItemMoveSound
+        end
+    elseif itemType == ItemType.ITEM_TYPE_EQUIP then
+        local race = GameModule:getHeroRace()
+        if race == Constant.RaceType.Slayer then
+            --人族
+            if kind == Constant.EquipKind.Clothes or kind == Constant.EquipKind.Trousers then
+                --衣服和裤子
+                soundName = SoundEffect.ClothItemMoveSound
+            elseif kind == Constant.EquipKind.Arms then
+                --武器
+                if Constant.IsGun[type] then
+                    --枪
+                    soundName = SoundEffect.GunItemMoveSound
+                else
+                    soundName = SoundEffect.SwordItemMoveSound
+                end
+            elseif kind == Constant.EquipKind.Shield then
+                --盾牌
+                soundName = SoundEffect.ShieldItemMoveSound
+            elseif kind == Constant.EquipKind.Bracelet then
+                --手镯
+                soundName = SoundEffect.BraceletItemMoveSound
+            elseif kind == Constant.EquipKind.Shoes then
+                --鞋子
+                soundName = SoundEffect.ShoesItemMoveSound
+            elseif kind == Constant.EquipKind.Glove then
+                --手套
+                soundName = SoundEffect.GloveItemMoveSound
+            elseif kind == Constant.EquipKind.Helmet then
+                --头盔
+                soundName = SoundEffect.HelmItemMoveSound
+            elseif kind == Constant.EquipKind.Belt then
+                --腰带
+                soundName = SoundEffect.BeltItemMoveSound
+            end
+        elseif race == Constant.RaceType.Vampire then
+            --鬼族
+            if kind == Constant.EquipKind.Clothes then
+                --衣服
+                soundName = SoundEffect.ClothItemMoveSound
+            elseif kind == Constant.EquipKind.Bracelet then
+                --手镯
+                soundName = SoundEffect.BraceletItemMoveSound
+            elseif kind == Constant.EquipKind.Glove then
+                --拳套
+                soundName = SoundEffect.GloveItemMoveSound
+            end
+        elseif race == Constant.RaceType.Ousters then
+            --魔族
+            if kind == Constant.EquipKind.Belt then
+                --臂环
+                soundName = SoundEffect.ArmsbandItemMoveSound
+            elseif kind == Constant.EquipKind.Trousers then
+                --靴子
+                soundName = SoundEffect.BootsItemMoveSound
+            elseif kind == Constant.EquipKind.Arms and type == Constant.WeaponType.BattleWheel then
+                --战轮
+                soundName = SoundEffect.ChakramItemMoveSound
+            elseif kind == Constant.EquipKind.Helmet then
+                --发圈
+                soundName = SoundEffect.CircletItemMoveSound
+            elseif kind == Constant.EquipKind.Clothes then
+                --大衣
+                soundName = SoundEffect.CoatItemMoveSound
+            elseif kind == Constant.EquipKind.ElfStone then
+                --精灵石
+                soundName = SoundEffect.ElementalStoneItemMoveSound
+            elseif kind == Constant.EquipKind.Necklace then
+                --项链
+                soundName = SoundEffect.PendantItemMoveSound
+            elseif kind == Constant.EquipKind.Ring then
+                --戒指
+                soundName = SoundEffect.RingItemMoveSound
+            elseif kind == Constant.EquipKind.Arms and type == Constant.WeaponType.WristGuard then
+                --护腕
+                soundName = SoundEffect.WristletItemMoveSound
+            end
+        end
+    end
+    if soundName then
+        lt.AudioManager:playBattleSound(soundName)
+    end
+end
+
+-- 根据设置类型 筛分
+function ItemModule:getAutoRecycleMapBySettingsType()
+    local heroData = GameModule:getHeroData()
+    if not heroData then
+        return
+    end
+    local myrace = heroData:getRace()
+    local list = CacheManager:getRecycleSettingsMap()
+    local mapTable = {}
+    for _, meta in ipairs(list or {}) do
+        local race = meta:getOccupation() or 0
+        if race == 0 or myrace == race then
+            local first = meta:getClass() -- 大类
+            local second = meta:getSettingsType() -- 设置类型
+            if not mapTable[first] then
+                mapTable[first] = {}
+            end
+            if not mapTable[first][second] then
+                mapTable[first][second] = {}
+            end
+            table.insert(mapTable[first][second], meta)
+        end
+    end
+    return mapTable
+end
+
+function ItemModule:getAutoRecycleTypeFilterMap()
+    if not self._recycleSettingsTypeFilterMap then
+		self._recycleSettingsTypeFilterMap = self:getAutoRecycleMapBySettingsType()
+	end
+	return self._recycleSettingsTypeFilterMap
+end
+
+function ItemModule:checkAutoRecycle(item)
+    if not item then
+        return false
+    end
+
+    local itemType = item:getItemType()
+    local mapData = self:getAutoRecycleTypeFilterMap()
+
+    if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+        -- 自动买药的 不售卖
+        local itemId = item:getItemId()
+        if lt.AutoFightManager:isAutoBuyItem(itemId) then
+            return false
+        end
+        return self:checkPropAutoRecycle(item, mapData)
+    elseif itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+        local isAllSelect = self:checkRecycleTypeAllSelect()
+        if not isAllSelect then
+            return false
+        end
+        local list = self:getAutoEquipList() --自动回收列表 不售卖
+        for i,v in ipairs(list or {}) do
+            if v:getItemUid() == item:getItemUid() then
+                return false
+            end
+        end
+        return self:checkEquipAutoRecycle(item, mapData)
+    end
+
+    return false
+end
+
+-- 处理道具类型的自动回收
+function ItemModule:checkPropAutoRecycle(item, mapData)
+    local mapInfo = mapData[Constant.ItemType.ITEM_TYPE_PROP]
+    if not mapInfo then return false end
+
+    local itemIdx = item:getItemId()
+    local type2Array  = mapInfo[Constant.SettingsType.ItemID]
+
+    -- 先检查类型2匹配
+    if type2Array then
+        for _, meta in ipairs(type2Array) do
+            local valueRange = string.split(meta:getValueRange(), ",")
+            if tonumber(valueRange[1]) == Constant.ItemType.ITEM_TYPE_PROP and itemIdx == tonumber(valueRange[2]) then
+                if self:isMetaEnabled(meta) then
+                    return true
+                else
+                    return false
+                end
+            end
+        end
+    end
+
+    -- 再检查类型1匹配
+    local type1Array = mapInfo[Constant.SettingsType.ItemType] or {}
+    local kind = item:getMetaKind()
+    local type = item:getMetaType()
+
+    for _, meta in ipairs(type1Array) do
+        local valueRange = string.split(meta:getValueRange(), ",")
+        if tonumber(valueRange[1]) == kind and (tonumber(valueRange[2]) == 0 or tonumber(valueRange[2]) == type) then
+            if self:isMetaEnabled(meta) then
+                return true
+            else
+                return false
+            end
+        end
+    end
+
+    return false
+end
+
+-- 处理装备类型的自动回收
+function ItemModule:checkEquipAutoRecycle(item, mapData)
+    local mapInfo = mapData[Constant.ItemType.ITEM_TYPE_EQUIP]
+    if not mapInfo then return false end
+
+
+
+    -- 检查装备类型设置
+    local equipTypeArray = mapInfo[Constant.SettingsType.EquipType]
+    if equipTypeArray then
+        -- 没勾选的类型 不判断
+        local isInEquipType = false
+        local kind = item:getMetaKind()
+        local type = item:getMetaType()
+        for _, meta in ipairs(equipTypeArray or {}) do
+            local valueRange = string.split(meta:getValueRange(), ",")
+            if tonumber(valueRange[1]) == kind and (tonumber(valueRange[2]) == 0 or tonumber(valueRange[2]) == type) then
+                if not self:isMetaEnabled(meta) then
+                    return false
+                end
+                isInEquipType = true
+            end
+        end
+        if not isInEquipType then
+            return false
+        end
+    end
+
+    -- 检查装备等级设置
+    local equipLvArray = mapInfo[Constant.SettingsType.EquipLv]
+    if equipLvArray then
+        local needLv = item:getMetaNeedLv() or 0
+        local isInEquipLv = false
+        for _, meta in ipairs(equipLvArray or {}) do
+            local valueRange = string.split(meta:getValueRange(), ",")
+            local minLv = tonumber(valueRange[1]) or 0
+            local maxLv = tonumber(valueRange[2]) or 0
+            if minLv <= needLv and maxLv >= needLv then
+                if not self:isMetaEnabled(meta) then
+                    return false
+                end
+                isInEquipLv = true
+            end
+        end
+        if not isInEquipLv then
+            return false
+        end
+    end
+
+    -- 检查属性限制
+    local equipPropList = mapInfo[Constant.SettingsType.EquipProp]
+    local itemMeta = item:getItemMeta()
+    if equipPropList and itemMeta then
+        local requireStr = itemMeta:getRequireSTR()
+        local requireDex = itemMeta:getRequireDEX()
+        local requireInt = itemMeta:getRequireINT()
+        local requireSum = itemMeta:getRequireSum()
+        -- if requireStr > 0 or requireDex > 0 or requireInt > 0 or requireSum > 0 then
+        local isInEquipProp = false
+        for _, meta in ipairs(equipPropList or {}) do
+            local valueRange = string.split(meta:getValueRange(), ",")
+            local minLv = tonumber(valueRange[1]) or 0
+            local maxLv = tonumber(valueRange[2]) or 0
+
+            -- 判断当前 meta 是否匹配任意一个属性值
+            local matched = false
+            if requireStr >= 0 and (minLv <= requireStr and maxLv >= requireStr) then 
+                matched = true
+            elseif requireDex >= 0 and (minLv <= requireDex and maxLv >= requireDex) then 
+                matched = true
+            elseif requireInt >= 0 and (minLv <= requireInt and maxLv >= requireInt) then 
+                matched = true
+            elseif requireSum >= 0 and (minLv <= requireSum and maxLv >= requireSum) then 
+                matched = true
+            end
+
+            if matched then
+                if not self:isMetaEnabled(meta) then
+                    return false
+                end
+                isInEquipProp = true
+            end
+        end
+        if not isInEquipProp then
+            return false
+        end
+        -- end
+    end
+
+    -- 检查词条品质
+    local equipAffixArray = mapInfo[Constant.SettingsType.EquipAffix]
+    if equipAffixArray then
+        local quality = item:getQuality()
+        local isInEquipAffix = false
+        for _, meta in ipairs(equipAffixArray or {}) do
+            local value = tonumber(meta:getValueRange())
+            if value == quality then
+                if not self:isMetaEnabled(meta) then
+                    return false
+                end
+                isInEquipAffix = true
+            end
+        end
+        if not isInEquipAffix then
+            return false
+        end
+    end
+
+    return true
+end
+
+-- 判断 Meta 是否启用
+function ItemModule:isMetaEnabled(meta)
+    local keySetting = PrefManager:getUserValueByKey(GameModule.AUTO_RECYCLE_SETTING .. meta:getIdx())
+    local checkselect = keySetting and tonumber(keySetting) or meta:getDefaultSwitch() or 0
+    return checkselect == 1
+end
+
+-- 判断四大类是否都未勾选（即没有任何回收条件）
+function ItemModule:checkRecycleTypeAllSelect()
+    local mapData = self:getAutoRecycleTypeFilterMap()
+    if not mapData then
+        return false, 0
+    end
+
+    local equipMap = mapData[Constant.ItemType.ITEM_TYPE_EQUIP]
+    if not equipMap then
+        return false, 0
+    end
+
+    -- 检查指定类型的配置是否至少有一项启用
+    local function isAnyMetaEnabled(configArray)
+        if not configArray then return false end
+        for _, meta in ipairs(configArray) do
+            if self:isMetaEnabled(meta) then
+                return true
+            end
+        end
+        return false
+    end
+
+    local settingsTypes = {
+        Constant.SettingsType.EquipType,
+        Constant.SettingsType.EquipAffix,
+    }
+
+    for _, settingType in ipairs(settingsTypes) do
+        local config = equipMap[settingType] or {}
+        if next(config ) ~= nil and  (not isAnyMetaEnabled(config)) then
+            -- 只要有一个分类下有启用项，就说明不是"全未勾选"
+            return false, settingType
+        end
+    end
+
+    -- EquipLv 和 EquipProp 只有一个就行
+    local configLv = equipMap[Constant.SettingsType.EquipLv] or {}
+    local configProp = equipMap[Constant.SettingsType.EquipProp] or {}
+    local hasLv = next(configLv) ~= nil and isAnyMetaEnabled(configLv)
+    local hasProp = next(configProp) ~= nil and isAnyMetaEnabled(configProp)
+
+    if not hasLv and not hasProp then
+        -- 两个分类都没有启用项，视为未满足条件
+        return false, Constant.SettingsType.EquipLv  -- 或者可以统一用 0 表示复合型失败
+    end
+
+    -- 所有分类都没有启用项
+    return true, 0
+end
+
+-- 背包
+function ItemModule:getPackageArray()
+    return self._packageArray or {}
+end
+
+-- 自动装备List
+function ItemModule:getAutoEquipList()
+    return self._autoEquipList or {}
+end
+
+-- 插入
+function ItemModule:addAutoEquipList(item)
+    if item then
+        table.insert(self._autoEquipList, item)
+    end
+end
+
+-- 删除
+function ItemModule:delAutoEquipList(pos)
+    table.remove(self._autoEquipList, pos)
+end
+
+
+function ItemModule:sendVipAutoSellReq(autoFlag,itemList)
+    self._autoRecycleFlag = autoFlag or false
+    local msg = netcmd_pb.CS_VipAutoSellReq()
+    msg.autoFlag = autoFlag or false
+    msg.itemUid = itemList or false
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.C_VIP_AUTO_SELL_REQ), msg)
+end
+
+function ItemModule:onVipAutoSellResp(event)
+    local proto = event.param
+    local ret = proto.ret
+    local changeNum = proto.changeNum
+    local sellItemNum = proto.sellItemNum
+    yflog:Info("--------changeNum-"..changeNum.."--sellItemNum--"..sellItemNum)
+    if ret == 0 then
+        if not self._autoRecycleFlag then
+            local content = string.format("已出售[%s]个物品，获得[%s]金币",sellItemNum,changeNum)
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = content })
+        else -- 加入系统消息
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_NEW_SYSTEM_NOTICE, {noticeId = Constant.MessageNoticeId.AotoRecycle,params = {sellItemNum,changeNum}})
+        end
+    end
+end
+
+function ItemModule:setIsEquipListChange(isChange)
+    self._equipListChange = isChange
+end
+
+function ItemModule:getIsEquipListChange()
+    return self._equipListChange
+end
+
+function ItemModule:onUpdate()
+    if not self:getIsEquipListChange() then -- 背包装备没变化
+        return
+    end
+    -- 自动出售功能需求VIP开启等级
+    local vipLv = VipModule:getCurVipLv()
+    local autoRecycleNeedVip = VipModule:getVipAutoRecycleLv()
+    if (vipLv < tonumber(autoRecycleNeedVip)) then
+        self:setIsEquipListChange(false)
+        return
+    end
+
+    -- 开启自动回收
+    local keySetting = PrefManager:getUserValueByKey(GameModule.AUTO_RECYCLE_SETTING_OPEN)
+    local checkselect = 0
+    if keySetting then
+        checkselect = tonumber(keySetting)
+    end
+    if checkselect ~= 1 then
+        self:setIsEquipListChange(false)
+        return
+    end
+    -- yflog:Info("-------------------onUpdate-checkselect-"..checkselect)
+    --FIXME 检验背包新增道具再刷新 
+    local itemList = {}
+    local propList = {} --检验过的道具缓存
+    for _, v in ipairs(self._packageArray) do
+        local itemIdx = v:getItemId()
+        local itemType = v:getItemType()
+        if (propList[itemIdx] and itemType == Constant.ItemType.ITEM_TYPE_PROP) or self:checkAutoRecycle(v) then
+            -- 检验过的道具不用在检验
+            if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+                propList[itemIdx] = 1
+            end
+            table.insert(itemList, v:getItemUid())
+        end
+    end
+    if #itemList > 0 then
+        ItemModule:sendVipAutoSellReq(true, itemList)
+    end
+    self:setIsEquipListChange(false)
+end
+
+--检测身上穿着几件套装(返回位置Idx数组)
+function ItemModule:checkSuitIdxs(suitMeta)
+    local suitIdxs = {}
+    if suitMeta:getSuitType() == 1 then
+        suitIdxs = self:checkASuitNum(suitMeta)
+    elseif suitMeta:getSuitType() == 2 then
+        suitIdxs = self:checkBSuitNum(suitMeta)
+    end
+    return suitIdxs
+end
+
+--A类套装检测只有数量判断
+function ItemModule:checkASuitNum(suitMeta)
+    local suitList = self:getSuitList(suitMeta)
+    local suitIdxs = {}
+    local suitBonus = suitMeta:getSuitBonus()
+    for k, v in ipairs(suitBonus) do
+        if #suitList >= v[1] then
+            table.insert(suitIdxs, k)
+        end
+    end
+    return suitIdxs
+end
+
+--B类套装检测数量判断+套件id判断
+function ItemModule:checkBSuitNum(suitMeta)
+    local suitList = self:getSuitList(suitMeta)
+    local suitIdxs = {}
+    local suitBonus = suitMeta:getSuitBonus()
+    for k, v in ipairs(suitBonus) do
+        if #suitList >= v[1] then
+            local isExit = CommonFunc:isInArray(suitList, v[3])
+            if isExit then
+                table.insert(suitIdxs, k)
+            end
+        end
+    end
+    return suitIdxs
+end
+
+--获得套装list(去重)
+function ItemModule:getSuitList(suitMeta)
+    local suitList = {}
+    local suitIdx = suitMeta:getIdxId()
+    local componentIds = suitMeta:getComponentId()
+    if #componentIds == 0 then
+        return suitList
+    end
+    for _, itemInfo in ipairs(self._equipArray) do
+        local equipMeta = itemInfo:getItemMeta()
+        local effectParam = equipMeta:getEffectParam()
+        if effectParam and effectParam ~= "" and effectParam[1][1] == "Suit" then
+            if effectParam[1][2] == suitIdx then
+                local isExit = CommonFunc:isInArray(componentIds, effectParam[1][3])
+                local isAdd = CommonFunc:isInArray(suitList, effectParam[1][3])
+                if isExit and not isAdd then
+                    table.insert(suitList, effectParam[1][3])
+                end
+            end
+        end
+    end
+    return suitList
+end
+
+function ItemModule:showTips(itemInfo)
+    local itemType = itemInfo:getItemType()
+    if itemType ==  Constant.ItemType.ITEM_TYPE_PROP then
+        self:showPropTips(itemInfo)
+    elseif itemType ==  Constant.ItemType.ITEM_TYPE_EQUIP then
+        self:showEquipTips(itemInfo)
+    end
+end
+
+function ItemModule:showPropTips(itemInfo)
+    if WndLockManager:getWndLockType() == Constant.WndLockType.Trade or WndLockManager:getWndLockType() == Constant.WndLockType.AutoRecycle then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,{itemInfo = itemInfo, tipsType = Constant.PROPTIPS_FORM.SELL})
+    elseif WndLockManager:getWndLockType() == Constant.WndLockType.Repair then
+        if WndLockManager:getRepairType() == Constant.RepairType.Repair then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,{itemInfo = itemInfo, tipsType = Constant.PROPTIPS_FORM.REPAIR})
+        end
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,{itemInfo = itemInfo, tipsType = Constant.PROPTIPS_FORM.BAG})
+    end
+end
+
+function ItemModule:showEquipTips(itemInfo)
+    if WndLockManager:getWndLockType() == Constant.WndLockType.Trade or WndLockManager:getWndLockType() == Constant.WndLockType.AutoRecycle then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,{itemInfo = itemInfo, tipsType = Constant.EquipShowTipsType.Sell})
+    elseif WndLockManager:getWndLockType() == Constant.WndLockType.Repair then
+        if WndLockManager:getRepairType() == Constant.RepairType.Repair then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,{itemInfo = itemInfo,tipsType = Constant.EquipShowTipsType.Repair, isBag = true})
+        else
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,{itemInfo = itemInfo,tipsType = Constant.EquipShowTipsType.Silver})
+        end
+    elseif itemInfo:getItemMeta():getKind() == Constant.EquipKind.Contract and self:isEquipOfContractPos(itemInfo) then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,{itemInfo = itemInfo, tipsType = Constant.EquipShowTipsType.RoleEquip})
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,{itemInfo = itemInfo,tipsType = Constant.EquipShowTipsType.Bag})
+    end
+end
+
+-- 检测契约是否已穿戴
+function ItemModule:isEquipOfContractPos(itemInfo)
+    local curObjId = itemInfo:getObjId()
+    for _, pos in ipairs(ContractPos) do
+        local equip = self:getEquipItemByPos(pos)
+        if equip then
+            local equipObjId = equip:getObjId()
+            if curObjId == equipObjId then
+            return true 
+            end
+        end
+    end
+    return false
+end
+
+function ItemModule:checkItemXYChange(preItemInfo, curItemIfno)
+    return preItemInfo:getItemX() == curItemIfno:getItemX() and preItemInfo:getItemY() == curItemIfno:getItemY()
+end
+
+function ItemModule:showTipsByType(itemInfo,tipsType)
+    local itemType = itemInfo:getItemType()
+    if itemType ==  Constant.ItemType.ITEM_TYPE_PROP then
+        self:showPropDisplayTips(itemInfo,tipsType)
+    elseif itemType ==  Constant.ItemType.ITEM_TYPE_EQUIP then
+        self:showEquipDisplayTips(itemInfo,tipsType)
+    end
+end
+
+function ItemModule:showPropDisplayTips(itemInfo,tipsType)
+    tipsType = tipsType or Constant.PROPTIPS_FORM.Display
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,{itemInfo = itemInfo, tipsType = tipsType})
+end
+
+function ItemModule:showEquipDisplayTips(itemInfo,tipsType)
+    tipsType = tipsType or  Constant.EquipShowTipsType.Display
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,{itemInfo = itemInfo,tipsType = tipsType})
+end
+
+--获得一件没有附魔的装备(背包和装备栏)
+function ItemModule:getNoEnchantEquip()
+    for k, v in pairs(self._equipArray) do
+        if v and v:getItemType() == Constant.ItemType.ITEM_TYPE_EQUIP then
+            local attr = lt.StrengthenModule:transformAffix(v)
+            if #attr == 0 then
+                return v
+            end
+        end
+    end
+    for k,v in pairs(self._packageArray) do
+        if v and v:getItemType() == Constant.ItemType.ITEM_TYPE_EQUIP then
+            local attr = lt.StrengthenModule:transformAffix(v)
+            if #attr == 0 then
+                return v
+            end
+        end
+    end
+    return nil
+end
+
+--获得一件有附魔的装备(背包和装备栏)
+function ItemModule:getEnchantEquip()
+    for k, v in pairs(self._equipArray) do
+        if v and v:getItemType() == Constant.ItemType.ITEM_TYPE_EQUIP then
+            local attr = lt.StrengthenModule:transformAffix(v)
+            if #attr > 0 then
+                local isMax = lt.StrengthenModule:getEnchantMax(attr)
+                if not isMax then
+                    return v
+                end
+            end
+        end
+    end
+    for k,v in pairs(self._packageArray) do
+        if v and v:getItemType() == Constant.ItemType.ITEM_TYPE_EQUIP then
+            local attr = lt.StrengthenModule:transformAffix(v)
+            if #attr > 0 then
+                local isMax = lt.StrengthenModule:getEnchantMax(attr)
+                if not isMax then
+                    return v
+                end
+            end
+        end
+    end
+    return nil
+end
+
+--使用物品(按itemidx, itemtype, count)
+function ItemModule:sendUseItemByIndex(itemIdx, itemType, count)
+    local msg = netcmd_pb.CS_UseItemByIndexReq()
+    msg.itemIdx = itemIdx
+    msg.itemType = itemType
+    msg.count = count
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.CS_USE_ITEM_BY_INDEX_REQ), msg)
+end
+
+--使用物品回调
+function ItemModule:onUseItemByIndex(event)
+    local proto = event.param
+    if proto.ret == 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_USE_ITEM_LIMIT19})
+    end
+end
+
+function ItemModule:getWeaponTypeByWeaponAppr(weaponAppr)
+    local weapon = weaponAppr
+    local weaponType = nil
+    if weapon and weapon ~= "" then
+        local weaponId = tonumber(string.split(weapon,",")[1])
+        if type(weaponId) == "number" then
+            local weaponMeta = lt.CacheManager:queryEquipMeta(weaponId)
+            if weaponMeta then
+                weaponType = weaponMeta:getType()
+            end
+        end
+    end
+
+    return weaponType
+end
+
+--
+function ItemModule:getSuitEquipAttr(item)
+    if not item then
+        return ""
+    end
+    local suitTableStr = ""
+    local itemConfig = item:getItemMeta()
+    local attributeDisplay = itemConfig:getAttributeDisplay()
+    local displays = string.split(attributeDisplay, ",")
+    -- 力量
+    if lt.StrengthenModule:getAttrShow(displays[Constant.EqAttrShowType.STR]) then
+        local str = item:getTotalStr()
+        local titleName = GReadText.KEY_STRENGTHEN_TIPS63.." : "
+        suitTableStr = titleName.."+"..str
+    end
+
+    -- 敏捷
+    if lt.StrengthenModule:getAttrShow(displays[Constant.EqAttrShowType.DEX]) then
+        local dex = item:getTotalDex()
+        local titleName = GReadText.KEY_STRENGTHEN_TIPS64.." : "
+        suitTableStr = titleName.."+"..dex
+    end
+
+    -- 智力
+    if lt.StrengthenModule:getAttrShow(displays[Constant.EqAttrShowType.INT]) then
+        local int = item:getTotalInt()
+        local titleName = GReadText.KEY_STRENGTHEN_TIPS65.." : "
+        suitTableStr = titleName.."+"..int
+    end
+
+    -- 物理伤害
+    if lt.StrengthenModule:getAttrShow(displays[Constant.EqAttrShowType.PDAM]) then
+        local pdam = item:getTotalPdam()
+        local titleName = GReadText.KEY_STRENGTHEN_TIPS66.." : "
+        suitTableStr = titleName.."+"..pdam
+    end
+
+    -- 魔法伤害
+    if lt.StrengthenModule:getAttrShow(displays[Constant.EqAttrShowType.MDAM]) then
+        local mdam = item:getTotalMdam()
+        local titleName = GReadText.KEY_STRENGTHEN_TIPS67.." : "
+        suitTableStr = titleName.."+"..mdam
+    end
+
+    -- 物理防御
+    if lt.StrengthenModule:getAttrShow(displays[Constant.EqAttrShowType.PPRO]) then
+        local ppro = item:getTotalPpro()
+        local titleName = GReadText.KEY_STRENGTHEN_TIPS68.." : "
+        suitTableStr = titleName.."+"..ppro
+    end
+
+    -- 魔法防御
+    if lt.StrengthenModule:getAttrShow(displays[Constant.EqAttrShowType.MPRO]) then
+        local mpmo = item:getTotalMpmo()
+        local titleName = GReadText.KEY_STRENGTHEN_TIPS69.." : "
+        suitTableStr = titleName.."+"..mpmo
+    end
+
+    -- 总能力
+    if lt.StrengthenModule:getAttrShow(displays[Constant.EqAttrShowType.ATTR]) then
+        local attr = item:getTotalAttr()
+        local titleName = GReadText.KEY_EQUIP_TIPS44.." : "
+        suitTableStr = titleName.."+"..attr
+    end
+
+    -- 对怪增伤
+    if lt.StrengthenModule:getAttrShow(displays[Constant.EqAttrShowType.DBTM]) then
+        local dbtm = item:getTotalDbtm()
+        local titleName = GReadText.KEY_EQUIP_TIPS45.." : "
+        suitTableStr = titleName.."+"..dbtm.."%"
+    end
+
+    -- 对人增伤
+    if lt.StrengthenModule:getAttrShow(displays[Constant.EqAttrShowType.DBTP]) then
+        local dbtp = item:getTotalDbtp()
+        local titleName = GReadText.KEY_EQUIP_TIPS46.." : "
+        suitTableStr = titleName.."+"..dbtp.."%"
+    end
+
+    return suitTableStr
+end
+------------------------------------------------------------------------
+-- 奖励
+function ItemModule:onRewardNtf(event)
+    local proto = event.param
+    local systemId = proto.systemId
+    -- yflog:Info("----------->>>>>>>>>> %s",systemId)
+    local rewardInfoArray = proto.singleRewardInfo
+    local rewardArray = {}
+    self._rewardNtfArray = {}
+    local rewardByItemId = {}
+    for k,v in ipairs(rewardInfoArray) do
+        -- yflog:Info("-------------%s,%s,%s",v.itemId,v.itemType,v.itemAddNum,v.objProperty)
+        local rewardIndex = rewardByItemId[v.itemId]
+        if rewardIndex and rewardArray[rewardIndex] and v.itemType == Constant.ItemType.ITEM_TYPE_PROP then
+            rewardArray[rewardIndex].itemAddNum = (rewardArray[rewardIndex].itemAddNum or 0) + (v.itemAddNum or 0)
+        else
+            table.insert(rewardArray,{itemId = v.itemId,itemType = v.itemType,itemAddNum = v.itemAddNum,objProperty = v.objProperty})
+            rewardByItemId[v.itemId] = #rewardArray
+        end
+    end
+
+    if #rewardArray > 0 then
+        table.insert(self._rewardNtfArray, {systemId = systemId, rewardArray = rewardArray})
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_REWARD_TIPS,{})
+    end
+end
+
+function ItemModule:getFirstReward()
+    if #self._rewardNtfArray == 0 then
+        return
+    end
+
+    local reward = table.remove(self._rewardNtfArray, 1)
+    return reward
+end
+
+-- 客户端根据表配置获得一个ItemData
+-- A=物品类型
+-- B=物品ID
+-- C=物品数量
+-- D=是否绑定
+-- E=物品剩余时间
+-- F=物品等级
+-- G=物品属性1
+-- H=物品属性2
+-- I=物品属性3
+function ItemModule:getItemDataByRewardConfig(rewardConfig)
+    local propertyArray = {
+        { properCode = lt.ServerClientEnum.ItemValueDef.Attr_ItemIdx  , intValue = tonumber(rewardConfig[2]) },
+        { properCode = lt.ServerClientEnum.ItemValueDef.Attr_ItemType , intValue = tonumber(rewardConfig[1]) },
+        { properCode = lt.ServerClientEnum.ItemValueDef.Attr_ILevel   , intValue = 4},
+    }
+
+    local affixAttr1 = tonumber(rewardConfig[7] or 0)
+    if affixAttr1 > 0 then
+        local optionCfg = CacheManager:getAttributeMetaByOptionId(affixAttr1)
+        if optionCfg then
+            local affixId = optionCfg:getType()
+            local affixLevel = optionCfg:getGrade()
+            table.insert( propertyArray, { properCode = lt.ServerClientEnum.ItemValueDef.Attr_FirstAffixId, intValue = affixId})
+            table.insert( propertyArray, { properCode = lt.ServerClientEnum.ItemValueDef.Attr_FirstAffixLevel, intValue = affixLevel})
+        end
+    end
+
+    local affixAttr2 = tonumber(rewardConfig[8] or 0)
+    if affixAttr2 > 0 then
+        local optionCfg = CacheManager:getAttributeMetaByOptionId(affixAttr2)
+        if optionCfg then
+            local affixId = optionCfg:getType()
+            local affixLevel = optionCfg:getGrade()
+            table.insert( propertyArray, { properCode = lt.ServerClientEnum.ItemValueDef.Attr_SecondAffixId, intValue = affixId})
+            table.insert( propertyArray, { properCode = lt.ServerClientEnum.ItemValueDef.Attr_SecondAffixLevel, intValue = affixLevel})
+        end
+    end
+
+    local affixAttr3 = tonumber(rewardConfig[9] or 0)
+    if affixAttr3 > 0 then
+        local optionCfg = CacheManager:getAttributeMetaByOptionId(affixAttr3)
+        if optionCfg then
+            local affixId = optionCfg:getType()
+            local affixLevel = optionCfg:getGrade()
+            table.insert( propertyArray, { properCode = lt.ServerClientEnum.ItemValueDef.Attr_ThirdAffixId, intValue = affixId})
+            table.insert( propertyArray, { properCode = lt.ServerClientEnum.ItemValueDef.Attr_ThirdAffixLevel, intValue = affixLevel})
+        end
+    end
+
+    local item = lt.ItemData.new(0, propertyArray)
+    return item
+end
+
+function ItemModule:initUnpackItem()
+    self._hpArr = self:getUnpakcItemArr(4001)
+    self._mpArr = self:getUnpakcItemArr(4002)
+    self._hpMpArr = self:getUnpakcItemArr(4003)
+end
+
+function ItemModule:getUnpakcItemArr(id)
+    -- local uiConfig = lt.CacheManager:getUIConfig(id)
+    -- local itemStr = uiConfig:getUnpackItemId()
+    -- local arr = string.split(itemStr, ",")
+    -- return arr
+    return {}
+end
+
+function ItemModule:unpackItemType(id)
+    -- 红
+    for i,v in ipairs(self._hpArr) do
+        if tonumber(v) == id then
+            return 1
+        end
+    end
+    -- 蓝
+    for i,v in ipairs(self._mpArr) do
+        if tonumber(v) == id then
+            return 2
+        end
+    end
+    -- 瞬药
+    for i,v in ipairs(self._hpMpArr) do
+        if tonumber(v) == id then
+            return 3
+        end
+    end
+
+    return 0
+end
+
+--[[
+function ItemModule:caclEquipCombat()
+    self._equipArrayCombat = {}
+end
+
+function ItemModule:getEquipCombat(pos)
+    return self._equipArrayCombat[pos] or 0
+end
+function ItemModule:getRuneItem()
+    local Array = {}
+    local job = lt.GameModule:getHeroData():getJob()
+    for k,v in pairs(self._sealArray) do
+        --if v:getRuneId() > 0 then
+            --if v:getMetaKind() == 46 and (job == lt.RuneDao:query(v:getRuneId()):getJob() or lt.RuneDao:query(v:getRuneId()):getJob() == 0) then
+                Array[#Array+1] = v
+            --end
+        --end 
+    end
+    return Array
+end
+
+function ItemModule:getSealItemNum(itemId)
+    local num = 0
+    for i,v in ipairs(self._sealArray) do
+        if v:getItemId() == itemId then
+            num = num + v:getNum()
+        end
+    end
+    return num
+end
+
+function ItemModule:RemoveClientItem(objId)
+    lt.LogUtil:debugInfo("ItemModule:RemoveClientItem")
+    for i,v in ipairs(self._packageArray) do
+        if objId == v:getObjId() then
+            v:setUseType(true)
+            --table.remove(self._packageArray, i)
+            break
+        end
+    end
+    -- for i,v in ipairs(self._sealArray) do
+    --     if objId == v:getObjId() then
+    --         v:setUseType(true)
+    --         --table.remove(self._packageArray, i)
+    --         break
+    --     end
+    -- end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT)
+end
+
+function ItemModule:AddClientItem(itemArray)
+    for k,v in pairs(itemArray) do
+        if v then
+            if v and type(v) ~= "number" then
+                --local item = lt.ItemData.new(v:getObjId(),v:getPropertyArray())
+                --print("TZ::::::",v:getObjId())
+                --item:setTypePos(Constant.ItemTypePos.Item_InPackage)
+                --table.insert(self._packageArray, item)
+                local item,k = self:getItemByObjId(v:getObjId())
+                if item then
+                    v:setUseType(false)
+                end
+            end
+        end
+    end
+    lt.LogUtil:debugInfo("ItemModule:AddClientItem")
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_ADD_CLIENTITEN_POST,{content = itemArray})
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT)
+end
+
+function ItemModule:RemoveManyItem(itemArray)
+    lt.LogUtil:debugInfo("ItemModule:RemoveManyItem")
+    for k,v in ipairs(itemArray) do
+        if  v then
+            self:RemoveSingalItem(v:getObjId())
+        end
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT)
+end
+
+function ItemModule:autoUseFastItem(setId, itemId)
+    local setId2Index = {
+        [10001] = 4001,
+        [10002] = 4002,
+        [10003] = 4003,
+        [10004] = 4003,
+        [11001] = 4004,
+        [11002] = 4004,
+    }
+    -- 4004
+    -- 4005
+    -- 4006
+    local item = self:getFastPotion(setId2Index[setId or 0], itemId)
+    if item then
+        lt.AudioManager:playSound(item:getItemMeta():getUseAudio())
+        self:sendUseItem(item:getObjId())
+    end
+end
+
+function ItemModule:onSpiritItemAck(event)
+    local proto = event.param
+    if proto then
+        if proto.type == 1 then
+            for i = 1, #proto.parm do
+                local objprop = proto.parm[i]
+                if objprop then
+                    local item = lt.ItemData.new(objprop.objID, objprop.objprops)
+                    table.insert(self._spiritArray, item)
+                    if self._spiritEquipType then
+                        local content = string.format(StringManager:getString(StringManager.KEY_ADD_ITEM_TIP), item:getItemMeta():getName())
+                        NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_NOTICE,{content = content})
+                    end
+                end
+            end
+            if not self._spiritEquipType then
+                self._spiritEquipType = true
+            end
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPT_SPIRITEQUIP_POST,{content = "add"})
+        elseif proto.type == 2 then
+            for i = 1, #proto.parm do
+                local objprop = proto.parm[i].objprops
+                if objprop then
+                    for k,v in pairs(self._spiritArray) do
+                        local objID = objprop[1].strValue
+                        if objID == v:getSpecialObjId() then
+                            table.remove(self._spiritArray,k)
+                        end
+                    end
+                end
+            end
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPT_SPIRITEQUIP_POST,{content = "consume"})
+        elseif proto.type == 3 then
+            for i = 1, #proto.parm do
+                local objprop = proto.parm[i].objprops
+                local objID = nil
+                for k,v in pairs(objprop) do
+                    if v and v.properCode == ServerClientEnum.ItemValueDef.Attr_SPIRITEQUIP_ID then
+                        objID = v.strValue
+                    end
+                end
+                if objID then
+                    for k,v in pairs(self._spiritArray) do
+                        if objID == v:getSpecialObjId() then
+                            v:setPropertyArray(objprop)
+                        end
+                    end
+                end
+            end
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPT_SPIRITEQUIP_POST,{content = "deal"})
+    end
+    print("onSpiritItemAck::::",proto.parm)
+end
+
+function ItemModule:useFastItem(event)
+    local proto = event.param
+    local item = nil
+    local btnId = proto.btnId
+    lt.LogUtil:debugTable("useFastItem = "..tostring(btnId))
+    -- if proto.btnId == 2002 then -- 回城
+    --     for i,v in ipairs(self._packageArray) do
+    --         if v:getMetaKind() == Constant.ITEM_KIND.kind_back then
+    --             if not item or item:getItemId() >= v:getItemId() then
+    --                 item = v
+    --             end
+    --         end
+    --     end
+    -- else 
+    --     item = self:getFastPotion(proto.btnId)
+    -- end
+    item = self:getFastPotion(btnId)
+    if item then
+        if item:getMetaKind() == 31 and item:getMetaType() == 2 then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MASK_VIEW, {class = "UIDlgCitySelect", item = item})
+            return
+        end
+        lt.AudioManager:playSound(item:getItemMeta():getUseAudio())
+        self:sendUseItem(item:getObjId())
+    else
+        -- NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = StringManager:getString(StringManager.KEY_FAST_NONE_TIP)})
+    end
+end
+
+function ItemModule:RemoveSingalItem(objId)
+    for i,v in ipairs(self._packageArray) do
+        if objId == v:getObjId() then
+            --table.remove(self._packageArray, i)
+            v:setUseType(true)
+            break
+        end
+    end
+end
+
+-- function ItemModule:onRefreshItem(event)
+--     lt.LogUtil:debugInfo("ItemModule:onRefreshItem")
+--     local proto = event.param
+--     local objprop = proto.objprop
+--     if not objprop then 
+--         lt.LogUtil:debugError("ItemModule:onRefreshItem objprop is nil ")
+--         return 
+--     end 
+--     local ret = false
+--     for i,v in ipairs(self._packageArray) do
+--         if objprop.objID == v:getObjId() then
+--             v:setPropertyArray(objprop.objprops)
+--             ret = true
+--             break
+--         end
+--     end
+
+--     if not ret then
+--         local item = lt.ItemData.new(objprop.objID, objprop.objprops)
+--         item:setTypePos(Constant.ItemTypePos.Item_InPackage)
+--         table.insert(self._packageArray, item)
+--         self._lockCount = 0
+--     end
+-- end
+
+-- function ItemModule:onRemoveItem(event)
+--     lt.LogUtil:debugInfo("ItemModule:onRemoveItem")
+--     local proto = event.param
+--     local objId = proto.objID
+
+--     for i,v in ipairs(self._packageArray) do
+--         if objId == v:getObjId() then
+--             table.remove(self._packageArray, i)
+--             break
+--         end
+--     end
+
+--     self._lockCount = 0
+-- end
+
+
+-- function ItemModule:tidyDepot()
+--     table.sort(self._depotArray, function (a, b)
+--         local ta = 1
+--         local aMeta = a:getItemMeta()
+--         local bMeta = b:getItemMeta()
+--         if a:getItemType() == 2 then
+--             ta = 3*100000000 + a:getMetaEquipPos() * 1000000 + aMeta:getQuality() * 100000 + a:getItemId() + a:getBind()/10
+--         elseif a:getItemType() == 1 then
+--             ta = 2*100000000 + a:getMetaKind()*1000000 + aMeta:getQuality() * 100000 + a:getMetaType()*10000 + a:getItemId()/100 + a:getBind()/1000 + a:getNum()/10000000
+--         elseif a:getItemType() == 3 then
+--             ta = 1*100000000 + a:getItemId()
+--         end
+--         local tb = 1
+--         if b:getItemType() == 2 then
+--             tb = 3*100000000 + b:getMetaEquipPos() * 1000000 + bMeta:getQuality() * 100000 + b:getItemId() + b:getBind()/10
+--         elseif b:getItemType() == 1 then
+--             tb = 2*100000000 + b:getMetaKind()*1000000 + bMeta:getQuality() * 100000 + b:getMetaType()*10000 + b:getItemId()/100 + b:getBind()/1000 + b:getNum()/10000000
+--         elseif a:getItemType() == 3 then
+--             tb = 1*100000000 + b:getItemId()
+--         end
+--         return ta > tb
+--     end)
+--     for i,v in ipairs(self._depotArray) do
+--         v:setPos(-1)
+--     end
+-- end
+
+-- function ItemModule:tidyDepot()
+--     table.sort(self._depotArray, function (a, b)
+--         local ta = 1
+--         if a:getItemType() == 2 then
+--             ta = 3*100000 + a:getMetaEquipPos() * 10000
+--         elseif a:getItemType() == 1 then
+--             ta = 2*100000 + a:getMetaKind()*10000 + a:getMetaType()*1000 + a:getNum()
+--         elseif a:getItemType() == 3 then
+--             ta = 1*100000 + a:getItemId()
+--         end
+--         local tb = 1
+--         if b:getItemType() == 2 then
+--             tb = 3*100000 + b:getMetaEquipPos() * 10000
+--         elseif b:getItemType() == 1 then
+--             tb = 2*100000 + b:getMetaKind()*10000 + b:getMetaType()*1000 + b:getNum()
+--         elseif a:getItemType() == 3 then
+--             tb = 1*100000 + b:getItemId()
+--         end
+--         return ta > tb
+--     end)
+--     for _,v in ipairs(self._depotArray) do
+--         v:setPos(-1)
+--     end
+-- end
+
+-- function ItemModule:insertSealItem(item)
+--     local page = self:calcPage(self._sealArray)
+--     item:setPage(page)
+--     table.insert(self._sealArray, item)
+
+--     local lockPos = lt.GameModule:getHeroData():getMaxSealPack() 
+--     if #self._sealArray >= lockPos then
+--         NtfManager:dispatchNtf(NtfManager.NTF.NTF_PLAY_TIPS_EVENT,{key = lt.Constant.PLAY_TIPS.FIRST_FULL_BAG})
+--     end
+--     -- 
+-- end
+
+-- function ItemModule:delSealItem(objId)
+--     local item, index = self:getSealItemByObjId(objId)
+--     if not item then return end
+--     table.remove(self._sealArray, index)
+-- end
+
+
+-- 道具Id从前到后（Id相同按绑定属性排序）
+-- 绑定属性从小到大（绑定属性相同按叠加数量排序）
+-- 叠加数量从大到小
+-- function ItemModule:tidySealPackage()
+--     table.sort(self._sealArray, function (a, b)
+--         local aMeta = a:getItemMeta()
+--         local bMeta = b:getItemMeta()
+        
+--         local ta = a:getItemId()/100 + a:getBind()/1000 + a:getNum()/10000000
+--         local tb = b:getItemId()/100 + b:getBind()/1000 + b:getNum()/10000000
+--         return ta > tb
+--     end)
+--     for i,v in ipairs(self._sealArray) do
+--         v:setPos(-1)
+--         v:setPage((i%40 == 0) and i/40 or (math.floor(i/40) + 1))
+--     end
+-- end
+
+
+
+-- function ItemModule:getSuidNumBySuidId(suidId, isrepeat)  
+--     if suidId == 0 then return 0 end
+
+--     local num = 0
+--     local ringNum = 0
+--     local braceletNum = 0
+--     for k,v in pairs(self._equipArray) do
+--         if suidId == v:getMetaSuidId() then
+--             if isrepeat then
+--                 num = num + 1
+--             else
+--                 if v:getMetaEquipPos() == Constant.EQUIP_ITEM_TYPE.type_bracelet then
+--                     ringNum = 1
+--                 elseif v:getMetaEquipPos() == Constant.EQUIP_ITEM_TYPE.type_ring then
+--                     braceletNum = 1
+--                 else
+--                     num = num + 1
+--                 end
+--             end
+--         end
+--     end
+--     return num + ringNum + braceletNum
+-- end
+
+-- function ItemModule:checkEquipDress(objID)
+--     for k,v in pairs(self._equipArray) do
+--         if objID == v:getObjId() then
+--             return true
+--         end
+--     end
+--     return false
+-- end
+
+-- function ItemModule:getEquipPosByItem(item)
+--     local posType = item:getMetaEquipPos()
+--     local bool = false
+--     if posType == Constant.EQUIP_ITEM_TYPE.type_bracelet then
+--         self._braceletLeft = not self._braceletLeft 
+--         bool = self._braceletLeft
+--     end
+--     if posType == Constant.EQUIP_ITEM_TYPE.type_ring then
+--         self._ringLeft = not self._ringLeft 
+--         bool = self._ringLeft 
+--     end
+--     return self:getEquipPosByItemType(posType, bool)
+-- end
+
+-- function ItemModule:getEquipPosByItemType(posType, bool)
+--     local pos = 0
+--     if posType == Constant.EQUIP_ITEM_TYPE.type_clothes then
+--         pos = Constant.EQUIP_ITEM_POS.pos_clothes
+
+--     elseif posType == Constant.EQUIP_ITEM_TYPE.type_weapon then
+--         pos = Constant.EQUIP_ITEM_POS.pos_weapon
+
+--     elseif posType == Constant.EQUIP_ITEM_TYPE.type_necklace then
+--         pos = Constant.EQUIP_ITEM_POS.pos_necklace
+
+--     elseif posType == Constant.EQUIP_ITEM_TYPE.type_hat then
+--         pos = Constant.EQUIP_ITEM_POS.pos_hat
+
+--     elseif posType == Constant.EQUIP_ITEM_TYPE.type_bracelet then
+--         pos = Constant.EQUIP_ITEM_POS.pos_left_bracelet
+--         if not self:getEquipItemByPos(Constant.EQUIP_ITEM_POS.pos_left_bracelet) then
+--             pos = Constant.EQUIP_ITEM_POS.pos_left_bracelet
+--             return pos
+--         end 
+--         if not self:getEquipItemByPos(Constant.EQUIP_ITEM_POS.pos_right_bracelet) then
+--             pos = Constant.EQUIP_ITEM_POS.pos_right_bracelet
+--             return pos
+--         end
+
+--         if bool then
+--             pos = Constant.EQUIP_ITEM_POS.pos_right_bracelet
+--         end
+
+--     elseif posType == Constant.EQUIP_ITEM_TYPE.type_ring then
+--         pos = Constant.EQUIP_ITEM_POS.pos_left_ring
+--         -- 戒指 pos_right_ring
+--         if not self:getEquipItemByPos(Constant.EQUIP_ITEM_POS.pos_left_ring) then
+--             pos = Constant.EQUIP_ITEM_POS.pos_left_ring
+--             return pos
+--         end 
+--         if not self:getEquipItemByPos(Constant.EQUIP_ITEM_POS.pos_right_ring) then
+--             pos = Constant.EQUIP_ITEM_POS.pos_right_ring
+--             return pos
+--         end
+        
+--         if bool then
+--             pos = Constant.EQUIP_ITEM_POS.pos_right_ring
+--         end
+
+--     elseif posType == Constant.EQUIP_ITEM_TYPE.type_shoes then
+--         pos = Constant.EQUIP_ITEM_POS.pos_shoes
+
+--     elseif posType == Constant.EQUIP_ITEM_TYPE.type_belt then
+--         pos = Constant.EQUIP_ITEM_POS.pos_belt
+
+--     elseif posType == Constant.EQUIP_ITEM_TYPE.type_medal then
+--         pos = Constant.EQUIP_ITEM_POS.pos_medal
+     
+--     elseif posType == Constant.EQUIP_ITEM_TYPE.type_horse then 
+--         pos = Constant.EQUIP_ITEM_POS.pos_horse
+     
+--     elseif posType == Constant.EQUIP_ITEM_TYPE.type_gem then
+--         pos = Constant.EQUIP_ITEM_POS.pos_gem
+--     end
+--     return pos
+-- end
+
+-- function ItemModule:autoUnpackItem(event)
+--     -- lt.LogUtil:debugTable("ItemModule:autoUnpackItem")
+
+--     local hasHp = false
+--     local hasMp = false
+--     local hasHpMP = false
+--     local curArr = {}
+
+--     if lt.AutoManager:getAutoUnpack() then
+        
+--         local maxP = lt.GameModule:getHeroData():getMaxPackage() 
+--         if table.nums(self._packageArray) > (maxP - 5) then
+--             return
+--         end
+
+--         for _,v in ipairs(self._packageArray) do
+--             if v:getItemType() == 1 and v:getMetaKind() == 5 and v:getMetaType() == 1 then
+--                 local msgReturn = string.split(v:getMateTypeEndValue(), ":")
+--                 local itemType = tonumber(msgReturn[1])
+--                 local id = tonumber(msgReturn[2])
+--                 local num = self:getItemNumByIdAndType(itemType, id)
+--                 local uType = self:unpackItemType(v:getItemId())
+--                 if num > 0 then
+--                     if uType == 1 then
+--                         hasHp = true
+--                     elseif uType == 2 then
+--                         hasMp = true
+--                     elseif uType == 3 then
+--                         hasHpMP = true
+--                     end
+--                 end
+--                 curArr[#curArr + 1] = v
+--             end
+--         end
+
+--         if not hasHp then
+--             for _, itemId in ipairs(self._hpArr) do
+--                 for _, itemData in ipairs(curArr) do
+--                     if itemData:getItemId() == tonumber(itemId) then
+--                         self:sendUseItem(itemData:getObjId())
+--                         return
+--                     end
+--                 end
+--             end
+--         end
+
+--         if not hasMp then
+--             local UseType = true
+--             if lt.GameModule:getHeroData():getJob() == 1 and lt.GameModule:getHeroData():getLevel() < 27 then
+--                 UseType = false
+--             end
+--             if UseType then
+--                 for _, itemId in ipairs(self._mpArr) do
+--                     for _, itemData in ipairs(curArr) do
+--                         if itemData:getItemId() == tonumber(itemId) then
+--                             self:sendUseItem(itemData:getObjId())
+--                             return
+--                         end
+--                     end
+--                 end
+--             end
+--         end
+
+--         if not hasHpMP then
+--             for _, itemId in ipairs(self._hpMpArr) do
+--                 for _, itemData in ipairs(curArr) do
+--                     if itemData:getItemId() == tonumber(itemId) then
+--                         self:sendUseItem(itemData:getObjId())
+--                         return
+--                     end
+--                 end
+--             end
+--         end
+--     end
+--     NtfManager:dispatchNtf(NtfManager.NTF.NTF_YUANYIN_UPT_INFO, {content = "item"})
+-- end
+]]
+return ItemModule

@@ -1,0 +1,512 @@
+---@我的队伍
+---@class UICompTeamMy
+local UICompTeamMy = class("UICompTeamMy",lt.UICompBase, lt.UICompChangeSkin)
+local TimeCounterManager = lt.TimeCounterManager
+
+UICompTeamMy.ChangeSkinConf = {
+    ["Team"] = {
+        ["img_bg"] = "bg_zuduixitong_zddtdi02",
+        ["img_title"] = "bg_zuduixitong_zdbiaotii",
+    },
+    ["CommonTL"] = {
+        ["btn_fastteam"] = {bg = "bg_youjian_changanniu01", disabled = "bg_youjian_changanniu02"},
+        ["btn_createteam"] = {bg = "bg_youjian_changanniu01", disabled = "bg_youjian_changanniu02"},
+        ["btn_applylist"] = {bg = "bg_youjian_changanniu01", disabled = "bg_youjian_changanniu02"},
+        ["btn_sendinvite"] = {bg = "bg_youjian_changanniu01", disabled = "bg_youjian_changanniu02"},
+        ["btn_exitteam"] = {bg = "bg_youjian_changanniu01", disabled = "bg_youjian_changanniu02"},
+    }
+}
+
+local GameModule = lt.GameModule
+local CacheManager = lt.CacheManager
+local NtfManager = lt.NtfManager
+local TeamModule = lt.TeamModule
+local Constant = lt.Constant
+local ChatModule = lt.ChatModule
+
+local MinLevel = 20
+
+function UICompTeamMy:ctor()
+    self:registerComponent("UICompTeamMyCell")
+    UICompTeamMy.super.ctor(self)
+    --UI
+    self._noTeamNode = nil
+    self._selectBtn = nil
+    self._controlBtn = nil
+    self._fastTeamBtn = nil
+    self._createTeamBtn = nil
+    self._teamNode = nil
+    self._addteamBtn = nil
+    self._addControlBtn = nil
+    self._applylistBtn = nil
+    self._reddot = nil
+    self._sendinviteBtn = nil
+    self._exitteamBtn = nil
+    self._teamNameLabel = nil
+    self._memberLabel = nil
+    self._mainIdxLabel = nil
+    self._subIdxLabel = nil
+    self._mainIdxBtn = nil
+    self._subIdxBtn = nil
+    self._mainArrorImg = nil
+    self._subArrorImg = nil
+    self._addTeamLabel = nil
+    self._mainChooseList = nil
+    self._subChooseList = nil
+    self._memberList = nil
+    self._mask = nil
+    --数据
+    self._hallTeamMeta = nil
+    self._selectItem = nil
+end
+
+function UICompTeamMy:onClear()
+    --UI
+    self._noTeamNode = nil
+    self._selectBtn = nil
+    self._controlBtn = nil
+    self._fastTeamBtn = nil
+    self._createTeamBtn = nil
+    self._teamNode = nil
+    self._addteamBtn = nil
+    self._addControlBtn = nil
+    self._applylistBtn = nil
+    self._reddot = nil
+    self._sendinviteBtn = nil
+    self._exitteamBtn = nil
+    self._teamNameLabel = nil
+    self._memberLabel = nil
+    self._mainIdxLabel = nil
+    self._subIdxLabel = nil
+    self._mainIdxBtn = nil
+    self._subIdxBtn = nil
+    self._mainArrorImg = nil
+    self._subArrorImg = nil
+    self._addTeamLabel = nil
+    self._mainChooseList = nil
+    self._subChooseList = nil
+    self._memberList = nil
+    self._mask = nil
+    
+    --数据
+    self._hallTeamMeta = nil
+    self._selectItem = nil
+    
+    self._openScheFastTeam = false
+    self._openScheInvate = false
+    self:unregisterAllComponent()
+    UICompTeamMy.super.onClear(self)
+end
+
+function UICompTeamMy:onConstruct()
+    self:startSkin()
+    --没队伍
+    self._noTeamNode = self:getChild("node_noteam")
+    self._selectBtn = self:getChild("btn_select")
+    self._controlBtn = self._selectBtn:getController("button")
+    self._fastTeamBtn = self:getChild("btn_fastteam")
+    self._createTeamBtn = self:getChild("btn_createteam")
+
+    --有队伍
+    self._teamNode = self:getChild("node_team")
+    self._addteamBtn = self:getChild("btn_addteam")
+    self._addControlBtn = self._addteamBtn:getController("button")
+    self._applylistBtn = self:getChild("btn_applylist")
+    --红点
+    self._reddot = self._applylistBtn:getChild("reddot")
+    self._sendinviteBtn = self:getChild("btn_sendinvite")
+    self._exitteamBtn = self:getChild("btn_exitteam")
+    self._teamNameLabel = self:getChild("label_teamname")
+    self._memberLabel = self:getChild("label_member")
+    self._mainIdxLabel = self:getChild("text_mainIdx")
+    self._subIdxLabel = self:getChild("text_subIdx")
+    self._mainIdxBtn = self:getChild("btn_mainIdx")
+    self._subIdxBtn = self:getChild("btn_subIdx")
+    self._mainArrorImg = self:getChild("img_mainarrow")
+    self._subArrorImg = self:getChild("img_subarrow")
+    self._addTeamLabel = self:getChild("label_addteam")
+    --选项框
+    self._mainChooseList = self:getChild("list_mainchoose")
+    self._mainChooseList:setItemRenderer(handler(self, self.renderMainChooseItem))
+    self._subChooseList = self:getChild("list_subchoose")
+    self._subChooseList:setItemRenderer(handler(self, self.renderSubChooseItem))
+    --我的队伍
+    self._memberList = self:getChild("list_member")
+    self._memberList:setItemRenderer(handler(self, self.renderMemberItem))
+    --mask
+    self._mask = self:getChild("mask")
+end
+
+function UICompTeamMy:onExit()
+    --注销计时器
+    TimeCounterManager:stopTimeCounter(TimeCounterManager.TC.MY_TEAM_UPDATE)
+
+
+    self._subIdxBtn:addClickListener(handler(self, self.onBuyBtnClick))
+    self._selectBtn:addClickListener(handler(self, self.onBuyBtnClick))
+    self._fastTeamBtn:addClickListener(handler(self, self.onBuyBtnClick))
+    self._createTeamBtn:addClickListener(handler(self, self.onBuyBtnClick))
+    self._addteamBtn:addClickListener(handler(self, self.onBuyBtnClick))
+    self._applylistBtn:addClickListener(handler(self, self.onBuyBtnClick))
+    self._sendinviteBtn:addClickListener(handler(self, self.onBuyBtnClick))
+    self._exitteamBtn:addClickListener(handler(self, self.onBuyBtnClick))
+    self._mainIdxBtn:addClickListener(handler(self, self.onBuyBtnClick))
+    self._mask:addClickListener(handler(self, self.onBuyBtnClick))
+    self._subChooseList:removeEventListener(fgui.UIEventType.ClickItem)
+    self._mainChooseList:removeEventListener(fgui.UIEventType.ClickItem)
+    UICompTeamMy.super.onExit(self)
+end
+
+function UICompTeamMy:onEnter()
+    UICompTeamMy.super.onEnter(self)
+    self._subIdxBtn:addClickListener(handler(self, self.onSubIdxBtnClick))
+    self._selectBtn:addClickListener(handler(self, self.onSelectBtnClick))
+    self._fastTeamBtn:addClickListener(handler(self, self.onFastTeamBtnClick))
+    self._createTeamBtn:addClickListener(handler(self, self.onCreateTeamBtnClick))
+    self._addteamBtn:addClickListener(handler(self, self.onAddTeamBtnClick))
+    self._applylistBtn:addClickListener(handler(self, self.onApplyListBtnClick))
+    self._sendinviteBtn:addClickListener(handler(self, self.onSendInviteBtnClick))
+    self._exitteamBtn:addClickListener(handler(self, self.onExitTeamBtnClick))
+    self._mainIdxBtn:addClickListener(handler(self, self.onMainIdxBtnClick))
+    self._subChooseList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickSubItem))
+    self._mainChooseList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickMainItem))
+    self._mask:addClickListener(handler(self, self.onMaskClick))
+
+    TimeCounterManager:startTimeCounter(TimeCounterManager.TC.MY_TEAM_UPDATE, {callback = function()
+        if self._openScheFastTeam then
+            self:refreshFastCountDown()
+        end
+        if self._openScheInvate then
+            self:refreshInviteCountDown()    
+        end
+    end })
+end
+
+function UICompTeamMy:initUI()
+end
+
+function UICompTeamMy:refreshView()
+    local teamId = TeamModule:getTeamId()
+    if teamId == 0 then
+        --没队伍
+        local canInvite = TeamModule:getCanInvite()
+        self._controlBtn:setSelectedIndex(canInvite)
+        --刷新倒计时
+        self:startFastCountDown()
+    else
+        local myTeamData = TeamModule:getMyTeam()
+        local canAddTeam = TeamModule:getCanAddTeam()
+        self._addControlBtn:setSelectedIndex(canAddTeam)
+        local memberList = myTeamData.memberInfoArray
+        self._memberList:setNumItems(#memberList)
+        local leaderInfo = TeamModule:getTeamLeader(myTeamData)
+        self._teamNameLabel:setText(string.format(GReadText.KEY_TEAM_HALL_TIPS3, leaderInfo.playerName))
+        self._memberLabel:setText(GReadText.KEY_TEAM_HALL_TIPS4..#memberList.."/"..Constant.MAX_TEAM_NUMBER)
+        --队伍配置
+        local teamMeta = CacheManager:getTeamHallMetaByIdx(myTeamData.configId)
+        self._mainIdxLabel:setText(teamMeta:getPurposeType() == Constant.TEAMHALL_TYPES.LEVEL and GReadText.KEY_TEAM_HALL_TIPS1 or GReadText.KEY_TEAM_HALL_TIPS2)
+        self._subIdxLabel:setText(teamMeta:getPurposeName())
+        --队伍筛选
+        self._hallTeamMeta = TeamModule:getHallTeamMeta(teamMeta:getPurposeType())
+        self._mainChooseList:setNumItems(1)
+        self._subChooseList:setNumItems(#self._hallTeamMeta)
+        --队长展示
+        local playerId = GameModule:getHeroData():getPlayerId()
+        self._addTeamLabel:setVisible(leaderInfo.playerId == playerId)
+        self._addteamBtn:setVisible(leaderInfo.playerId == playerId)
+        self._mainArrorImg:setVisible(leaderInfo.playerId == playerId)
+        self._subArrorImg:setVisible(leaderInfo.playerId == playerId)
+        self._applylistBtn:setVisible(leaderInfo.playerId == playerId)
+        self._sendinviteBtn:setVisible(leaderInfo.playerId == playerId)
+        self._mainIdxLabel:setPosition(leaderInfo.playerId == playerId and 571 or 581, 23)
+        self._subIdxLabel:setPosition(leaderInfo.playerId == playerId and 708 or 717, 23)
+        --刷新倒计时
+        self:startInviteCountDown()
+    end
+    self._noTeamNode:setVisible(teamId == 0)
+    self._teamNode:setVisible(teamId ~= 0)
+    --刷新红点
+    self:uptRedDotEvt()
+end
+
+function UICompTeamMy:onSelectBtnClick()
+    local canInvite = TeamModule:getCanInvite()
+    canInvite = canInvite == 1 and 0 or 1
+    TeamModule:sendSignAllow(canInvite)
+end
+
+function UICompTeamMy:refreshSelect()
+    local canInvite = TeamModule:getCanInvite()
+    self._controlBtn:setSelectedIndex(canInvite)
+end
+
+function UICompTeamMy:onAddTeamBtnClick()
+    local canAddTeam = TeamModule:getCanAddTeam()
+    canAddTeam = canAddTeam == 1 and 0 or 1
+    TeamModule:sendSetTeamBaseInfo(canAddTeam, TeamModule:getTeamCfgId())
+end
+
+function UICompTeamMy:refreshOtherTeam()
+    local myTeamData = TeamModule:getMyTeam()
+    local canAddTeam = TeamModule:getCanAddTeam()
+    self._addControlBtn:setSelectedIndex(canAddTeam)
+    local teamMeta = CacheManager:getTeamHallMetaByIdx(myTeamData.configId)
+    self._mainIdxLabel:setText(teamMeta:getPurposeType() == Constant.TEAMHALL_TYPES.LEVEL and GReadText.KEY_TEAM_HALL_TIPS1 or GReadText.KEY_TEAM_HALL_TIPS2)
+    self._subIdxLabel:setText(teamMeta:getPurposeName())
+    self._mainChooseList:setNumItems(1)
+    self._subChooseList:setNumItems(#self._hallTeamMeta)
+end
+
+--关闭筛选
+function UICompTeamMy:closeFilterView()
+    local isVisible1 = self._mainChooseList:isVisible()
+    if isVisible1 then
+        self:onMainIdxBtnClick()
+    end
+    local isVisible2 = self._subChooseList:isVisible()
+    if isVisible2 then
+        self:onSubIdxBtnClick()
+    end
+end
+
+--是否开启筛选
+function UICompTeamMy:checkMaskVisible()
+    return self._mask:isVisible()
+end
+
+--刷新申请列表红点
+function UICompTeamMy:uptRedDotEvt()
+    local isShowRedDot = TeamModule:getRedPoint()
+    self._reddot:setVisible(isShowRedDot)
+end
+
+function UICompTeamMy:renderMemberItem(index, obj)
+    local myTeamData = TeamModule:getMyTeam()
+    local playerInfo = myTeamData.memberInfoArray[index + 1]
+    local leaderInfo = TeamModule:getTeamLeader(myTeamData)
+    obj:setInfo(playerInfo, leaderInfo)
+    obj.index = index + 1
+end
+
+function UICompTeamMy:onClickItem(data) 
+    --选中成员显示tips(除了自己)
+    local myTeamData = TeamModule:getMyTeam()
+    local playerInfo = myTeamData.memberInfoArray[data.index]
+    local playerId = GameModule:getHeroData():getPlayerId()
+    if playerInfo.playerId == playerId then
+        return
+    end
+    if self._selectItem then
+        self._selectItem:setSelected(false)
+    end
+    self._selectItem = data
+    self._selectItem:setSelected(true)
+    --队长信息
+    local leaderInfo = TeamModule:getTeamLeader(myTeamData)
+    local isLeader = leaderInfo.playerId == playerId
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_PLAYER_TIPS, {playerInfo = playerInfo, isLeader = isLeader})
+end
+
+function UICompTeamMy:renderMainChooseItem(index, obj)
+    local myTeamData = TeamModule:getMyTeam()
+    local teamMeta = CacheManager:getTeamHallMetaByIdx(myTeamData.configId)
+    obj:setText(teamMeta:getPurposeType() == Constant.TEAMHALL_TYPES.LEVEL and GReadText.KEY_TEAM_HALL_TIPS2 or GReadText.KEY_TEAM_HALL_TIPS1)
+end
+
+function UICompTeamMy:onClickMainItem(context)
+    local data = context:getData()
+    local myTeamData = TeamModule:getMyTeam()
+    local teamMeta = CacheManager:getTeamHallMetaByIdx(myTeamData.configId)
+    local idxId = 1
+    if teamMeta:getPurposeType() == Constant.TEAMHALL_TYPES.LEVEL then
+        --副本默认选中第一个
+        self._hallTeamMeta = TeamModule:getHallTeamMeta(Constant.TEAMHALL_TYPES.DUNGEON)
+        idxId = self._hallTeamMeta[1]:getIdxId()
+    else
+        self._hallTeamMeta = TeamModule:getHallTeamMeta(Constant.TEAMHALL_TYPES.LEVEL)
+        local idx = TeamModule:getFilterLevelIdx()
+        idxId = self._hallTeamMeta[idx]:getIdxId()
+    end
+    TeamModule:sendSetTeamBaseInfo(TeamModule:getCanAddTeam(), idxId)
+    --关闭筛选
+    self:onMainIdxBtnClick()
+end
+
+function UICompTeamMy:renderSubChooseItem(index, obj)
+    local meta = self._hallTeamMeta[index + 1]
+    obj:setText(meta:getPurposeName())
+    obj.index = index + 1
+end
+
+function UICompTeamMy:onClickSubItem(context)
+    local data = context:getData()
+    local meta = self._hallTeamMeta[data.index]
+    TeamModule:sendSetTeamBaseInfo(TeamModule:getCanAddTeam(), meta:getIdxId())
+    --关闭筛选
+    self:onSubIdxBtnClick()
+end
+
+function UICompTeamMy:onFastTeamBtnClick()
+    TeamModule:sendFastJoinInTeam()
+end
+
+function UICompTeamMy:onCreateTeamBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_OPEN_CREATE_TEAM)
+end
+
+function UICompTeamMy:onApplyListBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_OPEN_APPLY_LIST)
+end
+
+--发布邀请
+function UICompTeamMy:onSendInviteBtnClick()
+    --要满20级才能发言
+    local level = GameModule:getHeroData():getLevel()
+    if level < MinLevel then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_HALL_TIPS47})
+        return
+    end
+    --仅队伍未满员才可以发布邀请
+    local members = TeamModule:getTeamMateNumbers()
+    if members >= Constant.MAX_TEAM_NUMBER then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_HALL_TIPS39})
+        return
+    end
+    --判断cd是否到了
+    if TeamModule:getSendInviteCdTime() > 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_TEAM_HALL_TIPS40})
+        return
+    end
+    --自动勾选允许加入
+    if TeamModule:getCanAddTeam() == 0 then
+        TeamModule:sendSetTeamBaseInfo(1, TeamModule:getTeamCfgId())
+    end
+    --发布邀请
+    local myTeamData = TeamModule:getMyTeam()
+    local teamMeta = CacheManager:getTeamHallMetaByIdx(myTeamData.configId)
+    local inviteStr = ""
+    local tableStr = {}
+    local lvlist = teamMeta:getPurposeLevel()
+    local leaderInfo = TeamModule:getTeamLeader(myTeamData)
+    local playerName = leaderInfo.playerName
+    if teamMeta:getPurposeType() == Constant.TEAMHALL_TYPES.LEVEL then
+        --练级目标
+        if members < 3 then
+            --队内人数少于3人
+            inviteStr = string.format(GReadText.KEY_TEAM_HALL_TIPS42, lvlist[1])
+        else
+            local needMembers = Constant.MAX_TEAM_NUMBER - members
+            inviteStr = string.format(GReadText.KEY_TEAM_HALL_TIPS43, lvlist[1], members, needMembers)
+        end
+    else
+        --副本目标
+        local dungeonName = teamMeta:getPurposeName()
+        if members < 3 then
+            --队内人数少于3人
+            inviteStr = string.format(GReadText.KEY_TEAM_HALL_TIPS44, dungeonName, lvlist[1])
+        else
+            local needMembers = Constant.MAX_TEAM_NUMBER - members
+            inviteStr = string.format(GReadText.KEY_TEAM_HALL_TIPS45, dungeonName, members, needMembers)
+        end
+    end
+    table.insert(tableStr, inviteStr)
+    local nameStr = string.format(GReadText.KEY_TEAM_HALL_TIPS46, playerName)
+    nameStr = "[" .. nameStr .. "]"
+    table.insert(tableStr, "<a href=\"" .. nameStr .. "\" target=\"_blank\">")
+    table.insert(tableStr, "[color=#00ff00]" .. nameStr .. "[/color]")
+    table.insert(tableStr, "</a>")
+    local teamId = "[teamId=" .. TeamModule:getTeamId() .. "]"
+    table.insert(tableStr, teamId)
+    inviteStr = table.concat(tableStr)
+    ChatModule:sendGMChat(inviteStr, Constant.MESSAGE_TALK_TYPE.TALKTYPE_SAME_RACE, playerName, "", "")
+    --设置cd
+    TeamModule:setSendInviteCdTime()
+end
+
+function UICompTeamMy:onExitTeamBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {type = 2, content = GReadText.KEY_TEAM_HALL_TIPS19, confirmCallback = function()
+        TeamModule:sendExitTeam()
+    end})
+end
+
+function UICompTeamMy:onMainIdxBtnClick()
+    local myTeamData = TeamModule:getMyTeam()
+    local leaderInfo = TeamModule:getTeamLeader(myTeamData)
+    local playerId = GameModule:getHeroData():getPlayerId()
+    --不是队长不让操作
+    if leaderInfo.playerId ~= playerId then
+        return
+    end
+    local isVisible = self._mainChooseList:isVisible()
+    self._mainArrorImg:setRotation(isVisible and 0 or 180)
+    self._mainChooseList:setVisible(not isVisible)
+    self._mask:setVisible(not isVisible)
+    local isVisible = self._subChooseList:isVisible()
+    if isVisible then
+        self:onSubIdxBtnClick()
+    end
+end
+
+function UICompTeamMy:onSubIdxBtnClick()
+    local myTeamData = TeamModule:getMyTeam()
+    local leaderInfo = TeamModule:getTeamLeader(myTeamData)
+    local playerId = GameModule:getHeroData():getPlayerId()
+    --不是队长不让操作
+    if leaderInfo.playerId ~= playerId then
+        return
+    end
+    local isVisible = self._subChooseList:isVisible()
+    self._subArrorImg:setRotation(isVisible and 0 or 180)
+    self._subChooseList:setVisible(not isVisible)
+    self._mask:setVisible(not isVisible)
+    local isVisible = self._mainChooseList:isVisible()
+    if isVisible then
+        self:onMainIdxBtnClick()
+    end
+end
+
+function UICompTeamMy:onMaskClick()
+    self:closeFilterView()
+end
+
+function UICompTeamMy:clearSelect()
+    if self._selectItem then
+        self._selectItem:setSelected(false)
+    end
+    self._selectItem = nil
+end
+
+--开始快速组队倒计时
+function UICompTeamMy:startFastCountDown()
+    self._openScheFastTeam = true
+
+    self:refreshFastCountDown()
+end
+
+--刷新按钮(快速组队)倒计时
+function UICompTeamMy:refreshFastCountDown()
+    local cd = TeamModule:getFastJoinInCdTime()
+    self._fastTeamBtn:setText(cd <= 0 and GReadText.KEY_TEAM_HALL_TIPS27 or cd.."s")
+    self._fastTeamBtn:setGrayed(cd > 0)
+    if cd <= 0 then
+        self._openScheFastTeam = false
+    end
+end
+
+--开始发布邀请倒计时
+function UICompTeamMy:startInviteCountDown()
+    self._openScheInvate = true
+    self:refreshInviteCountDown()
+end
+
+--刷新按钮(发布邀请)倒计时
+function UICompTeamMy:refreshInviteCountDown()
+    local cd = TeamModule:getSendInviteCdTime()
+    self._sendinviteBtn:setText(cd <= 0 and GReadText.KEY_TEAM_HALL_TIPS41 or cd.."s")
+    self._sendinviteBtn:setGrayed(cd > 0)
+    if cd <= 0 then
+        self._openScheInvate = false
+    end
+end
+
+return UICompTeamMy

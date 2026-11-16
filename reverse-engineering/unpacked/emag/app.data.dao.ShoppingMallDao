@@ -1,0 +1,30 @@
+local ShoppingMallDao = {}
+
+function ShoppingMallDao:query(id)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM ShoppingMall WHERE Id=%d;", tonumber(id))) do
+    	local meta = lt.ShoppingMallMeta.new(row)
+        return meta
+    end
+end
+
+function ShoppingMallDao:queryAll()
+    local map = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM ShoppingMall") do
+        local meta = lt.ShoppingMallMeta.new(row)
+        if not map[meta:getCostType()] then
+            map[meta:getCostType()] = {}
+        end
+        if not map[meta:getCostType()][meta:getType1()] then
+            map[meta:getCostType()][meta:getType1()] = {}
+        end
+        if not map[meta:getCostType()][meta:getType1()][meta:getType2()] then
+            map[meta:getCostType()][meta:getType1()][meta:getType2()] = {}
+        end
+        table.insert(map[meta:getCostType()][meta:getType1()][meta:getType2()], meta)
+    end
+    return map
+end
+
+return ShoppingMallDao

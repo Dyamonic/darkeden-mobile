@@ -1,0 +1,22 @@
+
+local NpcTalkDao = {}
+
+function NpcTalkDao:query(talkId)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM NPCTalk WHERE TalkId=%d;", tonumber(talkId))) do
+    	local mapMeta = lt.NpcTalkMeta.new(row)
+        return mapMeta
+    end
+end
+
+function NpcTalkDao:queryAll()
+    local mapTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM NPCTalk") do
+        local mapMeta = lt.NpcTalkMeta.new(row)
+        mapTable[#mapTable+1] = mapMeta
+    end
+    return mapTable
+end
+
+return NpcTalkDao

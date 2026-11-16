@@ -1,0 +1,783 @@
+---@宠物驯养
+---@class UICompPetTame
+local UICompPetTame = class("UICompPetTame", lt.UICompBase)
+
+local PetUIActor   = lt.PetUIActor
+local PetModule    = lt.PetModule
+local CacheManager = lt.CacheManager
+local ItemModule   = lt.ItemModule
+local Constant     = lt.Constant
+local NtfManager   = lt.NtfManager
+local SkeletonManager = lt.SkeletonManager
+
+UICompPetTame.ChangeSkinConf = {
+    ["CommonTL"] = {
+        ["btn_tame"]  = {bg = "sort"},
+        ["btn_merge"] = {bg = "sort"},
+        ["btn_reset"] = {bg = "sort"},
+    },
+    ["Task"] = {
+        ["attr_item_bg"] = "bg_cwrw_djk",
+        ["pet_item_bg"]  = "bg_cwrw_djk",
+    },
+    ["Pet"] = {
+        ["btn_tame_state"]  = { bg = "bg_cwxy_yeqian"},
+        ["btn_merge_state"] = { bg = "bg_cwxy_yeqian"},
+    }
+}
+
+local SELECTTYPE = {
+    ATTR  = 0, -- 属性
+    MERGE = 1, -- 合成
+}
+
+local ATTRINDEX = {
+    ["ATTR1"] = 1,
+    ["ATTR2"] = 2,
+    ["ATTR3"] = 3,
+}
+
+-- 对应每个词条的消耗
+local ATTRCOST = {
+    [ATTRINDEX.ATTR1] = { 1002001 },
+    [ATTRINDEX.ATTR2] = { 1004001, 1004002},
+    [ATTRINDEX.ATTR3] = { 1002002},
+}
+
+local BGATTR = {
+    [ATTRINDEX.ATTR1] = "bg_attr1",
+    [ATTRINDEX.ATTR2] = "bg_attr2",
+    [ATTRINDEX.ATTR3] = "bg_attr3",
+}
+
+local MERGECOST = 1007001
+local RESETCOST = 1008001
+
+local attrItemNameCfg = {
+    [ATTRINDEX.ATTR1] = {
+        maxAttr    = "bg_max_attr1",
+        valueAttr = "text_value_attr1",
+        variableId = "PetAttr1UnlockLevel",
+        attrValue  = "getAttr1",
+        attrStr    = "getAttr1Str",
+    },
+    [ATTRINDEX.ATTR2] = {
+        maxAttr    = "bg_max_attr2",
+        valueAttr = "text_value_attr2",
+        variableId = "PetAttr2UnlockLevel",
+        attrValue  = "getAttr2",
+        attrStr    = "getAttr2Str",
+    },
+    [ATTRINDEX.ATTR3] = {
+        maxAttr    = "bg_max_attr3",
+        valueAttr  = "text_value_attr3",
+        variableId = "PetAttr3UnlockLevel",
+        attrValue  = "getAttr3",
+        attrStr    = "getAttr3Str",
+    },
+}
+
+function UICompPetTame:ctor()
+    self._selectController = nil
+    self._parentPanel      = nil
+
+    -- 属性
+    self._modelNode        = nil
+    self._petActor1        = nil
+    self._attrSelectIndex  = nil
+    self._petInfo          = nil
+    self._isMaxRedBird     = nil
+    self._spineTameList    = nil
+
+    -- 合成
+    self._mergeModel1      = nil
+    self._mergeModel2      = nil
+    self._mergePetActor1   = nil
+    self._mergePetActor2   = nil
+    self._attrMaxList      = nil
+    self._petComposeSpine  = nil
+
+    UICompPetTame.super.ctor(self)
+end
+
+function UICompPetTame:onClear()
+    if self._petActor1 then
+        self._petActor1:onClear()
+        self._petActor1   = nil
+    end
+    self._mergePetActor1:onClear()
+    self._mergePetActor2:onClear()
+
+    self._selectController = nil
+    self._parentPanel      = nil
+
+    -- 属性
+    self._modelNode        = nil
+    self._attrSelectIndex  = nil
+    self._petInfo          = nil
+    self._isMaxRedBird     = nil
+    self._spineTameList    = nil
+    
+    -- 合成
+    self._mergeModel1      = nil
+    self._mergeModel2      = nil
+    self._mergePetActor1   = nil
+    self._mergePetActor2   = nil
+    self._mergePetInfo1    = nil
+    self._mergePetInfo2    = nil
+    self._attrMaxList      = nil
+    self._petComposeSpine  = nil
+
+    self._btnTameState  = nil
+    self._btnMergeState = nil
+    self._btnTame       = nil
+    self._btnMerge      = nil
+    self._btnReset      = nil
+    self._itemIcon      = nil
+    self._petItemIcon   = nil
+    self._comTam        = nil
+    self._mergeItemName = nil
+    self._mergeItemNum  = nil
+    self._effectBg      = nil
+    self._compose1      = nil
+    self._petTips1      = nil
+    self._petTips2      = nil
+    self._attrItemNum   = nil
+    self._attrItemBg    = nil
+    self._maxImage      = nil
+    self._labelProperty1_1 = nil
+    self._labelProperty2_1 = nil
+    self._labelProperty3_1 = nil
+    self._labelCompose_1   = nil
+    self._labelProperty1_2 = nil
+    self._labelProperty2_2 = nil
+    self._labelProperty3_2 = nil
+    self._labelCompose_2   = nil
+    self._bgAttrList = nil
+    self._selectAttr = nil
+    self._attrItemMaxAttr = nil
+    self._attrItemValueAttr = nil
+    UICompPetTame.super.onClear(self)
+end
+
+function UICompPetTame:onConstruct()
+    self._btnTameState  = self:getChild("btn_tame_state")
+    self._btnMergeState = self:getChild("btn_merge_state")
+    self._btnTame       = self:getChild("btn_tame")
+    self._btnMerge      = self:getChild("btn_merge")
+    self._btnReset      = self:getChild("btn_reset")
+    self._itemIcon      = self:getChild("attr_item_icon")
+    self._petItemIcon   = self:getChild("pet_item_icon")
+    self._comTam        = self:getChild("com_tame")
+    self._mergeItemName = self:getChild("label_item_name")
+    self._mergeItemNum  = self:getChild("pet_item_num")
+    self._effectBg      = self:getChild("effect_bg")
+    self._compose1      = self:getChild("label_compose_1")
+    self._petTips1      = self:getChild("pet_tips1")
+    self._petTips2      = self:getChild("pet_tips2")
+    self._attrItemNum   = self:getChild("attr_item_num")
+    self._attrItemBg    = self:getChild("attr_item_bg")
+    self._maxImage      = self:getChild("max")
+    self._labelProperty1_1 = self:getChild("label_propertyt1_1")
+    self._labelProperty2_1 = self:getChild("label_propertyt2_1")
+    self._labelProperty3_1 = self:getChild("label_propertyt3_1")
+    self._labelCompose_1   = self:getChild("label_compose_1")
+    self._labelProperty1_2 = self:getChild("label_propertyt1_2")
+    self._labelProperty2_2 = self:getChild("label_propertyt2_2")
+    self._labelProperty3_2 = self:getChild("label_propertyt3_2")
+    self._labelCompose_2   = self:getChild("label_compose_2")
+
+    self._bgAttrList = {}
+    for i = 1, 3 do
+        local bgAttr = self:getChild(BGATTR[i])
+        self._bgAttrList[i] = bgAttr
+    end
+
+    self._selectAttr = {}
+    for i = 1, 3 do
+        local selectAttr = self:getChild("select_attr" .. i)
+        self._selectAttr[i] = selectAttr
+    end
+
+    self._attrItemMaxAttr = {}
+    self._attrItemValueAttr = {}
+    for i = 1, #attrItemNameCfg do
+        local bgMaxAttr = self:getChild(attrItemNameCfg[i].maxAttr)
+        self._attrItemMaxAttr[i] = bgMaxAttr
+        local attrValueText = self:getChild(attrItemNameCfg[i].valueAttr)
+        self._attrItemValueAttr[i] = attrValueText
+    end
+    
+    self._modelNode   = self:getChild("node_model")
+    self._mergeModel1 = self:getChild("node_merge_model1")
+    self._mergeModel2 = self:getChild("node_merge_model2")
+
+    self:startSkin()
+    self:initUI()
+end
+
+function UICompPetTame:setParentPanel(parent)
+    self._parentPanel = parent
+end
+
+function UICompPetTame:onEnter()
+    UICompPetTame.super.onEnter(self)
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_PET_TAME_ATTR_REFRESH, handler(self, self.petTameAttrRefresh), "UICompPetTame:NTF_PET_TAME_ATTR_REFRESH")
+
+    self._btnTameState:addClickListener(handler(self, self.onChangeFuncCallBack))
+    self._btnMergeState:addClickListener(handler(self, self.onChangeFuncCallBack))
+
+    for i = 1, 3 do
+        local bgAttr = self._bgAttrList[i]
+        bgAttr.index = i
+        bgAttr:addClickListener(handler(self, self.onTouchCallBack))
+    end
+
+    self._btnTame:addClickListener(handler(self, self.onTameTouchCallBack))
+    self._btnMerge:addClickListener(handler(self, self.onMergeTouchCallBack))
+    self._btnReset:addClickListener(handler(self, self.onResetTouchCallBack))
+    self._itemIcon:addClickListener(handler(self, self.showTips))
+    self._petItemIcon:addClickListener(handler(self, self.showPetItemTips))
+
+    PetModule:clearSendPetRaiseLimit()
+end
+
+function UICompPetTame:onExit()
+    UICompPetTame.super.onExit(self)
+    NtfManager:removeNtfListenerByTag("UICompPetTame:NTF_PET_TAME_ATTR_REFRESH")
+
+    self._btnTameState:addClickListener(handler(self, self.onChangeFuncCallBack))
+    self._btnMergeState:addClickListener(handler(self, self.onChangeFuncCallBack))
+
+    for i = 1, 3 do
+        local bgAttr = self._bgAttrList[i]
+        bgAttr.index = nil
+        bgAttr:removeClickListener()
+    end
+
+    self._btnTame:removeClickListener()
+    self._btnMerge:removeClickListener()
+    self._btnReset:removeClickListener()
+    self._itemIcon:removeClickListener()
+    self._petItemIcon:removeClickListener()
+end
+
+function UICompPetTame:onUpdate(dt)
+    if self._petActor1 then
+        self._petActor1:onUpdate(dt)
+    end
+    
+    if self._mergePetActor1 then
+        self._mergePetActor1:onUpdate(dt)
+    end
+
+    if self._mergePetActor2 then
+        self._mergePetActor2:onUpdate(dt)
+    end
+end
+
+function UICompPetTame:initUI()
+    self._selectController = self:getController("btnSelect")
+
+    -- 属性
+    self._petActor1 = PetUIActor.new(2)
+    self._modelNode:displayObject():addChild(self._petActor1)
+    
+    -- 合成
+    self._mergePetActor1 = PetUIActor.new(2)
+    self._mergeModel1:displayObject():addChild(self._mergePetActor1)
+
+    self._mergePetActor2 = PetUIActor.new(2)
+    self._mergeModel2:displayObject():addChild(self._mergePetActor2)
+end
+
+function UICompPetTame:onChangeFuncCallBack()
+    self._parentPanel:refreshListData() -- 属性合成切换
+    self._parentPanel:refreshList()
+    self._parentPanel:showCurPanel()
+    self._parentPanel:refreshFilterBtn()
+end
+
+-----------------------------------------------------------------------------------------------
+-- 属性界面
+function UICompPetTame:refreshAttrPanel(petInfo)
+    if self._petComposeSpine then
+        self._petComposeSpine:setVisible(false)
+    end
+
+    if not petInfo then
+        self._comTam:setVisible(false)
+        return
+    end
+    self._comTam:setVisible(true)
+
+    self._petInfo = petInfo
+
+    local petMeta = petInfo.meta
+    local petData = petInfo.data
+    if petData then
+        self._petActor1:setDirection(petMeta:getModleDir())
+        self._petActor1:playAction(petData:getPetModel())
+    end
+
+    -- 默认选中第一个
+    if not self._attrSelectIndex then
+        self._attrSelectIndex = 1
+    end
+
+    self._attrMaxList = {}
+    self._isMaxRedBird = false
+    for i = 1, #attrItemNameCfg do
+        local bgMaxAttr =  self._attrItemMaxAttr[i]
+        local maxVisible = false
+        local maxAttrValue = ""
+        if petData then
+            local attrValueText = self._attrItemValueAttr[i]
+            local petLevel = petData:getLevel()
+            local variableId = Constant.Variable[attrItemNameCfg[i].variableId]
+            local curValue   = CacheManager:getValueById(variableId)
+            local attrValue  = petData[attrItemNameCfg[i].attrValue](petData)
+
+            ------------------------------------------------------------------------------------------
+            -- 计算最大值
+            if i == ATTRINDEX.ATTR3 then
+                local itemId = ATTRCOST[ATTRINDEX.ATTR3][1]
+                local itemMeta = CacheManager:getItemMeta(itemId)
+                local effectParam = (itemMeta:getEffectParam() or {})[1] or {}
+                local maxValue = effectParam[3] or 0
+                maxVisible = maxValue == attrValue -- 黄色视野水滴  EffectParam [["Vis",35,5000]]
+                maxAttrValue = maxValue
+            elseif i == ATTRINDEX.ATTR2 then
+                if attrValue > 0 then
+                    local petRaise1Meta = CacheManager:getPetRaiseById(attrValue)
+                    local probability2 = petRaise1Meta:getProbability2()
+                    if probability2 and probability2 > 0 then
+                        maxVisible = true
+                        self._isMaxRedBird = true
+                    end
+
+                    local petRaise1MaxMeta = CacheManager:getPetRaiseById(petRaise1Meta:getType())
+                    local attrMeta = lt.CacheManager:getAttributeMetaByOptionId(petRaise1MaxMeta:getAttributeId())
+                    maxAttrValue = attrMeta:getPlusPoint()
+                end
+            elseif i == ATTRINDEX.ATTR1 then
+                -- local attr1 = petData:getAttr1()
+                -- local petLevelMap = CacheManager:getAllPetLevelMap()
+                -- local petAttrCfg = CacheManager:getPetAttrCfg(attr1)
+                -- local maxLvl = #petLevelMap - 1
+                -- local petAttr= petAttrCfg[maxLvl]
+                -- if petAttr then
+                --     maxAttrValue = petAttr:getAccumAttr()
+                -- end
+                maxAttrValue = ""
+            end
+            ------------------------------------------------------------------------------------------
+
+            if petLevel < curValue then
+                local petLevelLimitStr = string.format(GReadText.KEY_PET_TIPS40,curValue)
+                attrValueText:setText(petLevelLimitStr)
+            else
+                if attrValue == 0 then
+                    attrValueText:setText(GReadText.KEY_PET_TIPS44)
+                else
+                    local functionName = attrItemNameCfg[i].attrStr
+                    local attrAtr = petData[functionName](petData)
+                    local maxStr = string.format(GReadText.KEY_PET_TIPS67,maxAttrValue)
+                    if maxAttrValue == "" then
+                        maxStr = ""
+                    end
+                    attrValueText:setText(attrAtr .. maxStr)
+                end
+            end
+        end
+        self._attrMaxList[i] = {maxVisible = maxVisible, maxAttrValue = maxAttrValue }
+
+        bgMaxAttr:setVisible(maxVisible)
+    end
+
+    self:refreshAttrPanelCost()
+    self:refreshAttrPanelSelect()
+end
+
+function UICompPetTame:refreshAttrPanelSelect()
+    for i = 1, 3 do
+        local selectAttr = self._selectAttr[i]
+        selectAttr:setVisible(self._attrSelectIndex == i)
+    end
+end
+
+function UICompPetTame:onTouchCallBack(obj)
+    local target = obj:getSender()
+    local index = target.index
+    yflog:Info("self._attrSelectIndex --->>> %s",index)
+    self._attrSelectIndex = index
+
+    self:refreshAttrPanelCost()
+    self:refreshAttrPanelSelect()
+end
+
+function UICompPetTame:onTameTouchCallBack()
+    yflog:Info("onTameTouchCallBack")
+    local attrCost = ATTRCOST[self._attrSelectIndex]
+    if not attrCost then
+        return
+    end
+
+    local itemId = attrCost[1]
+    if self._attrSelectIndex == ATTRINDEX.ATTR2 and self._isMaxRedBird then
+        itemId = attrCost[2]
+    end
+    local itemMeta = CacheManager:getItemMeta(itemId)
+    if not itemMeta then
+        return
+    end
+
+    if not self._petInfo then
+        return
+    end
+
+    local petData = self._petInfo.data
+    if not petData then
+        return
+    end
+
+    if PetModule:getSendPetRaiseLimit() then -- 防止频繁点击
+        return
+    end
+    
+    local petLevel = petData:getLevel()
+    local variableId = Constant.Variable["PetAttr" .. self._attrSelectIndex .. "UnlockLevel"]
+    local curValue   = CacheManager:getValueById(variableId)
+    if petLevel < curValue then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = string.format(GReadText.KEY_PET_TIPS45,curValue)})
+        return
+    end
+    
+    local isEnough = ItemModule:enoughItem(Constant.ItemType.ITEM_TYPE_PROP, itemId, 1, {tips = true})
+    yflog:Info("----->>>>>> %s %s %s",self._petInfo.data:getUid(), self._attrSelectIndex, itemId)
+    if isEnough then
+        if self._isMaxRedBird and self._attrSelectIndex == ATTRINDEX.ATTR2 then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+                content = GReadText.KEY_PET_TIPS71,
+                confirmCallback = function()
+                    PetModule:sendPetRaise(self._petInfo.data:getUid(), self._attrSelectIndex)
+                end,
+            })
+        else
+            PetModule:sendPetRaise(self._petInfo.data:getUid(), self._attrSelectIndex)
+        end
+    end
+end
+
+function UICompPetTame:refreshCost()
+    if self:isMerge() then 
+        self:refreshMergePanelCost()
+    else
+        self:refreshAttrPanelCost()
+    end
+end
+
+function UICompPetTame:refreshAttrPanelCost()
+    local itemIcon = self._itemIcon
+    local attrItemNum = self._attrItemNum
+    local attrItemBg  = self._attrItemBg
+    local btnTame = self._btnTame
+    local max     = self._maxImage
+    local isVisible = true
+    local attrMax = self._attrMaxList[self._attrSelectIndex]
+    if self._attrSelectIndex == ATTRINDEX.ATTR3 and attrMax and attrMax.maxVisible then -- 属性3到最高级不显示消耗和按钮
+        isVisible = false
+    end
+    itemIcon:setVisible(isVisible)
+    attrItemNum:setVisible(isVisible)
+    attrItemBg:setVisible(isVisible)
+    btnTame:setVisible(isVisible)
+    max:setVisible(not isVisible)
+
+    local attrCost = ATTRCOST[self._attrSelectIndex]
+    if not attrCost then
+        return
+    end
+
+    local itemId = attrCost[1]
+    if self._attrSelectIndex == ATTRINDEX.ATTR2 and self._isMaxRedBird then
+        itemId = attrCost[2]
+    end
+    local itemMeta = CacheManager:getItemMeta(itemId)
+    if itemMeta then
+        local itemNum = ItemModule:getItemNum(itemId)
+        local path = string.format(_GURL.GetImageItem, itemMeta:getIconId())
+        itemIcon:setURL(path)
+        
+        attrItemNum:setText(itemNum .. "/1")
+        if itemNum < 1 then
+            attrItemNum:setColor(Constant.COLOR_TEXT_RED)
+        else
+            attrItemNum:setColor(Constant.COLOR_GREEN)
+        end
+    end
+end
+-----------------------------------------------------------------------------------------------
+-- 合成界面
+function UICompPetTame:refreshMergePanel(petInfo1,petInfo2)
+    self._mergePetInfo1 = petInfo1
+    self._mergePetInfo2 = petInfo2
+    local petList = { [1] = petInfo1 or {}, [2] = petInfo2 or {} }
+    for k,v in pairs(petList) do
+        local petMeta = v.meta
+        local petData = v.data
+        -- 刷新属性
+        local propertyt1 = self["_labelProperty1_" .. k]
+        local propertyt2 = self["_labelProperty2_" .. k]
+        local propertyt3 = self["_labelProperty3_" .. k]
+        local propertyt1Str = GReadText.KEY_PET_TIPS3.."[color=#ffff00]"..GReadText.KEY_PET_TIPS2.."[/color]"
+        local propertyt2Str = GReadText.KEY_PET_TIPS3.."[color=#ffff00]"..GReadText.KEY_PET_TIPS2.."[/color]"
+        local propertyt3Str = ""
+
+        -- 组合描述
+        local compose = self["_labelCompose_" .. k]
+        local composeStr = GReadText.KEY_PET_TIPS4.."[color=#00ff00]"..GReadText.KEY_PET_TIPS41.."[/color]"
+
+        if petData then
+            self["_mergePetActor" .. k]:setDirection(petMeta:getModleDir())
+            self["_mergePetActor" .. k]:playAction(petData:getPetModel())
+            self["_mergeModel" .. k]:setVisible(true)
+            self["_petTips" .. k]:setVisible(false)
+
+            if petData:getAttr1() > 0 then
+                propertyt1Str = GReadText.KEY_PET_TIPS3.."[color=#ffff00]".. petData:getAttr1Str() .."[/color]"
+            end
+            if petData:getAttr2() > 0 then
+                propertyt2Str = GReadText.KEY_PET_TIPS3.."[color=#ffff00]".. petData:getAttr2Str() .."[/color]"
+            end
+            if petData:getAttr3() > 0 then
+                propertyt3Str = "[color=#ffff00]".. petData:getAttr3Str() .."[/color]"
+            end
+
+            if petData:getCompose() ~= "" then
+                composeStr = GReadText.KEY_PET_TIPS4.."[color=#00ff00]"..petData:getComposeStr().."[/color]"
+            end
+        else
+            self["_mergeModel" .. k]:setVisible(false)
+            self["_petTips" .. k]:setVisible(true)
+        end
+
+        propertyt1:setText(propertyt1Str)
+        propertyt2:setText(propertyt2Str)
+        propertyt3:setText(propertyt3Str)
+        compose:setText(composeStr)
+    end
+
+    local maxLevel = CacheManager:getPetMaxLevel()
+    -- 主宠物tips
+    local petTips = self._petTips1
+    local petSynMain = CacheManager:getValueById(Constant.Variable.PetSynMain)
+    petTips:setText(string.format(GReadText.KEY_PET_TIPS38,petSynMain,maxLevel))
+    
+    -- 材料宠物tips
+    local petTips2 = self._petTips2
+    local petSynSass = CacheManager:getValueById(Constant.Variable.PetSynSass)
+    petTips2:setText(string.format(GReadText.KEY_PET_TIPS39,petSynSass,maxLevel))
+
+    -- 组合属性显示
+    local effectVisible = false
+    if self._mergePetInfo1 and self._mergePetInfo2 then
+        effectVisible = true
+
+        -- 组合文字去材料宠物的第一条属性名，并根据第二个宠物的等级给出属性值范围
+        local petData = self._mergePetInfo2.data
+        local compose1 = self._compose1
+        if petData and petData:getAttr1() > 0 then
+            local attr1 = petData:getAttr1()
+            local optionInfo = lt.CacheManager:getOptionInfoMeta(attr1)
+            local petAttr = lt.CacheManager:getPetAttrByPetLevel(attr1,petData:getLevel())
+            local value = ""
+            if optionInfo and petAttr then
+                value = optionInfo:getName() .. petAttr:getAttrLower() .. "-" .. petAttr:getAttrUp()
+            end
+            local composeStr = GReadText.KEY_PET_TIPS4.."[color=#00ff00]".. value .."[/color]"
+            compose1:setText(composeStr)
+        end
+    end
+    self._effectBg:setVisible(effectVisible)
+    
+    local btnMerge = self._btnMerge -- 合成按钮
+    local btnReset = self._btnReset -- 重置按钮
+    if self._mergePetInfo1 then
+        local petData = self._mergePetInfo1.data
+        local isCompose = petData:getCompose() ~= ""
+        btnMerge:setVisible(not isCompose)
+        btnReset:setVisible(isCompose)
+        if isCompose then
+            self._labelProperty1_2:setText("")
+            self._labelProperty2_2:setText("")
+            self._labelProperty3_2:setText("")
+            self._labelCompose_2:setText("")
+            self._petTips2:setText(GReadText.KEY_PET_TIPS52)
+        end
+    else
+        btnMerge:setVisible(true)
+        btnReset:setVisible(false)
+    end
+
+    self:refreshMergePanelCost()
+
+    if PetModule:getPetComposeState() == Constant.PETCOMPOSE.SUCCESS then
+        if not self._petComposeSpine then
+            self._petComposeSpine = lt.SkeletonManager:createSkeletonEffectWithFile("ChongWuHeCheng", "ChongWuHeCheng_Skeleton")
+            self:displayObject():addChild(self._petComposeSpine,99)
+            self._petComposeSpine:setPosition(130,200)
+            self._petComposeSpine:setCallback(handler(self, self.spineAnimationEnd))
+        end
+        self._petComposeSpine:setVisible(true)
+        self._petComposeSpine:setAnimation(0, "ChongWuHeCheng", false)
+
+        PetModule:clearPetComposeState()
+    end
+end
+
+function UICompPetTame:refreshMergePanelCost()
+    local itemId = MERGECOST
+    if self._mergePetInfo1 then
+        local petData = self._mergePetInfo1.data
+        local isCompose = petData:getCompose() ~= ""
+        if isCompose then
+            itemId = RESETCOST
+        end
+    end
+    local itemMeta = CacheManager:getItemMeta(itemId)
+    if itemMeta then
+        local itemNum = ItemModule:getItemNum(itemId)
+        local itemIcon = self._petItemIcon
+        local path = string.format(_GURL.GetImageItem, itemMeta:getIconId())
+        yflog:Info("path---->>>>> %s",path)
+        itemIcon:setURL(path)
+        
+        self._mergeItemNum:setText(itemNum .. "/1")
+        if itemNum < 1 then
+            self._mergeItemNum:setColor(Constant.COLOR_TEXT_RED)
+        else
+            self._mergeItemNum:setColor(Constant.COLOR_GREEN)
+        end
+
+        self._mergeItemName:setText(itemMeta:getName())
+    end
+end
+
+function UICompPetTame:onMergeTouchCallBack()
+    yflog:Info("onMergeTouchCallBack")
+    local itemId = MERGECOST
+    local itemMeta = CacheManager:getItemMeta(itemId)
+    if not itemMeta then
+        return
+    end
+    
+    if not self._mergePetInfo1 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS46})
+        return
+    end
+    if not self._mergePetInfo2 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS47})
+        return
+    end
+    
+    local isEnough = ItemModule:enoughItem(Constant.ItemType.ITEM_TYPE_PROP, itemId, 1, {tips = true})
+    if isEnough then
+        PetModule:sendPetCompose(self._mergePetInfo1.data:getUid(), self._mergePetInfo2.data:getUid())
+    end
+end
+
+function UICompPetTame:onResetTouchCallBack()
+    yflog:Info("onResetTouchCallBack")
+    local itemId = RESETCOST
+    local itemMeta = CacheManager:getItemMeta(itemId)
+    if not itemMeta then
+        return
+    end
+    
+    if not self._mergePetInfo1 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_PET_TIPS46})
+        return
+    end
+    
+    local isEnough = ItemModule:enoughItem(Constant.ItemType.ITEM_TYPE_PROP, itemId, 1, {tips = true})
+    if isEnough then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {
+            content = GReadText.KEY_PET_TIPS85,
+            confirmCallback = function()
+                PetModule:sendPetCompose(self._mergePetInfo1.data:getUid(), 0)
+            end,
+        })
+    end
+end
+
+function UICompPetTame:showTips()
+    local attrCost = ATTRCOST[self._attrSelectIndex]
+    if not attrCost then
+        return
+    end
+    local itemId = attrCost[1]
+    if self._attrSelectIndex == ATTRINDEX.ATTR2 and self._isMaxRedBird then
+        itemId = attrCost[2]
+    end
+    local itemMeta = CacheManager:getItemMeta(itemId)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,{itemInfo = itemMeta, tipsType = Constant.PROPTIPS_FORM.Display})
+end
+
+function UICompPetTame:showPetItemTips()
+    local itemId = MERGECOST
+    if self._mergePetInfo1 then
+        local petData = self._mergePetInfo1.data
+        local isCompose = petData:getCompose() ~= ""
+        if isCompose then
+            itemId = RESETCOST
+        end
+    end
+    local itemMeta = CacheManager:getItemMeta(itemId)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,{itemInfo = itemMeta, tipsType = Constant.PROPTIPS_FORM.Display})
+end
+-----------------------------------------------------------------------------------------------
+
+function UICompPetTame:isMerge()
+    return self._selectController:getSelectedIndex() == SELECTTYPE.MERGE
+end
+
+function UICompPetTame:petTameAttrRefresh()
+    if not self._attrSelectIndex then
+        return
+    end
+
+    if not self._spineTameList then
+        self._spineTameList = {}
+    end
+    
+    if not self._spineTameList[self._attrSelectIndex] then
+        local selectAttr = self._selectAttr[self._attrSelectIndex]
+        local spine = SkeletonManager:createSkeletonEffectWithFile("ShengJiXiTong", "ShengJiXiTong_Skeleton")
+        spine:setCallback(handler(self, self.spineAttrEnd))
+        selectAttr:displayObject():addChild(spine)
+        spine:setScaleX(0.85)
+        spine:setPosition(145,20)
+        spine:setAnimationScale(2)
+        self._spineTameList[self._attrSelectIndex] = spine
+    end
+    
+    local spine = self._spineTameList[self._attrSelectIndex]
+    if spine then
+        spine:setAnimation(0, "ShengJiPanDuan2", false)
+    end
+end
+
+function UICompPetTame:spineAnimationEnd(event)
+    if event.type == "complete" then
+        self._petComposeSpine:setVisible(false)
+    end
+end
+
+function UICompPetTame:spineAttrEnd(event)
+    if event.type == "complete" then
+        PetModule:clearSendPetRaiseLimit()
+    end
+end
+
+return UICompPetTame

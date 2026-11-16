@@ -1,0 +1,88 @@
+local RoleColor = {
+    hair = {
+        cc.c3b(0, 178, 181),
+        cc.c3b(0, 0, 99),
+        cc.c3b(0, 97, 99),
+        cc.c3b(90, 170, 0),
+        cc.c3b(0, 89, 181),
+        cc.c3b(90, 170, 90),
+        cc.c3b(90, 178, 181),
+        cc.c3b(107, 105, 107),
+        cc.c3b(198, 7, 191),
+        cc.c3b(0, 97, 0),
+        cc.c3b(107, 0, 107),
+        cc.c3b(90, 0, 181),
+        cc.c3b(181, 0, 90),
+        cc.c3b(90, 89, 181),
+        cc.c3b(181, 89, 181),
+        cc.c3b(181, 178, 181),
+        cc.c3b(189, 186, 0),
+        cc.c3b(99, 0, 0),
+        cc.c3b(107, 105, 0),
+        cc.c3b(181, 89, 0),
+        cc.c3b(0, 178, 90),
+        cc.c3b(181, 89, 90),
+        cc.c3b(173, 170, 82),
+        cc.c3b(49, 48, 49),
+    },
+
+    skin = {
+        cc.c3b(115, 81, 49),
+        cc.c3b(115, 97, 57),
+        cc.c3b(99, 81, 66),
+        cc.c3b(115, 65, 57),
+        cc.c3b(132, 81, 57),
+        cc.c3b(165, 130, 99),
+        cc.c3b(99, 97, 99),
+        cc.c3b(82, 81, 0),
+        cc.c3b(156, 113, 66),
+        cc.c3b(156, 138, 82),
+        cc.c3b(156, 121, 107),
+        cc.c3b(173, 97, 90),
+        cc.c3b(189, 113, 82),
+        cc.c3b(222, 170, 132),
+        cc.c3b(132, 130, 132),
+        cc.c3b(132, 130, 0),
+        cc.c3b(198, 162, 123),
+        cc.c3b(189, 162, 123),
+        cc.c3b(173, 146, 132),
+        cc.c3b(189, 138, 132),
+        cc.c3b(214, 154, 132),
+        cc.c3b(247, 203, 156),
+        cc.c3b(181, 178, 181),
+        cc.c3b(165, 162, 66),
+    }
+}
+local DEFAULT_COLOR = cc.c3b(255, 255, 255)
+
+
+---@param index number 索引
+---@param isGL boolean 是否为opengl颜色值
+function RoleColor:getHairColorById(index, isGL)
+    if isGL == nil then
+        isGL = false
+    end
+    if index == 0 then
+        index = 1
+    end
+    local color = self.hair[index] or DEFAULT_COLOR
+    local glColor = cc.vec3(color.r/255, color.g/255, color.b/255)
+    return isGL == false and color or glColor
+end
+
+---@param index number 索引
+---@param isGL boolean 是否为opengl颜色值
+function RoleColor:getSkinColorById(index, isGL)
+    if isGL == nil then
+        isGL = false
+    end
+    if index == 0 then
+        index = 1
+    end
+    local color = self.skin[index] or DEFAULT_COLOR
+    local glColor = cc.vec3(color.r/255, color.g/255, color.b/255)
+    return isGL == false and color or glColor
+end
+
+return RoleColor
+    

@@ -1,0 +1,19 @@
+local DowngradeCostMeta = class("DowngradeCostMeta")
+
+function DowngradeCostMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function DowngradeCostMeta:initWithRow(row)
+    self._pointsPerLevel    = row.PointsPerLevel
+    self._cost              = row.Cost
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function DowngradeCostMeta:getPointsPerLevel() return self._pointsPerLevel end
+function DowngradeCostMeta:getCost() return self._cost end
+
+-- AUTO GENERATED GETTERS END
+return DowngradeCostMeta

@@ -1,0 +1,133 @@
+-- @Date    : 2019-06-21 11:05:51
+-- @Author  : ZhaoCi
+-- @Desc    :
+
+local MailData = class("MailData")
+--[[
+    邮件
+]]
+
+MailData._rowID         = nil
+MailData._sender        = nil
+MailData._title         = nil
+MailData._date          = nil
+MailData._emailType     = nil
+MailData._readFlag      = nil
+MailData._drawFlag      = nil
+MailData._content       = nil
+MailData._attachment    = nil
+MailData._order         = nil
+
+function MailData:setRowID(id)
+    self._rowID = id
+end
+
+function MailData:getRowID()
+    return self._rowID
+end
+
+function MailData:setSender(sender)
+    self._sender = sender
+end
+
+function MailData:getSender()
+    return self._sender
+end
+
+function MailData:setTitle(title)
+    self._title = title
+end
+
+function MailData:getTitle()
+    return self._title
+end
+
+function MailData:setDate(date)
+    self._date = date
+end
+
+function MailData:getDate()
+    return self._date
+end
+
+function MailData:setExpireDate(expireDate)
+    self._expireDate = expireDate
+end
+
+function MailData:getExpireDate()
+    return self._expireDate
+end
+
+function MailData:setEmailType(type)
+    self._emailType = type
+end
+
+function MailData:getEmailType()
+    return self._emailType
+end
+
+function MailData:setReadFlag(flag)
+    self._readFlag = flag
+end
+
+function MailData:getReadFlag()
+    return self._readFlag
+end
+
+function MailData:setHaveRead()
+    self._readFlag = 1
+end
+
+function MailData:setDrawFlag(flag)
+    self._drawFlag = flag
+end
+
+function MailData:getDrawFlag()
+    return self._drawFlag
+end
+
+function MailData:setHaveDraw()
+    self._drawFlag = 1
+end
+
+function MailData:setMailContent(content)
+    self._content = content
+end
+
+function MailData:getMailContent()
+    return self._content
+end
+
+function MailData:setMailAttachment(attachment)
+    self._attachment = attachment
+end
+
+function MailData:getMailAttachment()
+    return self._attachment
+end
+
+function MailData:autoOrder()
+    if self._emailType <= 2 then
+        if self._readFlag == 0 then
+            self._order = 2
+        else
+            self._order = 5
+        end
+    elseif self._emailType > 2 then
+        if self._drawFlag == 0 then
+            if self._readFlag == 0 then
+                self._order = 1
+            else
+                self._order = 3
+            end
+        else
+            self._order = 4
+        end
+    end
+end
+
+function MailData:getOrder()
+    return self._order
+end
+
+return MailData

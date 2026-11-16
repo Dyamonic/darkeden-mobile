@@ -1,0 +1,390 @@
+--- 装备外观界面
+---@class UIWndAppearance:UIWindowBase
+local UIWndAppearance = class("UIWndAppearance", lt.UIWindowBase)
+
+local NtfManager = lt.NtfManager
+local Constant = lt.Constant
+local CacheManager = lt.CacheManager
+local ItemModule = lt.ItemModule
+local GameModule = lt.GameModule
+
+UIWndAppearance.ChangeSkinConf = {
+    ["Strengthen"] = {
+        ["frame"] = {n1 = "bg_zhuangbei_beijinban"},
+        ["bg"] = "bg_zhuangbei_di",
+    },
+    ["Appearance"] = {
+        ["rightBg"] = "btn_ghxit_biaoti_02",
+        ["hair"] = {
+            bg = "btn_ghxit_biaoti_01",
+            n0 = "btn_ghxit_biaoti_01",
+        },
+        ["halo"] = {
+            bg = "btn_ghxit_biaoti_01",
+            n0 = "btn_ghxit_biaoti_01",
+        },
+        ["skin"] = {
+            bg = "btn_ghxit_biaoti_01",
+            n0 = "btn_ghxit_biaoti_01",
+        }
+    },
+    ["CommonTL"] = {
+        ["closeButton"] = {bg  = "bg_beibao_anniu01", bgup  = "bg_beibao_anniu02"},
+        ["activate"] = {bg  = "bg_zbsj_wxz", bglight  = "bg_zbsj_xz"},
+        ["hair_r"] = {n0 = "bth_zhuangbei_yeqian"},
+        ["halo_r"] = {n0 = "bth_zhuangbei_yeqian"},
+        ["skin_r"] = {n0 = "bth_zhuangbei_yeqian"},
+    }
+}
+
+-- 页签
+local BTNLISTCFG = {
+    { name = "hair", btnType = Constant.Appearance.Hair, visible = true },
+    { name = "halo", btnType = Constant.Appearance.Halo, visible = true },
+    { name = "skin", btnType = Constant.Appearance.Skin, visible = true },
+}
+
+function UIWndAppearance:ctor(param)
+    self:registerComponent("UICompAppearanceItem")
+    UIWndAppearance.super.ctor(self, param)
+    
+    self._selectItemId   = nil -- 当前选中的外观id
+    self._appearanceType = nil -- 外观类型
+    self._hairdye        = nil -- 染色剂数据
+    self._list           = nil
+    self._appearanceData = nil
+    self._selectControl  = nil
+    self._heroActor      = nil
+end
+
+function UIWndAppearance:onClear()
+    self:unregisterAllComponent()
+    
+    self._selectItemId   = nil
+    self._appearanceType = nil
+    self._hairdye        = nil
+    self._list           = nil
+    self._appearanceData = nil
+    self._selectControl  = nil
+    if self._heroActor then
+        self._heroActor:onClear()
+        self._heroActor = nil
+    end
+    UIWndAppearance.super.onClear(self)
+end
+
+function UIWndAppearance:onInit()
+    UIWndAppearance.super.onInit(self, _GURL.WndAppearance)
+
+    -- self._hairdye = lt.CacheManager:getValueById(lt.Constant.Variable.Hairdye) or {}
+    self:refreshHairdyeData()
+    self._list = self:getChild("list")
+    self._list:setItemRenderer(handler(self, self.renderListItem))
+
+    self:initUI()
+end
+
+function UIWndAppearance:initUI()
+    -- 页签,鬼族没有染发
+    self._appearanceType = Constant.Appearance.Hair
+    self._selectControl = self:getController("select")
+    self._btnShowControl = self:getController("showtype")
+    local selectIndex = 0
+    local race = GameModule:getHeroRace()
+    if race == Constant.RaceType.Vampire then
+        -- BTNLISTCFG[1].visible = false
+        self._btnShowControl:setSelectedIndex(race-1)
+        self._appearanceType = Constant.Appearance.Halo
+        selectIndex = 1
+    elseif race == Constant.RaceType.Ousters then
+        self._btnShowControl:setSelectedIndex(race-1)
+    end
+    
+    local index = 0
+    for _,v in ipairs(BTNLISTCFG) do
+       local btn = self:getChild(v.name)
+       if btn then
+           btn.btnType = v.btnType
+           btn:setVisible(v.visible)
+           btn:setPosition(46+136*index,54)
+           if v.visible then
+                index = index + 1
+           end
+       end
+    end
+
+    self._selectControl:setSelectedIndex(selectIndex)
+end
+
+function UIWndAppearance:onShown()
+    UIWndAppearance.super.onShown(self)
+
+    self:getChild("closeButton"):addClickListener(handler(self, self.onCloseBtnClick))
+    self:getChild("activate"):addClickListener(handler(self, self.onActivateClick))
+    for _,v in ipairs(BTNLISTCFG) do
+       local btn = self:getChild(v.name)
+       if btn then
+           btn:addClickListener(handler(self, self.onBtnClick))
+       end
+    end
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_HERO_EVENT, handler(self, self.heroDataUpdate), "UIWndAppearance:heroDataUpdate")
+
+    local race = GameModule:getHeroRace()
+    self:createRole()
+    local param = self:getParam().param
+    -- 根据参数打开默认页签
+    if param and param.index then
+        self._appearanceType = param.index
+        if param.selectItemId then
+            self._selectItemId = param.selectItemId
+        end
+        -- 鬼族没有染发
+        if race == Constant.RaceType.Vampire and self._appearanceType == Constant.Appearance.Hair then
+            self._appearanceType = Constant.Appearance.Halo
+            self._selectItemId = nil
+        end
+        self._selectControl:setSelectedIndex(self._appearanceType-1)
+    end
+    self:refreshCurApperance()
+end
+
+function UIWndAppearance:onHide()
+
+    self:getChild("closeButton"):removeClickListener()
+    self:getChild("activate"):removeClickListener()
+    for _,v in ipairs(BTNLISTCFG) do
+       local btn = self:getChild(v.name)
+       if btn then
+           btn:removeClickListener()
+       end
+    end
+    NtfManager:removeNtfListenerByTag("UIWndAppearance:heroDataUpdate")
+
+    self:clearRole()
+    
+    UIWndAppearance.super.onHide(self)
+end
+
+function UIWndAppearance:refreshCurApperance()
+    -- 页面数据重组
+    self:refreshHairdyeData()
+
+    self:refreshLeftList()
+    self:refreshSelect(self._selectItemId)
+    self:refreshRightInfo()
+end
+
+function UIWndAppearance:heroDataUpdate()
+    self:clearRole()
+    self:createRole()
+
+    self:refreshCurApperance()
+end
+
+-- 创建模型
+function UIWndAppearance:createRole()
+    -- 模型
+    local role = self:getChild("role")
+    local roleSize = role:getSize()
+    if not self._heroActor then
+        local heroData = clone(lt.GameModule:getHeroData())
+        local heroActor = lt.UIHeroActor.new(heroData, Constant.DIRECTION_DOWN, true)
+        heroActor:setLocalZOrder(5)
+        heroActor:setPosition(roleSize.width/2, 20)
+        role:displayObject():addChild(heroActor)
+        self._heroActor = heroActor
+        heroActor:setScale(1.2)
+
+        ------------------------------------------------------------------------------------
+        -- 魔族根据武器获取动作
+        local weapon = heroData:getWeaponAppr()
+        local weaponType = lt.ItemModule:getWeaponTypeByWeaponAppr(weapon)
+        local actionId = Constant.ROLE_ACTION_IDLE
+        if heroData:getRace() == Constant.RaceType.Ousters and weaponType ~= Constant.WeaponType.BattleWheel then
+            actionId = Constant.ACTION_OUSTERS_STAND
+        end
+        ------------------------------------------------------------------------------------
+
+        heroActor:playActionUI(actionId)
+    end
+end
+
+function UIWndAppearance:clearRole()
+    if self._heroActor then
+        self._heroActor:onClear()
+        self._heroActor = nil
+    end
+end
+
+-- 染发列表
+function UIWndAppearance:refreshLeftList()
+    local minItem = 6*7
+    local itemNum = minItem
+
+    -- 染发剂
+    if self._appearanceType == Constant.Appearance.Hair then
+        itemNum = #self._hairdye
+        self._appearanceData = self._hairdye        
+    else
+        itemNum = minItem
+        self._appearanceData = {}
+    end
+
+    -- 如果没有默认选中，默认选中第一个
+    if self._appearanceData[1] and not self._selectItemId then
+        self._selectItemId = self._appearanceData[1]
+    end
+
+    -- 空物品补充
+    if itemNum < minItem then
+        itemNum = minItem
+    end
+
+    self._list:setNumItems(itemNum)
+end
+
+function UIWndAppearance:renderListItem(index, obj)
+    local itemIndex = index + 1
+    local itemId = self._appearanceData[itemIndex]
+    if not itemId then
+        obj:setInfoEmpty()
+        return
+    end
+    
+    obj:setInfo(itemId,function()
+        self._selectItemId = itemId
+        self:refreshSelect(itemId)
+        self:refreshRightInfo()
+    end,self._appearanceType)
+    
+    obj:insertObjectToFactory(self)
+end
+
+-- 染色按钮
+function UIWndAppearance:onActivateClick()
+    if not self._selectItemId then
+        return
+    end
+
+    local itemMeta = CacheManager:getItemMeta(self._selectItemId)
+    if not itemMeta then
+        return
+    end
+
+    local curNum = ItemModule:getItemNum(self._selectItemId)
+    if curNum < 1 then
+        local tips = string.format(GReadText.KEY_APPEARANCE_TIPS4,itemMeta:getName())
+        lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_FLOAT_TIP,{content = tips})
+        return
+    end
+    local objId = ItemModule:getObjIdById(self._selectItemId) or 0
+    ItemModule:sendUseItemHairColor(objId,1)
+    -- self:refreshLeftList()
+    -- self:refreshRightInfo()
+end
+
+-- 按钮页签切换
+function UIWndAppearance:onBtnClick(obj)
+    local target = obj:getSender()
+    -- yflog:Info("onBtnClick--->%s",target.btnType)
+    self._appearanceType = target.btnType
+    self._selectItemId = nil
+
+    self:clearRole()
+    self:createRole()
+
+    self:refreshLeftList()
+    self:refreshSelect(self._selectItemId)
+    self:refreshRightInfo()
+end
+
+-- 关闭界面按钮
+function UIWndAppearance:onCloseBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndAppearance", close = true})
+end
+
+-- 选中框逻辑
+function UIWndAppearance:refreshSelect(itemId)
+    local children = self._list:getChildren()
+    for _,v in ipairs(children) do
+        v:setSelected((itemId or false) and v:getItemId() == itemId)
+    end
+end
+
+-- 刷新右侧消耗界面
+function UIWndAppearance:refreshRightInfo()
+    local nameT = self:getChild("name")
+    local descT = self:getChild("desc")
+    local needNumT = self:getChild("needNum")
+    local icon = self:getChild("icon")
+    local activate = self:getChild("activate")
+
+    nameT:setText("")
+    descT:setText("")
+    needNumT:setText("")
+    icon:setVisible(false)
+    activate:setVisible(false)
+    
+    if not self._selectItemId then
+        return
+    end
+
+    local itemMeta = lt.CacheManager:getItemMeta(self._selectItemId)
+    if not itemMeta then
+        return
+    end
+
+    -- icon 显示
+    icon:setURL(string.format(_GURL.GetImageItem, itemMeta:getIconId()))
+    icon:setVisible(true)
+    -- 数量显示
+    local curNum = lt.ItemModule:getItemNum(self._selectItemId)
+    needNumT:setText(string.format("%d/%d",curNum,1))
+    if curNum < 1 then
+        needNumT:setColor(cc.c3b(255, 0, 0))
+        icon:setGrayed(true)
+        if self._appearanceType == Constant.Appearance.Hair then
+            icon:setURL(string.format(_GURL.GetImageItem, 802009))
+        end
+    else
+        needNumT:setColor(cc.c3b(255, 255, 255))
+        icon:setGrayed(false)
+    end
+
+    
+    
+    
+    -- 颜色描述显示
+    local effectParam = itemMeta:getEffectParam()
+    local colorIndex = nil
+    if type(effectParam) == "table" and type(effectParam[1]) == "table" then
+        local color = GReadText["KEY_HAIR_COLOR_TIPS" .. (effectParam[1][2] or "")]
+        descT:setText(string.format(GReadText.KEY_APPEARANCE_TIPS1,color))
+        colorIndex = effectParam[1][2]
+    else
+        nameT:setText("")
+    end
+    nameT:setText(itemMeta:getName())
+
+    -- 按钮
+    activate:setVisible(true)
+
+    if colorIndex and self._heroActor then
+        self._heroActor:changeHairColor(colorIndex)
+    end
+end
+
+function UIWndAppearance:refreshHairdyeData()
+    self._hairdye = lt.CacheManager:getValueById(lt.Constant.Variable.Hairdye) or {}
+    table.sort(self._hairdye, function (a,b)
+        local aIsExist = (ItemModule:getItemNum(a) > 0) and 1 or 0
+        local bIsExist = (ItemModule:getItemNum(b) > 0) and 1 or 0
+        if aIsExist == bIsExist then
+            return a < b
+        else
+            return aIsExist > bIsExist
+        end
+    end)
+end
+
+return UIWndAppearance

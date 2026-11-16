@@ -1,0 +1,28 @@
+
+local TendencyMeta = class("TendencyMeta")
+
+
+
+function TendencyMeta:ctor(row)
+    self:initWithRow(row)
+end
+
+function TendencyMeta:initWithRow(row)
+    self._tendencyID = tonumber(row.TendencyID)
+    self._name = row.Name
+    self._enName = row.ENName
+    self._minValue = row.MinValue
+    self._maxValue = row.MaxValue
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function TendencyMeta:getTendencyID() return self._tendencyID end
+function TendencyMeta:getName() return self._name end
+function TendencyMeta:getEnName() return self._enName end
+function TendencyMeta:getMinValue() return self._minValue end
+function TendencyMeta:getMaxValue() return self._maxValue end
+
+-- AUTO GENERATED GETTERS END
+return TendencyMeta

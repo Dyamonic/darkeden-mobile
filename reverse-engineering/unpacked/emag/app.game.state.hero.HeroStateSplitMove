@@ -1,0 +1,431 @@
+local HeroStateSplitMove = class("HeroStateSplitMove", lt.HeroStateBase)
+
+local MapUtil = lt.MapUtil
+local AgentManager = lt.AgentManager
+local Constant = lt.Constant
+local ScheduleUtil = lt.ScheduleUtil
+
+
+-- 目标位置
+HeroStateSplitMove._mTarget       = nil
+HeroStateSplitMove._nTarget       = nil
+HeroStateSplitMove._xTarget       = nil
+HeroStateSplitMove._yTarget       = nil
+HeroStateSplitMove._cloneActorArr = nil
+HeroStateSplitMove._showMultiple  = nil
+HeroStateSplitMove._skillId       = nil
+HeroStateSplitMove._mAgentTarget  = nil
+HeroStateSplitMove._nAgentTarget  = nil
+HeroStateSplitMove._knockedTarget = nil
+
+--[[
+    技能: 人族 尾行之术 闪电滑行  火焰之步 灭日修罗斩 飞车一击  修罗-破
+]]
+
+function HeroStateSplitMove:ctor(heroAgent, mTarget, nTarget, skillId, knockedTarget, mAgentTarget, nAgentTarget, targetAgentId)
+    HeroStateSplitMove.super.ctor(self, heroAgent)
+
+    self._skillId = skillId
+    self._mAgentTarget = mAgentTarget
+    self._nAgentTarget = nAgentTarget
+    self._knockedTarget = knockedTarget
+    self._moveTime = nil
+    self._targetAgentId = targetAgentId
+
+    ---------------------------------------
+    -- 火焰之步 用于转向
+    self._stepCount = 0
+    self._firstDir = nil
+    self._timeRunDir = nil
+    ---------------------------------------
+
+    ---------------------------------------
+    -- 飞车一击 用于转向
+    self._bikeCrashStepCount = 0
+    self._timeBikeCrashDir = nil
+    self._moveAction = nil
+    ---------------------------------------
+    self:initMove(mTarget, nTarget)
+end
+
+function HeroStateSplitMove:onClear()
+    self._heroAgent     = nil
+    self._heroActor     = nil
+    self._showMultiple  = nil
+    self._skillId       = nil
+    self._knockedTarget = nil
+    self.endDirection   = nil
+                        
+    HeroStateSplitMove.super.onClear(self)
+end
+
+function HeroStateSplitMove:initMove(mNext, nNext)
+    -- hero 目标格子位置
+    self._heroActor = self._heroAgent:getActor()
+    self._mTarget = mNext
+    self._nTarget = nNext
+
+    -- 转换坐标
+    self._xTarget, self._yTarget = MapUtil:calcMNMid(self._mTarget, self._nTarget)
+
+    -- 设置方向
+    -- 换算方向 瞬息移动朝向
+    local xHero, yHero = self._heroAgent:getPosition()
+    local direction = MapUtil:calcDirectionXY(self._xTarget - xHero, self._yTarget - yHero)
+    local roleData = self._heroAgent:getRoleData()
+    if self._skillId == lt.SkillEnum.SKILL_BLAZE_WALK and roleData and roleData:isCrossCount() then
+        self._firstDir = direction
+    else
+        self._heroAgent:setDirection(direction)
+    end
+    -- yflog:Info("initMove-------->>>>>%s",direction)
+
+    -- 播放平移动画
+    if self._skillId == lt.SkillEnum.SKILL_BIKE_CRASH then
+        self._heroAgent:changeMountId(Constant.SLAYER_MOUNTID.SCORPION_KEY)
+        self._heroAgent:playAction(Constant.ACTION_SLAYER_MOTOR_MOVE)
+    else
+        self._heroAgent:playAction(Constant.ROLE_ACTION_MOVE)
+    end
+    self:createActorMoveAction()
+    -- 设置需不需要显示角色残影
+    self._showMultiple = true
+end
+
+function HeroStateSplitMove:onEnter()
+end
+
+function HeroStateSplitMove:onExit()
+    self:clearActorArr()
+    self._heroAgent:changeMountId(0)
+    if self._moveAction then
+        self._heroActor:stopAction(self._moveAction)
+        self._moveAction = nil
+    end
+
+    if self._delayScheule then
+        ScheduleUtil:unscheduleGlobal(self._delayScheule)
+        self._delayScheule = nil
+    end
+end
+
+function HeroStateSplitMove:onUpdate()
+    self:clearActorArr()
+    
+    self._heroAgent:setPosition(self._heroAgent:getPosition())
+
+    self:updateRunDir()
+    self:updateBikeCrashDir()
+    -- 复制角色
+    if self._showMultiple then
+        for i=1,2 do
+            self:cloneRole(i)
+        end
+    end
+end
+
+-------------------------------------------------------------------------------------
+-- 火焰之步
+function HeroStateSplitMove:updateRunDir()
+    if self._firstDir then
+        self._heroAgent:getActor():setLocalZOrder(self._heroAgent:getActor():getLocalZOrder()-1)
+        if not self._timeRunDir then
+            return
+        end
+
+        local curDir = self._heroAgent:getDirection()
+        local deltaTime = lt.GameBoard:getDeltaTime()
+        local direction = curDir-1*(self._stepCount/math.abs(self._stepCount))
+        if self._timeRunDir:tick(deltaTime) then
+            if direction < Constant.DIRECTION_LEFT then direction = Constant.DIRECTION_LEFT_UP end
+            if direction > Constant.DIRECTION_LEFT_UP then direction = Constant.DIRECTION_LEFT end
+            self._heroAgent:setDirection(direction)
+            self._timeRunDir = lt.TimeTrigger.new(self._moveTime/math.abs(self._stepCount))
+        end
+
+        if self._firstDir == direction then
+            self._timeRunDir = nil
+            self._heroAgent:setDirection(self._firstDir)
+        end
+    end
+end
+-------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------
+-- 飞车一击
+function HeroStateSplitMove:updateBikeCrashDir()
+    self._heroAgent:getActor():setLocalZOrder(self._heroAgent:getActor():getLocalZOrder()-1)
+
+    if self._bikeCrashStepCount <= 0 then
+        self._timeBikeCrashDir = nil
+        return
+    end
+
+    if not self._timeBikeCrashDir then
+        return
+    end
+
+    local curDir = self._heroAgent:getDirection()
+    local deltaTime = lt.GameBoard:getDeltaTime()
+    local direction = curDir + 1
+    if self._timeBikeCrashDir:tick(deltaTime*1.3) then
+        if direction < Constant.DIRECTION_LEFT then direction = Constant.DIRECTION_LEFT_UP end
+        if direction > Constant.DIRECTION_LEFT_UP then direction = Constant.DIRECTION_LEFT end
+        self._heroAgent:setDirection(direction)
+        self._timeBikeCrashDir = lt.TimeTrigger.new(0.025)
+        self._bikeCrashStepCount = self._bikeCrashStepCount - 1
+    end
+end
+-------------------------------------------------------------------------------------
+
+function HeroStateSplitMove:cloneRole(index)
+    -- 复制角色
+    local startPos = cc.p(self._heroAgent:getPosition())
+    local cloneActor = self._heroActor:cloneSlayer(index)  -- 克隆人族角色
+    local offsetXY = self:getOffectXYByDirection(self._heroActor:getDirection())
+    local offsetX, offsetY = offsetXY.x*index, offsetXY.y*index
+    cloneActor:setPosition(cc.p(startPos.x + offsetX - 25, startPos.y + offsetY + 15))
+
+    -- 添加到场景
+    self:getMapActor():addChild(cloneActor)
+    -- cloneActor:setLocalZOrder(self._heroActor:getLocalZOrder()-(2 - index + 1))
+    table.insert(self._cloneActorArr, cloneActor)
+end
+
+function HeroStateSplitMove:createActorMoveAction()
+    -- local startPos = cc.p(self._heroAgent:getPosition())
+    local targetPos = cc.p(self._xTarget, self._yTarget)
+    -- yflog:Info("HeroStateSplitMove:createActorMoveAction-------->>>>>%s %s",self._xTarget,self._yTarget)
+    -- 移动角色
+    local time = 0.2--math.sqrt((startPos.x - targetPos.x)^2 + (startPos.y - targetPos.y)^2)/400
+    self._moveTime = time
+
+    --------------------------------------------------------------------------------------
+    -- 火焰之步
+    if self._firstDir then
+        local direction = self._heroAgent:getDirection()
+        for i = 1,8 do
+            if self._firstDir == direction then
+                if self._stepCount > 4 then
+                    self._stepCount = -(8 - self._stepCount)
+                end
+            else
+                direction = direction-1
+                if direction < Constant.DIRECTION_LEFT then direction = Constant.DIRECTION_LEFT_UP end
+                if direction > Constant.DIRECTION_LEFT_UP then direction = Constant.DIRECTION_LEFT end
+                self._stepCount = self._stepCount + 1
+            end
+        end
+        self._timeRunDir = lt.TimeTrigger.new(self._moveTime/math.abs(self._stepCount))
+    end
+    --------------------------------------------------------------------------------------
+    if tolua.isnull(self._heroActor) then
+        return
+    end
+
+    if self._skillId == lt.SkillEnum.SKILL_ILLUSION_INVERSION then
+        local targetAgent = AgentManager:getAgent(self._targetAgentId or 0)
+        if not targetAgent then return end
+        targetAgent:playParallelEffectByLv(self._skillId, 1, Constant.EFFECT.PROCESS)
+    end
+
+    local moveAction = cc.MoveTo:create(time, cc.p(targetPos.x, targetPos.y))
+    self._moveAction = cc.Sequence:create(moveAction,cc.CallFunc:create(function()
+        self:completeActionHandler()
+    end))
+    self._heroActor:runAction(self._moveAction)
+end
+
+
+function HeroStateSplitMove:completeActionHandler()
+    self._heroAgent:setPosition(self._xTarget, self._yTarget)
+    self._firstDir = nil
+    self._timeRunDir = nil
+    -- 设置最终方向  面向怪方向
+    local xHero, yHero = self._heroAgent:getPosition()
+    local xAgentTarget, yAgentTarget = MapUtil:calcMNMid(self._mAgentTarget, self._nAgentTarget)
+    local direction = MapUtil:calcDirectionXY(xAgentTarget - xHero, yAgentTarget - yHero)
+    self._heroAgent:setDirection(direction)
+
+    if not self._heroAgent:getIsSelf() then
+        self._heroAgent:getCmdSystem():pop()
+    end
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    local mapAgent = worldAgent:getMapAgent()
+    if mapAgent then
+        mapAgent:changeAgentMN(self._heroAgent, self._mTarget, self._nTarget)
+    end
+    -- self._heroAgent:setMNExactly(self._mTarget, self._nTarget)
+
+    -- 击退直接切换idle
+    if self._knockedTarget then
+        self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+        self._showMultiple = false
+        self:clearActorArr()
+        return
+    end
+    ------------------------------------------------------------------------------------------
+    -- 播放攻击动画
+    local action = Constant.ACTION_ATTACK
+    local weaponType = nil
+    -- if self._skillId == lt.SkillEnum.SKILL_FLASH_SLIDING then
+    --     weaponType = Constant.WeaponType.Sword
+    -- elseif self._skillId == lt.SkillEnum.SKILL_SHADOW_WALK then
+    --     weaponType = Constant.WeaponType.Knife
+    -- elseif self._skillId == lt.SkillEnum.SKILL_BLAZE_WALK then
+    --     action = Constant.ACTION_SLAYER_BLADE_2_FAST
+    -- elseif self._skillId == lt.SkillEnum.SKILL_BLITZ_SLIDING then
+    --     action = Constant.ACTION_SLAYER_SWORD_2_FAST
+    -- elseif self._skillId == lt.SkillEnum.SKILL_BIKE_CRASH then
+    --     action = Constant.ACTION_SLAYER_MOTOR_STAND
+    -- elseif self._skillId == lt.SkillEnum.SKILL_ILLENDUE then
+    --     action = Constant.ACTION_MAGIC
+    -- elseif self._skillId == lt.SkillEnum.SKILL_ILLUSION_INVERSION then
+    --     action = Constant.ACTION_MAGIC
+    -- end
+    local action = Constant.ACTION_ATTACK
+    if self._skillId == lt.SkillEnum.SKILL_ILLENDUE then
+        action = Constant.ACTION_MAGIC
+    elseif self._skillId == lt.SkillEnum.SKILL_BLAZE_WALK then
+        action = Constant.ACTION_SLAYER_BLADE_2_FAST
+    end
+
+    if weaponType then
+        -- local name = Constant.SLAYER_ACTION_SPEED[weaponType][2]
+        -- action = Constant[name]
+        -- self._heroAgent:playAction(action,self._skillId)
+    elseif self._skillId == lt.SkillEnum.SKILL_BLAZE_WALK then
+        local objId = tostring(self._heroAgent:getObjId())
+        if string.find(objId, Constant.CLONETAG.BLAZE_WALK) then
+            self._heroAgent:playAction(action,self._skillId)
+            self._heroAgent:playBindingEffectByLv(self._skillId, 1, Constant.EFFECT.PROCESS)
+        end
+    elseif self._skillId == lt.SkillEnum.SKILL_BLITZ_SLIDING then
+        -- self._heroAgent:playAction(action,self._skillId)
+        -- self._heroAgent:playBindingEffectByLv(self._skillId, 1, Constant.EFFECT.PROCESS)
+        self._heroAgent:playAction(Constant.ROLE_ACTION_IDLE)
+    elseif self._skillId == lt.SkillEnum.SKILL_BIKE_CRASH then
+        local progressMetas = lt.CacheManager:getProcessMetas(self._skillId,1)
+        local bullet = lt.BullectScreenEffect.new(self._skillId, 0, cc.p(xHero-25, yHero+15))
+        bullet:addEffect(self._skillId, progressMetas[1])
+        lt.BulletManager:addBulletToMap(bullet,1151)
+    elseif self._skillId == lt.SkillEnum.SKILL_ILLENDUE then
+        local objId = tostring(self._heroAgent:getObjId())
+        if string.find(objId, Constant.CLONETAG.ILLENDUE) then
+            self._heroAgent:playAction(action,self._skillId)
+            lt.SkillManager:playIllendueEffect(self._skillId, 1, self._heroAgent:getAgentId(),self._targetAgentId)
+        end
+    elseif self._skillId == lt.SkillEnum.SKILL_ILLUSION_INVERSION then
+        -- self._heroAgent:playAction(action,self._skillId)
+        lt.SkillManager:playSoleEffectByLvDelay(self._heroAgent:getAgentId(),self._skillId,2,Constant.EFFECT.ACTION)
+    end
+
+    -- 
+
+    -- 攻击动画播放完成切换idle
+    local delay = 0.1
+    if self._skillId == lt.SkillEnum.SKILL_BIKE_CRASH then --原端游旋转为3次体验感极差，现已做优化设计旋转1次。
+        delay = 0.3
+        self.endDirection = direction
+        self._bikeCrashStepCount = 16
+        self._timeBikeCrashDir = lt.TimeTrigger.new(delay/self._bikeCrashStepCount)
+    elseif self._skillId == lt.SkillEnum.SKILL_ILLUSION_INVERSION then
+        delay = self._heroActor._actionInfo:getStep() * self._heroActor._actionInfo:getSpriteFrameCount() * self._heroAgent:getCurStepMultiple()
+    elseif self._skillId == lt.SkillEnum.SKILL_BLAZE_WALK then
+        local objId = tostring(self._heroAgent:getObjId())
+        if string.find(objId, Constant.CLONETAG.BLAZE_WALK) then
+           delay = self._heroActor._actionInfo:getStep() * self._heroActor._actionInfo:getSpriteFrameCount() * self._heroAgent:getCurStepMultiple()
+        end
+    elseif self._skillId == lt.SkillEnum.SKILL_ILLENDUE then
+        local objId = tostring(self._heroAgent:getObjId())
+        if string.find(objId, Constant.CLONETAG.ILLENDUE) then
+           delay = self._heroActor._actionInfo:getStep() * self._heroActor._actionInfo:getSpriteFrameCount() * self._heroAgent:getCurStepMultiple()
+        end
+    -- elseif self._heroActor and self._heroActor._actionInfo then
+    --     delay = self._heroActor._actionInfo:getStep() * self._heroActor._actionInfo:getSpriteFrameCount() * self._heroAgent:getCurStepMultiple()
+    end
+    self._delayScheule = ScheduleUtil:performWithDelayGlobal(function()
+        if self._heroAgent then
+            local roleData = self._heroAgent:getRoleData()
+            if roleData and roleData:isCrossCount() then
+                local worldAgent = AgentManager:getWorldAgent()
+                if worldAgent then
+                    worldAgent:deleteAgent(self._heroAgent:getObjId())
+                end
+            else
+                if self.endDirection then
+                    self._heroAgent:setDirection(self.endDirection)
+                end
+                self._heroAgent:changeMountId(0)
+                self._heroAgent:setPosition(self._xTarget, self._yTarget)
+                self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+            end
+        end
+    end, delay)
+    ------------------------------------------------------------------------------------------
+
+    self._showMultiple = false
+    self:clearActorArr()
+end
+
+function HeroStateSplitMove:getMapActor()
+    local worldAgent = AgentManager:getWorldAgent()
+    if not worldAgent then
+        return nil
+    end
+
+    local mapAgent = worldAgent:getMapAgent()
+    if not mapAgent then
+        return nil
+    end
+
+    local mapActor = mapAgent:getMapActor()
+    if not mapActor then
+        return nil
+    end
+
+    return mapActor
+end
+
+function HeroStateSplitMove:clearActorArr()
+    for _,v in ipairs(self._cloneActorArr or {}) do
+        v:removeFromParent()
+    end
+    self._cloneActorArr = {}
+end
+
+-- 根据方向获取偏移量
+function HeroStateSplitMove:getOffectXYByDirection(direction)
+    local offsetXY = cc.p(0,0)
+    if direction == Constant.DIRECTION_LEFT then
+        offsetXY = cc.p(20,0)
+    elseif direction == Constant.DIRECTION_RIGHT then
+        offsetXY = cc.p(-20,0)
+    elseif direction == Constant.DIRECTION_DOWN then
+        offsetXY = cc.p(0,20)
+    elseif direction == Constant.DIRECTION_UP then
+        offsetXY = cc.p(0,-20)
+    elseif direction == Constant.DIRECTION_LEFT_DOWN then
+        offsetXY = cc.p(15,15)
+    elseif direction == Constant.DIRECTION_LEFT_UP then
+        offsetXY = cc.p(15,-15)
+    elseif direction == Constant.DIRECTION_RIGHT_DOWN then
+        offsetXY = cc.p(-15,15)
+    elseif direction == Constant.DIRECTION_RIGHT_UP then
+        offsetXY = cc.p(-15,-15)
+    end
+
+    return offsetXY
+end
+
+function HeroStateSplitMove:onMessage(msg)
+end
+
+function HeroStateSplitMove:getStateId()
+    return Constant.HERO_STATE_SPLIT
+end
+
+function HeroStateSplitMove:getStateName()
+    return "HeroStateSplitMove"
+end
+
+return HeroStateSplitMove

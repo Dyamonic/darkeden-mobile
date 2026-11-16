@@ -1,0 +1,263 @@
+local BuffCommon = class("BuffCommon", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+local CacheManager = lt.CacheManager
+local Constant = lt.Constant
+
+--[[
+    通用走配表buff 与技能相关
+]]
+function BuffCommon:ctor(buffId, time, actor, skillLevel, source)    
+    BuffCommon.super.ctor(self, buffId, time, actor, skillLevel, source)
+    local buffMeta = lt.CacheManager:getBuffById(buffId)
+    if not buffMeta then
+        yflog:Info("BuffCommon Config not found buffMeta --->>> buffId = %s", buffId)
+        return
+    end
+    if buffId == BuffEnum.EFFECT_CLASS_BLOOD_DRAIN then
+        return
+    end
+    if buffId == BuffEnum.EFFECT_CLASS_AFTERMATH then
+        return
+    end
+    if buffId == BuffEnum.EFFECT_CLASS_DELAY_TRAP then
+        return
+    end
+    local skillId = buffMeta:getSkillId()
+    self._skillId = skillId
+    if skillId == SkillEnum.SKILL_DESTINIES then
+        return 
+    end
+    if buffId == BuffEnum.EFFECT_GROUND_VISIBLE then
+        return 
+    end
+
+    if buffId == BuffEnum.EFFECT_CLASS_BLOOD_DRAINING then
+        if source.srcId and source.srcId > 0 then
+            self._actor:playAction(Constant.ROLE_ACTION_FLY)
+            lt.ScheduleUtil:performWithDelayGlobal(function()
+                if self._actor then 
+                    if self._actor.getAgent then
+                        local agent = self._actor:getAgent()
+                        if agent then
+                            lt.GameModule:sendCanelBuff(buffId, agent:getObjId())
+
+                            agent:delBuffer(buffId)
+
+                            local worldAgent = lt.AgentManager:getWorldAgent()
+                            local srcAgent = worldAgent:getAgent(source.srcId)
+                            if srcAgent then
+                                srcAgent:delBuffer(buffId)
+                            end   
+                        end
+                    end
+                end
+            end, 4.26)
+        else
+            -- 施法者无特效
+            return 
+        end
+    elseif buffId == BuffEnum.EFFECT_CAUSE_CRITICAL_WOUNDS
+        or buffId == BuffEnum.EFFECT_EXPLOSION_WATER then
+        local agent = self._actor:getAgent()
+        if agent:isMonsterAgent() then
+            agent:changeState(lt.MonsterStateFly.new(agent,buffId))
+        elseif agent:isHeroAgent() then
+            agent:changeState(lt.HeroStateFly.new(agent,buffId))
+        end
+
+        if buffId == BuffEnum.EFFECT_CAUSE_CRITICAL_WOUNDS then
+            local downTime = time - 0.5--7/20
+            if downTime < 0 then
+                downTime = 0
+            end
+            self._actor:getAgent():addBuffer(BuffEnum.EFFECT_CAUSE_CRITICAL_WOUNDS_DOWN,downTime)
+        elseif buffId == BuffEnum.EFFECT_EXPLOSION_WATER then
+            local downTime = time - 0.5--7/20
+            if downTime < 0 then
+                downTime = 0
+            end
+            self._actor:getAgent():addBuffer(BuffEnum.EFFECT_EXPLOSION_WATER_DOWN,downTime)
+        end
+
+    elseif buffId == BuffEnum.EFFECT_CHARGING_POWER then--能量补充
+        return
+    elseif BuffEnum.SLOW_DOWN_BUFFS[buffId] then
+        -- 增减减速效果
+        local agent = self._actor:getAgent()
+        agent:resetActionStep()
+    elseif buffId == BuffEnum.EFFECT_REACTIVE_ARMOR 
+    or buffId == BuffEnum.EFFECT_REVIVE
+    then -- 大地护甲 大地护甲熟练度
+        if source and source.srcId then
+            self._skillId = source.srcId
+            skillId = source.srcId
+        end
+    elseif buffId == BuffEnum.EFFECT_CAUSE_CRITICAL_WOUNDS_DOWN then
+        local agent = self._actor:getAgent()
+        local agentId = agent:getAgentId()
+        lt.ScheduleUtil:performWithDelayGlobal(function()
+            local agent = lt.AgentManager:getAgent(agentId)
+            if agent then
+                agent:delBuffer(BuffEnum.EFFECT_CAUSE_CRITICAL_WOUNDS_DOWN,0)
+            end
+        end, time)
+    elseif buffId == BuffEnum.EFFECT_EXPLOSION_WATER_DOWN then
+        local agent = self._actor:getAgent()
+        local agentId = agent:getAgentId()
+        lt.ScheduleUtil:performWithDelayGlobal(function()
+            local agent = lt.AgentManager:getAgent(agentId)
+            if agent then
+                agent:delBuffer(BuffEnum.EFFECT_EXPLOSION_WATER_DOWN,0)
+            end
+        end, time)
+    elseif buffId == BuffEnum.EFFECT_GLACIER then
+        self._actor:setActionPause(true)
+    end
+
+    local skillMeta = CacheManager:getSkillEffectByIdLv(skillId,skillLevel)
+    if not skillMeta then
+        yflog:Info("SKill Config not found --->>> skillId = %s   skillLevel = %s", skillId,skillLevel)
+        return
+    end
+
+    local effectName = Constant.EFFECT.SELF
+    local targetAgentId = actor:getAgent():getAgentId()
+    local key = table.concat({"get" , effectName or "" , "Metas"})
+    local metas = {}
+    if type(skillMeta[key]) == "function" then
+        metas = skillMeta[key](skillMeta)
+    end
+
+    -- 播放在脚底的buff
+    if buffId == BuffEnum.EFFECT_REVEALER then
+        lt.SkillManager:playSoleEffectByLvDelay(targetAgentId,skillId,skillLevel,Constant.EFFECT.SELF)
+        return
+    elseif buffId == BuffEnum.EFFECT_DENIAL_MAGIC_DAMAGED then
+        effectName = Constant.EFFECT.HIT
+    end
+
+    if #metas > 0 then
+        local approach = metas[1]:getApproach() 
+        self._approach = approach
+        if Constant.EFFECT_PLAY_TYPE.PARALLEL == approach then
+            lt.SkillManager:playParallelEffectByLvDelay(skillId,targetAgentId,skillLevel,effectName)
+        elseif Constant.EFFECT_PLAY_TYPE.QUEUE == approach then
+            lt.SkillManager:playQueueEffectByLvDelay(skillId,targetAgentId,skillLevel,effectName)
+        elseif Constant.EFFECT_PLAY_TYPE.SPECIAL == approach then
+            
+            local agent = lt.AgentManager:getAgent(targetAgentId)
+            if not agent then
+                return
+            end
+            if skillId == SkillEnum.SKILL_AIR_SHIELD
+                or skillId == SkillEnum.SKILL_SPIRIT_GUARD
+                or skillId == SkillEnum.SKILL_PROTECTION_FROM_BLOOD
+                or skillId == SkillEnum.SKILL_PROTECTION_FROM_ACID
+                or skillId == SkillEnum.SKILL_PROTECTION_FROM_CURSE
+                or skillId == SkillEnum.SKILL_PROTECTION_FROM_POISON
+                or skillId == SkillEnum.SKILL_THORNS then
+
+                if (source or {}).isExist or false then
+                    local tempMeta = {}
+                    for k,v in ipairs(metas) do
+                        if v:getLoopCount() == -1 then
+                            table.insert(tempMeta,v)
+                        end
+                    end
+                    metas = tempMeta
+                end
+
+                agent:playRotateEffect(metas,skillId)
+            elseif skillId == SkillEnum.SKILL_CONCEALMENT then
+                agent:playRotateEffectQueue(metas,skillId)
+            elseif skillId == SkillEnum.SKILL_EXPLOSION_WATER then -- 制约喷泉
+                agent:playQueueEffectByLv(skillId, skillLevel, effectName)
+            elseif skillId == SkillEnum.SKILL_HETER_CHAKRAM then -- 夏布利基因
+                agent:playQueueEffectByLv(skillId, skillLevel, effectName)
+            elseif skillId == SkillEnum.SKILL_GROUND_BLESS then
+                agent:playRotateEffectQueue(metas,skillId)
+            end
+        elseif Constant.EFFECT_PLAY_TYPE.RANDOM == approach then
+            -- 随机 串行
+            lt.SkillManager:playQueueEffectByLvDelay(skillId,targetAgentId,skillLevel,effectName)
+        end
+    end
+
+    --测试消失
+    -- lt.ScheduleUtil:performWithDelayGlobal(function()
+    --     self:onClear()
+    -- end,5)
+end
+
+function BuffCommon:onClear()
+    if self._actor then
+        if Constant.EFFECT_PLAY_TYPE.PARALLEL == self._approach then
+            -- if self._skillId ~= SkillEnum.SKILL_CAUSE_CRITICAL_WOUNDS then 
+            self._actor:stopParallelEffect(self._skillId)
+            -- end
+        elseif Constant.EFFECT_PLAY_TYPE.QUEUE == self._approach then
+            self._actor:stopQueueEffect(self._skillId)
+        elseif Constant.EFFECT_PLAY_TYPE.RANDOM == self._approach then
+            self._actor:stopQueueEffect(self._skillId)
+        elseif Constant.EFFECT_PLAY_TYPE.SPECIAL == self._approach then
+            if self._skillId == SkillEnum.SKILL_AIR_SHIELD
+            or self._skillId == SkillEnum.SKILL_CONCEALMENT
+            or self._skillId == SkillEnum.SKILL_PROTECTION_FROM_BLOOD
+            or self._skillId == SkillEnum.SKILL_SPIRIT_GUARD
+            or self._skillId == SkillEnum.SKILL_PROTECTION_FROM_ACID
+            or self._skillId == SkillEnum.SKILL_PROTECTION_FROM_CURSE
+            or self._skillId == SkillEnum.SKILL_PROTECTION_FROM_POISON
+            or self._skillId == SkillEnum.SKILL_THORNS then
+                if self._actor.removeRotateEffect then
+                    self._actor:removeRotateEffect(self._skillId)
+                end
+            elseif self._skillId == SkillEnum.SKILL_EXPLOSION_WATER then
+                -- or self._skillId == SkillEnum.SKILL_HETER_CHAKRAM then
+                self._actor:stopQueueEffect(self._skillId)
+            end
+        end
+
+        ---吸血中
+        if self:getBufferId() == BuffEnum.EFFECT_CLASS_BLOOD_DRAINING
+            or self:getBufferId() == BuffEnum.EFFECT_CAUSE_CRITICAL_WOUNDS
+            or self:getBufferId() == BuffEnum.EFFECT_EXPLOSION_WATER then
+            local agent = self._actor:getAgent()
+            if agent:isMonsterAgent() then
+                agent:changeState(lt.MonsterStateIdle.new(agent))
+            elseif agent:isHeroAgent() then
+                if agent:isAlive() then
+                    agent:changeState(lt.HeroStateIdle.new(agent))
+                else
+                    agent:changeState(lt.HeroStateDead.new(agent))--直接吸死
+                end
+            end
+
+            if self:getBufferId() == BuffEnum.EFFECT_CAUSE_CRITICAL_WOUNDS then
+                agent:delBuffer(BuffEnum.EFFECT_CAUSE_CRITICAL_WOUNDS_DOWN,0)
+            elseif self:getBufferId() == BuffEnum.EFFECT_EXPLOSION_WATER then
+                agent:delBuffer(BuffEnum.EFFECT_EXPLOSION_WATER_DOWN,0)
+            end
+        end
+        
+        -- 能量补充
+        if self._skillId == SkillEnum.SKILL_CHARGING_POWER then
+            self._actor:removeBindingEffect(SkillEnum.SKILL_CHARGING_POWER)
+        end
+
+        if self:getBufferId() == BuffEnum.EFFECT_GLACIER then
+            self._actor:setActionPause(false)
+        end
+
+        -- 心态失常 冰之灵石
+        -- 还原增减减速效果
+        if BuffEnum.SLOW_DOWN_BUFFS[self:getBufferId() or 0] then
+            local agent = self._actor:getAgent()
+            agent:resetActionStep()
+        end
+    end
+    
+    BuffCommon.super.onClear(self)
+end
+
+return BuffCommon

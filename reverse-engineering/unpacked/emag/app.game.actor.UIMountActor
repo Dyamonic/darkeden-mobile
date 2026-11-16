@@ -1,0 +1,85 @@
+---ui类摩托车
+local UIMountActor  = class("UIMountActor",lt.ActionBaseActor)
+
+local Constant      = lt.Constant
+local ActionManager = lt.ActionManager
+local GameModule    = lt.GameModule
+local MountModule   = lt.MountModule
+
+local offsetX, offsetY = -25, 15
+function UIMountActor:ctor(scale)
+    UIMountActor.super.ctor(self)
+
+    scale = scale or 1
+
+    self._heroNode = display.newNode()
+    self:addChild(self._heroNode, 1)
+    self._heroNode:setScale(scale)
+    self._heroNode:setPosition(offsetX*scale, offsetY*scale)
+
+    self._spriteHero = self:CreateSprite(0.5, 0.5, 1, self._heroNode)
+end
+
+function UIMountActor:onClear()
+    UIMountActor.super.onClear(self)
+
+    self._spriteHero     = nil
+    self._heroNode       = nil
+    self._actionInfo     = nil
+end
+
+function UIMountActor:initActionInfo()
+    local mountInfo = Constant.MOUNT_ITEMS[self._actionId]
+    if not mountInfo then
+        return
+    end
+
+    local heroDate = GameModule:getHeroData()
+    if not heroDate then
+        return
+    end
+
+    local race = heroDate:getRace()
+    local sex = heroDate:getSex()
+
+    -- 魔族外需要设定性别
+    if race ~= Constant.RaceType.Ousters then
+        -- 服务器定义: 0男 1女, 所以本地需要 +1
+        sex = sex + 1
+    end
+    local mountModelName = string.format("mount_%d_%d_%d_%d", race, sex, mountInfo.adv, mountInfo.lv)
+
+    local action = MountModule:getMountActionId(self._actionId)
+    self._actionInfo = ActionManager:getActionMountInfo(mountModelName, action, Constant.DIRECTION_LEFT)
+end
+
+function UIMountActor:onUpdate(dt)
+    self:onUpdateAction()
+end
+
+function UIMountActor:updateFrame(update)
+    if not self._actionInfo then
+        return
+    end
+    if not self._hideSprite then
+        self._spriteHero:setVisible(true)
+        if update then
+            local frame = self._actionInfo:getSpriteFrame(self._nextFrameIndex)
+            if frame then
+                self._initFrame = true
+                local sprite = frame.sprite
+                self._spriteHero:setSpriteFrame(sprite)
+                local texture = self._spriteHero:getTexture()
+                texture:setAliasTexParameters()
+
+                -- 偏移值坐标
+                local pos = self:conversionOffsetPoint(cc.p(0, 0), cc.p(frame.x, frame.y), frame.size)
+                self._spriteHero:setPosition(pos)
+            end
+        end
+    else
+        self._spriteHero:setVisible(false)
+    end
+end
+
+return UIMountActor

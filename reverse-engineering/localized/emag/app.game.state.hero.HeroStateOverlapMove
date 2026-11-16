@@ -1,0 +1,277 @@
+
+local HeroStateOverlapMove = class("HeroStateOverlapMove", lt.HeroStateBase)
+
+HeroStateOverlapMove._moveTypeCur = nil
+HeroStateOverlapMove._mTarget = nil
+HeroStateOverlapMove._nTarget = nil
+HeroStateOverlapMove._xTarget = nil
+HeroStateOverlapMove._yTarget = nil
+
+-- onMessage使用
+HeroStateOverlapMove._moveType      = nil
+HeroStateOverlapMove._moveDirection = nil
+HeroStateOverlapMove._mNext         = nil
+HeroStateOverlapMove._nNext         = nil
+
+HeroStateOverlapMove._curCheckTime = nil
+
+function HeroStateOverlapMove:ctor(heroAgent)
+    HeroStateOverlapMove.super.ctor(self, heroAgent)
+
+    -- 脚步身间隔
+    self._audioInterval = 0.4
+    self._audioElapse = self._audioInterval
+
+    self._checkDiffArray = {{0,-1},{1,0},{0,1},{-1,0},{1,1},{1,-1},{-1,-1},{-1,1}}
+    self._checkIdx       = 1
+    self._preCheckIdx    = nil
+
+    self._curCheckTime = 0
+end
+
+function HeroStateOverlapMove:onClear()
+        
+    HeroStateOverlapMove.super.onClear(self)
+end
+
+function HeroStateOverlapMove:onEnter()
+    self._checkDiffArray = {{0,-1},{1,0},{0,1},{-1,0},{1,1},{1,-1},{-1,-1},{-1,1}}
+    self._checkIdx       = 1
+
+    self:safeMove()
+end
+
+function HeroStateOverlapMove:onExit()
+end
+
+function HeroStateOverlapMove:onUpdate()
+    if not self._xTarget or not self._yTarget then
+        self:checkMoveOn()
+        return
+    end
+
+    local xHero, yHero = self._heroAgent:getPosition()
+    local directionV = cc.pSub(cc.p(self._xTarget, self._yTarget), cc.p(xHero, yHero))
+    local length = cc.pGetLength(directionV)
+
+    local step = self._heroAgent:getMoveSpeed(self._moveTypeCur) * lt.GameBoard:getDeltaTime()
+    if length < step or length > 300 then
+        -- 到达
+        self._heroAgent:setPosition(self._xTarget, self._yTarget)
+
+        -- 定位
+        self._heroAgent:mapTileSound()
+        
+        -- 判断是否继续移动
+        if not self:checkMoveOn() then
+            return
+        end
+    else
+        -- 未到
+        directionV = cc.pMul(cc.pNormalize(directionV), step)
+        self._heroAgent:setPosition(xHero + directionV.x, yHero + directionV.y)
+
+        if self._fixDirection then
+            self._fixDirection = false
+            
+            self._heroAgent:setDirection(lt.MapUtil:calcDirectionXY(directionV.x, directionV.y))
+        end
+    end
+
+    self._moveType      = nil
+    self._moveDirection = nil
+    self._mNext         = nil
+    self._nNext         = nil
+
+    -- 脚步声
+    self._audioElapse = self._audioElapse + lt.GameBoard:getDeltaTime()
+    if self._audioElapse > self._audioInterval then
+        self._audioElapse = self._audioElapse - self._audioInterval
+
+        self._heroAgent:mapTileAudio(self._moveTypeCur)
+    end
+end
+
+function HeroStateOverlapMove:onMessage(msg)
+    if msg.msgId == lt.Constant.MSG_MOVE_JOYSTICK or msg.msgId == lt.Constant.MSG_MOVE_TOUCH then
+        -- 摇杆控制移动
+        if msg.moveType == lt.Constant.MOVE_NONE then
+            self._needStop = true
+        else
+            self._moveType      = msg.moveType
+            self._moveDirection = msg.moveDirection
+            self._mNext         = msg.mNext
+            self._nNext         = msg.nNext
+        end
+        return
+    end
+end
+
+function HeroStateOverlapMove:getStateId()
+    return lt.Constant.HERO_STATE_OVERLAP_MOVE
+end
+
+function HeroStateOverlapMove:getStateName()
+    return "HeroStateOverlapMove"
+end
+
+function HeroStateOverlapMove:checkMoveOn()
+    if not self._heroAgent:getIsSelf() then
+        return false
+    end
+
+    -- 自己
+    if self._heroAgent:getIsOutOfGame() then
+        self._heroAgent:changeState(lt.HeroStateDie.new(self._heroAgent))
+        return false
+    end
+
+    -- 无法移动
+    if not self._heroAgent:canMove() then
+        self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+        return false
+    end
+
+    if self._needStop then
+        self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+        return false
+    end
+
+    if self._moveType then
+        self._heroAgent:changeState(lt.HeroStateMove.new(self._heroAgent, self._moveType, self._moveDirection, self._mNext, self._nNext))
+        return
+    end
+
+    -- 判断是否安全
+    self:clearMove()
+
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    local targetAgent, distanceMin = worldAgent:selectTargetAgent(heroAgent)
+
+    -- 没移动信息
+    if not self._moveTypeCur then
+        if self._heroAgent:getTargetAgentId() then
+            local targetAgent = lt.AgentManager:getAgent(self._heroAgent:getTargetAgentId())
+            if targetAgent and not targetAgent:getIsOutOfGame() then
+                local mTarget, nTarget = targetAgent:getMNExactly()
+                local skillId, _ = self._heroAgent:getCheckSkillId()
+                if self._heroAgent:isInSkillDistance(skillId, mTarget, nTarget) then
+                    lt.AutoFightManager:playNormalSkill(self._heroAgent, self._heroAgent:getTargetAgentId())
+                    return
+                else
+                    print("is no longer within the attack range. Switch target.")
+                end
+            end
+        end
+
+        self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+        return false
+    end
+end
+
+function HeroStateOverlapMove:initMove(moveType, direction, mNext, nNext)
+    self._moveTypeCur = moveType
+    self._mTarget = mNext
+    self._nTarget = nNext
+    self._xTarget, self._yTarget = lt.MapUtil:calcMNMid(self._mTarget, self._nTarget)
+
+    -- 设置方向
+    self._heroAgent:setDirection(direction)
+
+    -- 修改MapAgent的AgentSystem
+    local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+    mapAgent:changeAgentMN(self._heroAgent, self._mTarget, self._nTarget)
+
+    -- 播放动画
+    self:playMoveAction()
+
+    if self._heroAgent:getIsSelf() then
+        lt.GameModule:sendMove(self._moveTypeCur, direction, mNext, nNext)
+    end
+
+    -- 脚步声
+    self._audioElapse = self._audioElapse + lt.GameBoard:getDeltaTime()
+    if self._audioElapse > self._audioInterval then
+        self._audioElapse = self._audioElapse - self._audioInterval
+
+        self._heroAgent:mapTileAudio(self._moveTypeCur)
+    end
+end
+
+function HeroStateOverlapMove:playMoveAction()
+    self._heroAgent:playMoveAction(self._moveTypeCur)
+end
+
+function HeroStateOverlapMove:clearMove()
+    self._moveTypeCur = nil
+    self._mTarget = nil
+    self._nTarget = nil
+    self._xTarget = nil
+    self._yTarget = nil
+end
+
+function HeroStateOverlapMove:safeMove()
+    local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+    local mHero, nHero = self._heroAgent:getMNExactly()
+    local mTarget, nTarget = self:getSafeTarget()
+    local moveType, moveDirection, mNext, nNext = mapAgent:calcTouchMove(mHero, nHero, mTarget, nTarget)
+    if moveType == lt.Constant.MOVE_NONE then
+        return
+    end
+    self:initMove(moveType, moveDirection, mNext, nNext)
+end
+
+function HeroStateOverlapMove:getSafeTarget()
+    local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+    local mHero, nHero = self._heroAgent:getMNExactly()
+    local usePadding = 0
+    local calPadding = 0
+    local calIdx = nil
+
+    local loopCount = 0
+    local startIdx = self._checkIdx
+    while loopCount < 8 do
+        local diff = self._checkDiffArray[self._checkIdx]
+        local tmpPadding = 0
+        for padding=1, 1 do
+            local tmpM, tmpN = mHero + diff[1] * padding, nHero + diff[2] * padding
+            if not mapAgent:isThrough(tmpM, tmpN) or mapAgent:isTrans(tmpM, tmpN) then
+                break
+            end
+
+            tmpPadding = padding
+        end
+
+        local tmpPadding2 = tmpPadding
+        if startIdx == self._checkIdx and tmpPadding2 > 0 then
+            tmpPadding2 = tmpPadding2 + 4
+        end
+
+        if not calIdx or tmpPadding2 > calPadding then
+            calIdx = self._checkIdx
+            usePadding = tmpPadding
+            calPadding = tmpPadding2
+        end
+
+        self._checkIdx = self._checkIdx + 1
+        if self._checkIdx > #self._checkDiffArray then
+            self._checkIdx = 1
+        end
+        loopCount = loopCount + 1
+    end
+
+    if usePadding and calIdx then
+        self._checkIdx = calIdx -- 下次从选定的位置开始判定
+        local diff = self._checkDiffArray[calIdx]
+        return mHero + diff[1] * usePadding, nHero + diff[2] * usePadding
+    else
+        return mHero, nHero
+    end
+end
+
+-- 修正方向
+function HeroStateOverlapMove:setFixDirection()
+    self._fixDirection = true
+end
+
+return HeroStateOverlapMove

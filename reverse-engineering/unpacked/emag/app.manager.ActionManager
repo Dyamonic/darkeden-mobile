@@ -1,0 +1,452 @@
+
+local ActionManager = {}
+
+local Constant = lt.Constant
+
+function ActionManager:init()
+    self._frameTable = {}
+    self._frameLoadedTable = {}
+    self._actionInfoTable = {}
+    self._actionDatacfpkTable = {}
+end
+
+function ActionManager:clear()
+    for _, actionInfo in pairs(self._actionInfoTable) do
+        actionInfo:clear()
+    end
+    self._actionInfoTable = {}
+
+
+    -- self._actionDatacfpkTable = {} 注意释放
+
+    for dataFilename, frameInfo in pairs(self._frameTable) do
+        display.removeSpriteFrames(dataFilename, frameInfo.imageFilename)
+    end
+    self._frameTable = {}
+end
+
+--[[
+    释放最不常用的动作 动作存在 引用数 _use
+    每次触发方法 获得最低引用数 移除最低引用数的动作
+]]
+function ActionManager:stepRemove()
+    local minUse = nil
+    for _, actionInfo in pairs(self._actionInfoTable) do
+        if not minUse or actionInfo:getUse() < minUse then
+            minUse = actionInfo:getUse()
+        end
+    end
+    if not minUse then
+        return
+    end
+    local count = 0
+    for k, actionInfo in pairs(self._actionInfoTable) do
+        if actionInfo:getUse() <= minUse then
+            count = count + 1
+            actionInfo:clear()
+            self._actionInfoTable[k] = nil
+        else
+            actionInfo:setUse(actionInfo:getUse() - (minUse - 1))
+        end
+    end
+    if DEBUG > 2 then
+        print("remove ActionInfo by minUse",minUse," count", count)
+    end
+end
+
+-- sprite frame part
+function ActionManager:loadAtlas(dataFilename, imageFilename, ntfMessage)
+    if self._frameTable[dataFilename] then
+        self._frameTable[dataFilename].rc = self._frameTable[dataFilename].rc + 1
+
+        if self._frameLoadedTable[dataFilename] then
+            return true
+        end
+    else
+        self._frameTable[dataFilename] = {}
+        self._frameTable[dataFilename].imageFilename = imageFilename
+        self._frameTable[dataFilename].rc = 1
+
+        display.loadSpriteFrames(dataFilename, imageFilename, function()
+            if DEBUG > 2 then
+                print("ActionManager:loadAtlas dataFilename", dataFilename," imageFilename",imageFilename)
+            end
+
+            self._frameLoadedTable[dataFilename] = true
+
+            ntfMessage = ntfMessage or lt.NtfManager.NTF.SPRITE_FRAME_LOADED
+            lt.NtfManager:dispatchNtf(ntfMessage, {dataFilename = dataFilename})
+        end)
+    end
+
+    return false
+end
+
+function ActionManager:unloadAtlas(dataFilename, imageFilename)
+    if self._frameTable[dataFilename] then
+        -- 纹理已经被释放
+        return
+    end
+
+    if self._frameTable[dataFilename].rc == 1 then
+        display.removeSpriteFrames(dataFilename, imageFilename)
+        self._frameTable[dataFilename] = nil
+        self._frameLoadedTable[dataFilename] = nil
+        if DEBUG > 2 then
+            print("ActionManager:unloadAtlas dataFilename", dataFilename," imageFilename",imageFilename)
+        end
+
+    else
+        self._frameTable[dataFilename].rc = self._frameTable[dataFilename].rc - 1
+    end
+end
+
+--[[
+    ************************************** 天炼加载action start **************************************
+]]
+function ActionManager:getAcitonHeroInfo(modelName, actionId, direction, isShadow)
+    return self:getActionActor("hero", modelName, actionId, direction, isShadow)
+end
+
+-- weapon
+function ActionManager:getActionWeaponInfo(modelName, actionId, direction, isShadow)
+    return self:getActionActor("weapon", modelName, actionId, direction, isShadow)
+end
+
+function ActionManager:getActionShieldInfo(modelName, actionId, direction, isShadow)
+    return self:getActionActor("shield", modelName, actionId, direction, isShadow)
+end
+
+function ActionManager:getActionMountInfo(modelName, actionId, direction, isShadow)
+    return self:getActionActor("mount", modelName, actionId, direction, isShadow)
+end
+
+
+--[[
+    modelName: model_种族_性别_等级
+]]
+function ActionManager:getActionActor(tag, modelName, actionId, direction, isShadow)
+    local str = string.split(modelName, "_")
+    local race = 0
+    if isShadow then
+        race = tonumber(str[3])
+    else
+        race = tonumber(str[2])
+    end
+    local loop = self:getActionLoop(actionId ,race ,tag)
+
+    local  actionName = string.format("%s_%d_%d", modelName, actionId, direction)
+    -- loop = -1
+
+    local actionInfo = self._actionInfoTable[actionName]
+    if not actionInfo then
+        if tag == "weapon" then
+            actionInfo = lt.ActionActorWeapon.new(modelName, actionId, direction, loop, isShadow)
+        elseif tag == "shield" then
+            actionInfo = lt.ActionActorShield.new(modelName, actionId, direction, loop, isShadow)
+        elseif tag == "mount" then
+            actionInfo = lt.ActionActorMount.new(modelName, actionId, direction, loop, isShadow)
+        else
+            actionInfo = lt.ActionActor.new(modelName, actionId, direction, loop, isShadow)
+        end
+
+        self._actionInfoTable[actionName] = actionInfo
+    else
+        actionInfo:addUse()
+    end
+
+    return actionInfo
+end
+
+function ActionManager:getActionMonsterInfo(modelName, modelId, actionId, direction, isShadow)
+    return self:getActionMonster(modelName, modelId, actionId, direction, isShadow)
+end
+
+function ActionManager:getActionNpcInfo(modelName, modelId, actionId, direction, isShadow)
+    return self:getActionNpc(modelName, modelId, actionId, direction, isShadow)
+end
+
+function ActionManager:getActionMonster(modelName, modelId, actionId, direction, isShadow)
+    if modelName == nil or modelId == nil or actionId == nil or direction == nil then
+        yflog:Info("ActionMonster error modelName：%s, modelId：%s, actionId：%s, direction：%s",modelName, modelId, actionId, direction)
+        return
+    end
+    if type(modelName) == "table" or type(modelId) == "table" or type(actionId) == "table" or type(direction) == "table" then
+        yflog:Info("ActionMonster type error modelName：%s, modelId：%s, actionId：%s, direction：%s",modelName, modelId, actionId, direction)
+        return
+    end
+    local  actionName = string.format("%s_%d_%d_%d", modelName, modelId, actionId, direction)
+    -- yflog:Info("getActionActor actionName model_modelId_actionId_direction: %s", actionName)
+
+    -- 方向转换 将传世方向转成天炼
+    -- local cDirection = self:conversionDirection(direction)
+
+    local loop = self:getActionLoop(actionId)
+    -- loop = -1
+
+    local actionInfo = self._actionInfoTable[actionName]
+    if not actionInfo then
+        actionInfo = lt.ActionMonster.new(modelName, modelId, actionId, direction, loop, isShadow)
+        self._actionInfoTable[actionName] = actionInfo
+    else
+        actionInfo:addUse()
+    end
+
+    return actionInfo
+end
+
+function ActionManager:getActionNpc(modelName, modelId, actionId, direction, isShadow)
+    --给一个默认值
+    direction = direction or Constant.DIRECTION_RIGHT_DOWN
+    local actionName = string.format("%s_%d_%d_%d", modelName, modelId, actionId, direction)
+    -- yflog:Info("getActionActor actionName model_modelId_actionId_direction: %s", actionName)
+
+    -- 方向转换 将传世方向转成天炼
+    -- local cDirection = self:conversionDirection(direction)
+
+    local loop = self:getActionLoop(actionId)
+    ------------------------------------------------------------------------------
+    -- 棺材写死每个动作都循环
+    if modelId == 98 then
+        loop = -1
+    end
+    ------------------------------------------------------------------------------
+
+    local actionInfo = self._actionInfoTable[actionName]
+    if not actionInfo then
+        actionInfo = lt.ActionNpc.new(modelName, modelId, actionId, direction, loop, isShadow)
+        self._actionInfoTable[actionName] = actionInfo
+    else
+        actionInfo:addUse()
+    end
+
+    return actionInfo
+end
+
+-- -- 方向转换 将传世方向转成天炼
+-- function ActionManager:conversionDirection(direction)
+--     --[[
+--         天炼源资源方向规则
+--             7  6  5
+--             0     4
+--             1  2  3
+
+--         传世资源方向规则
+--             7  0  1
+--             6     2
+--             5  4  3
+--     ]]
+--     -- return 7 - direction
+--     if direction > 6 then
+--         return direction
+--     end
+
+--     return 6 - direction
+-- end
+
+-- 获取生物数据信息
+function ActionManager:getActionData(modelname, modelId)
+    local dataName = string.format("%s_%d", modelname, modelId)
+
+    local actionDatacfpk = self._actionDatacfpkTable[dataName]
+    if not actionDatacfpk then
+        actionDatacfpk = lt.ActionData.new(modelname, modelId)
+        self._actionDatacfpkTable[dataName] = actionDatacfpk
+    else
+        actionDatacfpk:addUse()
+    end
+
+    return actionDatacfpk
+end
+
+function ActionManager:getActorFrameCount(modelName, actionId, direction,transform,stepMultiple)
+    local stepMultiple = stepMultiple or 1
+    ------------------------------------------------------------------------------
+    -- 变身读取怪物数据
+    if transform and lt.SkillEnum.TRANSFORM_MODELID[transform] then
+        local frameCount = ActionManager:getCreatureFrameCount("monster", lt.SkillEnum.TRANSFORM_MODELID[transform], actionId, direction)
+        return frameCount, 0.06*stepMultiple
+    end
+    ------------------------------------------------------------------------------
+
+    local meta = lt.CacheManager:getRoleModelMeta(modelName)
+    if not meta then
+        yflog:Error("RoleModelMeta is nil modelName: %s", modelName)
+        return 
+    end
+
+    -- 对应动作文件 .cfpk
+    local fileName = meta:getAction()
+
+    local modelId = meta:getModelId()
+
+    local actionData = self:getActionData(fileName, modelId)
+    if not actionData then
+        yflog:Info("ActionManager getCreatureFrameCount actionData is nil")
+        return 0
+    end
+    local modelMap = string.split(modelName, "_")
+    local race = tonumber(modelMap[#modelMap-3])
+    local frameStep = self:getActionStep(actionId,race)
+    local frameCount = actionData:getFrameCount(actionId, direction)
+    return frameCount, frameStep*stepMultiple
+end
+
+-- 获取怪物某个动作的帧数
+function ActionManager:getCreatureFrameCount(modelName, modelId, actionId, direction)
+    local name = "creature"
+
+    local actionData = self:getActionData(name, modelId)
+    if not actionData then
+        yflog:Info("ActionManager getCreatureFrameCount actionData is nil")
+        return 0
+    end
+
+    local frameCount = actionData:getFrameCount(actionId, direction)
+    return frameCount
+end
+
+-- 根据动作获取行动step
+function ActionManager:getActionStep(actionId,race)
+    local step = lt.CacheManager:getActionStep(race,actionId)
+    if type(step) == "number" then
+        step = step / 1000
+    else
+        step = 0.05
+    end
+
+    return step
+
+--[[
+    -- 根据玩家动作获取step,用于动作播放时的步声间隔 && 用于每个动作帧的播放速度间隔  
+    -- 如每帧间隔为0.0167  ACTION_IDLE 为 0.333 则站立为20帧播放一张图片 0.0167*20 = 0.334
+    if actionId == Constant.ACTION_WALK then
+        return lt.Constant.MAP_BLOCK_HEIGHT / Constant.HERO_WALK_SPEED / frameCount
+    elseif actionId == Constant.ACTION_RUN then
+        return 2 * Constant.MAP_BLOCK_HEIGHT / Constant.HERO_RUN_SPEED / frameCount
+    elseif actionId == Constant.ACTION_IDLE then
+        return 0.333
+    else
+        return 0.1
+    end
+]]
+end
+
+--[[
+    ************************************** 天炼加载action end **************************************
+]]
+
+--[[
+    转职前与转职后对应的action数据不一致
+    所以增加此方法区分种族与转职前后的动作
+]]
+function ActionManager:getAdvancedActorAction(race, advanced, actionId)
+    if not advanced then
+        --  yflog:Info("==cur =actionId:%s, ", actionId)
+        return actionId
+    end
+
+    if race == Constant.RaceType.Slayer then
+        if actionId == Constant.ACTION_MOUNT_SLAYER_MOVE then
+            actionId = Constant.ACTION_MOUNT_ADVANCED_SLAYER_MOVE
+        elseif actionId == Constant.ACTION_MOUNT_SLAYER_STAND then
+            actionId = Constant.ACTION_MOUNT_ADVANCED_SLAYER_STAND
+        end
+        return actionId
+    end
+
+    yflog:Info("actionId:%s", actionId)
+
+    return actionId
+end
+
+
+function ActionManager:getActionLoop(actionId ,race , tag)
+    -- 给与策划测试专用 配置在env文件中 FIXME后期需要删除
+    if _G_ACTION_LOOP then
+        return -1
+    end
+
+    if race == Constant.RaceType.Ousters then
+        if actionId == Constant.ACTION_OUSTERS_FAIRY_MOVE_STAND
+        or actionId == Constant.ACTION_OUSTERS_FAIRY_MOVE_MOVE
+        or actionId == Constant.ACTION_OUSTERS_PEGASUS_MOVE_STAND
+        or actionId == Constant.ACTION_OUSTERS_PEGASUS_MOVE_MOVE
+         then
+            return -1
+        end
+    end
+
+    if race == Constant.RaceType.Slayer and tag == "mount" then
+        if actionId == Constant.ACTION_MOUNT_ADVANCED_SLAYER_STAND
+        or actionId == Constant.ACTION_MOUNT_SLAYER_MOVE
+        or actionId == Constant.ACTION_MOUNT_SLAYER_STAND
+        or actionId == Constant.ACTION_MOUNT_ADVANCED_SLAYER_MOVE
+         then
+            return -1
+        end
+    end
+    
+    if actionId == Constant.ROLE_ACTION_IDLE 
+        or actionId == Constant.ROLE_ACTION_MOVE 
+        or actionId == Constant.ACTION_OUSTERS_STAND 
+        or actionId == Constant.ACTION_OUSTERS_MOVE
+        or actionId == Constant.ACTION_OUSTERS_FAST_MOVE_MOVE
+        or actionId == Constant.ACTION_OUSTERS_FAST_MOVE_STAND
+        or actionId == Constant.ACTION_OUSTERS_DRAIN
+        then
+        return -1
+    else
+        return 1
+    end
+
+    return 1
+end
+
+--[[
+    特殊怪物
+    方向与action
+    208: 油桶: action_0 -> direction_2(站立1帧) && action_6 -> direction_2(击碎8帧)
+    102: 圣诞树 action_6 -> direction_2
+    203: 地雷 action_0 -> direction_2 
+    202: 娱乐站台 action_0 -> direction_2 
+    207: 地雷2 action_0 -> direction_1
+    242: 理性柱子 action_0 -> direction_3
+]]
+function ActionManager:getSpecialMonsterDirection(modelId, actionId)
+    if modelId == 208 then
+        -- 油桶
+        return nil, 2
+    elseif modelId == 102 then
+        -- 圣诞树
+        return 6, 2
+    elseif modelId == 203 then
+        -- 地雷
+        return 0, 2
+    elseif modelId == 202 then
+        -- 娱乐站台
+        return 0, 2
+    elseif modelId == 207 then
+        -- 地雷2
+        return 0, 1
+    elseif modelId == 242 then
+        -- 理性柱子
+        if actionId == Constant.ROLE_ACTION_DIE then
+            return 6, 3
+        else
+            return 0, 3
+        end
+    elseif modelId == 224 then
+        -- 伊甸园boss变身
+        if actionId == Constant.ROLE_ACTION_DIE then
+            return 6, 2
+        end
+    elseif modelId == 249 then
+        -- 地雷2
+        return actionId, 2
+    end
+
+    return nil, nil
+end
+
+return ActionManager

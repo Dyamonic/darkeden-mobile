@@ -1,0 +1,66 @@
+--- 公会成员列表Cell
+---@class UICompGuildUnionListCell
+local UICompGuildUnionListCell          = class("UICompGuildUnionListCell", lt.UIGButtonBase)
+
+local NtfManager                        = lt.NtfManager
+local CommonModule                      = lt.CommonModule
+local Constant                          = lt.Constant
+local CacheManager                      = lt.CacheManager
+local GuildModule                       = lt.GuildModule
+
+UICompGuildUnionListCell.ChangeSkinConf = {
+    ["Guild"] = {
+        ["bg"] = "bg_gonghuixt_16",
+    },
+    ["CommonTL"] = {
+        ["btn_union"] = { icon = "bg_youjian_changanniu02" },
+    }
+}
+
+function UICompGuildUnionListCell:onClear()
+    self._bgGuildIcon   = nil
+    self._lblGuildName  = nil
+    self._lblMasterName = nil
+    self._lblCount      = nil
+    self._lblLoginTime  = nil
+    self._bgSelect      = nil
+    self._lblState      = nil
+    self._ctlShow       = nil
+    UICompGuildUnionListCell.super.onClear(self)
+end
+
+function UICompGuildUnionListCell:onEnter()
+    self:addClickListener(handler(self, self.onClickBtn))
+    UICompGuildUnionListCell.super.onEnter(self)
+end
+
+function UICompGuildUnionListCell:onExit()
+    self:removeClickListener()
+    UICompGuildUnionListCell.super.onExit(self)
+end
+
+function UICompGuildUnionListCell:onConstruct()
+    self._bgGuildIcon   = self:getChild("bg_guildIcon")
+    self._lblGuildName  = self:getChild("lbl_guildName")
+    self._lblMasterName = self:getChild("lbl_masterName")
+    self._lblCount      = self:getChild("lbl_count")
+    self._lblLoginTime  = self:getChild("btn_union")
+    self._bgSelect      = self:getChild("bg_select")
+    self._lblState      = self:getChild("lbl_state")
+    self._ctlShow       = self:getController("c1")
+    self._bgSelect:setVisible(false)
+end
+
+function UICompGuildUnionListCell:setInfo(info, index)
+
+end
+
+function UICompGuildUnionListCell:setSelected(select)
+    self._bgSelect:setVisible(select)
+end
+
+function UICompGuildUnionListCell:onClickBtn(obj)
+    -- NtfManager:dispatchNtf(NtfManager.NTF.NTF_GUILDMEMBER_LIST_SELECT, {data = self})
+end
+
+return UICompGuildUnionListCell

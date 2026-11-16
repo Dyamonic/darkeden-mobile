@@ -1,0 +1,35 @@
+
+local CmdMove = class("CmdMove", lt.CmdBase)
+
+CmdMove._moveType  = nil
+CmdMove._direction = nil
+CmdMove._mNext     = nil
+CmdMove._nNext     = nil
+
+function CmdMove:ctor(moveType, direction, mNext, nNext)
+    CmdMove.super.ctor(self, lt.Constant.CmdId.CMD_MOVE)
+
+    self._moveType  = moveType
+    self._direction = direction
+    self._mNext     = mNext
+    self._nNext     = nNext
+end
+
+-- Setter && Getter
+function CmdMove:getMoveType()
+    return self._moveType
+end
+
+function CmdMove:getDirection()
+    return self._direction
+end
+
+function CmdMove:getMNext()
+    return self._mNext
+end
+
+function CmdMove:getNNext()
+    return self._nNext
+end
+
+return CmdMove

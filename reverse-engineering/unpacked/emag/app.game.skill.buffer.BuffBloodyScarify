@@ -1,0 +1,29 @@
+local BuffBloodyScarify = class("BuffBloodyScarify", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+local ScheduleUtil  = lt.ScheduleUtil
+local CacheManager = lt.CacheManager
+local Constant = lt.Constant
+
+--[[
+    血之烙印
+]]
+function BuffBloodyScarify:ctor(time, actor, skilllevel, source, buffId)   
+    BuffBloodyScarify.super.ctor(self, buffId, time, actor)
+    -- 被攻击播特效即可
+    self._skillId = SkillEnum.SKILL_BLOODY_SCARIFY
+    if buffId == BuffEnum.EFFECT_CLASS_BLOODY_SCARIFY then
+        local buffMetas = CacheManager:getProcessMetas(self._skillId)
+        actor:playParallelEffectSpecial(self._skillId, buffMetas)
+    elseif buffId == BuffEnum.EFFECT_CLASS_BLOODY_SCARIFY_BOMB then
+        local targetAgentId = actor:getAgent():getAgentId()
+        lt.SkillManager:playBloodyScarify(self._skillId, targetAgentId)
+    end
+end
+
+function BuffBloodyScarify:onClear()
+    BuffBloodyScarify.super.onClear(self)
+end
+
+
+return BuffBloodyScarify

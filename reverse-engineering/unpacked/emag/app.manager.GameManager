@@ -1,0 +1,64 @@
+
+local GameManager = {}
+GameManager._config = nil
+
+function GameManager:init()
+    self:getConfig()
+end
+
+function GameManager:clear()
+    self._config = nil
+end
+
+function GameManager:getConfig()
+	if not self._config then
+		local path = cc.FileUtils:getInstance():fullPathForFilename("game.plist")
+		self._config = cc.FileUtils:getInstance():getValueMapFromFile(path)
+	end
+
+	return self._config
+end
+
+function GameManager:getUserType()
+	return self:getConfig()["GAME_USER_TYPE"]
+end
+
+function GameManager:getIOSEnterPrise()
+    return ("enterprise" == self:getUserType() or "tianxia" == self:getUserType()) and device.platform == "ios"
+end
+
+function GameManager:getIsAZSiPuUserType()
+    return "azsipu" == self:getUserType()
+end
+
+function GameManager:getCodeByUserType(code)
+	-- if code == "F0" or code == "F1" or code == "F2" or code == "A1" or code == "S0" then
+	--     local ut = self:getUserType()
+	--     if ut == "tianxia" or ut == "enterprise" or ut == "inner" then
+	--         if code == "F1" or code == "F0" then
+	--             return true
+	--         end
+	--     elseif ut == "azstore" then
+	--     	if code == "F2" or code == "F0" then
+	--             return true
+	--         end
+	--     elseif ut == "azsipu" then
+	--     	if code == "A1" then
+	--             return true
+	--         end
+	--     elseif ut == "developer" then
+	--     	if code == "S0" then
+	--             return true
+	--         end
+	--     end
+	-- 	return false
+	-- end
+    return true
+end
+
+function GameManager:getBanhao()
+	return self:getConfig()["GAME_HIDE_BANHAO"] or 0
+end
+
+
+return GameManager

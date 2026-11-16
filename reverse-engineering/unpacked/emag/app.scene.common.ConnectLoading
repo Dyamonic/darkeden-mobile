@@ -1,0 +1,76 @@
+
+local ConnectLoading = class("ConnectLoading", function()
+	return display.newLayer()
+end)
+
+function ConnectLoading:loadingOn(curTimes, maxTimes)
+	local layer = display.getRunningScene():getChildByTag(123456)
+	if not layer then
+		layer = ConnectLoading.new(curTimes, maxTimes)
+		display.getRunningScene():addChild(layer, 123456, 123456)
+	else
+		layer:updateInfo(curTimes, maxTimes)
+	end
+end
+
+function ConnectLoading:loadingOff() 
+	local layer = display.getRunningScene():getChildByTag(123456)
+	if layer then
+		layer:removeSelf()
+	end
+end
+
+function ConnectLoading:ctor(curTimes, maxTimes)
+	self:enableNodeEvents()
+    self:setTouchEnabled(true)
+    self:setTouchMode(cc.EVENT_TOUCH_ONE_BY_ONE)
+    self:setSwallowsTouches(true)
+
+    self._touchListener = cc.EventListenerTouchOneByOne:create()
+    self._touchListener:setEnabled(true)
+    self._touchListener:setSwallowTouches(true)
+    self._touchListener:registerScriptHandler(function()
+    	return true
+    end, cc.Handler.EVENT_TOUCH_BEGAN)
+    self._touchListener:registerScriptHandler(function()
+    end, cc.Handler.EVENT_TOUCH_MOVED)
+    self._touchListener:registerScriptHandler(function()
+    end, cc.Handler.EVENT_TOUCH_ENDED)
+    cc.Director:getInstance():getEventDispatcher():addEventListenerWithSceneGraphPriority(self._touchListener, self)
+
+    local bgSize = cc.size(700, 32)
+    local tipsBg = display.newSprite("ui/common/common_tips_bg.png", display.cx, display.cy, {scale9 = true, size = bgSize, capInsets = cc.rect(14, 8, 2, 12)})
+    self:addChild(tipsBg)
+
+    local labelNode = display.newNode()
+    tipsBg:addChild(labelNode)
+
+    local label = lt.LabelEx.new(lt.StringManager:getString(lt.StringManager.RECONNECT_TIPS), {font=lt.Constant.FONT_2, size=18, color=lt.Constant.COLOR_TEXT_WHITE})
+    label:setAnchorPoint(0, 0.5)
+    labelNode:addChild(label)
+
+    self._label = lt.LabelEx.new("(10/10)", {font=lt.Constant.FONT_2, size=18, color=lt.Constant.COLOR_TEXT_GOLD_H})
+    self._label:setAnchorPoint(0, 0.5)
+    self._label:setPosition(label:getContentSize().width, 0)
+    labelNode:addChild(self._label)
+
+    labelNode:setPosition(bgSize.width / 2 - (self._label:getPositionX() + self._label:getContentSize().width) / 2, bgSize.height / 2)
+
+    self:updateInfo(curTimes, maxTimes)
+end
+
+function ConnectLoading:updateInfo(curTimes, maxTimes)
+	print("ConnectLoading:updateInfo",curTimes, maxTimes)
+
+    self._label:setString("("..curTimes .. "/" .. maxTimes..")")
+end
+
+function ConnectLoading:onExit()
+	if self._touchListener then
+    	cc.Director:getInstance():getEventDispatcher():removeEventListener(self._touchListener)
+    	self._touchListener = nil
+    end
+end
+
+return ConnectLoading
+	

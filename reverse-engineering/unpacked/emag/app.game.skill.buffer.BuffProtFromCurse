@@ -1,0 +1,19 @@
+local BuffProtFromCurse = class("BuffProtFromCurse", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+
+--[[
+    诅咒抗力
+]]
+function BuffProtFromCurse:ctor(time, actor, skilllevel)    
+    BuffProtFromCurse.super.ctor(self, BuffEnum.EFFECT_PROTECTION_FROM_CURSE, time, actor, skilllevel)
+    -- 脚底长效特效
+    actor:playSoleEffect(SkillEnum.SKILL_PROTECTION_FROM_CURSE, SkillEnum.EFFECT_OWNER.OTHER, true)
+end
+
+function BuffProtFromCurse:onClear()
+    self._actor:removeSoleEffect(SkillEnum.SKILL_PROTECTION_FROM_CURSE, true)
+    BuffProtFromCurse.super.onClear(self)
+end
+
+return BuffProtFromCurse

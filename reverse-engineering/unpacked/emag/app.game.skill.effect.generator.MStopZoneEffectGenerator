@@ -1,0 +1,158 @@
+-- MStopZoneEffectGenerator.lua
+
+local MStopZoneEffectGenerator = class("MStopZoneEffectGenerator", lt.MEffectGenerator)
+local FRAMEID_NULL = 0xFFFF
+local MapUtil = lt.MapUtil
+function MStopZoneEffectGenerator:generate(egInfo)
+    local est = egInfo.effectSpriteType
+    local newFrameID = FRAMEID_NULL
+
+    -- 处理不同的效果类型
+    if (est >= EFFECTSPRITETYPE_DARKNESS_1_1 and est <= EFFECTSPRITETYPE_DARKNESS_3_5) or
+       (est >= EFFECTSPRITETYPE_GRAY_DARKNESS_1_1 and est <= EFFECTSPRITETYPE_GRAY_DARKNESS_3_5) then
+
+        if egInfo.pPreviousEffect ~= nil then
+            newFrameID = 5 + egInfo.pPreviousEffect:GetFrameID()
+        else
+            if est >= EFFECTSPRITETYPE_DARKNESS_2_1 and est <= EFFECTSPRITETYPE_DARKNESS_2_5 then
+                est = EFFECTSPRITETYPE_DARKNESS_2_1 + math.random(0, 4)
+            elseif est >= EFFECTSPRITETYPE_DARKNESS_1_1 and est <= EFFECTSPRITETYPE_DARKNESS_1_5 then
+                est = EFFECTSPRITETYPE_DARKNESS_1_1 + math.random(0, 4)
+            elseif est >= EFFECTSPRITETYPE_DARKNESS_3_1 and est <= EFFECTSPRITETYPE_DARKNESS_3_5 then
+                est = EFFECTSPRITETYPE_DARKNESS_3_1 + math.random(0, 4)
+            elseif est >= EFFECTSPRITETYPE_GRAY_DARKNESS_1_1 and est <= EFFECTSPRITETYPE_GRAY_DARKNESS_1_5 then
+                est = EFFECTSPRITETYPE_GRAY_DARKNESS_1_1 + math.random(0, 4)
+            elseif est >= EFFECTSPRITETYPE_GRAY_DARKNESS_2_1 and est <= EFFECTSPRITETYPE_GRAY_DARKNESS_2_5 then
+                est = EFFECTSPRITETYPE_GRAY_DARKNESS_2_1 + math.random(0, 4)
+            elseif est >= EFFECTSPRITETYPE_GRAY_DARKNESS_3_1 and est <= EFFECTSPRITETYPE_GRAY_DARKNESS_3_5 then
+                est = EFFECTSPRITETYPE_DARKNESS_3_1 + math.random(0, 4)
+            end
+        end
+    elseif est == EFFECTSPRITETYPE_INFINITY_THUNDERBOLT_CENTER then
+        est = EFFECTSPRITETYPE_INFINITY_THUNDERBOLT_CENTER + math.random(0, 2)
+    end
+
+    if est >= #g_pEffectSpriteTypeTable then
+        return false
+    end
+
+    local bltType = g_pEffectSpriteTypeTable[est].BltType
+    local frameID = g_pEffectSpriteTypeTable[est].FrameID
+    local repeatFrame = g_pEffectSpriteTypeTable[est].RepeatFrame
+
+    if newFrameID ~= FRAMEID_NULL then
+        frameID = newFrameID
+    end
+
+    local direction = egInfo.direction
+
+    -- 处理剑波效果
+    if est == EFFECTSPRITETYPE_SWORD_WAVE_1 then
+        direction = (direction + 1) % 8
+    elseif est == EFFECTSPRITETYPE_SWORD_WAVE_2 then
+        direction = (direction + 6) % 8
+    elseif est == EFFECTSPRITETYPE_SWORD_WAVE_3 then
+        direction = (direction + 1) % 8
+    end
+
+    -- 转换坐标
+    local sX = MapUtil:PixelToMapX(egInfo.x0)
+    local sY = MapUtil:PixelToMapY(egInfo.y0)
+
+    local maxFrame = g_pTopView:GetMaxEffectFrame(bltType, frameID)
+
+    -- 添加效果到区域
+    if egInfo.nActionInfo == RESULT_SKILL_STONE_AUGER or 
+       egInfo.nActionInfo == RESULT_STEP_SKILL_STONE_AUGER_2 or
+       egInfo.nActionInfo == RESULT_STEP_SKILL_STONE_AUGER_3 then
+
+        local pt = {
+            {0, 1},
+            {1, 0},
+            {0, 0},
+            {0, -1},
+            {-1, 0}
+        }
+
+        sX = g_pTopView:PixelToMapX(egInfo.x1)
+        sY = g_pTopView:PixelToMapY(egInfo.y1)
+
+        for i = 1, #pt do
+            local pEffect = MEffect(bltType)
+            pEffect:SetFrameID(frameID, maxFrame)
+            pEffect:SetPosition(sX + pt[i][1], sY + pt[i][2])
+            pEffect:SetZ(egInfo.z0)
+            pEffect:SetStepPixel(egInfo.step)
+            pEffect:SetCount(egInfo.count, egInfo.linkCount)
+            pEffect:SetDirection(direction)
+            pEffect:SetPower(egInfo.power)
+            pEffect:SetMulti(true)
+
+            if g_pZone:AddEffect(pEffect) then
+                if egInfo.pEffectTarget ~= nil then
+                    if i == 1 then
+                        pEffect:SetLink(egInfo.nActionInfo, egInfo.pEffectTarget)
+                    else
+                        local pTarget = MEffectTarget(egInfo.pEffectTarget)
+                        pEffect:SetLink(egInfo.nActionInfo, pTarget)
+                    end
+                end
+
+                if repeatFrame then
+                    local num = math.random(0, maxFrame - 1)
+                    for nf = 1, num do
+                        pEffect:NextFrame()
+                    end
+                end
+            end
+        end
+        return true
+    else
+        local pEffect = MEffect(bltType)
+        pEffect:SetFrameID(frameID, maxFrame)
+
+        if (est == EFFECTSPRITETYPE_FIRE_CRACKER_1 or
+            est == EFFECTSPRITETYPE_FIRE_CRACKER_2 or
+            est == EFFECTSPRITETYPE_FIRE_CRACKER_3) or
+           (est >= EFFECTSPRITETYPE_DRAGON_FIRE_CRACKER and est <= EFFECTSPRITETYPE_FIRE_CRACKER_4) or
+           (est == EFFECTSPRITETYPE_PET_SLAYER_3TH_ATTACK_1 or est == EFFECTSPRITETYPE_PET_SLAYER_3TH_ATTACK_2) then
+            pEffect:SetPixelPosition(egInfo.x0, egInfo.y0, egInfo.z0)
+        else
+            pEffect:SetPosition(sX, sY)
+        end
+
+        pEffect:SetZ(egInfo.z0)
+        pEffect:SetStepPixel(egInfo.step)
+        pEffect:SetCount(egInfo.count, egInfo.linkCount)
+        pEffect:SetDirection(direction)
+        pEffect:SetPower(egInfo.power)
+
+        if (est == EFFECTSPRITETYPE_FIRE_CRACKER_1 or
+            est == EFFECTSPRITETYPE_FIRE_CRACKER_2 or
+            est == EFFECTSPRITETYPE_FIRE_CRACKER_3) or
+           (est >= EFFECTSPRITETYPE_DRAGON_FIRE_CRACKER and est <= EFFECTSPRITETYPE_FIRE_CRACKER_4) or
+           (est == EFFECTSPRITETYPE_GREAT_RUFFIAN_2_AXE_THROW or
+            est == EFFECTSPRITETYPE_GREAT_RUFFIAN_2_AXE_THROW_SHADOW or
+            est == EFFECTSPRITETYPE_GREAT_RUFFIAN_1_AXE_GROUND or
+            est == EFFECTSPRITETYPE_GREAT_RUFFIAN_1_AXE_WAVE) then
+            pEffect:SetMulti(true)
+        end
+
+        local bAdd = g_pZone:AddEffect(pEffect)
+
+        if bAdd then
+            pEffect:SetLink(egInfo.nActionInfo, egInfo.pEffectTarget)
+
+            if repeatFrame then
+                local num = math.random(0, maxFrame - 1)
+                for nf = 1, num do
+                    pEffect:NextFrame()
+                end
+            end
+        end
+        return bAdd
+    end
+    return false
+end
+
+return MStopZoneEffectGenerator

@@ -1,0 +1,22 @@
+
+local AdvLevelExpInfoMeta = class("AdvLevelExpInfoMeta")
+
+function AdvLevelExpInfoMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function AdvLevelExpInfoMeta:initWithRow(row)
+    self._level = row.ADVClassLevel
+    self._exp = row.ADVGoalEXP
+    self._advAccumExp = row.ADVAccumEXP
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function AdvLevelExpInfoMeta:getLevel() return self._level end
+function AdvLevelExpInfoMeta:getExp() return self._exp end
+function AdvLevelExpInfoMeta:getAdvAccumExp() return self._advAccumExp end
+
+-- AUTO GENERATED GETTERS END
+return AdvLevelExpInfoMeta

@@ -1,0 +1,24 @@
+
+local RankBonusInfoDao = {}
+
+function RankBonusInfoDao:queryByRaceId(raceId)
+    local RankBonusTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM RankBonusInfo WHERE Race=%d;",raceId)) do
+        local rankBonusInfo = lt.RankBonusInfoMeta.new(row)
+        RankBonusTable[rankBonusInfo:getRankId()] = rankBonusInfo
+    end
+    return RankBonusTable
+end
+
+function RankBonusInfoDao:queryByClassLevelAndRaceId(classLevel,raceId)
+    local RankBonusTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM RankBonusInfo WHERE ClassLevel=%d AND Race=%d;",classLevel,raceId)) do
+        local rankBonusInfo = lt.RankBonusInfoMeta.new(row)
+        RankBonusTable[rankBonusInfo:getRankId()] = rankBonusInfo
+    end
+    return RankBonusTable
+end
+
+return RankBonusInfoDao

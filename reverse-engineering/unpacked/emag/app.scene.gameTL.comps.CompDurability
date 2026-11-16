@@ -1,0 +1,197 @@
+---@class CompDurability 耐久度
+local CompDurability = class("CompDurability", lt.UICompBase)
+local GameModule     = lt.GameModule
+local Constant       = lt.Constant
+local NtfManager     = lt.NtfManager
+local ItemModule     = lt.ItemModule
+local RaceSkinRes    = Constant.RaceSkinRes
+local RaceType       = Constant.RaceType
+
+function CompDurability:ctor(view)
+    CompDurability.super.ctor(self)
+    self._view = view
+    self:initUI()
+end
+
+function CompDurability:initUI()
+    self:refreshRoleEquip()
+end
+
+function CompDurability:GetEquipItemInfoByPos(pos)
+    local equipData = ItemModule:getEquipArray()
+    for k, v in ipairs(equipData) do
+        local equipPos = v:getPos()
+        if pos == equipPos then
+            return v
+        end
+    end
+end
+
+function CompDurability:onEnter()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_HERO_EQUIP_EVENT,
+        handler(self, self.refreshRoleEquip), "CompDurability:refreshRoleEquip")
+    self._view:addClickListener(handler(self, self.onClickBtn))
+    CompDurability.super.onEnter(self)
+end
+
+function CompDurability:onExit()
+    NtfManager:removeNtfListenerByTag("CompDurability:refreshRoleEquip")
+    self._view:removeClickListener()
+    CompDurability.super.onExit(self)
+end
+
+function CompDurability:onClear()
+    self._view = nil
+    CompDurability.super.onClear(self)
+end
+
+function CompDurability:getHeadUrl(race, sex, itemMeta, item)
+    local raceRes = RaceSkinRes[race]
+    local urlPath = ""
+
+    local dur = 0
+    local durabilityTotal = item:getTotalDurability()
+    local durability = item:getDurability()
+    local curProp = string.format("%.0f", durability / durabilityTotal * 100)
+
+    local isShow = false
+    curProp = tonumber(curProp)
+    if curProp <= 10 then
+        dur = 2
+        isShow = true
+    elseif curProp <= 25 then
+        dur = 1
+        isShow = true
+    end
+
+    local kind = itemMeta and itemMeta:getKind() or 0 -- 大类
+    if kind == Constant.EquipKind.Arms then           -- 武器
+        -- 小类
+        local smallKind = 0
+        local itemType = itemMeta and itemMeta:getType() or 0 -- 小类
+        if itemType == Constant.WeaponType.Knife
+            or itemType == Constant.WeaponType.Sword then
+            smallKind = 1
+        elseif Constant.IsGun[itemType] then -- 枪
+            smallKind = 2
+        elseif itemType == Constant.WeaponType.Cross
+            or itemType == Constant.WeaponType.Wand then
+            smallKind = 3
+        elseif itemType == Constant.WeaponType.BattleWheel then --=战轮
+            smallKind = 0
+        elseif itemType == Constant.WeaponType.WristGuard then  --护腕
+            smallKind = 1
+        end
+        urlPath = string.format(_GURL.GetImageMainDurEx, raceRes, kind, smallKind, dur)
+    elseif kind == Constant.EquipKind.Clothes
+        or kind == Constant.EquipKind.Trousers
+        or kind == Constant.EquipKind.Glove then --手套
+        urlPath = string.format(_GURL.GetImageMainDurEx, raceRes, kind, sex, dur)
+    elseif kind == Constant.EquipKind.Belt
+        or kind == Constant.EquipKind.Shoes then
+        if race == RaceType.Slayer then
+            urlPath = string.format(_GURL.GetImageMainDurEx, raceRes, kind, sex, dur)
+        else
+            urlPath = string.format(_GURL.GetImageMainDur, raceRes, kind, dur)
+        end
+    elseif kind == Constant.EquipKind.Necklace then
+        if race == RaceType.Slayer then
+            urlPath = string.format(_GURL.GetImageMainDurEx, raceRes, kind, sex, dur)
+        elseif race == RaceType.Vampire then
+            urlPath = string.format(_GURL.GetImageMainDur, raceRes, kind, dur)
+        else --  魔族：种族_大类_方向（1=左&右 2=中 ）_耐久
+            local equipPos = item and item:getPos() or 0
+            local pos = 1
+            if equipPos == Constant.OustersEquipPos.Necklace2 then
+                pos = 2
+            end
+            urlPath = string.format(_GURL.GetImageMainDurEx, raceRes, kind, pos, dur)
+        end
+    elseif kind == Constant.EquipKind.Bracelet
+        or kind == Constant.EquipKind.Ring
+        or kind == Constant.EquipKind.Earrings
+        or kind == Constant.EquipKind.Amulet
+        or kind == Constant.EquipKind.ElfStone
+        or kind == Constant.EquipKind.Helmet
+        or kind == Constant.EquipKind.Shield
+    then --种族_大类_耐久度
+        urlPath = string.format(_GURL.GetImageMainDur, raceRes, kind, dur)
+    end
+
+
+    return urlPath, isShow
+end
+
+function CompDurability:refreshRoleEquip()
+    local heroData = GameModule:getHeroData()
+    if not heroData then
+        return
+    end
+    local curRace  = heroData:getRace()
+    local curSex   = heroData:getSex()
+    local equipPos = Constant[Constant.RaceToJobPanel[curRace] .. "EquipPos"] or {}
+    local bg       = self._view:getChild("bg")
+    local bgUrl    = string.format(_GURL.GetImageMainDur, RaceSkinRes[curRace], 0, curSex)
+    bg:setURL(bgUrl)
+
+    if curRace == Constant.RaceType.Slayer or curRace == Constant.RaceType.Vampire  then
+        local ctl  = self._view:getController("c1")
+        ctl:setSelectedIndex(curSex)
+    end 
+
+    local isShowView = false
+    local armsData = self:GetEquipItemInfoByPos(equipPos["Arms"])
+    for k, v in pairs(equipPos) do
+        local roleEquip = self._view:getChild(k)
+        local equipData = self:GetEquipItemInfoByPos(v)
+        local armsSame = false
+        if curRace == Constant.RaceType.Slayer then
+            if k == "Shield" and armsData and armsData:getMetaType() ~= Constant.ArmsEquipType.HandSword then
+                equipData = armsData
+                armsSame = true
+            end
+        else
+            if k == "Arms_same" then
+                equipData = armsData
+                armsSame = true
+            end
+        end
+        if roleEquip then
+            if equipData then
+                local itemMeta = equipData:getItemMeta()
+                local url, isShow = self:getHeadUrl(curRace, curSex, itemMeta, equipData)
+                -- yflog:Info("-------pos=%s----url=%s", k, url)
+                if not isShowView and isShow then
+                    isShowView = true
+                end
+                roleEquip:setURL(url)
+            else -- 不穿不显示
+                -- yflog:Info("-------..k=" .. k)
+                roleEquip:setURL("")
+            end
+        end
+    end
+    self._view:setVisible(isShowView)
+    self._view:setTouchable(isShowView)
+end
+
+function CompDurability:onClickBtn(obj)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {
+        class = "UIWndLock",
+        reopen = true,
+        param = {
+            [1] = {
+                class = "UIWndRepair",
+                location = "right",
+                reopen = true,
+                param = {
+                    tabId = 1, }
+            },
+            [2] = { class = "UIWndRoleEquip", reopen = true },
+            WndLockType = Constant.WndLockType.Repair,
+            lockIds = "110+109"
+        }
+    })
+end
+
+return CompDurability

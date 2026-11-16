@@ -1,0 +1,395 @@
+--所有GS游戏逻辑消息都定义在这里
+--协议定义编号从100开始
+--协议定义请按功能划分
+
+---------------客户端发往服务器消息---------------
+-----------基础功能协议定义从101开始到200------------
+local ClientCmdDef = {}
+
+ClientCmdDef.CONFIRM_ON_LOGIN      = 101    -- 进入游戏时点确定
+ClientCmdDef.QUIT                  = 102    -- 点退出游戏
+ClientCmdDef.MOVE                  = 103    -- 移动或转身
+ClientCmdDef.ATTACK                = 104    -- 攻击
+ClientCmdDef.CHAT                  = 105    -- 聊天
+ClientCmdDef.RELIVE                = 106    -- 复活
+
+ClientCmdDef.NpcOperation_JumpMap = 107  -- NPC操作-地图传送
+ClientCmdDef.NpcOperation_Recover = 108  -- NPC操作-回复满血
+ClientCmdDef.NpcOperation_ExchangeItem = 109 --NPC操作-道具兑换
+ClientCmdDef.NpcOperation_BuyStorge = 110 --NPC操作-购买仓库
+ClientCmdDef.NpcOperation_FindMotorcycle = 111 --NPC操作-摩托车找回
+
+ClientCmdDef.C_QUERY_PET           = 112    -- 查询宠物情况
+ClientCmdDef.ACTIVITY_UPDATE_REQ   = 113	-- 在线活动请求
+ClientCmdDef.QUERY_APPEAR          = 114    -- 人物突斩野蛮消失后再出现纠出现纠错
+ClientCmdDef.CANCEL_TRANSFOR     = 115    -- 取消变身
+
+
+ClientCmdDef.C_USE_ITEM			   = 202    -- 使用物品(玩家包裹)
+
+----------物品装备协议200开始---------------------------
+ClientCmdDef.EQUIP				   = 200    -- 装备物品
+ClientCmdDef.UNEQUIP			   = 201	-- 卸除物品
+ClientCmdDef.PECK				   = 203	-- 丢物品
+ClientCmdDef.PICKUP			       = 204	-- 捡物品
+ClientCmdDef.AUTOTIDY_ITEM		   = 207    -- 自动整理物品协议
+ClientCmdDef.STORE_ITEM            = 208    -- 物品存仓
+ClientCmdDef.TAKEOUT_STORAGE_ITEM  = 209    -- 从仓库取出物品
+ClientCmdDef.RECYCLE_ITEM          = 210    -- 回收物品
+ClientCmdDef.LEVELUP_OPERATE       = 211    -- 装备升级
+ClientCmdDef.BLESSING_OPERATE      = 212    -- 装备祝福
+ClientCmdDef.STRENGTHEN_OPERATE    = 213    -- 装备词条强化
+ClientCmdDef.COMPOSE_OPERATE       = 214    -- 装备合成
+ClientCmdDef.INHERIT_OPERATE       = 215    -- 装备传承
+ClientCmdDef.RECASTING_OPERATE     = 227    -- 装备重铸
+ClientCmdDef.PURIFY_OPERATE        = 228    -- 装备净化
+ClientCmdDef.OPEN_SHOP_OPERATE     = 229    -- 打开商店标签
+ClientCmdDef.REPQIR_OPERATE        = 231    -- 维修(耐久度/镀银)
+ClientCmdDef.SHOP_SELL_OPERATE     = 232    -- 出售
+
+ClientCmdDef.SELLITEM_TONPC        = 216    -- 向NPC卖东西时，把要卖的东西放入托盘
+ClientCmdDef.CONFIRM_SELLITEM_TONPC= 217    -- 卖东西点击确认
+ClientCmdDef.BUYITEM_FROMNPC       = 218    -- 选择好要买的东西点击OK
+ClientCmdDef.ITEMCATEGORY_FROMNPC  = 219    -- 选择好要购买的物品种类点击OK
+ClientCmdDef.FLY_TRANSFER          = 221    -- 使用飞鞋传送
+ClientCmdDef.NEW_BPCSHOP_BUY       = 222    -- 新版npc兑换商店 购买
+ClientCmdDef.ACTIVECODE            = 223    -- 激活码
+ClientCmdDef.RECOVERY_ITEM         = 224    -- 一键回收物品
+ClientCmdDef.EXPAND_BAG            = 225    -- 扩容背包
+ClientCmdDef.C_BELT_ITEM_OPERATE   = 226    -- 腰带放入、卸下
+ClientCmdDef.RELEASE_EXP_BOX       = 299    -- 自动释放月光宝盒经验
+
+----------功能协议300开始---------------------------
+ClientCmdDef.C_LEARN_SKILL          = 397    -- 学习技能
+ClientCmdDef.C_UPGRADE_SKILL        = 398    -- 升级技能
+ClientCmdDef.C_RETURN_SKILL         = 399    -- 回退技能
+
+ClientCmdDef.C_CLEAN_CLASS_SKILL    = 450    -- 清除阶级技能
+ClientCmdDef.C_VAMPIRE_TUNNEL_USE    = 451    -- 清除阶级技能
+
+
+ClientCmdDef.C_AssignAttributePoint = 519    -- 分配属性点
+ClientCmdDef.C_CLEANAttributePoint  = 520    -- 鬼族清洗属性点
+ClientCmdDef.C_DigCorpse            = 521    -- 怪物挖掘尸体
+
+-----------------------------------------------------------------------------
+-- old
+ClientCmdDef.CONVERT_EXP_BOX       = 300    -- 兑换月光宝盒经验
+ClientCmdDef.EQUIP_ENCHANTMENT_ACK = 302    -- 请求部位附魔
+
+
+ClientCmdDef.ATTACK_MODE           = 312    -- 攻击状态
+ClientCmdDef.GUILD_LIST            = 314    -- 请求公会列表
+ClientCmdDef.OPERATE_GUILD_APPLICATION = 319    -- 处理申请
+ClientCmdDef.INVITE_IN_TEAM        = 330    -- 邀请入队
+ClientCmdDef.APPLY_IN_TEAM         = 331    -- 申请入队
+ClientCmdDef.QUIT_TEAM             = 332    -- 退出队伍
+ClientCmdDef.KIKC_TEAM             = 333    -- 踢出队伍
+ClientCmdDef.TEAM_INFO_REFURBISH   = 334    -- 信息更新
+ClientCmdDef.TEAM_FREE_SIGN        = 335    -- 信息更新
+ClientCmdDef.REQ_GET_EMAIL_LIST    = 341    -- 获取邮件列表
+ClientCmdDef.REQ_GET_EMAIL_INFO    = 342    -- 获取邮件信息
+ClientCmdDef.REQ_RECEIVE_EMAIL_ITEM = 343   -- 领取邮件物品
+ClientCmdDef.REQ_DELETE_EMAIL      = 344    -- 删除邮件
+ClientCmdDef.SHOP_BUY_LIMIT_REQ    = 347    -- 限购信息请求
+ClientCmdDef.SHOP_BUY_ITEM_REQ     = 348    -- 购买道具请求
+ClientCmdDef.TRADING_ITEM_ON_THE_SHELF = 351 -- 上架
+ClientCmdDef.TRADING_ITEM_BUY      = 352    -- 购买
+ClientCmdDef.TRADING_ITEM_DISMOUNT = 353    -- 下架
+ClientCmdDef.TRADING_ITEM_RECEIVE  = 354    -- 领取物品
+ClientCmdDef.TRANING_REQUEST_ITEM_LIST = 355 -- 请求物品列表
+ClientCmdDef.TRANING_FIND_ITEM_LIST= 356 -- 查找物品
+ClientCmdDef.REQ_SOUND_HORN        = 361    -- 传音号角发送消息
+ClientCmdDef.REQ_READ_EMAIL        = 362    -- 邮件一键已读
+ClientCmdDef.EQUIP_ENCHANTMENTLIST = 369    -- 附魔数据
+ClientCmdDef.DISCARD_JINBI         = 371    -- 丢弃金币
+ClientCmdDef.BATCH_USE_ITEM        = 373    -- 批量使用物品
+ClientCmdDef.RANK_LIST_REQ         = 376    -- 排行榜
+ClientCmdDef.USE_KUN_YAO_ITEM      = 377    -- 捆药绳
+ClientCmdDef.FOOD_USE_FLAG         = 380    -- 兽粮使用标志
+ClientCmdDef.USE_FOOD      		   = 381    -- 兽粮使用
+ClientCmdDef.HANDBOOK_TRANSFER     = 382    -- 图鉴飞鞋传送
+ClientCmdDef.EVERYDAY_SIGN         = 385    -- 签到 (每日签到)
+ClientCmdDef.EVERYDAY_SIGN_EXTRA   = 386    -- 签到领取额外奖励
+ClientCmdDef.EVERYDAY_SIGN_LIST    = 387    -- 每日签到列表
+ClientCmdDef.RECEIVE_LINGQI        = 388    -- 领取灵气
+ClientCmdDef.BACK_TO_TOWN          = 389    -- 回城
+ClientCmdDef.ACHIEVEMENT_RW        = 391    -- 成就领奖
+ClientCmdDef.EQUIP_TITLE           = 392    -- 装备称号
+ClientCmdDef.UNLOAD_TITLE          = 393    -- 卸下称号
+ClientCmdDef.LIMIT_BUY             = 396    -- 抢购(限时抢购)
+-- ClientCmdDef.SKILL_UP              = 397    -- 技能升级
+ClientCmdDef.SET_GAME_CONFIG       = 399    -- 游戏设置
+ClientCmdDef.TEAM_INFO_REQUST      = 401    -- 获得队伍成员信息
+ClientCmdDef.FIRST_CHARGE_DRAW     = 402    -- 首冲领取奖励
+ClientCmdDef.BUY_MONTH_CARD        = 403    -- 购买月卡
+ClientCmdDef.RECEIVE_MONTH_CARD_AWARD  = 404    -- 领取月卡奖励
+ClientCmdDef.BUY_WEEK_FUND         = 405    -- 购买周基金
+ClientCmdDef.RECEIVE_WEEK_FUND_AWARD   = 406    -- 领取周基金奖励
+ClientCmdDef.NEW_SERVER_BUY        = 407    -- 开服礼包购买
+ClientCmdDef.CONTINUED_CHARGE_DRAW  = 410    -- 连续充值获取奖励
+ClientCmdDef.WEAPON_UNSEAL         = 411    -- 武器解封
+ClientCmdDef.WEAPON_INLAY          = 412    -- 武器镶嵌
+ClientCmdDef.SHIELD_STRENGTJEN     = 413    -- 护盾强化
+ClientCmdDef.CHANGE_OF_NAME        = 414    -- 改名
+ClientCmdDef.SHIELD_SPIRIT         = 417   -- 护盾皮肤注灵
+ClientCmdDef.SHIELD_SKIN_EQUIP     = 418   -- 护盾皮肤穿戴
+ClientCmdDef.SHIELD_SKIN_ACTIVATE  = 419   -- 护盾皮肤激活
+ClientCmdDef.OPEN_SHIELDS          = 423   -- 开启护盾强化
+ClientCmdDef.CARD_MONTH_BUY        = 428   -- 购买贵族月卡
+ClientCmdDef.CARD_MONTH_DRAW       = 429   -- 领取贵族月卡
+ClientCmdDef.CARD_WEEK_BUY         = 430   -- 购买特权周卡
+ClientCmdDef.CARD_WEEK_DRAW        = 431   -- 领取特权周卡
+ClientCmdDef.CARD_MONTH_DAILY_DRAW = 432   -- 领取月卡每日奖励
+ClientCmdDef.BUY_ZHIGOULIBAO       = 434   -- 购买直购礼包
+ClientCmdDef.WEAPON_STRENGHTEN     = 436   -- 武器强化
+ClientCmdDef.EQUIP_IDENTIFY        = 440   -- 装备鉴定
+ClientCmdDef.PRAY_THAT_TREE        = 441   -- 祈愿树
+ClientCmdDef.C_ENCHANTMENT_BREAK   = 445   -- 心魔突破
+ClientCmdDef.FAST_USE_ITEMS        = 453   -- 批量使用多个物品(全部使用)
+ClientCmdDef.KF_CHONG_BANG		   = 455   -- 开服冲榜
+ClientCmdDef.C_GET_TOTAL_RECHARGE  = 456   -- 累充返利领取
+ClientCmdDef.C_GET_TOTAL_CONSUME   = 457   -- 累消返利领取
+ClientCmdDef.C_SUPER_OPEN_JINGMI   = 461   -- 开启精密宝盒
+ClientCmdDef.WEAPON_WAREHOUSE      = 466   -- 领取寻宝仓库道具
+ClientCmdDef.DEL_WEAPON_WAREHOUSE  = 467   -- 分解武器仓库武器
+ClientCmdDef.C_CUSTOM_TITLE        = 468   -- 定制称号
+ClientCmdDef.C_CRAZY_SHOPPING_BUY  = 469   -- 嗨购一车(购买)
+ClientCmdDef.C_CRAZY_SHOPPING_DRAW = 470   -- 嗨购一车(奖励)
+ClientCmdDef.YBJIJIN		       = 472   -- 开服基金
+ClientCmdDef.REQ_BUY_GROWTH_GIFT   = 473   -- 购买成长礼包
+
+ClientCmdDef.C_BUY_PRIVILEGE_CARD = 474   -- 购买特权卡
+ClientCmdDef.C_RECEIVE_PRIVILEGE_DAILY_REWARD = 475   -- 领取特权卡每日奖励
+
+ClientCmdDef.C_DAILYTASK          = 477   -- 每日任务
+ClientCmdDef.C_COST_RANK          = 478   -- 消费排行
+ClientCmdDef.REQ_DRAW_DAILY_RECHARGE = 479  --每日累充领取奖励
+ClientCmdDef.C_NewSuperRing			= 488   -- 特戒升级
+
+
+ClientCmdDef.C_SpiritEquip          = 523   -- 坐骑装备
+
+ClientCmdDef.C_ActivityValueReward  = 522   -- 领取活跃度奖励
+
+ClientCmdDef.C_LimitBagReq          = 526   -- 限时礼包购买
+
+ClientCmdDef.C_PlayerUpLevel        = 524   -- 人物转生升级
+ClientCmdDef.C_ReincarnatedExchange = 525   -- 人物转生兑换
+ClientCmdDef.C_ReBorn               = 527   -- 人物转生
+
+ClientCmdDef.CS_TRANSFER_REQ =  10043 -- 地图跳转
+ClientCmdDef.CS_CancelBloodDrainBufferReq            =   10805 -- 取消buffer
+
+--组队功能
+ClientCmdDef.C_HALL_INFO_REQ                = "PROTOID_CS_HALL_INFO_REQ_ENUM"               --组队大厅信息请求
+ClientCmdDef.C_APPLY_IN_TEAM_REQ            = "PROTOID_CS_APPLY_IN_TEAM_REQ_ENUM"           --申请加入队伍
+ClientCmdDef.C_ONE_KEY_APPLY_IN_TEAM_REQ    = "PROTOID_CS_ONE_KEY_APPLY_IN_TEAM_REQ_ENUM"   --一键申请加入队伍
+ClientCmdDef.C_MY_TEAM_INFO_REQ             = "PROTOID_CS_MY_TEAM_INFO_REQ_ENUM"            --我的队伍信息请求
+ClientCmdDef.C_SIGN_ALLOW_REQ               = "PROTOID_CS_SIGN_ALLOW_REQ_ENUM"              --是否允许被邀请标记
+ClientCmdDef.C_CREATE_TEAM_REQ              = "PROTOID_CS_CREATE_TEAM_REQ_ENUM"             --创建队伍
+ClientCmdDef.C_FAST_JOIN_IN_TEAM_REQ        = "PROTOID_CS_FAST_JOIN_IN_TEAM_REQ_ENUM"       --快速组队
+ClientCmdDef.C_APPLY_TEAM_LIST_REQ          = "PROTOID_CS_APPLY_TEAM_LIST_REQ_ENUM"         --组队申请列表
+ClientCmdDef.C_AGREE_IN_TEAM_REQ            = "PROTOID_CS_AGREE_IN_TEAM_REQ_ENUM"           --(申请列表)同意入队
+ClientCmdDef.C_REJECT_IN_TEAM_REQ           = "PROTOID_CS_REJECT_IN_TEAM_REQ_ENUM"          --(申请列表)拒绝入队
+ClientCmdDef.C_CLEAR_APPLY_TEAM_LIST_REQ    = "PROTOID_CS_CLEAR_APPLY_TEAM_LIST_REQ_ENUM"   --清空申请列表
+ClientCmdDef.C_KICK_TEAM_REQ                = "PROTOID_CS_KICK_TEAM_REQ_ENUM"               --踢出队伍
+ClientCmdDef.C_SET_TEAM_BASE_INFO_REQ       = "PROTOID_CS_SET_TEAM_BASE_INFO_REQ_ENUM"      --设置队伍信息
+ClientCmdDef.C_INVITE_TEAM_REQ              = "PROTOID_CS_INVITE_TEAM_REQ_ENUM"             --邀请组队
+ClientCmdDef.C_AGREE_TO_TEAM_REQ            = "PROTOID_CS_AGREE_TO_TEAM_REQ_ENUM"           --(邀请入队)同意入队
+ClientCmdDef.C_REJECT_TO_TEAM_REQ           = "PROTOID_CS_REJECT_TO_TEAM_REQ_ENUM"          --(邀请入队)拒绝入队
+ClientCmdDef.C_EXIT_TEAM_REQ                = "PROTOID_CS_EXIT_TEAM_REQ_ENUM"               --退出队伍
+ClientCmdDef.C_TRANSFER_CAPTAIN_REQ         = "PROTOID_CS_TRANSFER_CAPTAIN_REQ_ENUM"        --转让队长
+
+--聊天功能
+ClientCmdDef.C_CHAT_REQ                     = "PROTOID_CS_CHAT_REQ_ENUM"                      --聊天请求
+ClientCmdDef.C_CHAT_NUM_REQ                 = "PROTOID_CS_CHAT_NUM_REQ_ENUM"                  --聊天次数 请求
+
+--邮件功能
+ClientCmdDef.C_GET_MAIL_LIST_REQ            = "PROTOID_CS_GET_MAIL_LIST_REQ_ENUM"           --获取邮件列表
+ClientCmdDef.C_GET_MAIL_INFO_REQ            = "PROTOID_CS_GET_MAIL_INFO_REQ_ENUM"           --获取邮件信息
+ClientCmdDef.C_RECEIVE_MAIL_ITEM_REQ        = "PROTOID_CS_RECEIVE_MAIL_ITEM_REQ_ENUM"       --领取邮件物品
+ClientCmdDef.C_DELETE_MAIL_REQ              = "PROTOID_CS_DELETE_MAIL_REQ_ENUM"             --删除邮件
+ClientCmdDef.C_EMAIL_ONE_CLICK_READ_REQ     = "PROTOID_CS_EMAIL_ONE_CLICK_READ_REQ_ENUM"    --一键已读邮件
+
+--跳转地图点
+ClientCmdDef.C_JUMP_TO_TRANSFER_POINT_REQ   = "PROTOID_CS_JUMP_TO_TRANSFER_POINT_REQ_ENUM"  --跳转点
+ClientCmdDef.C_QUERY_TEAMMATE_POS_REQ       = "PROTOID_CS_QUERY_TEAMMATE_POS_REQ_ENUM"      --查询队友位置
+
+--好友
+ClientCmdDef.C_FRIEND_LLIST_REQ             = "PROTOID_CS_FRIEND_LLIST_REQ_ENUM"               -- 好友列表 req
+ClientCmdDef.C_FRIEND_APPLY_LIST_REQ        = "PROTOID_CS_FRIEND_APPLY_LIST_REQ_ENUM"          -- 好友 申请列表 req
+ClientCmdDef.C_FRIEND_APPLY_REQ             = "PROTOID_CS_FRIEND_APPLY_REQ_ENUM"               -- 好友 申请 req
+ClientCmdDef.C_FRIEND_ACCEPT_REQ            = "PROTOID_CS_FRIEND_ACCEPT_REQ_ENUM"              -- 好友 接受申请 req
+ClientCmdDef.C_FRIEND_DELETE_REQ            = "PROTOID_CS_FRIEND_DELETE_REQ_ENUM"              -- 删除 好友 req
+ClientCmdDef.C_FRIEND_ALLOW_ADD_SIGN_REQ    = "PROTOID_CS_FRIEND_ALLOW_ADD_SIGN_REQ_ENUM"      -- 好友 设置允许添加标记 req
+
+ClientCmdDef.C_AGREE_RELIVE_REQ             = "PROTOID_CS_AGREE_RELIVE_REQ_ENUM"            -- 复活请求
+ClientCmdDef.C_RECOVER_TENDENCIES_REQ       = "PROTOID_CS_RECOVER_TENDENCIES_REQ_ENUM"      -- 恢复善恶值
+ClientCmdDef.C_SET_RELIVE_POINT_REQ         = "PROTOID_CS_SET_RELIVE_POINT_REQ_ENUM"        -- 指定复活点
+ClientCmdDef.C_NPC_SIGN_CONTRACT_REQ        = "PROTOID_CS_NPC_SIGN_CONTRACT_REQ_ENUM"       -- 签约(魔族)
+
+-- 公会
+ClientCmdDef.C_CREATE_GUILD_REQ             = "PROTOID_CS_CREATE_GUILD_REQ_ENUM"               -- 公会创建 req
+ClientCmdDef.C_GUILD_LIST_REQ               = "PROTOID_CS_GUILD_LIST_REQ_ENUM"                 -- 公会列表 req
+ClientCmdDef.C_GUILD_DETAIL_REQ             = "PROTOID_CS_GUILD_DETAIL_REQ_ENUM"               -- 公会详情 req
+ClientCmdDef.C_GUILD_APPLY_REQ              = "PROTOID_CS_GUILD_APPLY_REQ_ENUM"                -- 公会申请 req
+ClientCmdDef.C_GUILD_APPLY_OPT_REQ          = "PROTOID_CS_GUILD_APPLY_OPT_REQ_ENUM"            -- 公会申请操作 req
+ClientCmdDef.C_GUILD_INVITE_SEND_REQ        = "PROTOID_CS_GUILD_INVITE_SEND_REQ_ENUM"          -- 公会邀请 req
+ClientCmdDef.C_GUILD_INVITE_OPT_REQ         = "PROTOID_CS_GUILD_INVITE_OPT_REQ_ENUM"           -- 公会邀请操作 req
+ClientCmdDef.C_GUILD_LEAVE_REQ              = "PROTOID_CS_GUILD_LEAVE_REQ_ENUM"                -- 离开公会 req
+ClientCmdDef.C_GUILD_KICK_REQ               = "PROTOID_CS_GUILD_KICK_REQ_ENUM"                 -- 踢人 req
+ClientCmdDef.C_GUILD_DELETE_REQ             = "PROTOID_CS_GUILD_DELETE_REQ_ENUM"               -- 解散公会 req
+ClientCmdDef.C_GUILD_SET_DUTY_REQ           = "PROTOID_CS_GUILD_SET_DUTY_REQ_ENUM"             -- 设置职位 req
+ClientCmdDef.C_GUILD_APPLY_LIST_REQ         = "PROTOID_CS_GUILD_APPLY_LIST_REQ_ENUM"           -- 公会申请列表 req
+ClientCmdDef.C_GUILD_SET_NOTICE_REQ         = "PROTOID_CS_GUILD_SET_NOTICE_REQ_ENUM"           -- 设置公告 req
+ClientCmdDef.C_CANCEL_GUILD_APPLY_REQ       = "PROTOID_CS_CANCEL_GUILD_APPLY_REQ_ENUM"         -- 取消公会申请 req
+
+ClientCmdDef.CS_SOUL_CHAIN_REQ              =   "PROTOID_CS_SOUL_CHAIN_REQ_ENUM";           -- 灵魂锁链传送
+ClientCmdDef.CS_SET_DENY_TRACE_REQ          =   "PROTOID_CS_SET_DENY_TRACE_REQ_ENUM";       -- 设置屏蔽追踪开关
+--任务功能
+ClientCmdDef.C_TASK_LIST_REQ                = "PROTOID_CS_TASK_LIST_REQ_ENUM"               --任务列表请求
+ClientCmdDef.C_TASK_LEADING_REQ             = "PROTOID_CS_TASK_LEADING_REQ_ENUM"            --接取任务请求
+ClientCmdDef.C_TASK_COMMIT_REQ              = "PROTOID_CS_TASK_COMMIT_REQ_ENUM"             --完成任务请求
+ClientCmdDef.C_TASK_RECEIVE_REWARD_REQ      = "PROTOID_CS_TASK_RECEIVE_REWARD_REQ_ENUM"     --领取任务奖励请求
+ClientCmdDef.C_TASK_GIVE_UP_REQ             = "PROTOID_CS_TASK_GIVE_UP_REQ_ENUM"            --放弃任务请求
+ClientCmdDef.C_TASK_JUMP_UP_REQ             = "PROTOID_CS_TASK_JUMP_UP_REQ_ENUM"            --任务跳转地图请求
+ClientCmdDef.C_RECEIVE_TASK_BOX_REWARD_REQ  = "PROTOID_CS_RECEIVE_TASK_BOX_REWARD_REQ_ENUM" --领取宝箱奖励请求
+ClientCmdDef.C_RECEIVE_ALL_TASK_REWARD_REQ  = "PROTOID_CS_RECEIVE_ALL_TASK_REWARD_REQ_ENUM" --一键领取任务奖励请求
+ClientCmdDef.C_TALK_NPC_REQ                 = "PROTOID_CS_TALK_NPC_REQ_ENUM"                --npc对话任务
+
+ClientCmdDef.C_HOLYBOOK_LIST_REQ            = "PROTOID_CS_HOLYBOOK_LIST_REQ_ENUM"               --圣书列表请求
+ClientCmdDef.C_HOLYBOOK_BORROW_REQ          = "PROTOID_CS_HOLYBOOK_BORROW_REQ_ENUM"             --借圣书
+--商城
+ClientCmdDef.C_SHOPPING_MALL_LIST_REQ       = "PROTOID_CS_SHOPPING_MALL_LIST_REQ_ENUM"      --商城列表请求
+ClientCmdDef.C_SHOPPING_MALL_BUY_REQ        = "PROTOID_CS_SHOPPING_MALL_BUY_REQ_ENUM"       --商城购买请求
+
+--宠物功能
+ClientCmdDef.C_PET_LIST_REQ                 = "PROTOID_CS_PET_LIST_REQ_ENUM"                --宠物列表请求
+ClientCmdDef.C_PET_DETAIL_REQ               = "PROTOID_CS_PET_DETAIL_REQ_ENUM"              --宠物详情请求
+ClientCmdDef.C_PET_CAPTURE_REQ              = "PROTOID_CS_PET_CAPTURE_REQ_ENUM"             --宠物捕捉请求
+ClientCmdDef.C_PET_FIGHT_REQ                = "PROTOID_CS_PET_FIGHT_REQ_ENUM"               --宠物出战或休息请求
+ClientCmdDef.C_PET_TAKEOUT_REQ              = "PROTOID_CS_PET_TAKEOUT_REQ_ENUM"             --宠物取出请求
+ClientCmdDef.C_PET_OPENDIG_REQ              = "PROTOID_CS_PET_OPENDIG_REQ_ENUM"             --宠物开启挖掘请求
+ClientCmdDef.C_PET_SIGN_REQ                 = "PROTOID_CS_PET_SIGN_REQ_ENUM"                --宠物签名请求
+ClientCmdDef.C_PET_RAISE_REQ                = "PROTOID_CS_PET_RAISE_REQ_ENUM"               --宠物驯养请求
+ClientCmdDef.C_PET_FEED_REQ                 = "PROTOID_CS_PET_FEED_REQ_ENUM"                --宠物喂食请求
+ClientCmdDef.C_PET_RELIVE_REQ               = "PROTOID_CS_PET_RELIVE_REQ_ENUM"              --宠物复活请求
+ClientCmdDef.C_PET_CAPSULE_REQ              = "PROTOID_CS_PET_CAPSULE_REQ_ENUM"             --宠物胶囊请求
+ClientCmdDef.C_PET_COMPOSE_REQ              = "PROTOID_CS_PET_COMPOSE_REQ_ENUM"             --宠物合成请求
+ClientCmdDef.C_PET_STORE_LIST_REQ           = "PROTOID_CS_PET_STORE_LIST_REQ_ENUM"          --宠物仓库请求
+ClientCmdDef.C_PET_STOREITEM_REQ            = "PROTOID_CS_PET_STOREITEM_REQ_ENUM"           --宠物道具存仓请求
+ClientCmdDef.C_PET_TAKEOUT_STOREITEM_REQ    = "PROTOID_CS_PET_TAKEOUT_STOREITEM_REQ_ENUM"   --宠物道具仓库取出请求
+ClientCmdDef.CS_PET_SKIN_LVUPREQ            = "PROTOID_CS_PET_SKIN_LVUP_REQ_ENUM"           --宠物皮肤升级请求
+ClientCmdDef.CS_PET_SKIN_WEAR_REQ           = "PROTOID_CS_PET_SKIN_WEAR_REQ_ENUM"           --宠物皮肤穿戴请求
+ClientCmdDef.CS_PET_SKIN_UNWEAR_REQ         = "PROTOID_CS_PET_SKIN_UNWEAR_REQ_ENUM"         --宠物皮肤卸下请求
+ClientCmdDef.CS_PET_USEITEMREQ              = "PROTOID_CS_PET_USEITEM_REQ_ENUM"             --宠物使用道具请求
+
+ClientCmdDef.C_NPC_VAMPIRE_LAIR_POS_CHECK_REQ = "PROTOID_CS_NPC_VAMPIRE_LAIR_POS_CHECK_REQ_ENUM" --指定点检测
+ClientCmdDef.C_NPC_VAMPIRE_LAIR_INFO_REQ      = "PROTOID_CS_NPC_VAMPIRE_LAIR_INFO_REQ_ENUM"      -- 副本状态请求
+ClientCmdDef.C_TRANSFER_BY_CONFIG_REQ         = "PROTOID_CS_TRANSFER_BY_CONFIG_REQ_ENUM"         -- 地图跳转
+
+
+ClientCmdDef.C_ALTAR_OF_BLOOD_COMMIT_REQ    = "PROTOID_CS_ALTAR_OF_BLOOD_COMMIT_REQ_ENUM"   --转职副本物品提交请求
+ClientCmdDef.C_ALTAR_OF_BLOOD_TRANSFER_REQ  = "PROTOID_CS_ALTAR_OF_BLOOD_TRANSFER_REQ_ENUM" --转职副本2传送
+ClientCmdDef.C_MIRROR_OF_ABYSS_TRANSFER_REQ = "PROTOID_CS_MIRROR_OF_ABYSS_TRANSFER_REQ_ENUM"--转职副本3传送
+ClientCmdDef.C_TRANSFER_STORE_REQ           = "PROTOID_CS_TRANSFER_STORE_REQ_ENUM"          --仓库传送
+
+-- Vip
+ClientCmdDef.C_VIP_REQ                      = "PROTOID_CS_VIP_REQ_ENUM"                     --vip
+ClientCmdDef.C_BUY_VIP_REQ                  = "PROTOID_CS_BUY_VIP_REQ_ENUM"                 --vip
+ClientCmdDef.C_RECEIVE_VIP_REWARD_REQ       = "PROTOID_CS_RECEIVE_VIP_REWARD_REQ_ENUM"      --vip 
+-- 拍卖行
+ClientCmdDef.C_TRANSACTION_LIST_REQ          = "PROTOID_CS_TRANSACTION_LIST_REQ_ENUM"       --
+ClientCmdDef.C_TRANSACTION_SIMPLE_LIST_REQ   = "PROTOID_CS_TRANSACTION_SIMPLE_LIST_REQ_ENUM"--
+ClientCmdDef.C_PUT_ON_SALE_REQ               = "PROTOID_CS_PUT_ON_SALE_REQ_ENUM"--
+ClientCmdDef.C_TAKE_DOWN_THE_SALE_REQ        = "PROTOID_CS_TAKE_DOWN_THE_SALE_REQ_ENUM"--
+ClientCmdDef.C_ONCE_AGAIN_PUT_ON_SALE_REQ    = "PROTOID_CS_ONCE_AGAIN_PUT_ON_SALE_REQ_ENUM"--
+ClientCmdDef.C_MARK_REQ                      = "PROTOID_CS_MARK_REQ_ENUM"--
+ClientCmdDef.C_BUY_TRANSACTION_REQ           = "PROTOID_CS_BUY_TRANSACTION_REQ_ENUM"--
+ClientCmdDef.C_TRADING_LOG_REQ               = "PROTOID_CS_TRADING_LOG_REQ_ENUM"--
+ClientCmdDef.C_BIDDING_REQ                   = "PROTOID_CS_BIDDING_REQ_ENUM"--
+
+--引导
+ClientCmdDef.C_GUIDE_STR_REQ                 = "PROTOID_CS_GUIDE_STR_REQ_ENUM"       --
+ClientCmdDef.C_SET_GUIDE_STR_REQ             = "PROTOID_CS_SET_GUIDE_STR_REQ_ENUM"--
+
+-- 排行榜
+ClientCmdDef.C_RANK_LIST_REQ                 = "PROTOID_CS_RANK_LIST_REQ_ENUM"
+ClientCmdDef.C_QUERY_PLAYER_REQ              = "PROTOID_CS_QUERY_PLAYER_REQ_ENUM"
+
+
+--成就
+ClientCmdDef.C_ACHIEVE_LIST_REQ              = "PROTOID_CS_ACHIEVE_LIST_REQ_ENUM"
+ClientCmdDef.C_ACHIEVE_REWARD_REQ            = "PROTOID_CS_ACHIEVE_REWARD_REQ_ENUM"
+
+ClientCmdDef.C_TRANSFORM_EQUIP_REQ           = "PROTOID_CS_TRANSFORM_EQUIP_REQ_ENUM"    -- 装备转换
+ClientCmdDef.C_ADVANCE_EQUIP_TRANSFORM_INFO_REQ   = "PROTOID_CS_ADVANCE_EQUIP_TRANSFORM_INFO_REQ_ENUM"    -- 装备转换数据请求
+
+ClientCmdDef.C_ACHIEVE_JUMP_MAP_REQ          = "PROTOID_CS_ACHIEVE_JUMP_MAP_REQ_ENUM"
+
+ClientCmdDef.CS_CREATE_RECHARGE_ORDER_REQ          = "PROTOID_CS_CREATE_RECHARGE_ORDER_REQ_ENUM" --创建订单
+
+-- vip自动售卖
+ClientCmdDef.C_VIP_AUTO_SELL_REQ             = "PROTOID_CS_VIP_AUTO_SELL_REQ_ENUM"
+
+-- 七日活动
+ClientCmdDef.C_QUERY_SEVEN_DAY_REQ           = "PROTOID_CS_QUERY_SEVEN_DAY_REQ_ENUM" --查询七日嘉年华数据
+ClientCmdDef.C_GET_SEVEN_DAY_REWARD_REQ      = "PROTOID_CS_GET_SEVEN_DAY_REWARD_REQ_ENUM" --获取奖励
+ClientCmdDef.C_GET_SEVEN_DAY_ALREWARD_REQ    = "PROTOID_CS_GET_SEVEN_DAY_ALREWARD_REQ_ENUM" --活跃度奖励
+ClientCmdDef.C_SEVEN_DAY_TASK_JUMP_MAP_REQ   = "PROTOID_CS_SEVEN_DAY_TASK_JUMP_MAP_REQ_ENUM" --任务跳地图
+
+ClientCmdDef.CS_GIFT_CODE_REQ                = "PROTOID_CS_GIFT_CODE_REQ_ENUM"
+
+ClientCmdDef.CS_QUERY_FIRST_RECHARGER_REQ    = "PROTOID_CS_QUERY_FIRST_RECHARGER_REQ_ENUM" --查询首冲信息
+ClientCmdDef.CS_FIRST_RECHARGE_GET_REWARD_REQ= "PROTOID_CS_FIRST_RECHARGE_GET_REWARD_REQ_ENUM"--领取奖励
+
+ClientCmdDef.CS_DAY_GIFT_REQ                = "PROTOID_CS_DAY_GIFT_REQ_ENUM" --查询每日特惠
+ClientCmdDef.CS_DAY_GIFT_REWARD_REQ         = "PROTOID_CS_DAY_GIFT_REWARD_REQ_ENUM"--领取每日特惠奖励
+
+-- 坐骑
+ClientCmdDef.C_QUERY_MOUNT_REQ                = "PROTOID_CS_QUERY_MOUNT_REQ_ENUM"  -- 查询坐骑
+ClientCmdDef.C_USE_MOUNT_REQ                  = "PROTOID_CS_USE_MOUNT_REQ_ENUM"   -- 使用坐骑
+ClientCmdDef.C_UPGRADE_MOUNT_REQ              = "PROTOID_CS_UPGRADE_MOUNT_REQ_ENUM" -- 升级/激活坐骑
+
+ClientCmdDef.C_QUERY_HALO_REQ                 = "PROTOID_CS_QUERY_HALO_REQ_ENUM"  -- 查询光环
+ClientCmdDef.C_USE_HALO_REQ                   = "PROTOID_CS_USE_HALO_REQ_ENUM"    -- 使用光环
+ClientCmdDef.C_UPGRADE_HALO_REQ               = "PROTOID_CS_UPGRADE_HALO_REQ_ENUM"--  升级/激活光环
+--首饰套养成
+ClientCmdDef.CS_EQUIP_MOTIVATE_REQ          = "PROTOID_CS_EQUIP_MOTIVATE_REQ_ENUM"--首饰套激发
+ClientCmdDef.CS_EQUIP_UPGRADE_REQ           = "PROTOID_CS_EQUIP_UPGRADE_REQ_ENUM" --首饰套精炼
+ClientCmdDef.CS_EQUIP_UPRANK_REQ            = "PROTOID_CS_EQUIP_UPRANK_REQ_ENUM" --装备升阶
+
+
+ClientCmdDef.CS_VERSION_REQ                 = "PROTOID_CS_VERSION_REQ_ENUM"-- 服务端当前版本
+
+ClientCmdDef.CS_SEARCH_MONSTER_REQ          = "PROTOID_CS_SEARCH_MONSTER_REQ_ENUM"-- 搜索怪物
+
+ClientCmdDef.CS_GET_CLEARABLE_ATTRIBUTE_POINT_REQ    =   "PROTOID_CS_GET_CLEARABLE_ATTRIBUTE_POINT_REQ_ENUM" -- 获取可洗出属性点
+
+--月卡
+ClientCmdDef.CS_MONTHCARD_REWARD_REQ        = "PROTOID_CS_MONTHCARD_REWARD_REQ_ENUM"-- 月卡领奖
+ClientCmdDef.CS_MONTHCARD_INIT_REQ          = "PROTOID_CS_MONTHCARD_INIT_REQ_ENUM"-- 月卡初始化
+
+--精力系统
+ClientCmdDef.CS_QUERY_ENERGY_REQ             = "PROTOID_CS_QUERY_ENERGY_REQ_ENUM" --查询精力数据
+ClientCmdDef.CS_GET_ENERGY_ITEMS_REQ         = "PROTOID_CS_GET_ENERGY_ITEMS_REQ_ENUM" --领取精力道具
+ClientCmdDef.CS_USE_ITEM_BY_INDEX_REQ        = "PROTOID_CS_USE_ITEM_BY_INDEX_REQ_ENUM" --使用物品
+ClientCmdDef.CS_WORLD_BOSS_LIST_REQ          = "PROTOID_CS_WORLD_BOSS_LIST_REQ_ENUM" --世界boss列表请求
+
+ClientCmdDef.CS_CONSUME_VOUCHER_REQ         = "PROTOID_CS_CONSUME_VOUCHER_REQ_ENUM" --使用代金券
+
+-- 触发礼包
+ClientCmdDef.CS_TRIGGER_GIFT_REQ             = "PROTOID_CS_TRIGGER_GIFT_REQ_ENUM" --信息请求
+
+ClientCmdDef.CS_GETDAILYRECHARGEREWARDREQ   = "PROTOID_CS_GET_DAILY_RECHARGE_REWARD_REQ_ENUM" --获取每日充值奖励
+ClientCmdDef.CS_QUERY_DAILY_RECHARGE_REQ    = "PROTOID_CS_QUERY_DAILY_RECHARGE_REQ_ENUM" --查询天天日充值信息
+
+--七日签到
+ClientCmdDef.CS_GET_SEVEN_DAY_SIGN_REWARD_REQ  = "PROTOID_CS_GET_SEVEN_DAY_SIGN_REWARD_REQ_ENUM"--领取签到奖励
+ClientCmdDef.CS_QUERY_SEVEN_DAY_SIGN_REQ       = "PROTOID_CS_QUERY_SEVEN_DAY_SIGN_REQ_ENUM"--查询签到
+--等级礼包
+ClientCmdDef.CS_LEVELGIFT_REWARD_REQ           = "PROTOID_CS_LEVELGIFT_REWARD_REQ_ENUM"--领取等级礼包
+ClientCmdDef.CS_LEVELGIFT_INIT_REQ             = "PROTOID_CS_LEVELGIFT_INIT_REQ_ENUM"--等级礼包查询
+
+return ClientCmdDef

@@ -1,0 +1,1446 @@
+--- 背包
+---@class UIWndInventory:UIWindowBase
+local UIWndInventory = class("UIWndInventory", lt.UIWindowBase)
+
+local SORT_CODE = {
+    ["0"]  = GReadText.KEY_INVENTORY_TIPS7,
+    ["-1"] = GReadText.KEY_INVENTORY_TIPS8,
+    ["-2"] = GReadText.KEY_INVENTORY_TIPS9
+}
+
+
+local FITER_TYPES = {
+    ALL = 1,
+    PROPS = 2,
+    EQUIPS = 3,
+}
+
+local INVENTORY_TIPS = {
+    STRING_TIPS_1 = GReadText.KEY_INVENTORY_TIPS5,
+    STRING_TIPS_2 = GReadText.KEY_INVENTORY_TIPS6,
+    STRING_TIPS_3 = GReadText.KEY_BAG_SORT_LIMIT_TIPS,
+    STRING_SORT = GReadText.KEY_BAG_SORT,
+}
+
+local ItemModule = lt.ItemModule
+local NtfManager = lt.NtfManager
+local Constant = lt.Constant
+local RaceType = Constant.RaceType
+local ExpandCNT = 5
+local GameModule = lt.GameModule
+local WndLockManager = lt.WndLockManager
+local InventoryGridManger = lt.InventoryGridManger
+local GuideModule = lt.GuideModule
+local StrengthenModule = lt.StrengthenModule
+local AutoFightManager = lt.AutoFightManager
+local CacheManager = lt.CacheManager
+local VipModule = lt.VipModule
+local RechargeModule = lt.RechargeModule
+local TimeCounterManager = lt.TimeCounterManager
+local SORT_TIME = 5
+
+
+UIWndInventory.ChangeSkinConf = {
+    ["Inventory"] = {
+        ["opacityBg"] = "bgOpacity",
+        ["bg"] = "bg",
+        ["bottom"] = "bg_yaodai_kuangdiqie",
+    },
+    ["CommonTL"] = {
+        -- ["btnHelp"] = {bg = "help"},
+        -- ["btnFind"] = {bg = "find"},
+        ["btnMoney"] = {bg = "bg_beibao_anniu01", bgup = "bg_beibao_anniu02", bgdis = "bg_beibao_anniu03"},
+        ["btnSort"] = {bg = "sort"},
+        ["btnSell"] = {bg = "sort", bgHui = "bg_yaodai_anniuzhihui", select = "bg_yaodai_xuanzhong"},
+        ["btnBelt"] = {bg = "sort", bgHui = "bg_yaodai_anniuzhihui", select = "bg_yaodai_xuanzhong"},
+        ["btnFiter1"] = {n0 = "tab_normal", n1 = "tab_select", n2 = "tab_select", n3 = "tab_select"},
+        ["btnFiter2"] ={n0 = "tab_normal", n1 = "tab_select", n2 = "tab_select", n3 = "tab_select"},
+        ["btnFiter3"] = {n0 = "tab_normal", n1 = "tab_select", n2 = "tab_select", n3 = "tab_select"},
+        ["closeButton1"] = {bg  = "bg_beibao_anniu01", bgup  = "bg_beibao_anniu02"},
+    }
+}
+
+UIWndInventory.ChangeSkinOffset = {
+   [RaceType.Slayer] = {
+        ["closeButton1"] = {x = -3, y = -7},
+        ["btnFiter1"] = {y = -35},
+        ["btnFiter2"] = {y = -35},
+        ["btnFiter3"] = {y = -35},
+        ["bg"] = {x = -2, y = -10},
+        ["bottom"] = {x = -2, y = -10},
+        ["beltCom"] = {y = -5},
+   },
+   [RaceType.Vampire] = {
+        ["closeButton1"] = {x = 3, y = 1},
+        ["btnFiter1"] = {x = -18, y = -16},
+        ["btnFiter2"] = {x = -18, y = -16},
+        ["btnFiter3"] = {x = -18, y = -16},
+        ["opacityBg"] = {y = 4},
+        ["bg"] = {y = 4},
+        ["bottom"] = {y = 4},
+        
+   },
+   [RaceType.Ousters] = {
+   }
+}
+
+
+function UIWndInventory:ctor(param)
+    UIWndInventory.super.ctor(self, param)
+    self._isOnInit = false
+    self._isBGOpacity = false 
+    self._fiterBtns = {}
+    self._targetAction = nil
+    self._expandsBtns = {}
+
+    self._tiledsTab = {}    --格子的行号分组
+    self._itemsTab = {}     --道具的分组
+    self._tiledMapSelectTab = {}    --格子的选中态分组
+
+    self._gridWidth = 0              -- 网格宽度
+    self._gridHeight = 0             -- 网格高度
+
+    -- 背包物品存储
+    self._bagItems = {}
+end
+
+function UIWndInventory:onInit()
+    self:registerComponent("UICompExpandBagItem", "UICompInventoryTiled", "UICompItem", "CompQuickBar2")
+    UIWndInventory.super.onInit(self, _GURL.Inventory)
+    self._isOnInit = true
+    self._remainTs = 0
+    self:initUI()
+    self:setBGOpacity()
+    self:initGridData()
+end
+
+function UIWndInventory:onClear()
+    self:clear()
+    if self._targetAction then
+        self._targetAction:kill()
+        self._targetAction = nil
+    end
+    if self._gridManger then
+        self._gridManger:clearTiledItem()
+        self._gridManger = nil
+    end
+    self:unregisterAllComponent()
+    if self._effectActorsArr then
+        for i = #self._effectActorsArr,1,-1 do
+            self._effectActorsArr[i]:onClear()
+            table.remove(self._effectActorsArr,i)
+        end
+        self._effectActorsArr = nil
+    end
+    self._bg = nil
+    self._btnOpacity = nil
+    self._btnFiterAll = nil
+    self._btnFiterItem = nil
+    self._btnFiterEquip = nil
+    self._btnSort = nil
+    self._btnSell = nil
+    self._touchLayer = nil
+    self._gridList = nil
+    self._controlTab = nil
+    self._gridPanel = nil
+    self._tiledPanel = nil
+    self._itemsPanel = nil
+    self._btnMoney = nil
+    self._btnBelt = nil
+    self._customCloseButton = nil
+    self._defaultExpand = nil
+
+    for i = 1, 3 do
+        self["_equipSprite"..i] = nil
+    end
+
+    for i = 1, 3 do
+        self["_contract"..i] = nil
+    end
+
+    for index, _ in pairs(self._tiledsTab) do
+        self._tiledsTab[index] = nil
+    end
+    self._tiledsTab = nil
+
+    for index, _ in pairs(self._bagItems) do
+        self._bagItems[index] = nil
+    end
+    self._bagItems = nil
+
+
+    for index, _ in ipairs(self._expandsBtns) do
+        self._expandsBtns[index] = nil
+    end
+    self._expandsBtns = nil
+
+    for index, _ in ipairs(self._itemsTab) do
+        self._itemsTab[index] = nil
+    end
+    self._itemsTab = nil
+
+    for index, _ in ipairs(self._itemDataTable) do
+        self._itemDataTable[index] = nil
+    end
+    self._itemDataTable = nil
+    
+    self._preNode = nil
+    self._btnSell = nil
+    self._gridManger = nil
+
+    UIWndInventory.super.onClear(self)
+end
+
+function UIWndInventory:onHide()
+    TimeCounterManager:stopTimeCounter(TimeCounterManager.TC.BAG_SORT_UPDATE)
+    self:removeUIListenerEvent()
+
+    UIWndInventory.super.onHide(self)
+end
+
+function UIWndInventory:onShown()
+    self:enableUpdateEvent(true)
+
+    self:addUIListenerEvent()
+
+    self._isMonthCard = RechargeModule:checkMonthCard()
+    self:loadExpand()--扩展背包以及Manger相关
+
+    local param = self:getParam().param or {}
+    local defaultId = param.tabId or 1
+    local defaultView, openViewParam= self._fiterBtns[defaultId], nil
+    self._preNode =  nil
+    self.openViewType = 0
+
+    self:setBGOpacity()
+    self:openFiterView(defaultView, openViewParam)
+
+    self:refreshMoney()
+
+    self:refreshBeltBtn()
+
+    self:refreshSellInfo(false)
+
+    local beltCom = self:getChild("beltCom")
+    beltCom:setType(Constant.BeltBarType.Inventory)
+    beltCom:insertObjectToFactory(self)
+
+    --交换转职装备先请求数据
+    if WndLockManager:getWndLockType() == Constant.WndLockType.Trade and WndLockManager:getTradeType() == Constant.FiterType.Exchange then
+        StrengthenModule:sendAdvanceEquipInfo()
+    end
+
+    TimeCounterManager:startTimeCounter(TimeCounterManager.TC.BAG_SORT_UPDATE, {callback = function()
+        if self._isStartCounterLimit then
+            if self._btnSort then
+                self._btnSort:setTitle(self._remainTs .. "s")
+                self._remainTs = self._remainTs - 1
+                if self._remainTs < 0 then
+                    self._isStartCounterLimit = false
+                    self._btnSort:setTitle(INVENTORY_TIPS.STRING_SORT)
+                end
+            end
+        end
+    end })
+
+end
+
+function UIWndInventory:onEnter()
+    UIWndInventory.super.onEnter(self)
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT, handler(self, self.refreshItemInfo), "UIWndInventory:refreshItemInfo")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_INVENTORY_AUTOSORT, handler(self, self.autoSortResponse), "UIWndInventory:autoSortResponse")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_INVENTORY_EXPAND_LIST, handler(self, self.loadExpand), "UIWndInventory:loadExpand")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_HERO_EVENT, handler(self, self.refreshHeroInfo), "UIWndInventory:refreshHeroInfo")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_HERO_EQUIP_EVENT, handler(self, self.refreshHeroEquip), "UIWndInventory:refreshHeroEquip")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_PUT_IN_BELT_EVENT, handler(self, self.putInBeltFunc), "UIWndInventory:putInBeltFunc")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CANCEL_TRADE_CHOOSE, handler(self, self.cancelTradeChoose), "UIWndInventory:cancelTradeChoose")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CANCEL_REPAIR_CHOOSE, handler(self, self.cancelRepairChoose), "UIWndInventory:cancelRepairChoose")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_COIN_NUMBER_CHANGE, handler(self, self.refreshMoney), "UIWndInventory:refreshMoney")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CANCEL_SELECT_STATE_ITEM, handler(self, self.cancelSelectItem), "UIWndInventory:cancelSelectItem")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CHANGE_SETTINGS, handler(self, self.changeSettings), "UIWndInventory:changeSettings")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_INVENTORY_TRADE_CHANGE, handler(self, self.tradeChange), "UIWndInventory:tradeChange")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_PROP_USE, handler(self, self.showSpine), "UIWndInventory:showSpine")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_VIP_STATE_CHANGE, handler(self, self.vipChange), "UIWndInventory:vipChange")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CLOSE_BELT_EVENT, handler(self, self.closeBelt), "UIWndInventory:closeBelt")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CLOSE_INVENTORY_MASK, handler(self, self.closeInventoryMask), "UIWndInventory:closeInventoryMask")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_MONEY_EVENT, handler(self, self.refreshGold),"UIWndInventory:refreshGold")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_AUTORECYCLE_CLOSE, handler(self, self.closeAutoRecycle),"UIWndInventory:closeAutoRecycle")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CHECK_GUIDE_EVENT, handler(self, self.checkGuide), "UIWndInventory:checkGuide")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_ITEM_CHANGE_EVENT, handler(self, self.updateItemFromBagEvent),"UIWndInventory:updateItemFromBagEvent")
+    -- 清除圣水制造（人祝）标识
+    -- ItemModule:clearCreateHolyPotion()
+    -- ItemModule:clearCreateHolyPotionDoctor()
+    self._effectActorsArr = {}--道具特效的数组
+end
+
+function UIWndInventory:onExit()
+    UIWndInventory.super.onExit(self)
+    NtfManager:removeNtfListenerByTag("UIWndInventory:refreshItemInfo")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:autoSortResponse")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:loadExpand")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:refreshHeroInfo")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:refreshHeroEquip")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:putInBeltFunc")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:cancelTradeChoose")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:cancelRepairChoose")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:cancelSelectItem")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:refreshMoney")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:changeSettings")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:tradeChange")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:showSpine")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:vipChange")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:closeBelt")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:closeInventoryMask")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:refreshGold")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:closeAutoRecycle")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:checkGuide")
+    NtfManager:removeNtfListenerByTag("UIWndInventory:updateItemFromBagEvent")
+    -- 重置腰带
+    self:refreshBeltInfo(false)
+    self:refreshBeltBtn(false)
+    self:refreshSellInfo(false)
+    WndLockManager:clearSelectItemInfo()
+    self:clear()
+end
+
+function UIWndInventory:initUI()
+    self._bg = self:getChild("bg")
+    self._btnOpacity = self:getChild("btnOpacity")
+    self._btnFiterAll = self:getChild("btnFiterAll")
+    self._btnFiterItem = self:getChild("btnFiterItem")
+    self._btnFiterEquip = self:getChild("btnFiterEquip")
+    self._btnSort = self:getChild("btnSort")
+    self._btnSell = self:getChild("btnSell")
+    self:refreshSellInfo(false)
+    self._touchLayer = self:getChild('touchLayer')
+    
+
+    self._touchLayer:setVisible(false)
+    self._gridList = self:getChild("gridList")
+    self._controlTab = self:getController("tabs")
+    self._gridList:setScrollItemToViewEnabled(false)
+    self._gridPanel = self._gridList:addItemFromPool()
+
+    self._tiledPanel = fgui.GComponent:create()
+    self._itemsPanel = fgui.GComponent:create()
+    self._gridPanel:addChild(self._tiledPanel)
+    self._gridPanel:addChild(self._itemsPanel)
+    -- 获取GList的ScrollPane
+    self._scrollPane = self._gridList:getScrollPane()
+    self._listSize = self._gridList:getSize()
+    -- 存钱按钮
+    self._btnMoney = self:getChild("btnMoney")
+
+    -- 腰带按钮
+    self._btnBelt = self:getChild("btnBelt")
+
+    -- 关闭按钮
+    self._customCloseButton = self:getChild("closeButton1")
+
+    -- 扩容背包
+    for index = 1, ExpandCNT do 
+        local expand = self:getChild("defaultExpand"..index)
+        expand:setEmpty()
+        expand:setFromWnd(self)
+        expand:insertObjectToFactory(self)
+        table.insert(self._expandsBtns, expand)
+    end
+
+    self._defaultExpand = self:getChild("defaultExpand")
+    self._defaultExpand:setExpandInfo({addH = 8}, true)
+
+    --初始化所有层级
+    local childs = self:getChildren()
+    for i = 1, #childs do
+        childs[i]:setSortingOrder(i)
+    end
+end 
+
+function UIWndInventory:showSpine(param)
+    local callback = param.param.callback
+    --添加特效
+    if not self._preNode then
+        return
+    end
+    if self._preNode.spine then
+        self._preNode.spine:setVisible(true)
+        self._preNode.spine:setAnimation(0, "JiYiShuiJing", false)
+    else
+        local spine = lt.SkeletonManager:createSkeletonEffectWithFile("CompactEffect01", "CompactEffect_skeleton")
+        self._preNode:displayObject():addChild(spine)
+        local size = self._preNode:getSize()
+        spine:setPosition(size.width*2.5, size.height/2)
+        spine:setAnimation(0, "JiYiShuiJing", false)
+        self._preNode.spine = spine
+    end
+    
+    if callback then
+        self._preNode.spine:setCallback(function(event)
+            if event.type == "complete" then
+                callback()
+                self._preNode.spine:setVisible(false)
+            end
+        end)
+    end
+end
+
+
+function UIWndInventory:setBGOpacity()
+    local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.BAG_OPACITY)
+    self._isBGOpacity = editTable.switch == 1
+    if self._isBGOpacity then
+        editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.WINDOW_OPACITY)
+        self._bg:setAlpha(editTable.value/100)
+    else
+        self._bg:setAlpha(1)
+    end
+end
+
+function UIWndInventory:clear()
+    self._preNode = nil
+    self._gridManger:clear()
+    self:clearAllSelectTiled()
+    self:resetTiledAndItem()
+end
+
+function UIWndInventory:openFiterView(sender, params)
+    if self.openViewType == sender.fiterType then 
+        return
+    end
+    self._preNode = nil
+    local wndLockType = WndLockManager:getWndLockType()
+
+    if wndLockType ~= Constant.WndLockType.Belt then
+        self._gridList:scrollToView(0)
+    end
+
+    self.openViewType = sender.fiterType
+    self._controlTab:setSelectedIndex(self.openViewType - 1);
+    local isShow = self.openViewType == FITER_TYPES.ALL
+    self._btnSort:setVisible(isShow)
+
+    self:setBagItemVisible()
+    self:refreshItemInfo()
+end
+
+function UIWndInventory:setBagItemVisible()
+    self:clearAllSelectTiled()
+end
+
+function UIWndInventory:refreshItemInfo(event)
+    self:clear()--清除所有物品
+    local itemArray = {}
+    if self.openViewType == FITER_TYPES.ALL then
+        itemArray = ItemModule:getPackageArray()
+    elseif self.openViewType == FITER_TYPES.EQUIPS then
+        itemArray = ItemModule:getFiterEquipArr()
+    elseif self.openViewType == FITER_TYPES.PROPS then
+        itemArray = ItemModule:getFiterPropArr()
+    end
+    
+    if not itemArray then return end
+    yflog:Info('背包物品数量:%s',#itemArray)
+
+    self:createItemDataTable(itemArray)
+    self:onGildScrollChange()
+    self:refreshContract()
+    self:refreshUseNum()
+    
+    -- ItemModule:clearCreateHolyPotion()
+    -- ItemModule:clearCreateHolyPotionDoctor()
+
+    --透明度
+    local childs = self._tiledPanel:getChildren()
+    local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.WINDOW_OPACITY)
+    for i = 1, #childs do
+        childs[i]:setBGVisible(not self._isBGOpacity)
+        childs[i]:getChild("bgHide"):setAlpha(editTable.value/100)
+        childs[i]:getChild("selectHide"):setAlpha(editTable.value/100)
+    end
+
+    local expand = self:getChild("defaultExpand")
+    expand:setAlpha()
+    for index = 1, ExpandCNT do
+        expand = self:getChild("defaultExpand"..index)
+        expand:setAlpha()
+    end
+end
+
+function UIWndInventory:autoSortResponse(params)
+    local ret = params.param.ret
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = SORT_CODE[tostring(ret)]})
+end
+
+------------------------- grid -------------------------------
+function UIWndInventory:initGridData()
+    self._gridManger = InventoryGridManger.new(Constant.INVENTORY_DEFUAL_SIZE.WIDTH, Constant.INVENTORY_DEFUAL_SIZE.HEIGHT + ItemModule:getExpandGridH())
+    self._gridPanel:setSize(self._gridManger:getGridSize())
+    self._gridWidth, self._gridHeight = self._gridManger:getGridWH()
+end
+
+function UIWndInventory:updateGridData()
+    self._gridManger:updateGridData(Constant.INVENTORY_DEFUAL_SIZE.WIDTH, Constant.INVENTORY_DEFUAL_SIZE.HEIGHT + ItemModule:getExpandGridH())
+    self._gridPanel:setSize(self._gridManger:getGridSize())
+    self._gridWidth, self._gridHeight = self._gridManger:getGridWH()
+end
+
+------------------------- items -------------------------------
+
+function UIWndInventory:createItemUI(itemInfo)
+    local item = fgui.UIPackage:createObject("Item", "Item");
+    -- item.equipData = itemInfo
+    item:insertObjectToFactory(self)
+    item:setPivot(0.5,0.5, true)
+    item:setFromWnd(self)
+    item:setSortingOrder(10)
+    self._itemsPanel:addChild(item)
+    return item
+end
+
+function UIWndInventory:clearAllSelectTiled()
+    self._tiledMapSelectTab = {}
+end
+-------------------------  tiled  ---------------------------------------
+------------------------------- package expand --------------------------
+function UIWndInventory:loadExpand(params)
+    if not self._gridManger then
+        self:initGridData()
+    else
+        self:updateGridData()
+    end
+    self:refreshExpandData(params)
+    self:refreshUseNum()
+end
+
+function UIWndInventory:refreshReplaceUI()
+    self._touchLayer:setVisible(true)
+    self._touchLayer:setSortingOrder(99)
+end
+
+function UIWndInventory:checkCanReplace(addH, replaceH)
+    local canReplace = self._gridManger:checkExpandGrid(addH, replaceH, self._totalGrid)
+    return canReplace
+end
+
+function UIWndInventory:refreshExpandData()
+    local expandArr = ItemModule:getExpandArray()
+    local oldTotalGrid = clone(self._totalGrid) or 0
+    --计算总高度
+    self._totalGrid = Constant.INVENTORY_DEFUAL_SIZE.HEIGHT
+
+    for index, btn in ipairs(self._expandsBtns) do
+        local expandItemInfo = expandArr[tonumber(index)]
+        if expandItemInfo then
+            local config = expandItemInfo:getItemMeta()
+            local addH = config:getEffectParam()[1][2]
+            self._totalGrid = self._totalGrid + addH
+            btn:setExpandInfo({addH = addH, index = index, expandItemInfo = expandItemInfo})
+        else
+            btn:setEmpty()
+        end
+    end
+    
+    if oldTotalGrid > self._totalGrid then
+        local oldY = self._scrollPane:getPosY()
+        local panelHeight = self._gridPanel:getSize().height
+        if oldY + self._listSize.height > panelHeight then
+            self._scrollPane:setPosY(panelHeight - self._listSize.height)
+        end
+        self:onGildScrollChange()
+    end
+    oldTotalGrid = nil
+end
+
+function UIWndInventory:refreshUseNum()
+    local used = self._gridManger:getUsedNum(1, 8)
+    local total = 64
+
+    local base = 8
+    local expandArr = ItemModule:getExpandArray()
+    for _, info in pairs(expandArr) do
+        local addH = info:getItemMeta():getEffectParam()[1][2]
+        local startPos = base + 1
+        local endPos = startPos + addH - 1
+        used = used + self._gridManger:getUsedNum(startPos, endPos)
+        total  = total + 8 * addH
+        base = endPos
+    end
+    self._defaultExpand:setNumText(used, total)
+end
+
+--创建当前页数据，初始背包使用量
+function UIWndInventory:createItemDataTable(itemArray)
+    self._itemDataTable = {}
+    for _, itemInfo in ipairs(itemArray) do
+        self:addItemDataForTable(itemInfo)
+    end
+end
+
+--数据中添加一个道具刷新背包使用情况
+function UIWndInventory:addItemDataForTable(iteminfo)
+    local gridSizeIndex = iteminfo:getItemMeta():getItemSize()
+    local size = lt.Constant.ITEMSIZE[gridSizeIndex or 1]
+    local gridWidth = size.width
+    local gridHeight = size.height
+    local itemX,itemY = 0,0
+    if self.openViewType == FITER_TYPES.ALL then
+        itemX = iteminfo:getItemX() + 1
+        itemY = iteminfo:getItemY() + 1
+    else
+        itemX,itemY = iteminfo:getFiterXY()
+    end
+    if not itemY then
+        return
+    end
+    for i = itemY, itemY + gridHeight - 1 do
+        for j = itemX, itemX + gridWidth - 1 do
+            self._gridManger:addItemToGrid(true, i, j)
+            self:showTiledSelect(j, i)
+        end
+    end
+    self._itemDataTable[iteminfo:getObjId()] = iteminfo
+end
+--数据中删除一个道具刷新背包使用情况
+function UIWndInventory:removeItemDataForTable(objId)
+    if not objId then
+        return
+    end
+    if not self._itemDataTable[objId] then
+        return
+    end
+    local itemObj = self._itemDataTable[objId]
+    local sizeIndex = itemObj:getItemMeta():getItemSize()
+    local gridSize = Constant.ITEMSIZE[sizeIndex]
+    local itemX,itemY = 0,0
+    if self.openViewType == FITER_TYPES.ALL then
+        itemX = itemObj:getItemX() + 1
+        itemY = itemObj:getItemY() + 1
+    else
+        itemX,itemY = itemObj:getFiterXY()
+    end
+    for i = itemY, itemY + gridSize.height - 1 do
+        for j = itemX, itemX + gridSize.width - 1 do
+            self._gridManger:removeItemFromGrid(i, j)
+            if not self._gridManger:getItemGird(i,j) then
+                self:hideTiledSelect(j, i) --刷新选中态的记录和表现
+            end
+        end
+    end
+    self._itemDataTable[objId] = nil
+end
+------------------------------- event listener--------------------------
+
+function UIWndInventory:addUIListenerEvent()
+    self._touchLayer:addClickListener(handler(self, self.replaceTouchClick));
+    self._btnSort:addClickListener(handler(self, self.btnSortClick));
+    self._btnSell:addClickListener(handler(self, self.btnSellClick))
+    self._btnBelt:addClickListener(handler(self, self.btnBeltClick))
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        local obj = self:getChild("btnFiter"..fiterType);
+        obj:addClickListener(handler(self, self.openFiterBtnClick));
+        obj.fiterType = fiterType
+        self._fiterBtns[fiterType] = obj
+    end
+    self._btnMoney:addClickListener(handler(self, self.btnMoneyClik))
+    self._customCloseButton:addClickListener(handler(self, self.customCloseBtnClick))
+    -- 监听滚动事件
+    self._gridList:addEventListener(fgui.UIEventType.Scroll,handler(self, self.onGildScrollChange))
+    -- self:onUpdate()
+end
+
+function UIWndInventory:removeUIListenerEvent()
+    self._gridList:removeEventListener(fgui.UIEventType.Scroll)
+    self._touchLayer:removeClickListener()
+    self._btnSort:removeClickListener()
+    self._btnSell:removeClickListener()
+    self._btnBelt:removeClickListener()
+    for _, fiterBtn in ipairs(self._fiterBtns) do
+        fiterBtn:removeClickListener()
+    end
+    self._btnMoney:removeClickListener()
+    self._customCloseButton:removeClickListener()
+end
+
+function UIWndInventory:openFiterBtnClick(context)
+    local sender = context:getSender()
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        if fiterType == sender.fiterType then
+            self._fiterBtns[fiterType]:setSortingOrder(14)
+        else
+            self._fiterBtns[fiterType]:setSortingOrder(12)
+        end
+    end
+    self:openFiterView(sender)
+end
+
+function UIWndInventory:btnSortClick()
+    if self._remainTs > 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = string.format(INVENTORY_TIPS.STRING_TIPS_3, self._remainTs)})
+        return 
+    end
+    self._isStartCounterLimit = true
+    self._remainTs = SORT_TIME
+    lt.SocketApi:sendToGs(lt.ClientCmdDef.AUTOTIDY_ITEM)
+end
+
+function UIWndInventory:btnMoneyClik()
+    if WndLockManager:getWndLockType() ~= Constant.WndLockType.WareHouse then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = INVENTORY_TIPS.STRING_TIPS_2})
+        return
+    end
+    local heroData = GameModule:getHeroData()
+    local jinBi = heroData:getJinBi()
+    if jinBi <= 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_INVENTORY_TIPS18})
+        return
+    end
+    local bagMaxCoin = CacheManager:getValueById(Constant.Variable.StoreMaxCoin)
+    local maxNum = math.min(jinBi, bagMaxCoin - heroData:getJinBiInStorage())
+    local minNum = jinBi > 0 and 1 or 0
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_NUM, 
+    {
+        content = INVENTORY_TIPS.STRING_TIPS_1,
+        confirmCallback = function(curNum)
+            ItemModule:sendToDepot(0, 0, curNum or 0)
+        end,
+        param = {
+            maxNum = maxNum,
+            minNum = minNum,
+        }
+    })
+end
+
+function UIWndInventory:customCloseBtnClick()
+    local wndLockType = WndLockManager:getWndLockType()
+    if wndLockType == Constant.WndLockType.WareHouse or wndLockType == Constant.WndLockType.AutoRecycle then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndLock", close = true})
+    elseif wndLockType == Constant.WndLockType.Belt then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndLock", close = true})
+    elseif wndLockType == Constant.WndLockType.Trade or wndLockType == Constant.WndLockType.Repair then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndLock", close = true})
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndTalkNpc", close = true})
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndInventory", close = true})
+    end
+end
+
+function UIWndInventory:replaceTouchClick()
+    local expandArr = ItemModule:getExpandArray()
+    for index = 1, 5 do 
+        local info = expandArr[index]
+        local expand = self:getChild("defaultExpand"..index)
+        if info then
+            expand:hideReplaceUI()
+            expand:setSortingOrder(21)
+            self._touchLayer:setVisible(false)
+            self._touchLayer:setSortingOrder(1)
+        end
+    end
+
+    --关闭腰带
+    self._touchLayer:setVisible(false)
+    self._touchLayer:setSortingOrder(1)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_CLOSE_BELT_EVENT)
+end
+
+
+function UIWndInventory:refreshGold()
+    self:refreshMoney()
+end
+
+
+function UIWndInventory:btnBeltClick()
+    local pocketCount = ItemModule:getPocketCount()
+    local race = GameModule:getHeroRace()
+    --  未穿戴腰带
+    if pocketCount <= 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = string.format(GReadText.KEY_BELT_TIPS1, GReadText["KEY_BELT_"..race])})
+        return
+    end
+
+    -- 其它锁定窗口禁用
+    local wndLockType = WndLockManager:getWndLockType()
+    if wndLockType and (wndLockType ~= Constant.WndLockType.Belt) then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = string.format(GReadText.KEY_BELT_TIPS2, GReadText["KEY_BELT_"..race])})
+        return
+    end
+
+    -- 如果是腰带锁定窗口点击取消
+    if wndLockType and wndLockType == Constant.WndLockType.Belt then
+        -- 关闭lock状态
+        WndLockManager:setCloseIgnore({["UIWndInventory"] = true})
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndLock", close = true})
+
+        WndLockManager:clearSelectItemInfo()
+        self:refreshBeltInfo(false)
+        return
+    end
+
+    -- 文本提示
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_BELT_TIPS6})
+    
+    -- 打开腰带锁定窗口
+    self:showBelt()
+end
+
+function UIWndInventory:closeAutoRecycle()
+    -- 其它锁定窗口禁用
+    local wndLockType = WndLockManager:getWndLockType()
+    -- 如果是腰带锁定窗口点击取消
+    if wndLockType and (wndLockType == Constant.WndLockType.AutoRecycle) then
+        -- 关闭lock状态
+        WndLockManager:setCloseIgnore({["UIWndInventory"] = true})
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndLock", close = true})
+        self:refreshSellInfo(false)
+        if self._localZOrder then
+            self:setLocalZOrder(self._localZOrder)
+        end
+        return
+    end
+end
+
+function UIWndInventory:btnSellClick()
+    local mobileRecycle = VipModule:getVipMobileRecycle()
+    if mobileRecycle ~= 1 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_AUTO_RECYCLE_TIPS1 })--先开启Vip
+        return
+    end
+    -- 其它锁定窗口禁用
+    local wndLockType = WndLockManager:getWndLockType()
+    if wndLockType and (wndLockType == Constant.WndLockType.Belt) then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_VIP_TIPS1})
+        return
+    end
+
+    -- 其它锁定窗口禁用
+    local wndLockType = WndLockManager:getWndLockType()
+    if wndLockType and (wndLockType ~= Constant.WndLockType.AutoRecycle) then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_VIP_TIPS2})
+        return
+    end
+
+    -- 如果是腰带锁定窗口点击取消
+    if wndLockType and (wndLockType == Constant.WndLockType.AutoRecycle) then
+        -- 关闭lock状态
+        WndLockManager:setCloseIgnore({["UIWndInventory"] = true})
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndLock", close = true})
+        self:refreshSellInfo(false)
+        if self._localZOrder then
+            self:setLocalZOrder(self._localZOrder)
+        end
+        return
+    end
+    lt.NpcModule:setNpcId(nil)
+    self._localZOrder = self:getLocalZOrder()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {
+        class = "UIWndLock",
+        reopen = true,
+        param = {
+            [1] = { class = "UIWndInventory", reopen = true },
+            WndLockType = Constant.WndLockType.AutoRecycle,
+            [2] = {
+                class = "UIWndAutoRecycle",
+                param = {
+                    tabId = 2, },
+                reopen = true,
+            },   
+        }
+    })
+    self:refreshSellInfo(true)
+end
+
+------------------------------------------------------------------------------------------------------
+-- 功能性函数
+function UIWndInventory:refreshHeroInfo()
+    self:refreshMoney()
+end
+
+function UIWndInventory:refreshHeroEquip()
+    self:refreshBeltBtn()
+    self:refreshContract()
+end
+
+function UIWndInventory:refreshMoney()
+    local heroData = GameModule:getHeroData()
+    local jinBi = heroData:getJinBi()
+    self:getChild("textMoney"):setText(jinBi)
+    local btnMoney = self:getChild("btnMoney")
+    btnMoney:getChild("bgdis"):setVisible(WndLockManager:getWndLockType() ~= Constant.WndLockType.WareHouse or jinBi <= 0)
+    btnMoney:getChild("icondis"):setVisible(WndLockManager:getWndLockType() ~= Constant.WndLockType.WareHouse or jinBi <= 0)
+end
+
+-- 刷新腰带按钮状态
+function UIWndInventory:refreshBeltBtn(isShow)
+    local race = GameModule:getHeroRace()
+    self._btnBelt:setText(GReadText["KEY_BELT_"..race])
+    local pocketCount = ItemModule:getPocketCount()
+    local btnBg = self._btnBelt:getChild("bg")
+    local btnBgHui = self._btnBelt:getChild("bgHui")
+    local lock  = self._btnBelt:getChild("lock")
+    local select = self._btnBelt:getChild("select")
+    -- 是否有腰带位置
+    -- 锁标识
+    if pocketCount > 0 then
+        btnBg:setVisible(true)
+        btnBgHui:setVisible(false)
+        lock:setVisible(false)
+
+        -- 其它锁定窗口禁用
+        local wndLockType = WndLockManager:getWndLockType()
+        if wndLockType and (wndLockType ~= Constant.WndLockType.Belt) then
+            btnBg:setVisible(false)
+            btnBgHui:setVisible(true)
+            return
+        end
+
+    else
+        btnBg:setVisible(false)
+        btnBgHui:setVisible(true)
+        lock:setVisible(true)
+    end
+    if isShow then
+        select:setVisible(true)
+    else
+        select:setVisible(false)
+    end
+end
+
+function UIWndInventory:showBelt()
+    local wndLockType = WndLockManager:getWndLockType()
+    if wndLockType then
+        yflog:Info("wndLockType %s",wndLockType)
+        return
+    end
+    self:refreshBeltInfo(true)
+    local selfSize = self:getSize()
+    local selfPosX,selfPosY = self:getPosition()
+    local offsetY = display.height - selfSize.height - selfPosY - 50
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {
+        class = "UIWndLock",
+        param = {
+            [1] = { class = "UIWndInventory", location="unchanged", offset = {x = 0, y = offsetY < 0 and offsetY or 0}, reopen = true},
+            WndLockType = Constant.WndLockType.Belt 
+        }
+    })
+end
+
+-- 放入背包操作
+function UIWndInventory:putInBeltFunc(target)
+    local param = target.param
+    local itemType = param.itemInfo:getItemType()
+    -- 魔族水晶石只能放在制定地方
+    if itemType == Constant.ItemType.ITEM_TYPE_EQUIP and ItemModule:getPocketCount() < 5 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_BELT_TIPS5})
+        return
+    end
+    -- 文本提示
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_BELT_TIPS3})
+    if param and param.itemInfo then
+        WndLockManager:setSelectItemInfo(param.itemInfo)
+    end
+    self:showBelt()
+    local beltCom = self:getChild("beltCom")
+    beltCom:refreshCanSelect()
+end
+
+-- 刷新腰带显示状态
+function UIWndInventory:refreshBeltInfo(isShow)
+    local beltCom = self:getChild("beltCom")
+    beltCom:refreshBeltInfo()
+    beltCom:refreshCanSelect()
+    
+    if not beltCom.pos then
+        local pos = beltCom:getPosition()
+        beltCom.pos = pos
+    end
+    local pos = beltCom.pos
+    if self._targetAction then
+        self._targetAction:kill()
+        self._targetAction = nil
+    end
+    if isShow then
+        beltCom:setVisible(isShow)
+        self._targetAction = fgui.GTween:to(cc.p(pos.x , pos.y), cc.p(pos.x , pos.y+75), 0.2):setTarget(beltCom, fgui.TweenPropType.Position):onComplete(function()
+            self._targetAction = nil
+            beltCom:setVisible(isShow)
+            self:refreshBeltBtn(isShow)
+            beltCom:setSortingOrder(100)
+            self._touchLayer:setVisible(true)
+            self._touchLayer:setSortingOrder(99)
+        end)
+    else
+        beltCom:setSortingOrder(3)
+        self._touchLayer:setVisible(false)
+        self._touchLayer:setSortingOrder(1)
+        self._targetAction = fgui.GTween:to(cc.p(pos.x , pos.y+75), cc.p(pos.x , pos.y), 0.2):setTarget(beltCom, fgui.TweenPropType.Position):onComplete(function()
+            if self._targetAction then
+                self._targetAction = nil
+                beltCom:setVisible(isShow)
+                self:refreshBeltBtn(isShow)
+            end
+        end)
+    end
+end
+
+--取消出售选中
+function UIWndInventory:cancelTradeChoose()
+    if WndLockManager:getWndLockType() == Constant.WndLockType.Trade or 
+        WndLockManager:getWndLockType() == Constant.WndLockType.AutoRecycle 
+        then
+        local oldTarget = WndLockManager:getTradeItemInfo()
+        if oldTarget and oldTarget.setItemSelect then
+            oldTarget:setItemSelect(false)
+            WndLockManager:setTradeItemInfo(nil)
+        end
+    end
+end
+
+--取消维修选中
+function UIWndInventory:cancelRepairChoose()
+    if WndLockManager:getWndLockType() == Constant.WndLockType.Repair then
+        local oldTarget = WndLockManager:getRepairItemInfo()
+        if oldTarget and oldTarget.setItemSelect then
+            oldTarget:setItemSelect(false)
+        end
+        WndLockManager:setRepairItemInfo(nil)
+    end
+end
+
+function UIWndInventory:cancelSelectItem()
+    if self._preNode then
+        self._preNode:loadShader(false)
+        self._preNode = nil 
+    end
+end
+
+function UIWndInventory:setPreSelectNode(node)
+    if not self._preNode then
+        self._preNode = node
+    else
+        self._preNode:loadShader(false)
+        self._preNode = node
+    end
+end
+
+--刷新契约（客户端自己放契约位置）
+function UIWndInventory:refreshContract()
+    local width, height = self._gridManger:getGridWH()
+    local curRace = GameModule:getHeroRace()
+    local equipPos = Constant[Constant.RaceToJobPanel[curRace] .. "EquipPos"] or {}
+    for i = 1, 3 do
+        local equipData = self:getEquipItemInfoByPos(equipPos["Contract"..i])
+        if equipData then
+            if self["_contract"..i] == nil then
+                self["_contract"..i] = self:createItemUI(equipData)
+            end
+            self["_contract"..i]:setItemInfo(equipData, self.openViewType, true)
+            self._gridManger:addItemToGrid(self["_contract"..i], i, width)
+            self:showTiledSelect(width, i)
+            local cellPos = self._gridManger:getCenterXY(self["_contract"..i], width, i)
+            self["_contract"..i]:setPosition(cellPos.x, cellPos.y)
+        else
+            if self["_equipSprite"..i] == nil then
+                self["_equipSprite"..i] = display.newSprite("icon/itemTL/bg_beibao_ttjy.png")
+                self._itemsPanel:displayObject():addChild(self["_equipSprite"..i])
+                local cellPos = self._gridManger:getCenterXY2(width, i, 1, 1)
+                self["_equipSprite"..i]:setPosition(cellPos.x, -cellPos.y)
+            end
+        end
+        if self["_equipSprite"..i] then
+            self["_equipSprite"..i]:setVisible(equipData == nil)
+        end
+        if self["_contract"..i] then
+            self["_contract"..i]:setVisible(equipData ~= nil)
+        end
+    end
+end
+
+function UIWndInventory:getEquipItemInfoByPos(pos)
+    local equipData = ItemModule:getEquipArray()
+    for k,v in ipairs(equipData) do
+        local equipPos = v:getPos()
+        if pos == equipPos then
+            return v
+        end
+    end
+end
+
+--设置改变
+function UIWndInventory:changeSettings(params)
+    local param = params.param
+    if param.index == Constant.SETTINGS_TYPES.BAG_OPACITY or param.index == Constant.SETTINGS_TYPES.WINDOW_OPACITY then
+        local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.BAG_OPACITY)
+        self._isBGOpacity = editTable.switch == 1
+        if self._isBGOpacity then
+            editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.WINDOW_OPACITY)
+            self._bg:setAlpha(editTable.value/100)
+        else
+            self._bg:setAlpha(1)
+        end
+        local childs = self._tiledPanel:getChildren()
+        editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.WINDOW_OPACITY)
+        for i = 1, #childs do
+            childs[i]:setBGVisible(not self._isBGOpacity)
+            childs[i]:getChild("bgHide"):setAlpha(self._isBGOpacity and editTable.value/100 or 1)
+            childs[i]:getChild("selectHide"):setAlpha(self._isBGOpacity and editTable.value/100 or 1)
+        end
+        local expand = self:getChild("defaultExpand")
+        expand:setAlpha(self._isBGOpacity and editTable.value/100 or 1)
+        for index = 1, ExpandCNT do
+            expand = self:getChild("defaultExpand"..index)
+            expand:setAlpha(self._isBGOpacity and editTable.value/100 or 1)
+        end
+    end
+end
+
+function UIWndInventory:refreshSellInfo(show)
+    local btnBg = self._btnSell:getChild("bg")
+    local btnBgHui = self._btnSell:getChild("bgHui")
+    local lock  = self._btnSell:getChild("lock")
+    local select = self._btnSell:getChild("select")
+    select:setVisible(show)
+    -- 其它锁定窗口禁用
+    local wndLockType = WndLockManager:getWndLockType()
+    if wndLockType and (wndLockType ~= Constant.WndLockType.AutoRecycle) then
+        btnBgHui:setVisible(true)
+        return
+    end
+
+    local mobileRecycle = VipModule:getVipMobileRecycle()
+    local showVip = true
+    if mobileRecycle == 1 then
+        showVip = false
+    end
+
+    btnBgHui:setVisible(showVip)
+    lock:setVisible(showVip)
+end
+
+function UIWndInventory:tradeChange()
+    self:refreshSellInfo(false)
+end
+
+function UIWndInventory:vipChange()
+    self:refreshSellInfo(false)
+end
+
+function UIWndInventory:closeBelt()
+    local wndLockType = WndLockManager:getWndLockType()
+    if wndLockType and (wndLockType == Constant.WndLockType.Belt) then
+        -- 关闭lock状态
+        WndLockManager:setCloseIgnore({["UIWndInventory"] = true})
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndLock", close = true})
+        WndLockManager:clearSelectItemInfo()
+        self:refreshBeltInfo(false)
+    end
+end
+
+function UIWndInventory:closeInventoryMask()
+    self._touchLayer:setVisible(false)
+end
+
+------------------------------------ 引导 ------------------------------------
+function UIWndInventory:checkGuide()
+    local layerManager = display.getRunningScene():getLayerManager()
+
+    --有tips不展示引导
+    if layerManager:checkHasTips() then return end
+    
+    local wndLockType = WndLockManager:getWndLockType()
+    --背包界面
+    if wndLockType == nil then
+        --了解宠物引导
+        if GuideModule:checkCanGuide(Constant.GUIDE_ID.PETFIGHT4) then
+            local childs = self._itemsPanel:getChildren()
+            for i = 1, #childs do
+                if childs[i]:getItemInfo():getItemId() == 901001 then
+                    self:showTargetGuide(Constant.GUIDE_ID.PETFIGHT4, childs[i])
+                    return
+                end
+            end
+            --完成了解宠物的引导
+            GuideModule:directEndGuide({Constant.GUIDE_ID.PETFIGHT4, Constant.GUIDE_ID.PETFIGHT5})
+        end
+    end
+end
+
+function UIWndInventory:showTargetGuide(guideId, child, list)
+    local poslist = {} 
+    if list and #list > 1 then
+        for i = 2, #list do
+            local x = list[i]:getPosition().x
+            local y = self._gridPanel:getSize().height - list[i]:getPosition().y
+            local pos = self._gridPanel:displayObject():convertToWorldSpace(cc.p(x, y))
+            pos = cc.p(pos.x - list[i]:getSize().width/2, display.height - pos.y - list[i]:getSize().height/2)
+            table.insert(poslist, pos)
+        end
+    end
+    
+    local x = child:getPosition().x
+    local y = self._gridPanel:getSize().height - child:getPosition().y
+    local pos = self._gridPanel:displayObject():convertToWorldSpace(cc.p(x, y))
+    GuideModule:triggerGuide(guideId, child, cc.p(pos.x - child:getSize().width/2, display.height - pos.y - child:getSize().height/2), function()
+        local sender = child
+        if not self._preNode then
+            self._preNode = sender
+        else
+            self._preNode:loadShader(false)
+            self._preNode = sender
+        end
+        local itemInfo = child:getItemInfo()
+        sender:loadShader(true)
+        itemInfo:setNew(false)
+        child:setNew()
+        ItemModule:showTips(itemInfo)
+    end, poslist)
+end
+------------------------------------ 引导 ------------------------------------
+
+--道具属性变更
+function UIWndInventory:updateItemFromBagEvent(event)
+    local param = event.param
+    local typePos = param.typePos
+    if typePos == Constant.ItemTypePos.Item_InPackage then
+        local item = param.item
+        local objId = param.objId
+        self:changeItemFromBag(objId,item)
+        self:refreshUseNum()
+    end
+end
+--道具物品变化
+function UIWndInventory:changeItemFromBag(objId,item)
+    if item then
+        if self._itemDataTable then
+            if not self._itemDataTable[item:getObjId()] then
+                self:addItemDataForTable(item)
+            end
+            if item and self.scroolTopPosY and self.downPosY then
+                if self._gridManger:isItemInWindow(item,self.scroolTopPosY,self.downPosY,self.openViewType == FITER_TYPES.ALL) then
+                    self:showItemInPanle(item)
+                end
+            end
+        end
+    else
+        if self._itemsTab and self._itemsTab[objId] then
+            self._itemsTab[objId]:removeFromParent()
+            self._gridManger:pushBagItem(self._itemsTab[objId])
+            self._itemsTab[objId] = nil
+        end
+        if self._itemDataTable then
+            self:removeItemDataForTable(objId)
+        end
+    end
+end
+
+function UIWndInventory:createItemEffect(item)
+    --圣水制造（人祝）特效刷新
+    local holyPotionArr = ItemModule:getCreateHolyPotion()
+    for _,itemObjId in ipairs(holyPotionArr) do
+        if itemObjId == item:getItemObjId() then
+            local actionInfoMetas = CacheManager:getSkillEffectBySkillIdAndEName(lt.SkillEnum.SKILL_CREATE_HOLY_POTION, "result_magic_create_holy_water")
+            local index = #self._effectActorsArr + 1
+            self._effectActorsArr[index] = lt.UIEffectActor.new(actionInfoMetas[1], 1, nil)
+            local pos = self._gridManger:getCenterXY(item)
+            self._effectActorsArr[index]:setPosition(pos.x-15,-pos.y+15)
+            item:getParent():displayObject():addChild(self._effectActorsArr[index])
+            ItemModule:clearCreateHolyPotion(itemObjId)
+        end
+    end
+    -- 圣水制造（人医）特效刷新
+    local holyPotionDoctorArr = ItemModule:getCreateHolyPotionDoctor()
+    for _,itemObjId in ipairs(holyPotionDoctorArr) do
+        if itemObjId == item:getItemObjId() then
+            local metas = CacheManager:getProcessMetas(lt.SkillEnum.SKILL_CREATE_HOLY_POTION_DOCTOR)
+            if metas and metas[1] then
+                local index = #self._effectActorsArr + 1
+                self._effectActorsArr[index] = lt.UIEffectActor.new(metas[1], 1, nil)
+                local pos = self._gridManger:getCenterXY(item)
+                self._effectActorsArr[index]:setPosition(pos.x-15,-pos.y+15)
+                item:getParent():displayObject():addChild(self._effectActorsArr[index])
+                ItemModule:clearCreateHolyPotionDoctor(itemObjId)
+            end
+        end
+    end
+end
+
+function UIWndInventory:onUpdate(dt)
+    if self._effectActorsArr then
+        for i = #self._effectActorsArr,1,-1 do
+            if self._effectActorsArr[i]:getStopEffect() then
+                self._effectActorsArr[i]:onClear()
+                table.remove(self._effectActorsArr,i)
+            else
+                self._effectActorsArr[i]:onUpdate(dt)
+            end
+        end
+    end
+end
+
+function UIWndInventory:onGildScrollChange(event)
+    local posY = self._scrollPane:getPosY()
+    local top = math.floor(posY/68)
+    if self.scroolTopPosY ~= top then
+        self.scroolTopPosY = math.floor(posY/68)
+        self.downPosY = self.scroolTopPosY + 8
+        -- print("当前的计划顶点是:",self.scroolTopPosY,"底点是：",self.downPosY," 窗口高度：",posY)
+        self:updateTiledItem(self.scroolTopPosY,self.downPosY)
+    end
+end
+
+function UIWndInventory:updateTiledItem(top,down)
+    --归还视图外的格子
+    for row, _ in pairs(self._tiledsTab) do
+        if row < top or row > down then
+            if self._tiledsTab[row] then
+                for _, tiled in pairs(self._tiledsTab[row]) do
+                    if not self._gridList:isChildInView(tiled) then
+                        self._gridManger:pushTiledGird(tiled)
+                    end
+                    self._tiledsTab[row] = nil
+                end
+            end
+        end
+    end
+    --从缓存中取格子
+    for row = top, down do
+        if self._tiledsTab[row] == nil then
+            for col = 1, self._gridWidth do
+                local tiled = self._gridManger:popTiledGird()
+                self:showTiledInPanel(row,col,tiled)
+            end
+        end
+    end
+    --归还视图外的道具
+    for key, item in pairs(self._itemsTab) do
+        if not self._gridList:isChildInView(item) or self._itemDataTable[key] == nil then
+            -- print("update清除道具：",item:getItemInfo():getItemMeta():getName(),key)
+            item:removeFromParent()
+            self._gridManger:pushBagItem(item)
+            self._itemsTab[key] = nil
+        end
+    end
+    if self._itemDataTable then
+        for _, itemdata in pairs(self._itemDataTable) do
+            if not self._itemsTab[itemdata:getObjId()] and self._gridManger:isItemInWindow(itemdata,top,down,self.openViewType == FITER_TYPES.ALL) then
+                self:showItemInPanle(itemdata)
+            end
+        end
+    end
+end
+
+-- 创建单个格子
+function UIWndInventory:showTiledInPanel(row, col,tiled)
+    -- 复用已存在的格子或创建新格子
+    if not tiled:getParent() then 
+        tiled:insertObjectToFactory(self)
+        tiled:setPivot(0.5, 0.5, true)
+        self._tiledPanel:addChild(tiled)
+    end
+    self._tiledsTab[row] = self._tiledsTab[row] or {}
+    self._tiledsTab[row][col] = tiled
+    -- 设置格子位置
+    local centerPos = self._gridManger:getTiledCenterXY(col, row)
+    tiled:setPosition(centerPos.x, centerPos.y)
+    
+    if (row == 1 or row == 2 or row == 3) and col == self._gridWidth then
+        tiled:setSpecialShow(true)
+    else
+        tiled:setSpecialShow(false)
+    end
+    --占用态
+    if self._tiledMapSelectTab[row] and self._tiledMapSelectTab[row][col] then
+        tiled:setSelectedShow(true)
+    else
+        tiled:setSelectedShow(false)
+    end
+    tiled:setBGVisible(not self._isBGOpacity)
+end
+
+function UIWndInventory:showItemInPanle(itemInfo)
+    -- itemInfo.show = true
+    local gridSizeIndex = itemInfo:getItemMeta():getItemSize()
+    local objId = itemInfo:getObjId()
+    if not self._itemsTab[objId]  then
+        local item = self._gridManger:popBagItem(gridSizeIndex)
+        self._itemsTab[objId] = item
+        if not item:getParent() then
+            item:insertObjectToFactory(self)
+            item:setPivot(0.5,0.5, true)
+            item:setFromWnd(self)
+            item:setSortingOrder(10)
+            self._itemsPanel:addChild(item)
+            -- print("添加道具：",itemInfo:getItemMeta():getName(),objId)
+        end
+    end
+    self._itemsTab[objId]:setItemInfo(itemInfo, self.openViewType, true)
+    self._itemsTab[objId]:setRed(not itemInfo:isWearable())
+    local monthBound = itemInfo:getBound() == Constant.BOUND_TYPE.MONTH_BOUND
+    self._itemsTab[objId]:setIsBind(monthBound and not self._isMonthCard)
+    self._itemsTab[objId]:setVisible(true)
+    self:pushItemInBag(self._itemsTab[objId])
+    self:createItemEffect(self._itemsTab[objId])
+end
+
+---添加一个物品到格子上
+function UIWndInventory:pushItemInBag(pItem)
+    local gridX, gridY = pItem:getGridX(), pItem:getGridY()
+    local gridWidth = pItem:getGridWidth()
+    local gridHeight = pItem:getGridHeight()
+    if not gridY then
+        return
+    end
+    for i = gridY, gridY + gridHeight - 1 do
+        for j = gridX, gridX + gridWidth - 1 do
+            -- self._gridManger:addItemToGrid(true, i, j)
+            -- print(string.format("添加道具：%s到格子：X%s,Y%s",pItem:getIgetObjId(),j,i))
+            self:showTiledSelect(j, i) -- 需要延后处理（因为格子还没创完）
+            local cellPos = self._gridManger:getCenterXY(pItem)
+            pItem:setPosition(cellPos.x, cellPos.y)
+        end
+    end
+end
+
+function UIWndInventory:showTiledSelect(gridX, gridY)
+    self._tiledMapSelectTab[gridY] = self._tiledMapSelectTab[gridY] or {}
+    self._tiledMapSelectTab[gridY][gridX] = true
+    if self._tiledsTab[gridY] and self._tiledsTab[gridY][gridX] then
+        self._tiledsTab[gridY][gridX]:setSelectedShow(true)
+    end
+end
+
+function UIWndInventory:hideTiledSelect(gridX, gridY)
+    self._tiledMapSelectTab[gridY] = self._tiledMapSelectTab[gridY] or {}
+    self._tiledMapSelectTab[gridY][gridX] = nil
+    if self._tiledsTab[gridY] and self._tiledsTab[gridY][gridX] then
+        self._tiledsTab[gridY][gridX]:setSelectedShow(false)
+    end
+end
+
+function UIWndInventory:resetTiledAndItem()
+    if self._tiledsTab then
+        for row, _ in pairs(self._tiledsTab) do
+            if self._tiledsTab[row] then
+                for _, tiled in pairs(self._tiledsTab[row]) do
+                    tiled:removeFromParent()
+                    self._gridManger:pushTiledGird(tiled)
+                    self._tiledsTab[row] = nil
+                end
+            end
+        end
+    end
+    self._tiledsTab = {} --视图中的格子
+    if self._itemsTab then
+        for key, item in pairs(self._itemsTab) do
+            -- print("清除道具：",item:getItemInfo():getItemMeta():getName(),key)
+            item:removeFromParent()
+            self._gridManger:pushBagItem(item)
+            self._itemsTab[key] = nil
+        end
+    end
+    self._itemsTab = {}         -- 视图中的道具
+    self.scroolTopPosY = nil    -- 顶部格子坐标系高度
+    self._tiledMapSelectTab = {}--存放格子选中态数据
+end
+
+
+return UIWndInventory

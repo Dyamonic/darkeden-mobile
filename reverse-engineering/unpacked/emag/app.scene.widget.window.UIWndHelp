@@ -1,0 +1,223 @@
+--- 帮助界面
+---@class UIWndHelp:UIWindowBase
+local UIWndHelp          = class("UIWndHelp", lt.UIWindowBase)
+
+local NtfManager         = lt.NtfManager
+local GameModule         = lt.GameModule
+local CacheManager       = lt.CacheManager
+local Constant           = lt.Constant
+
+local BTN_HEIHT          = 44
+local BTN_WIDTH          = 162
+
+UIWndHelp.ChangeSkinConf = {
+    ["Help"] = {
+        ["bg"] = "bg_bzxt_diban",
+    },
+    ["CommonTL"] = {
+        ["frame"] = {
+            closeButton = { bg = "bg_beibao_anniu01", bgup = "bg_beibao_anniu02" },
+        }
+    }
+}
+
+local MarkKey            = 999
+
+function UIWndHelp:ctor(param)
+    self:registerComponent("UICompHelpMenuCell")
+    UIWndHelp.super.ctor(self, param)
+    self._mainIdx = 0
+    self._subIdx = 0
+
+    self._myRace = GameModule:getHeroData():getRace()
+    self._helpMap = self:initData()
+end
+
+function UIWndHelp:initData()
+    local unordered = CacheManager:getHelpMapByRace(self._myRace) -- 纯表
+    local keys = {}
+    for key in pairs(unordered) do
+        table.insert(keys, key)
+    end
+    local ordered = {}
+    for _, key in ipairs(keys) do
+        table.insert(ordered, unordered[key])
+    end
+    return ordered
+end
+
+function UIWndHelp:onInit()
+    UIWndHelp.super.onInit(self, _GURL.UIWndHelp)
+    self._targetList  = self:getChild("list_menu")
+    self._lblTitlec   = self:getChild("lbl_titlec")
+    self._lblTitle    = self:getChild("lbl_title")
+    self._listContent = self:getChild("list_content")
+    self._ctl         = self:getController("c1")
+    self._listSkill   = self:getChild("list_skill")
+    self._listContent:setItemRenderer(handler(self, self.contentRender))
+    self._targetList:setItemRenderer(handler(self, self.targetRender))
+    self._listSkill:setItemRenderer(handler(self, self.skillRender))
+end
+
+function UIWndHelp:onShown()
+    self._params = self:getParam().param
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_HELP_SELECT_MAINIDX, handler(self, self.selectMainIdx),
+        "UIWndHelp:selectMainIdx")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_HELP_SELECT_SUBIDX, handler(self, self.selectSubIdx),
+        "UIWndHelp:selectSubIdx")
+    self:initUI()
+end
+
+function UIWndHelp:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndHelp:selectMainIdx")
+    NtfManager:removeNtfListenerByTag("UIWndHelp:selectSubIdx")
+    UIWndHelp.super.onHide(self)
+end
+
+function UIWndHelp:onClear()
+    self._targetList  = nil
+    self._lblTitlec   = nil
+    self._lblTitle    = nil
+    self._listContent = nil
+    self._ctl         = nil
+    self._listSkill   = nil
+    self._helpMap     = nil
+    self:unregisterAllComponent()
+    UIWndHelp.super.onClear(self)
+end
+
+function UIWndHelp:onLayerClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndHelp", close = true })
+end
+
+function UIWndHelp:initUI()
+    if #self._targetList:getChildren() > 0 then
+        local childIndex = self._targetList:itemIndexToChildIndex(self._mainIdx - 1)
+        local context = self._targetList:getChildAt(childIndex)
+        context:getController("c1"):setSelectedIndex(1)
+        context:setSize(BTN_WIDTH, BTN_HEIHT)
+        context:getChild("list_choose"):setVisible(false)
+    end
+
+    self._targetList:setNumItems(#self._helpMap)
+    local mainIdx = 1
+    if self._params and self._params.mainIdx then
+        mainIdx = self._params.mainIdx
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_HELP_SELECT_MAINIDX, { mainIdx = mainIdx })
+end
+
+function UIWndHelp:targetRender(index, obj)
+    local index = index + 1
+    obj:getChild("text_choose"):setText(self._helpMap[index][1]:getTypeName())
+    local list = self._helpMap[index]
+    local type = list[1]:getType()
+    if type == MarkKey then -- 技能表
+        list = CacheManager:getSkillByRace(self._myRace)
+    end
+    obj:setObjInfo(list, index, type == MarkKey)
+end
+
+--选中一级按钮回调
+function UIWndHelp:selectMainIdx(event)
+    local param = event.param or {}
+    local helpMap = self._helpMap
+    if self._mainIdx == param.mainIdx then
+        local childIndex = self._targetList:itemIndexToChildIndex(self._mainIdx - 1)
+        local context = self._targetList:getChildAt(childIndex)
+        if context:getSize().height > BTN_HEIHT then
+            context:getController("c1"):setSelectedIndex(1)
+            context:setSize(BTN_WIDTH, BTN_HEIHT)
+            context:getChild("list_choose"):setVisible(false)
+        else
+            local childIndex = self._targetList:itemIndexToChildIndex(self._mainIdx - 1)
+            local context = self._targetList:getChildAt(childIndex)
+            context:getController("c1"):setSelectedIndex(0)
+            local newList = context._helpList
+            context:setSize(BTN_WIDTH, BTN_HEIHT + #newList * BTN_HEIHT)
+            context:getChild("list_choose"):setVisible(true)
+        end
+        return
+    end
+
+    if self._mainIdx > 0 and self._mainIdx <= #helpMap then
+        local childIndex = self._targetList:itemIndexToChildIndex(self._mainIdx - 1)
+        local context = self._targetList:getChildAt(childIndex)
+        context:getController("c1"):setSelectedIndex(1)
+        context:setSize(BTN_WIDTH, BTN_HEIHT)
+        context:getChild("list_choose"):setVisible(false)
+    end
+
+    self._mainIdx = param.mainIdx
+    local childIndex = self._targetList:itemIndexToChildIndex(self._mainIdx - 1)
+    local newContext = self._targetList:getChildAt(childIndex)
+    local newList = newContext._helpList
+    newContext:getController("c1"):setSelectedIndex(0)
+    newContext:setSize(BTN_WIDTH, BTN_HEIHT + #newList * BTN_HEIHT)
+    newContext:getChild("list_choose"):setVisible(true)
+    self._targetList:scrollToView(childIndex)
+
+    local subIdx = 1
+    if self._params and self._params.subIdx then
+        subIdx = self._params.subIdx
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_HELP_SELECT_SUBIDX, { subIdx = subIdx })
+end
+
+--选中二级按钮回调
+function UIWndHelp:selectSubIdx(event)
+    local param = event.param or {}
+    self._subIdx = param.subIdx
+    local childIndex = self._targetList:itemIndexToChildIndex(self._mainIdx - 1)
+    local context = self._targetList:getChildAt(childIndex)
+    context:selectSubIdx(self._subIdx)
+
+    local helpMeta = self._helpMap[self._mainIdx][1]
+    local type = helpMeta:getType()
+    self._ctl:setSelectedIndex(type == MarkKey and 1 or 0)
+    if type == MarkKey then
+        local list = CacheManager:getSkillByRace(self._myRace)
+        local data = list[self._subIdx]
+        self._listSkill:setNumItems(1)
+        if data then
+            self._lblTitlec:setText(data:getName())
+            self._lblTitle:setText(data:getName())
+        end
+    else
+        self._listContent:setNumItems(1)
+        self._listContent:scrollToView(0)
+        local data = self._helpMap[self._mainIdx][self._subIdx]
+        if data then
+            self._lblTitlec:setText(data:getTitle())
+            self._lblTitle:setText(data:getTitle())
+        else
+            self._lblTitlec:setText("")
+            self._lblTitle:setText("")
+        end
+    end
+end
+
+function UIWndHelp:contentRender(index, obj)
+    local index = index + 1
+    local data = self._helpMap[self._mainIdx][self._subIdx]
+    if data then
+        obj:getChild("lbl_summarize"):setText(data:getSummarize())
+        obj:getChild("lbl_content"):setText(data:getContent())
+        obj.index = index
+    end
+end
+
+function UIWndHelp:skillRender(index, obj)
+    local list = CacheManager:getSkillByRace(self._myRace)
+    local data = list[self._subIdx]
+    if data then
+        obj:getChild("icon"):setURL(string.format(_GURL.GetImageSkill, data:getSpriteID()))
+        obj:getChild("detail"):setText(data:getDescription())
+    end
+end
+
+function UIWndHelp:onLayerClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndHelp", close = true })
+end
+
+return UIWndHelp

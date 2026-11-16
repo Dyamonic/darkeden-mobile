@@ -1,0 +1,107 @@
+---@class MsgboxRoleLayer 创建角色消息提示
+local MsgboxRoleLayer = class("MsgboxRoleLayer", lt.UICompBase)
+local NtfManager = lt.NtfManager
+function MsgboxRoleLayer:ctor()
+    MsgboxRoleLayer.super.ctor(self)
+    self._view = fgui.UIPackage:createObject("CreateRole", "MsgboxRoleLayer")
+    self._view:setPivot(0.5, 0.5 , true)
+    self._view:setPosition(display.cx, display.cy)
+    self:addChild(self._view)
+end
+
+function MsgboxRoleLayer:onClear()
+    self._view = nil
+    self._removeBox = nil
+    self._messageBox = nil
+    self._messageBoxSmall = nil
+
+    MsgboxRoleLayer.super.onClear(self)
+end
+
+function MsgboxRoleLayer:onEnter()
+    -- MessageBox
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, handler(self, self.showMessageBox), "MsgboxRoleLayer:showMessageBox")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CLOSE_MESSAGEBOX, handler(self, self.closeMessageBox), "MsgboxRoleLayer:closeMessageBox")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_SHOW_MESSAGEBOX_REMOVE, handler(self, self.showRemoveMessageBox), "MsgboxRoleLayer:showRemoveMessageBox")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, handler(self, self.showMessageBoxSmall), "MsgboxRoleLayer:showMessageBoxSmall")
+end
+
+function MsgboxRoleLayer:onExit()
+    NtfManager:removeNtfListenerByTag("MsgboxRoleLayer:showMessageBox")
+    NtfManager:removeNtfListenerByTag("MsgboxRoleLayer:closeMessageBox")
+    NtfManager:removeNtfListenerByTag("MsgboxRoleLayer:showRemoveMessageBox")
+    NtfManager:removeNtfListenerByTag("MsgboxRoleLayer:showMessageBoxSmall")
+end
+
+-- 大提示框
+function MsgboxRoleLayer:showMessageBox(event)
+    local param = event.param
+    if param then
+        if not self._messageBox then
+            self._messageBox = fgui.UIPackage:createObject("MessageBox", "MessageBox")
+            self._view:addChild(self._messageBox)
+            self._messageBox:initUI()
+        end
+        
+        self._messageBox:refreshDesc(param)
+        self._messageBox:setVisible(true)
+    else
+        self:closeMessageBox(nil)
+    end
+end
+
+function MsgboxRoleLayer:closeMessageBox(event)
+    if self._messageBox then
+        self._messageBox:setVisible(false)
+    end
+end
+
+-- 移除提示
+function MsgboxRoleLayer:showRemoveMessageBox(event)
+    local param = event.param
+    if param then
+        if not self._removeBox then
+            self._removeBox = fgui.UIPackage:createObject("MessageBox", "MessageBoxRemove")
+            self._removeBox:initUI(param)
+            self._view:addChild(self._removeBox)
+        else
+            self._removeBox:initUI(param)
+            self._removeBox:setVisible(true)
+        end
+        
+        
+    else
+        self:closeMessageBoxNum(nil)
+    end
+end
+
+function MsgboxRoleLayer:closeMessageBoxNum(event)
+    if self._removeBox then
+        self._removeBox:setVisible(false)
+    end
+end
+
+-- 小提示
+function MsgboxRoleLayer:showMessageBoxSmall(event)
+    local param = event.param
+    if param then
+        if not self._messageBoxSmall then
+            self._messageBoxSmall = fgui.UIPackage:createObject("MessageBox", "MessageBoxSmall")
+            self._view:addChild(self._messageBoxSmall)
+            self._messageBoxSmall:initUI()
+        end
+        
+        self._messageBoxSmall:refreshDesc(param)
+        self._messageBoxSmall:setVisible(true)
+    else
+        self:closeMessageBoxSmall(nil)
+    end
+end
+
+function MsgboxRoleLayer:closeMessageBoxSmall(event)
+    if self._messageBoxSmall then
+        self._messageBoxSmall:setVisible(false)
+    end
+end
+
+return MsgboxRoleLayer

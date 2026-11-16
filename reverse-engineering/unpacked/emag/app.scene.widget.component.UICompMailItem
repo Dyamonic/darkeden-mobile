@@ -1,0 +1,71 @@
+---邮箱组件
+---@class UICompMailItem
+
+local UICompMailItem = class("UICompMailItem", lt.UIGButtonBase)
+
+function UICompMailItem:ctor()
+    UICompMailItem.super.ctor(self)
+    --UI
+    self._state = nil
+    self._name = nil
+    self._title = nil
+    self._reward = nil
+    self._timeText = nil
+end
+
+function UICompMailItem:onClear()
+    --UI
+    self._state = nil
+    self._name = nil
+    self._title = nil
+    self._reward = nil
+    self._timeText = nil
+end
+
+function UICompMailItem:onConstruct()
+    self._state = self:getChild("state")
+    self._name = self:getChild("name")
+    self._title = self:getChild("desc")
+    self._reward = self:getChild("item")
+    self._timeText = self:getChild("time")
+end
+
+function UICompMailItem:setState(url)
+    self._state:setURL(url)
+end
+
+function UICompMailItem:setTimeText(text)
+    self._timeText:setText(text)
+end
+
+function UICompMailItem:setName(text)
+    if lt.utf8.len(text) > 10 then
+        text = lt.utf8.sub(text, 0, 10) .. "..."
+    end
+    self._name:setText(text)
+end
+
+function UICompMailItem:setTitle(text)
+    if lt.utf8.len(text) > 30 then
+        text = lt.utf8.sub(text, 0, 30) .. "..."
+    end
+    self._title:setText(text)
+end
+
+function UICompMailItem:setReward(url)
+    self._reward:setURL(url)
+end
+
+function UICompMailItem:setRewardVis(show)
+    self._reward:setVisible(show)
+end
+
+function UICompMailItem:setRewardGray(gray)
+    self._reward:setGrayed(gray)
+end
+
+function UICompMailItem:clear()
+
+end
+
+return UICompMailItem

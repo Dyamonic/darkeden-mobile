@@ -1,0 +1,953 @@
+---@装备洗炼
+---@class UICompStSuccinct
+local UICompStSuccinct = class("UICompStSuccinct", lt.UIGButtonBase, lt.UICompChangeSkin)
+
+UICompStSuccinct.ChangeSkinConf = {
+    ["Strengthen"] = {
+        ["img_plane"] = "bg_zhuangbei_kuang",
+        ["img_di2"] = "bg_zhuangbei_di1",
+        ["img_di"] = "bg_zhuangbei_beijing",
+        ["img_bg"] = "bg_zhuangbei_kuang1",
+        ["transform_panel_di1"] = "bg_zhuangbeirh_hcbjdi",
+        ["transform_panel_di2"] = "bg_zhuangbeirh_hcbjdi",
+        ["transform_img_di1"] = "bg_bxzh_di_01",
+        ["transform_img_di2"] = "bg_bxzh_di_01",
+        ["transform_img_di"] = "bg_zhuangbei_beijing",
+    },
+    ["CommonTL"] = {
+        ["btn_levelup"] = {bg = "bg_zbsj_wxz", bglight = "bg_zbsj_xz"},
+        ["btn_yeqian1"] = {n0 = "bth_zhuangbei_yeqian02"},
+        ["btn_yeqian2"] = {n0 = "bth_zhuangbei_yeqian02"},
+        ["btn_yeqian3"] = {n0 = "bth_zhuangbei_yeqian02"},
+        ["btn_transform"] = {bg = "bg_zbsj_wxz", bglight = "bg_zbsj_xz"},
+        ["btn_sure"] = {bg = "bg_zbsj_wxz", bglight = "bg_zbsj_xz"},
+        ["tab_choose"] = {btn_choose = "bg_zuduixitong_yeqiandi", loader_choose1 = "icon_zuduixitong_shouqi", loader_choose2 = "icon_zuduixitong_shouqi"},
+    }
+}
+
+local SUCCINCT_TYPES = {
+    RECASTING = 1,      --重铸
+    PURIFY = 2,         --净化
+    TRANSFORM = 3,      --转换
+}
+
+local CacheManager = lt.CacheManager
+local NtfManager = lt.NtfManager
+local ItemModule = lt.ItemModule
+local StrengthenModule = lt.StrengthenModule
+local Constant = lt.Constant
+local SkeletonManager = lt.SkeletonManager
+local AudioManager = lt.AudioManager
+local CommonFunc = lt.CommonFunc
+local GuideModule = lt.GuideModule
+local GameModule = lt.GameModule
+
+function UICompStSuccinct:ctor()
+    self:registerComponent("UICompItem", "UICompEnchantItem", "UICompEnchantCost", "UICompStSuccinctConfirm", "UICompTransformItem")
+    UICompStSuccinct.super.ctor(self)
+    --UI
+    self._controlTab = nil
+    self._itemNode = nil
+    self._equipIcon = nil
+    self._nameLabel = nil
+    self._tipsLabel = nil
+    self._warningLabel = nil
+    self._btnPanel = nil
+    self._levelupBtn = nil
+    self._emptyLabel = nil
+    self._attrlist = nil
+    self._item = nil
+    self._selectBtn = nil
+    self._controlBtn = nil
+    self._selectTitle = nil
+    self._tailNode = nil
+    self._tailSpine = nil
+    self._confirm = nil
+    self._costLabel= nil
+    self._node1 = nil
+    self._node2 = nil
+    self._transformCostLabel = nil
+    self._costImg = nil
+    self._costLoader = nil
+    self._chooseTab = nil
+    self._transformControlTab = nil
+    self._chooselist = nil
+    self._chooseText = nil
+    self._transformBtn = nil
+    self._transformBtnPanel = nil
+    self._helpBtn = nil
+    self._transformItem = nil
+    for i = 1, 2 do
+        self["_itemNode"..i] = nil
+        self["_equipIcon"..i] = nil
+        self["_emptyLabel"..i] = nil
+        self["_nameLabel"..i] = nil
+        self["_costBar"..i] = nil
+        self["_attrlist"..i] = nil
+    end
+    self._sureBtn = nil
+    self._iconPanel = nil
+    self._transformAttrlist = nil
+    self._mainNode = nil
+    self._resultNode = nil
+    self._animNode = nil
+    self._processNode = nil
+    self._downNode = nil
+    self._processSpine = nil
+    self._downSpine = nil
+    self._spine = nil
+    self._icon1 = nil
+    self._icon2 = nil
+    self._iconResult = nil
+    --数据
+    self._itemInfo = nil
+    self._fiterBtns = {}
+    self._openViewType = nil
+    self._selectItem = nil
+    self._attr = nil
+    self._selectIdx = 0
+    self._animFlag = false
+    self._index = nil
+    self._transformMeta = nil
+    self._transformInfo = nil
+    self._params = nil
+    self._transformAttr = nil
+end
+
+function UICompStSuccinct:onClear()
+    self:unregisterAllComponent()
+    --UI
+    self._controlTab = nil
+    self._itemNode = nil
+    self._equipIcon = nil
+    self._nameLabel = nil
+    self._tipsLabel = nil
+    self._warningLabel = nil
+    self._btnPanel = nil
+    self._levelupBtn = nil
+    self._emptyLabel = nil
+    self._item = nil
+    self._selectBtn = nil
+    self._controlBtn = nil
+    self._selectTitle = nil
+    self._tailNode = nil
+    self._tailSpine = nil
+    self._confirm = nil
+    self._costLabel = nil
+    self._node1 = nil
+    self._node2 = nil
+    self._transformCostLabel = nil
+    self._costImg = nil
+    self._costLoader = nil
+    self._chooseTab = nil
+    self._transformControlTab = nil
+    self._chooseText = nil
+    self._transformBtn = nil
+    self._transformBtnPanel = nil
+    self._helpBtn = nil
+    self._transformItem = nil
+    for i = 1, 2 do
+        self["_itemNode"..i] = nil
+        self["_equipIcon"..i] = nil
+        self["_emptyLabel"..i] = nil
+        self["_nameLabel"..i] = nil
+        self["_costBar"..i] = nil
+    end
+    self._sureBtn = nil
+    self._iconPanel = nil
+    self._mainNode = nil
+    self._resultNode = nil
+    self._animNode = nil
+    self._processNode = nil
+    self._downNode = nil
+    self._processSpine = nil
+    self._downSpine = nil
+    self._spine = nil
+    self._icon1 = nil
+    self._icon2 = nil
+    self._iconResult = nil
+    --数据
+    self._itemInfo = nil
+    self._fiterBtns = nil
+    self._openViewType = nil
+    self._selectItem = nil
+    self._attr = nil
+    self._selectIdx = nil
+    self._animFlag = nil
+    self._index = nil
+    self._transformMeta = nil
+    self._transformInfo = nil
+    self._params = nil
+    self._transformAttr = nil
+
+    if self._attrlist then
+        self._attrlist:removeChildrenToPool()
+        self._attrlist:removeItemRenderer()
+        self._attrlist = nil
+    end
+
+    for i = 1, 2 do
+        if self["_attrlist"..i] then
+            self["_attrlist"..i]:removeChildrenToPool()
+            self["_attrlist"..i]:removeItemRenderer()
+            self["_attrlist"..i] = nil
+        end
+    end
+
+    if self._transformAttrlist then
+        self._transformAttrlist:removeChildrenToPool()
+        self._transformAttrlist:removeItemRenderer()
+        self._transformAttrlist = nil
+    end
+
+    if self._chooselist then
+        self._chooselist:removeChildrenToPool()
+        self._chooselist:removeItemRenderer()
+        self._chooselist = nil
+    end
+end
+
+function UICompStSuccinct:onConstruct()
+    self:startSkin()
+    self:initUI()
+end
+
+function UICompStSuccinct:initUI()
+    --初始化
+    self._controlTab = self:getController("tabs")
+    self._itemNode = self:getChild("node_item")
+    self._equipIcon = self:getChild("panel_icon")
+    self._nameLabel = self:getChild("label_name")
+    self._tipsLabel = self:getChild("label_tips")
+    self._warningLabel = self:getChild("label_warning")
+    self._btnPanel = self:getChild("panel_btn")
+    self._levelupBtn = self:getChild("btn_levelup")
+    self._emptyLabel = self:getChild("label_empty")
+    self._attrlist = self:getChild("list_attr")
+    self._attrlist:setItemRenderer(handler(self, self.renderListItem))
+    
+    --生成物品
+    self._item = fgui.UIPackage:createObject("Strengthen", "EnchantCost")
+    self._item:insertObjectToFactory(self)
+    self._item:setRegClass(self)
+    self._item:setPosition(165, 324)
+    self._costLabel = self:getChild("label_cost")
+
+    self:addChild(self._item)
+
+    --页签
+    for fiterType = 1, table.nums(SUCCINCT_TYPES) do
+        local obj = self:getChild("btn_yeqian"..fiterType)
+        obj.fiterType = fiterType
+        self._fiterBtns[fiterType] = obj
+    end
+    --净化
+    self._selectBtn = self:getChild("btn_select")
+    self._controlBtn = self:getChild("btn_select"):getController("button")
+    self._selectTitle = self:getChild("title")
+
+    --添加净化拖尾特效
+    self._tailNode = self:getChild("node_animation")
+    self._tailSpine = SkeletonManager:createSkeletonEffectWithFile("XiLianXiTong", "XiLianXiTong_Skeleton_JingHua")
+    self._tailNode:displayObject():addChild(self._tailSpine)
+
+    self._node1 = self:getChild("node1")
+    self._node2 = self:getChild("node2")
+
+    self._transformCostLabel = self:getChild("transform_label_cost")
+    self._costImg = self:getChild("img_cost")
+    self._costLoader = self:getChild("loader_cost")
+
+    self._chooseTab = self:getChild("tab_choose")
+    self._transformControlTab = self._chooseTab:getController("c1")
+    self._chooselist = self._chooseTab:getChild("list_choose")
+    self._chooselist:setItemRenderer(handler(self, self.renderChooseItem))
+    self._chooseText = self._chooseTab:getChild("text_choose")
+
+    self._transformBtn = self:getChild("btn_transform")
+    self._transformBtnPanel = self:getChild("transform_panel_btn")
+    self._helpBtn = self:getChild("btn_help")
+
+    --初始化左右两侧界面
+    for i = 1, 2 do
+        self["_itemNode"..i] = self:getChild("node_item"..i)
+        self["_equipIcon"..i] = self:getChild("panel_icon"..i)
+        self["_emptyLabel"..i] = self:getChild("label_empty"..i)
+        self["_nameLabel"..i] = self:getChild("label_name"..i)
+        self["_costBar"..i] = self:getChild("bar_cost"..i)
+        self["_attrlist"..i] = self:getChild("list_attr"..i)
+        self["_attrlist"..i]:setItemRenderer(handler(self, self.renderTransformListItem))
+    end
+
+    --创建item
+    self._transformItem = fgui.UIPackage:createObject("Item", "Item")
+    self._transformItem:insertObjectToFactory(self)
+    self:getChild("node_cost"):addChild(self._transformItem)
+
+    --结果界面
+    self._sureBtn = self:getChild("btn_sure")
+    self._iconPanel = self:getChild("transform_panel_icon")
+    self._transformAttrlist = self:getChild("transform_list_attr")
+    self._transformAttrlist:setItemRenderer(handler(self, self.renderTransformListItem))
+
+    self._mainNode = self:getChild("node_main")
+    self._resultNode = self:getChild("node_result")
+    self._animNode = self:getChild("node_animation")
+    self._processNode = self:getChild("node_process")
+    self._downNode = self:getChild("node_down")
+
+    --合成过程特效1(上层)
+    self._processSpine = SkeletonManager:createSkeletonEffectWithFile("ZhuangBeiZhuanHuan", "ZhuangBeiZhuanHuan_Skeleton")
+    self._processNode:displayObject():addChild(self._processSpine)
+    self._processSpine:setCallback(handler(self, self.spineAnimationEnd))
+
+    --合成过程特效2(下层)
+    self._downSpine = SkeletonManager:createSkeletonEffectWithFile("ZhuangBeiZhuanHuan", "ZhuangBeiZhuanHuan_Skeleton")
+    self._downNode:displayObject():addChild(self._downSpine)
+    self._downSpine:setCallback(handler(self, self.spineAnimationEnd))
+
+    --合成结果特效
+    self._spine = SkeletonManager:createSkeletonEffectWithFile("RongHeXiTong", "RongHeXiTong_Skeleton_XinZhuangBei")
+    self._animNode:displayObject():addChild(self._spine)
+    self._spine:setCallback(handler(self, self.spineAnimationEnd))
+
+    --流动特效
+    local energySpineLeft = SkeletonManager:createSkeletonEffectWithFile("FuMoXiTong", "FuMoXiTong_Skeleton_ZhuMo")
+    self._costBar1:displayObject():addChild(energySpineLeft)
+    energySpineLeft:setAnimation(0, "NengLiangChuanShu", true)
+
+    local energySpineRight = SkeletonManager:createSkeletonEffectWithFile("FuMoXiTong", "FuMoXiTong_Skeleton_ZhuMo")
+    self._costBar2:displayObject():addChild(energySpineRight)
+    energySpineRight:setAnimation(0, "NengLiangChuanShu", true)
+end
+
+function UICompStSuccinct:onEnter()
+    self._btnPanel:addClickListener(handler(self, self.onCancelBtnClick))
+    self._levelupBtn:addClickListener(handler(self, self.onLevelupBtnClick))
+    self._attrlist:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+    self._item:addClickListener(function()
+        local cost = 703001
+        if self._openViewType == SUCCINCT_TYPES.PURIFY then
+            cost = StrengthenModule:getSuccinctItem(self._itemInfo, self._attr)
+        else
+            cost = StrengthenModule:getRecastingItem(self._itemInfo)
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,{itemInfo = CacheManager:getItemMeta(cost), tipsType = Constant.PROPTIPS_FORM.Display})
+    end)
+    for k, v in ipairs(self._fiterBtns) do
+        v:addClickListener(handler(self, self.openFiterBtnClick))
+    end
+    self._selectBtn:addClickListener(handler(self, self.onSelectBtnClick))
+
+    self._chooseTab:getChild("btn_choose"):addClickListener(handler(self, self.onTabClick))
+    self._chooselist:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onTransformClickItem))
+    self._transformBtn:addClickListener(handler(self, self.onTransformBtnClick))
+    self._transformBtnPanel:addClickListener(handler(self, self.onCancelBtnClick))
+    self._helpBtn:addClickListener(handler(self, self.onHelpBtnClick))
+    self._sureBtn:addClickListener(handler(self, self.onSureBtnClick))
+    self._transformItem:addClickListener(function()
+        local cost = self._transformMeta:getCostItems()
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,{itemInfo = CacheManager:getItemMeta(tonumber(cost[1][2])), tipsType = Constant.PROPTIPS_FORM.Display})
+    end)
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_ITEM_NUMB,
+        handler(self, self.refreshItemNum), "UICompStSuccinct:refreshItemNum")
+end
+
+function UICompStSuccinct:onExit()
+    self._btnPanel:removeClickListener()
+    self._levelupBtn:removeClickListener()
+    self._item:removeClickListener()
+    for k, v in ipairs(self._fiterBtns) do
+        v:removeClickListener()
+    end
+    self._selectBtn:removeClickListener()
+    self._attrlist:removeEventListener(fgui.UIEventType.ClickItem)
+
+    self._chooseTab:getChild("btn_choose"):removeClickListener()
+    self._chooselist:removeEventListener(fgui.UIEventType.ClickItem)
+    self._transformBtn:removeClickListener()
+    self._transformBtnPanel:removeClickListener()
+    self._helpBtn:removeClickListener()
+    self._sureBtn:removeClickListener()
+    self._transformItem:removeClickListener()
+    NtfManager:removeNtfListenerByTag(NtfManager.NTF.NTF_UPDATE_ITEM_NUMB, "UICompStSuccinct:refreshItemNum")
+end
+
+function UICompStSuccinct:openFiterView(sender)
+    if self._openViewType == sender.fiterType then 
+        return 
+    end
+    self._openViewType = sender.fiterType
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SELECT_SUBVIEW, self._openViewType)
+end
+
+function UICompStSuccinct:refreshView(itemInfo, subIdx)
+    self:clear()
+    self._itemContentTable = {}
+    self._itemInfo = itemInfo
+    self._openViewType = subIdx
+    self._controlTab:setSelectedIndex(self._openViewType - 1)
+
+    if self._openViewType ~= SUCCINCT_TYPES.TRANSFORM then
+        if self._icon == nil then
+            self._icon = fgui.UIPackage:createObject("Item", "Item")
+            self._icon:insertObjectToFactory(self)
+            self._icon:setPivot(0.5,0.5, true)
+            self._equipIcon:addChild(self._icon)
+        end
+        if itemInfo then
+            --选中状态
+            self._icon:setItemInfo(itemInfo)
+            self._nameLabel:setText(itemInfo:getName())
+            self._itemNode:setPosition(29, 70)
+            self._attr = StrengthenModule:transformAffix(itemInfo)
+        else
+            --默认状态
+            self._itemNode:setPosition(154 ,70)
+            self._attr = {}
+        end
+        self._icon:setVisible(itemInfo ~= nil)
+
+        --消耗
+        self._cost = 703001
+        if self._openViewType == SUCCINCT_TYPES.RECASTING then
+            --装备重铸
+            self._tipsLabel:setText(GReadText.KEY_STRENGTHEN_TIPS32)
+            self._levelupBtn:setText(GReadText.KEY_STRENGTHEN_TIPS33)
+            self._emptyLabel:setText(GReadText.KEY_STRENGTHEN_TIPS34)
+            self._warningLabel:setText(GReadText.KEY_STRENGTHEN_TIPS35)
+            local costs, lord = StrengthenModule:getRecastingItem(self._itemInfo)
+            self._cost = costs
+            local canSuccinct = ItemModule:enoughItem(1, Constant.TYPE_VAULE_ITEM.COIN, lord, {tips = false})
+            local color = canSuccinct and "[color=#00ff00]" or "[color=#ff0000]"
+            local lordStr = color..CommonFunc:changeNumberShow(lord).."[/color]"
+            self._costLabel:setText(string.format(GReadText.KEY_NPC_CLS_SKILL_TIPS3, _GURL.GetImageCoin..lordStr))
+            self._costLabel:setVisible(itemInfo ~= nil)
+            if canSuccinct then
+                canSuccinct = ItemModule:enoughItem(1, self._cost, 1, {tips = false})
+            end
+            self._levelupBtn:setGrayed(itemInfo == nil or not canSuccinct)
+
+            local _itemkey = string.format("%d_%d",1,self._cost)
+            self._itemContentTable[_itemkey] = true
+        elseif self._openViewType == SUCCINCT_TYPES.PURIFY then
+            --装备净化
+            self._tipsLabel:setText(GReadText.KEY_STRENGTHEN_TIPS36)
+            self._levelupBtn:setText(GReadText.KEY_STRENGTHEN_TIPS37)
+            self._emptyLabel:setText(GReadText.KEY_STRENGTHEN_TIPS38)
+            self._warningLabel:setText(GReadText.KEY_STRENGTHEN_TIPS39)
+            self._cost = StrengthenModule:getSuccinctItem(self._itemInfo, self._attr)
+            self._costLabel:setVisible(false)
+            local canSuccinct = ItemModule:enoughItem(1, self._cost, 1, {tips = false})
+            self._levelupBtn:setGrayed(itemInfo == nil or not canSuccinct)
+
+            local _itemkey = string.format("%d_%d",1,self._cost)
+            self._itemContentTable[_itemkey] = true
+        end
+        --通用逻辑
+        self._item:setInfo({1, self._cost, 1})
+        self._item:setVisible(itemInfo ~= nil)
+        self._attrlist:setNumItems(itemInfo and #self._attr or 0)
+        self._tipsLabel:setVisible(itemInfo ~= nil)
+        self._emptyLabel:setVisible(itemInfo == nil)
+        self._attrlist:setVisible(itemInfo ~= nil)
+        self._nameLabel:setVisible(itemInfo ~= nil)
+    else
+        --装备转换
+        self:refreshLeftView()
+    end
+    self._node1:setVisible(self._openViewType ~= SUCCINCT_TYPES.TRANSFORM)
+    self._node2:setVisible(self._openViewType == SUCCINCT_TYPES.TRANSFORM)
+    self._animFlag = false
+end
+
+function UICompStSuccinct:clear()
+    self._itemInfo = nil
+    if self._selectItem then
+        self._selectItem:changeSelect(false)
+    end
+    self._selectItem = nil
+    self._attr = {}
+    self._transformAttr = {}
+    self._transformMeta = nil
+    self._controlBtn:setSelectedIndex(self._selectIdx)
+end
+
+function UICompStSuccinct:openFiterBtnClick(context)
+    local sender = context:getSender()
+    for fiterType = 1, table.nums(SUCCINCT_TYPES) do
+        if fiterType == sender.fiterType then
+            self._fiterBtns[fiterType]:setSortingOrder(3)
+        else
+            self._fiterBtns[fiterType]:setSortingOrder(1)
+        end
+    end
+    self:openFiterView(sender)
+end
+
+function UICompStSuccinct:onLevelupBtnClick()
+    if self._itemInfo == nil then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content =  GReadText.KEY_STRENGTHEN_TIPS87})
+        return
+    end
+    if self._itemInfo then
+        local isExit = StrengthenModule:checkStrengthenEquip(self._itemInfo)
+        if not isExit then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_AUTO_TIPS10})
+            return
+        end
+        if self._selectItem == nil then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_STRENGTHEN_TIPS40})
+            return
+        end
+        local cost = 703001
+        local lord = 0
+        if self._openViewType == SUCCINCT_TYPES.PURIFY then
+            cost = StrengthenModule:getSuccinctItem(self._itemInfo, self._attr)
+        else
+            cost, lord = StrengthenModule:getRecastingItem(self._itemInfo)
+        end
+        local canSuccinct = ItemModule:enoughItem(1, cost, 1, {tips = true})
+        if canSuccinct then
+            --检测货币
+            canSuccinct = ItemModule:enoughItem(1, Constant.TYPE_VAULE_ITEM.COIN, lord, {tips = true})
+        end
+        if canSuccinct then
+            if self._openViewType == SUCCINCT_TYPES.RECASTING and self._selectIdx == 1 then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_CONFIRM_SUCCINCT)
+            else
+                self:showSuccinctConfirm()
+            end
+        end
+    end
+end
+
+--二次确认界面
+function UICompStSuccinct:showSuccinctConfirm()
+    if not self._confirm then
+        self._confirm = fgui.UIPackage:createObject("Strengthen", "SuccinctConfirm")
+        self._confirm:insertObjectToFactory(self)
+        self._confirm:setPosition(-466,-45)
+        self:addChild(self._confirm)
+    end
+    self._confirm:refreshView(self._openViewType, self._selectItem)
+    self._confirm:setVisible(true)
+end
+
+--去洗炼
+function UICompStSuccinct:toSuccinct()
+    --防止连续请求
+    if self._animFlag then return end
+    local cost = 703001
+    local lord = 0
+    if self._openViewType == SUCCINCT_TYPES.PURIFY then
+        cost = StrengthenModule:getSuccinctItem(self._itemInfo, self._attr)
+    else
+        cost, lord = StrengthenModule:getRecastingItem(self._itemInfo)
+        if self._confirm then
+            self._confirm:closeView()
+        end
+    end
+    local canSuccinct = ItemModule:enoughItem(1, cost, 1, {tips = true})
+    if canSuccinct then
+        --检测货币
+        canSuccinct = ItemModule:enoughItem(1, Constant.TYPE_VAULE_ITEM.COIN, lord, {tips = true})
+    end
+    if canSuccinct then
+        if self._selectItem then
+            --服务器交互
+            self._animFlag = true
+            self._index = StrengthenModule:getServerEnumByIdx(self._itemInfo, self._selectItem:getPorp()[1])
+            if self._openViewType == SUCCINCT_TYPES.RECASTING then
+                StrengthenModule:sendEquipRecasting(self._itemInfo:getObjId(), self._index)
+            else
+                StrengthenModule:sendEquipPurify(self._itemInfo:getObjId(), self._index)
+            end
+        end
+    end
+end
+
+function UICompStSuccinct:showSuccinctResult()
+    --显示结果
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_OPEN_STRENGTHEN_MASK, true)
+    if self._openViewType == SUCCINCT_TYPES.RECASTING then
+        -- local isFast = self._selectIdx == 1
+        local isFast = true
+        local newAttr = StrengthenModule:getAffixById(self._itemInfo, self._index)
+        self._selectItem:startAnim(isFast, newAttr)
+    else
+        self._confirm:closeView()
+        self._selectItem:changeSelect(false)
+        self._selectItem:startCleanAnim()
+        self._tailNode:setVisible(true)
+        self._tailSpine:setAnimation(0, "JingHua", false)
+        local tran = self._selectItem:getTran()
+        tran:play(function()
+            self._selectItem:endCleanAnim()
+            self._tailNode:setVisible(false)
+            --客户端清除数据词条
+            -- local attrId = StrengthenModule:getServerEnumByIdx(self._itemInfo, self._selectItem:getPorp()[1])
+            -- self._itemInfo:setValue(attrId, 0)
+            if #self._attr == 1 then
+                self:onCancelBtnClick()
+            else
+                local objId = self._itemInfo:getObjId()
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_REFRESH_EQUIP_VIEW, {objId = objId, noRefresh = true})
+                self:refreshView(self._itemInfo, self._openViewType)
+            end
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_OPEN_STRENGTHEN_MASK, false)
+            AudioManager:playSound(Constant.SoundEffect.EventFanfare)
+        end)
+        --播几号动画
+        local index = self._selectItem.index == 1 and #self._attr or #self._attr + self._selectItem.index
+        self:getTransition("t"..index):play()
+    end
+end
+
+function UICompStSuccinct:recastingResult()
+    self:refreshView(self._itemInfo, self._openViewType)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_OPEN_STRENGTHEN_MASK, false)
+    AudioManager:playSound(Constant.SoundEffect.EventFanfare)
+end
+
+function UICompStSuccinct:onCancelBtnClick()
+    self._itemInfo = nil
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_CANCEL_EQUIP_CHOOSE, {needRefresh = true})
+end
+
+function UICompStSuccinct:onSelectBtnClick()
+    self._selectIdx = self._selectIdx == 1 and 0 or 1
+    self._controlBtn:setSelectedIndex(self._selectIdx)
+end
+
+function UICompStSuccinct:onClickItem(context)
+    local data = context:getData()
+    if self._selectItem then
+        self._selectItem:changeSelect(false)
+    end
+    self._selectItem = data
+    self._selectItem:changeSelect(true)
+end
+
+function UICompStSuccinct:renderListItem(index, obj)
+    local equipProp = self._attr[index + 1]
+    obj:setAttr(equipProp)
+    obj.index = index + 1
+    obj:insertObjectToFactory(self)
+end
+
+--装备转换
+
+--刷新左侧界面
+function UICompStSuccinct:refreshLeftView()
+    local itemInfo = self._itemInfo
+
+    if self._icon1 == nil then
+        self._icon1 = fgui.UIPackage:createObject("Item", "Item")
+        self._icon1:insertObjectToFactory(self)
+        self._icon1:setPivot(0.5,0.5, true)
+        self._equipIcon1:addChild(self._icon1)
+    end
+    if itemInfo then
+        self._icon1:setItemInfo(itemInfo)
+    end
+    self._icon1:setVisible(itemInfo ~= nil)
+    self._costLoader:setVisible(itemInfo ~= nil)
+
+    --特效是否显示
+    self._costBar1:setVisible(itemInfo ~= nil)
+    --刷新数据
+    self._emptyLabel1:setText(GReadText.KEY_STRENGTHEN_TIPS73)
+    self._emptyLabel1:setVisible(itemInfo == nil)
+    self._nameLabel1:setVisible(itemInfo ~= nil)
+    self._attrlist1:setVisible(itemInfo ~= nil)
+    self._item:setVisible(false)
+    if itemInfo then
+        local itemConfig = self._itemInfo:getItemMeta()
+        local lvStr = lt.StringManager:getRomeNumber(self._itemInfo:getILevel())
+        self._nameLabel1:setText(itemConfig:getName()..lvStr)
+        self._transformAttr = StrengthenModule:transformAffix(itemInfo)
+        self._attrlist1:setNumItems(#self._transformAttr)
+        self._metaList = StrengthenModule:getTransformData(itemInfo:getItemId())
+    else
+        self._attrlist1:setNumItems(0)
+        self._metaList = {}
+    end
+    self._chooseTab:setVisible(#self._metaList > 1)
+    self._transformBtn:setGrayed(true)
+    self._transformControlTab:setSelectedIndex(0)
+    --判断是否直接显示右边(一个就直接显示)
+    if #self._metaList == 1 then
+        self._transformMeta = self._metaList[1]
+    end
+    --刷新选择框
+    self._chooselist:setNumItems(#self._metaList > 1 and #self._metaList or 0)
+    if self._transformInfo then
+        self._transformInfo:setSelect(false)
+    end
+    self._transformInfo = nil
+
+    --刷新右侧
+    self:refreshRightView()
+
+    --判断是否开着结果界面，如果开着要关掉
+    if self._resultNode:isVisible() then
+        self._mainNode:setVisible(true)
+        self._resultNode:setVisible(false)
+    end
+end
+
+--刷新右侧界面
+function UICompStSuccinct:refreshRightView()
+    local meta = self._transformMeta
+    --特效是否显示
+    self._costBar2:setVisible(meta ~= nil)
+    --刷新数据
+    self._emptyLabel2:setText(#self._metaList <= 1 and GReadText.KEY_STRENGTHEN_TIPS73 or GReadText.KEY_STRENGTHEN_TIPS74)
+    self._emptyLabel2:setVisible(meta == nil)
+    self._nameLabel2:setVisible(meta ~= nil)
+    self._attrlist2:setVisible(meta ~= nil)
+    self._transformItem:setVisible(meta ~= nil)
+    self._transformCostLabel:setVisible(meta ~= nil)
+    self._costImg:setVisible(meta ~= nil)
+    self._chooseText:setText(meta ~= nil and meta:getTransformType() or GReadText.KEY_STRENGTHEN_TIPS80)
+
+    if self._icon2 == nil then
+        self._icon2 = fgui.UIPackage:createObject("Item", "Item")
+        self._icon2:insertObjectToFactory(self)
+        self._icon2:setPivot(0.5,0.5, true)
+        self._equipIcon2:addChild(self._icon2)
+    end
+
+    if self._itemInfo and meta then
+        local itemConfig = CacheManager:queryEquipMeta(meta:getTransformItemIdx())
+        local lvStr = lt.StringManager:getRomeNumber(self._itemInfo:getILevel())
+        self._nameLabel2:setText(itemConfig:getName()..lvStr)
+        self._attrlist2:setNumItems(#self._transformAttr)
+        local itemInfo = clone(self._itemInfo)
+        itemInfo:setItemId(meta:getTransformItemIdx())
+        itemInfo:initMetaInfo()
+        self._icon2:setItemInfo(itemInfo)
+        self._icon2:setVisible(true)
+        --消耗显示
+        local cost = meta:getCostItems()
+        self._transformItem:setInfo(string.format(_GURL.GetImageItem, tonumber(cost[1][2])))
+        self._transformItem:setItemNums("")
+        self._transformItem:setNeedNum(ItemModule:getItemNum(tonumber(cost[1][2])), tonumber(cost[1][3]))
+        self._transformItem:setIconSize(68, 68)
+        self._transformItem:setIconScale(0.8, 0.8)
+        self._transformCostLabel:setText(CacheManager:getItemMeta(tonumber(cost[1][2])):getName())
+        local canSuccinct = ItemModule:enoughItem(1, tonumber(cost[1][2]), tonumber(cost[1][3]), {tips = false})
+        self._transformBtn:setGrayed(not canSuccinct)
+
+        local _itemkey = string.format("%d_%d",tonumber(cost[1][1]),tonumber(cost[1][2]))
+        self._itemContentTable[_itemkey] = true
+    else
+        self._attrlist2:setNumItems(0)
+        self._icon2:setVisible(false)
+        self._transformBtn:setGrayed(true)
+    end
+end
+
+--显示结果界面
+function UICompStSuccinct:showTransformResult(objUid)
+    local itemdata = ItemModule:getItemByUid(objUid)
+    if self._iconResult == nil then
+        self._iconResult = fgui.UIPackage:createObject("Item", "Item")
+        self._iconResult:insertObjectToFactory(self)
+        self._iconResult:setPivot(0.5,0.5, true)
+        self._iconPanel:addChild(self._iconResult)
+    end
+    if itemdata then
+        self._iconResult:setItemInfo(itemdata)
+    end
+
+    self._transformAttr = StrengthenModule:transformAffix(itemdata)
+    self._mainNode:setVisible(false)
+    self._resultNode:setVisible(true)
+    self._transformAttrlist:setNumItems(#self._transformAttr)
+    --播放特效
+    self._animNode:setVisible(true)
+    self._spine:setAnimation(0, "XinZhuangBei", false)
+end
+
+function UICompStSuccinct:onTabClick()
+    local index = self._transformControlTab:getSelectedIndex()
+    self._transformControlTab:setSelectedIndex(index == 0 and 1 or 0)
+end
+
+function UICompStSuccinct:onTransformClickItem(context)
+    local data = context:getData()
+    self._transformMeta = data:getMeta()
+    self:refreshRightView()
+    self._transformControlTab:setSelectedIndex(0)
+    --切换选中
+    if self._transformInfo then
+        self._transformInfo:setSelect(false)
+    end
+    self._transformInfo = data
+    self._transformInfo:setSelect(true)
+end
+
+function UICompStSuccinct:onTransformBtnClick()
+    if self._transformMeta then
+        local cost = self._transformMeta:getCostItems()
+        local canTransform = ItemModule:enoughItem(tonumber(cost[1][1]), tonumber(cost[1][2]), tonumber(cost[1][3]), {tips = true})
+        if canTransform then
+            local str = ""
+            local types = self._transformMeta:getType()
+            local fromType = self._transformMeta:getTypeName()
+            local toType = self._transformMeta:getTransformType()
+            if types == Constant.TRANSFORMTYPE.ARMSTYPE then
+                str = string.format(GReadText.KEY_STRENGTHEN_TIPS82, "[color=#00ff00]"..fromType.."→"..toType.."[/color]")
+            elseif types == Constant.TRANSFORMTYPE.CLOTHESGENDER then
+                str = string.format(GReadText.KEY_STRENGTHEN_TIPS83, "[color=#00ff00]"..fromType.."→"..toType.."[/color]")
+            end
+            str = GReadText.KEY_STRENGTHEN_TIPS81.."\n"..str
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_MESSAGEBOX, {content = str, confirmCallback = function()
+                --服务器交互
+                StrengthenModule:sendEquipTransform(self._itemInfo:getItemUid(), self._transformMeta:getId())
+            end})
+        end
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = "Please select the equipment to be converted"})
+    end
+end
+
+function UICompStSuccinct:onHelpBtnClick()
+    local helpStr = GReadText.KEY_STRENGTHEN_TIPS84
+    local race = GameModule:getHeroRace()
+    if race == Constant.RaceType.Vampire then
+        helpStr = GReadText.KEY_STRENGTHEN_TIPS85
+    elseif race == Constant.RaceType.Ousters then
+        helpStr = GReadText.KEY_STRENGTHEN_TIPS86
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {content = helpStr})
+end
+
+function UICompStSuccinct:renderTransformListItem(index, obj)
+    local equipProp = self._transformAttr[index + 1]
+    obj:setAttr(equipProp)
+    obj:insertObjectToFactory(self)
+end
+
+function UICompStSuccinct:renderChooseItem(index, obj)
+    obj:setInfo(self._metaList[index + 1])
+    obj:insertObjectToFactory(self)
+end
+
+function UICompStSuccinct:onSureBtnClick()
+    self:onCancelBtnClick()
+    self._mainNode:setVisible(true)
+    self._resultNode:setVisible(false)
+end
+
+--------------------服务器回调--------------------
+function UICompStSuccinct:equipTransform(event)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_OPEN_STRENGTHEN_MASK, true)
+    self._costImg:setVisible(false)
+    --获得新装备
+    self._params = event.param
+    --播放特效
+    self._processNode:setVisible(true)
+    self._processSpine:setAnimation(0, "ZhuanHuan", false)
+    self._downNode:setVisible(true)
+    self._downSpine:setAnimation(0, "lizi_feiXIng", false)
+end
+
+--动画回调
+function UICompStSuccinct:spineAnimationEnd(event)
+    if event.type == "complete" then
+        if event.animation == "XinZhuangBei" then
+            self._animNode:setVisible(false)
+        elseif event.animation == "ZhuanHuan" then
+            self._processNode:setVisible(false)
+            --展示结果界面
+            local objUid = self._params.transformEquipUid
+            self:showTransformResult(objUid)
+            --弹出消息
+            local tipStr = #self._metaList > 1 and GReadText.KEY_STRENGTHEN_TIPS77 or GReadText.KEY_STRENGTHEN_TIPS78
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = tipStr})
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_OPEN_STRENGTHEN_MASK, false)
+            AudioManager:playSound(Constant.SoundEffect.EventFanfare)
+        elseif event.animation == "lizi_feiXIng" then
+            self._downNode:setVisible(false)
+        end
+    end
+end
+
+function UICompStSuccinct:checkGuide()
+    if GuideModule:checkCanGuide(Constant.GUIDE_ID.PURIFY5) then
+        local btn = self:getChild("btn_yeqian2")
+        local pos = self:displayObject():convertToWorldSpace(btn:getPosition())
+        pos = cc.p(pos.x, pos.y)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.PURIFY5, btn, pos, function()
+            self:openFiterView(btn)
+        end)
+        return
+    end
+
+    if GuideModule:checkCanGuide(Constant.GUIDE_ID.TRANSFORM5) then
+        local btn = self:getChild("btn_yeqian3")
+        local pos = self:displayObject():convertToWorldSpace(btn:getPosition())
+        pos = cc.p(pos.x, pos.y)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.TRANSFORM5, btn, pos, function()
+            self:openFiterView(btn)
+        end)
+        return
+    end
+end
+
+function UICompStSuccinct:refreshItemNum(event)
+    if event and event.name == "NTF_UPDATE_ITEM_NUMB" then
+        if event.param and event.param.content then
+            if self._itemContentTable and self._itemContentTable[event.param.content] then
+                
+            else
+                return
+            end
+        end
+    end
+    if self._openViewType == SUCCINCT_TYPES.RECASTING then
+        if self._itemInfo and self._cost then
+            self._item:setInfo({1, self._cost, 1})
+            local costs, lord = StrengthenModule:getRecastingItem(self._itemInfo)
+            local canSuccinct = ItemModule:enoughItem(1, Constant.TYPE_VAULE_ITEM.COIN, lord, {tips = false})
+            if canSuccinct then
+                canSuccinct = ItemModule:enoughItem(1, costs, 1, {tips = false})
+            end
+            self._levelupBtn:setGrayed(not canSuccinct)
+        end
+    elseif self._openViewType == SUCCINCT_TYPES.PURIFY then
+        if self._itemInfo and self._cost then
+            self._item:setInfo({1, self._cost, 1})
+            local canSuccinct = ItemModule:enoughItem(1, self._cost, 1, {tips = false})
+            self._levelupBtn:setGrayed(not canSuccinct)
+        end
+    elseif self._openViewType == SUCCINCT_TYPES.TRANSFORM then
+        if self._itemInfo and self._transformMeta then
+            local cost = self._transformMeta:getCostItems()
+            self._transformItem:setNeedNum(ItemModule:getItemNum(tonumber(cost[1][2])), tonumber(cost[1][3]))
+            local canSuccinct = ItemModule:enoughItem(1, tonumber(cost[1][2]), tonumber(cost[1][3]), {tips = false})
+            self._transformBtn:setGrayed(not canSuccinct)
+        end
+    end
+end
+
+function UICompStSuccinct:refreshMoney()
+    if self._openViewType == SUCCINCT_TYPES.RECASTING then
+        if self._itemInfo then
+            local costs, lord = StrengthenModule:getRecastingItem(self._itemInfo)
+            local canSuccinct = ItemModule:enoughItem(1, Constant.TYPE_VAULE_ITEM.COIN, lord, {tips = false})
+            local color = canSuccinct and "[color=#00ff00]" or "[color=#ff0000]"
+            local lordStr = color..CommonFunc:changeNumberShow(lord).."[/color]"
+            self._costLabel:setText(string.format(GReadText.KEY_NPC_CLS_SKILL_TIPS3, _GURL.GetImageCoin..lordStr))
+            if canSuccinct then
+                canSuccinct = ItemModule:enoughItem(1, costs, 1, {tips = false})
+            end
+            self._levelupBtn:setGrayed(not canSuccinct)
+        end
+    end
+end
+
+return UICompStSuccinct

@@ -1,0 +1,249 @@
+---@人族传送界面
+---@class UIWndSlayerTransmitMap:UIWindowBase
+local UIWndSlayerTransmitMap = class("UIWndSlayerTransmitMap", lt.UIWindowBase)
+
+local NtfManager = lt.NtfManager
+local Constant = lt.Constant
+local CacheManager = lt.CacheManager
+local GameModule = lt.GameModule
+local MaxMapIdx = 8
+
+function UIWndSlayerTransmitMap:ctor(param)
+    self:registerComponent("UICompSlayerTransmitSubMap")
+    UIWndSlayerTransmitMap.super.ctor(self, param)
+    self._idx = 0
+    self._targetList = nil
+    self._listMap = nil
+    self._miniMap = nil
+    self._nameLabel = nil
+    self._mapList = nil
+    self._transmitSubMap = nil
+end
+
+function UIWndSlayerTransmitMap:onClear()
+    self.listNode = nil
+    self._idx = nil
+    if self._targetList then
+        self._targetList:removeChildrenToPool()
+        self._targetList:removeItemRenderer()
+        self._targetList:removeEventListener(fgui.UIEventType.ClickItem)
+        self._targetList = nil
+    end
+    self._listMap = nil
+    self._miniMap = nil
+    self._nameLabel = nil
+    self._mapList = nil
+    self._transmitSubMap = nil
+    self:unregisterAllComponent()
+    UIWndSlayerTransmitMap.super.onClear(self)
+end
+
+function UIWndSlayerTransmitMap:onEnter()
+    UIWndSlayerTransmitMap.super.onEnter(self)
+    if self:getContentPane() then
+        self:refreshSelect(1)
+    end
+end
+
+function UIWndSlayerTransmitMap:onExit()
+    UIWndSlayerTransmitMap.super.onExit(self)
+end
+function UIWndSlayerTransmitMap:onShown()
+    UIWndSlayerTransmitMap.super.onShown(self)
+    -- self._targetList:setItemRenderer(handler(self, self.renderTargetItem))
+    self._targetList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickTargetItem))
+end
+
+function UIWndSlayerTransmitMap:onHide()
+    self:resetView()
+    if self._targetList then
+        self._targetList:removeChildrenToPool()
+        self._targetList:removeEventListener(fgui.UIEventType.ClickItem)
+    end
+    if self.listNode then
+        for _,obj in pairs(self.listNode) do
+            obj:removeClickListener()
+        end
+    end
+    UIWndSlayerTransmitMap.super.onHide(self)
+end
+
+function UIWndSlayerTransmitMap:onInit()
+    UIWndSlayerTransmitMap.super.onInit(self, _GURL.GetSlayerTransmitMap)
+    self._targetList = self:getChild("targetList")
+    self._targetList:setItemRenderer(handler(self, self.renderTargetItem))
+    self._listMap = self:getChild("list_map")
+    self._miniMap = self._listMap:getChildAt(0)
+    self._nameLabel = self:getChild("mapName")
+    
+    --八个地区
+    self._mapList = {}
+    self.listNode = {}
+    for i = 1, MaxMapIdx do
+        local mapNode = self._miniMap:getChild("n"..i)
+        local meta = CacheManager:getMapTransferPointMeta(i)
+        local name = mapNode:getChild("name")
+        name:setText(string.split(meta[1]:getMapName(), "_")[1])
+        local mapMeta = CacheManager:getMapMeta(meta[1]:getMapCode())
+        local startLvl, endLvl = mapMeta:getLvlRecommend()
+        mapNode:getChild("lvl"):setText(string.format("Lv%s-Lv%s",startLvl, endLvl))
+        local mapBtn = mapNode:getChild("btn_click")
+        mapBtn.index = i
+        mapBtn:addClickListener(handler(self, self.onMapAreaClick))
+        table.insert(self.listNode,mapBtn)
+        local race = GameModule:getHeroRace()
+        if race == Constant.RaceType.Slayer and i == 4 then --人族不能进卡斯塔罗(id4,特殊写死)
+            mapNode:setGrayed(true)
+            name:setColor(cc.c3b(0xAE, 0xAC, 0xAE))
+        end
+        table.insert(self._mapList, mapNode)
+    end
+    
+    local fitMapList = self:getFitMap()
+    self._targetList:setNumItems(#fitMapList)
+
+    self:refreshSelect(1)
+end
+
+function UIWndSlayerTransmitMap:initUI()
+    
+end
+
+function UIWndSlayerTransmitMap:refreshMiniMap()
+    if self._idx ~= 0 then
+        local meta = CacheManager:getMapTransferPointMeta(self._idx)
+        self._nameLabel:setText(string.split(meta[1]:getMapName(), "_")[1])
+    end
+end
+
+function UIWndSlayerTransmitMap:renderTargetItem(index, obj)
+    local fitMapList = self:getFitMap()
+    obj:getChild("title"):setText(string.split(fitMapList[index+1][1]:getMapName(), "_")[1])
+    obj.index = index + 1
+end
+
+function UIWndSlayerTransmitMap:onClickTargetItem(context)
+    local obj = context:getData()
+    local fitMapList = self:getFitMap()
+    local data = fitMapList[obj.index]
+    self:refreshSelect(data[1]:getMapGroup())
+end
+
+function UIWndSlayerTransmitMap:onMapAreaClick(target)
+    local index = target:getSender().index
+    local meta = CacheManager:getMapTransferPointMeta(index)
+    self:refreshSelect(meta[1]:getMapGroup())
+end
+
+--根据种族获得相应地图
+function UIWndSlayerTransmitMap:getFitMap()
+    local race = GameModule:getHeroRace()
+    local maplist = {}
+    for i = 1, MaxMapIdx do
+        local meta = CacheManager:getMapTransferPointMeta(i)
+        local raceContain = meta[1]:getRace()
+        if raceContain == "0" or string.find(raceContain, race) then
+            table.insert(maplist, meta)
+        end
+    end
+    return maplist
+end
+
+--根据地图index获得百分比位置
+function UIWndSlayerTransmitMap:getMapPerByIdx(mapIdx)
+    local perX = {0, 0.675, 1, 0.335, 0.675, 1, 0.675, 0.675}
+    local perY = {0, 0, 0, 0.335, 0.335, 0.335, 0.67, 1}
+    return perX[mapIdx], perY[mapIdx]
+end
+
+--刷新选中状态
+function UIWndSlayerTransmitMap:refreshSelect(idx)
+    --人族不能进卡斯塔罗(id4,特殊写死)
+    local race = GameModule:getHeroRace()
+    if race == Constant.RaceType.Slayer and idx == 4 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = "This map cannot be reached by teleportation"})
+        return
+    end
+    --如果选中一样的idx两次则进入二级界面
+    if self._idx == idx then
+        self:openSubView()
+        return
+    end
+    local fitMapList = self:getFitMap()
+    local childIndex = 0
+    if self._idx ~= 0 then
+        local obj = self._mapList[self._idx]
+        obj:getChild("select"):setVisible(false)
+        for i = 1, #fitMapList do
+            if fitMapList[i][1]:getMapGroup() == self._idx then
+                childIndex = self._targetList:itemIndexToChildIndex(i-1)
+                break
+            end
+        end
+        local context = self._targetList:getChildAt(childIndex)
+        context:getChild("icon"):setURL(string.format(_GURL.GetMiniMapFGUI, "bg_ditcs_04_s"))
+    end
+    self._idx = idx
+    local newObj = self._mapList[self._idx]
+    newObj:getChild("select"):setVisible(true)
+    childIndex = 0
+    for i = 1, #fitMapList do
+        if fitMapList[i][1]:getMapGroup() == self._idx then
+            childIndex = self._targetList:itemIndexToChildIndex(i-1)
+            break
+        end
+    end
+    local newContext = self._targetList:getChildAt(childIndex)
+    newContext:getChild("icon"):setURL(string.format(_GURL.GetMiniMapFGUI, "bg_ditcs_05_s"))
+    self._targetList:scrollToView(childIndex)
+
+    local scrollPane = self._listMap:getScrollPane()
+    local perX, perY = self:getMapPerByIdx(idx)
+    scrollPane:setPercX(perX, true)
+    scrollPane:setPercY(perY, true)
+
+    self:refreshMiniMap()
+end
+
+--二级界面
+function UIWndSlayerTransmitMap:openSubView()
+    if not self._transmitSubMap then
+        self._transmitSubMap = fgui.UIPackage:createObject("MiniMap", "SlayerTransmitSubMap")
+        self._transmitSubMap:insertObjectToFactory(self)
+        self._transmitSubMap:setPosition(0,0)
+        self._transmitSubMap:initUI()
+        self:addChild(self._transmitSubMap)
+    end
+    local meta = CacheManager:getMapTransferPointMeta(self._idx)
+    local objId = self:getParam().param.objId
+    self._transmitSubMap:refreshView(meta, objId)
+    self._transmitSubMap:setVisible(true)
+end
+
+--重置界面
+function UIWndSlayerTransmitMap:resetView()
+    self._nameLabel:setText("")
+    local scrollPane = self._listMap:getScrollPane()
+    scrollPane:setPercX(0)
+    scrollPane:setPercY(0)
+    if self._idx ~= 0 then
+        local obj = self._mapList[self._idx]
+        obj:getChild("select"):setVisible(false)
+        local fitMapList = self:getFitMap()
+        local childIndex = 0
+        for i = 1, #fitMapList do
+            if fitMapList[i][1]:getMapGroup() == self._idx then
+                childIndex = self._targetList:itemIndexToChildIndex(i-1)
+                break
+            end
+        end
+        local context = self._targetList:getChildAt(childIndex)
+        context:getChild("icon"):setURL(string.format(_GURL.GetMiniMapFGUI, "bg_ditcs_04_s"))
+    end
+    self._idx = 0
+    if self._transmitSubMap then
+        self._transmitSubMap:setVisible(false)
+    end
+end
+
+return UIWndSlayerTransmitMap

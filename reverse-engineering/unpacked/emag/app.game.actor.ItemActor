@@ -1,0 +1,144 @@
+local constant = lt.Constant
+local ItemModule = lt.ItemModule
+local ItemActor = class("ItemActor", function()
+    return display.newNode()
+end)
+
+ItemActor._itemData = nil
+
+ItemActor._sprite   = nil
+ItemActor._nameNode = nil
+ItemActor._textName = nil
+
+local qualityColor = {
+    [0] = cc.c3b(255, 255, 255),
+    [1] = cc.c3b(255, 255, 0),
+    [2] = cc.c3b(155, 155, 255),
+    [3] = cc.c3b(255, 80, 80),
+}
+
+local qualitySpine = {
+    [1] = "DiaoLuo_Skeleton_Yellow",
+    [2] = "DiaoLuo_Skeleton_Blue",
+    [3] = "DiaoLuo_Skeleton_Red"
+}
+  
+function ItemActor:ctor(itemData)
+    self._itemData = itemData
+
+    local quality = self._itemData:getQuality()
+    local qualitySpineMeta = qualitySpine[quality]
+    if qualitySpineMeta then
+        self._spineQuality = lt.SkeletonManager:createSkeletonEffectWithFile("Drop", "DiaoLuo_Skeleton",1.3)
+        self:addChild(self._spineQuality)
+        self._spineQuality:setAnimation(0, qualitySpineMeta, true)
+    end
+
+    -- local path = string.format("icon/item/item_d_%05d.png", self._itemData:getIconId())
+    local itemType = self._itemData:getItemType()
+    local iconPath = "icon/itemTL/ground/prop/%s.png"
+    if itemType == constant.ItemType.ITEM_TYPE_PROP then
+        iconPath = "icon/itemTL/ground/prop/%s.png"
+    elseif itemType == constant.ItemType.ITEM_TYPE_EQUIP then
+        iconPath = "icon/itemTL/ground/equip/%s.png"
+    end
+    local path = string.format(iconPath, self._itemData:getIconId())
+    -- local path = string.format("icon/item/item_%05d.png", self._itemData:getIconId())
+    self._sprite = display.newSprite(path)
+    if self._sprite then
+        self._sprite:setAnchorPoint(0.5, 0.5)
+        self:addChild(self._sprite)
+
+        -- 物品掉落特效 闪闪发光特效
+        self._armature = lt.ArmatureAni.new("effect/ui/ItemShiningEffect/ItemShiningEffect.ExportJson", "ItemShiningEffect")
+        if self._armature then
+            self._armature:playWithIndex(0, true)
+            self:addChild(self._armature)
+        end
+    end
+
+    self._nameNode = display.newNode()
+
+    self._textName = lt.UIManager:createTextNameNode(self._itemData:getName(), 12)
+    self._textName:setAnchorPoint(0.5, 1)
+    self._textName:setPosition(0, 25)
+    self._textName:setVisible(false)
+    self._nameNode:addChild(self._textName)
+    -- self:addChild(self._textName)
+
+
+    if itemType == lt.Constant.ItemType.ITEM_TYPE_EQUIP then
+        local affixId = self._itemData:getFirstAffixId() 
+        self._tColor = ItemModule:getAffixColor(affixId)
+    end
+    self._itemObjId = self._itemData:getObjId()
+    self:loadShader(false)
+
+    
+
+    -- self._textName = cc.Label:createWithBMFont("font/bmf_name.fnt", self._itemData:getName(), cc.TEXT_ALIGNMENT_CENTER)
+    -- self._textName:setScale(0.8)
+    -- self._textName:setAnchorPoint(0.5, 1)
+    -- self._textName:setPosition(0, 25)
+    -- self._textName:setVisible(false)
+    -- self._nameNode:addChild(self._textName)
+    
+end
+
+function ItemActor:loadShader(isBorder)
+    local isBorderFlag = isBorder and 1 or 0
+    local param = {
+        node = self._sprite, --self._icon:displayObject(), 
+        isBorder = isBorderFlag,
+        bColor = cc.vec3(1.0, 1.0, 1.0),
+        tColor =  self._tColor;
+        isBlink = false,
+        outLineWidth = 1,
+        objId = self._itemObjId
+    }
+    lt.ShaderBackendUtil:makeBorderEffect(param.node, param)
+end
+
+function ItemActor:onClear()
+    if self._sprite then
+        self._sprite:removeSelf()
+        self._sprite = nil
+    end
+    if self._armature then
+        self._armature:removeSelf()
+        self._armature = nil
+    end
+    if self._spineQuality then
+        self._spineQuality:removeSelf()
+        self._spineQuality = nil
+    end
+    self._nameNode:removeSelf()
+end
+
+function ItemActor:onUpdate()
+    self:onUpdateName()
+end
+
+function ItemActor:onUpdateName()
+    if not self._itemData then
+        return
+    end
+    
+    local visible = true
+    self._textName:setVisible(visible)
+    if visible then
+        local quality = self._itemData:getQuality()
+        self._textName:setColor(qualityColor[quality])
+    end
+end
+
+function ItemActor:setPositionEx(x, y)
+    self:setPosition(x, y)
+    self._nameNode:setPosition(x, y)
+end
+
+function ItemActor:getNameNode()
+    return self._nameNode
+end
+
+return ItemActor

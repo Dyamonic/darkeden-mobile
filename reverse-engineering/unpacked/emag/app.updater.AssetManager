@@ -1,0 +1,120 @@
+local AssetManager = {}
+
+local ConfigLoader = lt.ConfigLoader
+
+AssetManager.REMOTE_LOADER_TYPE_EFFECT = "effect"
+AssetManager.REMOTE_LOADER_TYPE_MODEL = "tlmodel"
+local RemoteLoaderUrl = {
+    ["effect"] = true,
+    ["tlmodel"] = true,
+}
+
+function AssetManager:init()
+    -- -- 先屏蔽 开放再打开
+    -- if true then
+    --     return
+    -- end
+
+    if not _G_TL_URL or not _G_CDN_URL or not _G_API_CENTER_FLAG or ConfigLoader:isSkipUpdate() then
+		return
+	end
+
+    self._updaterCahche = lt.UpdaterCache.new()
+    self._updater = lt.Updater.new()
+end
+
+function AssetManager:clear()
+    if self._updaterCahche then
+        self._updaterCahche:onClear()
+        self._updaterCahche = nil
+    end
+
+    if self._updater then
+        self._updater:onClear()
+        self._updater = nil
+    end
+end
+
+function AssetManager:loadRemoteAtlas(path, type, callback)
+    -- 忽略更新
+    if ConfigLoader:isSkipUpdate() then
+        callback(path)
+        return false
+    end
+
+    local url = self:pathToUrl(path)
+
+    local isRemote = self:checkRemoteAtlas(url, type)
+    if isRemote then
+        -- 启动远程下载，后台下载
+        self._updater:startDownload(url, callback)
+
+        return isRemote
+    end
+
+    if callback then
+        callback(path)
+    end
+
+    return isRemote
+end
+
+--[[
+    -- 下载 plist and pvr.ccz
+    第一：需要判断是否为需要从远程加载的类型 [配置到表或者配置文件中] 写死也行
+    第二：判断本地localResMap是否有，为空则进入第四步，否则进入第三步。
+    第三：如果存在则从remote中取出，再与其对比md5，一致则用本地，不一致进入第四步
+    第四：取remote进行下载
+]]
+function AssetManager:checkRemoteAtlas(url, type)
+    -- 判断类型 否则返回false
+    if not RemoteLoaderUrl[type] then
+        return false
+    end
+
+    -- localResMap
+    local md5Local = self._updaterCahche:getUrlFromLocal(url)
+    if not md5Local or #md5Local < 2 then
+        return true
+    end
+
+    local md5Remote = self._updaterCahche:getUrlFromRemote(url)
+    if not md5Remote or #md5Remote < 2 then
+        return false
+    end
+
+    -- 对比md5, 一致则用本地
+    if md5Remote[1] == md5Local[1] then
+        return false
+    end
+
+    return true
+end
+
+-- 远程加载
+function AssetManager:getUrlFromRemote(url)
+   return self._updaterCahche:getUrlFromRemote(url)
+end
+
+-- 保存下载好的文件
+function AssetManager:saveFileDownloadInfo(value)
+    self._updaterCahche:saveFileDownloadInfo(value)
+end
+
+function AssetManager:getRemoteVersion()
+    if self._updaterCahche == nil then
+        return ""
+    end
+
+    return self._updaterCahche:getRemoteVersion()
+end
+
+function AssetManager:IsOpenDownload()
+    return self._updaterCahche ~= nil and self._updater ~= nil
+end
+
+function AssetManager:pathToUrl(path)
+    return "res/" .. path .. ".zip"
+end
+
+return AssetManager

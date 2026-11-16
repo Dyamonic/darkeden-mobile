@@ -1,0 +1,199 @@
+﻿npc,english,map,zone,tile_x,tile_y,race_display
+10,Bathory,1104,Bathory Lair,27,17,0
+11,Tepez,1114,Tepes Lair,22,14,0
+12,Bathory,1106,Bathory Lair Clon,27,17,0
+13,Tepez,1115,Tepes Lair Clon,22,14,0
+101,Matt (Guide),12,Eslania Northwest,137,145,0
+102,Jack (Comms),12,Eslania Northwest,159,167,0
+103,Terry (Class Trainer),12,Eslania Northwest,211,116,0
+104,Nanxi (Supplies),12,Eslania Northwest,220,113,0
+105,Tana (Class Guide),12,Eslania Northwest,207,98,0
+106,Zach (Skills),12,Eslania Northwest,217,95,0
+107,Kaizer (Blades & Swords),12,Eslania Northwest,222,95,0
+110,Christine (Storage),2011,Guild Cleric 1F,24,21,0
+111,Robin (Storage),64,Perona Southwest,17,222,0
+112,Jenson (Guns),64,Perona Southwest,11,224,0
+113,Yuwa (Blades),64,Perona Southwest,10,229,0
+114,Han (Swords),64,Perona Southwest,8,234,0
+115,Rakomanov (Healer),64,Perona Southwest,17,239,0
+116,Haniva (Blessings),64,Perona Southwest,20,237,0
+117,Friedlie (Class Exchange),64,Perona Southwest,23,235,0
+118,Kalman (Holy Book),64,Perona Southwest,36,228,0
+119,Smarrovic (Silver Plating),2021,Guild Knight 1F,31,17,0
+120,Argonos (Travel),64,Perona Southwest,29,213,0
+121,Johanna (Supplies),2021,Guild Knight 1F,43,39,0
+122,Chris (Storage),2021,Guild Knight 1F,20,23,0
+123,Shandra (Armor),2022,Guild Knight 2F,45,35,0
+124,Golub (Jewelry),2022,Guild Knight 2F,38,25,0
+125,Sihara (Gloves & Boots),2022,Guild Knight 2F,19,25,0
+126,Kenan (Donations),2023,Guild Knight 3F,35,61,0
+127,Kevin (Storage),2001,Guild Army 1F,23,22,0
+128,David (Travel),2001,Guild Army 1F,33,25,0
+129,Salamander (Supplies),2001,Guild Army 1F,42,36,0
+130,Clive (Jewelry),2002,Guild Army 2F,44,33,0
+131,Sonia (Armor),2002,Guild Army 2F,31,21,0
+132,Krall (Weapons),2002,Guild Army 2F,19,26,0
+133,Drake (Guns),2003,Guild Army 3F,31,25,0
+134,Sutan (Smg),2003,Guild Army 3F,21,34,0
+135,Smith (Donations),2003,Guild Army 3F,30,52,0
+136,Xinsen (Supplies),2011,Guild Cleric 1F,42,39,0
+137,Grifen (Repairs),2011,Guild Cleric 1F,35,26,0
+138,Richardson (General Goods),2012,Guild Cleric 2F,42,33,0
+139,Nikola (Equipment),2012,Guild Cleric 2F,33,24,0
+140,Yebukini (Marriage),2012,Guild Cleric 2F,17,29,0
+141,Caine,2012,Guild Cleric 2F,32,48,0
+142,Stoyanov (Donations),2013,Guild Cleric 3F,34,57,0
+143,Shamor (Equipment),2013,Guild Cleric 3F,20,33,0
+144,Music Palace Messenger,1402,Lusttower 2F,167,95,0
+145,Music Palace Messenger,1402,Lusttower 2F,94,172,0
+154,Aislin (Reset),1201,Castle Octavus,65,104,0
+155,Ellen (Guild Battle),1201,Castle Octavus,97,70,0
+156,Simon (Steward),1201,Castle Octavus,77,45,0
+157,Harold (Repairs),1203,Castle Septimus,79,92,0
+158,Judith (Supplies),1203,Castle Septimus,111,53,0
+159,Brenda (Steward),1203,Castle Septimus,89,29,0
+160,Crow (Armor),34,Drobeta Southwest,35,190,0
+161,Hesbro (Silver Plating),2023,Guild Knight 3F,13,46,0
+162,Denis (Repairs),2101,Tutorial North,66,17,0
+163,rare book (Supplies),2102,Tutorial South,33,90,0
+164,Supervisory Crystal Ball (Exchange),5000,Hell Garden 1F,88,110,0
+201,Sola (Guide),1311,Ousters Village,48,98,0
+202,Li Te (Donations),1311,Ousters Village,46,51,0
+203,Ravia (Exchange),1311,Ousters Village,102,34,0
+205,Amata (Storage),1311,Ousters Village,13,42,0
+206,Hao La (Repairs),1311,Ousters Village,90,23,0
+207,Aya (Travel),62,Perona Northwest,47,37,0
+209,Manes (General Goods),1311,Ousters Village,111,108,0
+210,Li Te (Donations),62,Perona Northwest,32,22,0
+211,Hao La (Holy Book),62,Perona Northwest,24,42,0
+217,Lowa (Taxes),1205,Castle Pentanus,45,16,0
+218,Rip (Reset),1205,Castle Pentanus,11,51,0
+219,Nitrisha (Guild Battle),1205,Castle Pentanus,79,51,0
+220,Aigino (Steward),1206,Castle Hexserius,55,107,0
+221,Eronia (Repairs),1206,Castle Hexserius,19,79,0
+222,Nassas (Reset),1206,Castle Hexserius,43,49,0
+301,Ballery (Armor),1003,Vampire Village,69,29,0
+302,Foley Colagas (Skills),1003,Vampire Village,91,56,0
+303,Kakun (Guild),1003,Vampire Village,71,92,0
+304,Seth (Jewelry),1003,Vampire Village,46,98,0
+305,Lebeka (Exchange),1003,Vampire Village,44,50,0
+306,Kain (Skills),1007,Rasen Yard,68,21,0
+307,Aiman (Guild),1007,Rasen Yard,23,81,0
+308,Priya (Marriage),1007,Rasen Yard,44,108,0
+309,Murphy (Travel),61,Perona Northeast,98,217,0
+311,Capatini (Storage),1003,Vampire Village,27,73,0
+312,Grippis (Storage),61,Perona Northeast,115,203,0
+313,Belst (Travel),61,Perona Northeast,109,197,0
+323,Beatrix (Steward),1202,Castle Tertius,19,79,0
+324,Hunter (City Steward),1202,Castle Tertius,55,107,0
+325,Mary (Guild Battle),1202,Castle Tertius,43,50,0
+326,Aimi (Guild Battle),1204,Castle Quartus,46,16,0
+327,Morok (Reset),1204,Castle Quartus,11,51,0
+328,Baron (Taxes),1204,Castle Quartus,79,51,0
+329,Laliba (Exchange),23,Limbo Lair Southeast,129,86,0
+330,Agnar (Storage),1007,Rasen Yard,94,73,0
+401,Ortaeus (Attack),1501,Siege Warfare2,34,210,0
+402,Ortaeus (Defense),1501,Siege Warfare2,166,40,0
+403,Septimus (Attack),1503,Siege Warfare4,34,210,0
+404,Septimus (Defense),1503,Siege Warfare4,166,40,0
+405,Sethris (Attack),1502,Siege Warfare3,34,210,0
+406,Sethris (Defense),1502,Siege Warfare3,166,40,0
+407,Quotas (Attack),1504,Siege Warfare5,34,210,0
+408,Quotas (Defense),1504,Siege Warfare5,166,40,0
+409,Pentanus (Attack),1505,Siege Warfare6,34,210,0
+410,Pentanus (Defense),1505,Siege Warfare6,166,40,0
+411,Hexilius (Attack),1506,Siege Warfare7,34,210,0
+412,Hexilius (Defense),1506,Siege Warfare7,166,40,0
+413,Eternal,71,Adam New East,112,216,0
+414,Apollo,71,Adam New East,98,23,0
+415,Manason,72,Adam New C,40,140,0
+416,Pisket,72,Adam New C,90,118,0
+417,Palaros,73,Adam New West,28,25,0
+418,Eric,73,Adam New West,22,222,0
+501,The Corner of the Earth Spirit,62,Perona Northwest,12,9,0
+502,The Corner of the Earth Spirit,61,Perona Northeast,75,115,0
+503,The Corner of the Earth Spirit,64,Perona Southwest,61,42,0
+504,The Corner of the Earth Spirit,63,Perona Southeast,70,170,0
+505,The Corner of the Earth Spirit,52,Timore Northwest,32,176,0
+506,The Corner of the Earth Spirit,52,Timore Northwest,169,96,0
+507,The Corner of the Earth Spirit,54,Timore Southwest,87,208,0
+508,The Corner of the Earth Spirit,54,Timore Southwest,204,90,0
+509,The Corner of the Earth Spirit,51,Timore Northeast,54,203,0
+510,The Corner of the Earth Spirit,51,Timore Northeast,206,64,0
+511,The Corner of the Earth Spirit,53,Timore Southeast,93,53,0
+512,The Corner of the Earth Spirit,53,Timore Southeast,172,194,0
+513,The Corner of the Earth Spirit,92,Vranco Northwest,135,152,0
+514,The Corner of the Earth Spirit,92,Vranco Northwest,249,146,0
+515,The Corner of the Earth Spirit,94,Vranco Southwest,164,65,0
+516,The Corner of the Earth Spirit,94,Vranco Southwest,56,229,0
+517,The Corner of the Earth Spirit,93,Vranco Southeast,45,154,0
+518,The Corner of the Earth Spirit,93,Vranco Southeast,191,178,0
+519,The Corner of the Earth Spirit,91,Vranco Northeast,83,52,0
+520,The Corner of the Earth Spirit,91,Vranco Northeast,120,181,0
+521,The Corner of the Earth Spirit,81,Castalo Northeast,171,100,0
+522,The Corner of the Earth Spirit,1004,Limbo Dungeon,71,68,0
+523,The Corner of the Earth Spirit,1102,Bathory Dungeon B3,61,31,0
+524,The Corner of the Earth Spirit,1105,Tunnel Ghorgova,165,89,0
+525,The Corner of the Earth Spirit,1105,Tunnel Ghorgova,95,201,0
+526,The Corner of the Earth Spirit,1123,Bathory Battlezone,90,42,0
+527,The Corner of the Earth Spirit,1001,Slayers Training,139,134,0
+528,The Corner of the Earth Spirit,1001,Slayers Training,221,47,0
+529,The Corner of the Earth Spirit,1002,Eslania Dungeon,56,64,0
+530,The Corner of the Earth Spirit,1008,Kali Cave,40,81,0
+531,The Corner of the Earth Spirit,1008,Kali Cave,225,209,0
+532,The Corner of the Earth Spirit,1112,Castle Rasen 1 2,72,44,0
+533,The Corner of the Earth Spirit,1011,Losttaiyan B1,14,107,0
+534,The Corner of the Earth Spirit,1126,Drobeta Dungeon V1f,53,70,0
+535,The Corner of the Earth Spirit,1124,Rasen Battlezone,68,59,0
+536,The Corner of the Earth Spirit,1125,Drobeta Dungeon S1f,75,76,0
+537,The Corner of the Earth Spirit,1121,Slayer Battlezone1,74,76,0
+538,The Corner of the Earth Spirit,1311,Ousters Village,43,105,0
+539,The Corner of the Earth Spirit,1322,Ousters Dungeon02,98,76,0
+540,The Corner of the Earth Spirit,1323,Ousters Dungeon03,109,69,0
+541,The Corner of the Earth Spirit,22,Limbo Lair Northwest,216,36,0
+542,The Corner of the Earth Spirit,22,Limbo Lair Northwest,30,202,0
+543,The Corner of the Earth Spirit,24,Limbo Lair Southwest,37,204,0
+544,The Corner of the Earth Spirit,24,Limbo Lair Southwest,218,203,0
+545,The Corner of the Earth Spirit,21,Limbo Lair Northeast,131,39,0
+546,The Corner of the Earth Spirit,21,Limbo Lair Northeast,100,216,0
+547,The Corner of the Earth Spirit,23,Limbo Lair Southeast,129,162,0
+548,The Corner of the Earth Spirit,23,Limbo Lair Southeast,242,207,0
+549,The Corner of the Earth Spirit,12,Eslania Northwest,36,202,0
+550,The Corner of the Earth Spirit,12,Eslania Northwest,143,14,0
+551,The Corner of the Earth Spirit,14,Eslania Southwest,25,211,0
+552,The Corner of the Earth Spirit,14,Eslania Southwest,125,124,0
+553,The Corner of the Earth Spirit,13,Eslania Southeast,43,215,0
+554,The Corner of the Earth Spirit,13,Eslania Southeast,217,43,0
+555,The Corner of the Earth Spirit,11,Eslania Northeast,167,226,0
+556,The Corner of the Earth Spirit,11,Eslania Northeast,81,43,0
+557,The Corner of the Earth Spirit,32,Drobeta Northwest,124,144,0
+558,The Corner of the Earth Spirit,32,Drobeta Northwest,211,15,0
+559,The Corner of the Earth Spirit,34,Drobeta Southwest,98,231,0
+560,The Corner of the Earth Spirit,34,Drobeta Southwest,193,100,0
+561,The Corner of the Earth Spirit,33,Drobeta Southeast,32,189,0
+562,The Corner of the Earth Spirit,33,Drobeta Southeast,239,166,0
+563,The Corner of the Earth Spirit,31,Drobeta Northeast,15,218,0
+564,The Corner of the Earth Spirit,31,Drobeta Northeast,213,139,0
+565,The Corner of the Earth Spirit,42,Rodin Northwest,39,140,0
+566,The Corner of the Earth Spirit,42,Rodin Northwest,202,170,0
+567,The Corner of the Earth Spirit,44,Rodin Southwest,42,217,0
+568,The Corner of the Earth Spirit,44,Rodin Southwest,208,89,0
+569,The Corner of the Earth Spirit,43,Rodin Southeast,63,211,0
+570,The Corner of the Earth Spirit,43,Rodin Southeast,185,67,0
+571,The Corner of the Earth Spirit,41,Rodin Northeast,11,211,0
+572,The Corner of the Earth Spirit,41,Rodin Northeast,184,35,0
+601,Matt,4002,Alter Of Blood,69,20,1
+602,Matt,4002,Alter Of Blood,89,77,1
+603,Matt,4002,Alter Of Blood,30,100,1
+604,Matt,4002,Alter Of Blood,53,87,1
+605,Matt,4002,Alter Of Blood,12,64,1
+611,Hao La,4002,Alter Of Blood,69,20,3
+612,Hao La,4002,Alter Of Blood,89,77,3
+613,Hao La,4002,Alter Of Blood,30,100,3
+614,Hao La,4002,Alter Of Blood,53,87,3
+615,Hao La,4002,Alter Of Blood,12,64,3
+621,Ballery,4002,Alter Of Blood,69,20,2
+622,Ballery,4002,Alter Of Blood,89,77,2
+623,Ballery,4002,Alter Of Blood,30,100,2
+624,Ballery,4002,Alter Of Blood,53,87,2
+625,Ballery,4002,Alter Of Blood,12,64,2

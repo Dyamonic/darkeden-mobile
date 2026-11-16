@@ -1,0 +1,38 @@
+local BuffHyDroConvergence = class("BuffHyDroConvergence", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+local ScheduleUtil  = lt.ScheduleUtil
+local CacheManager = lt.CacheManager
+local Constant = lt.Constant
+
+--[[
+    复合水疗
+]]
+function BuffHyDroConvergence:ctor(time, actor, skilllevel, source, buffId)   
+    BuffHyDroConvergence.super.ctor(self, buffId, time, actor)
+    -- 被攻击播特效即可
+    self._skillId = SkillEnum.SKILL_HYDRO_CONVERGENCE
+    
+    local buffMetas = CacheManager:getBuffMetas(self._skillId)
+    actor:playParallelEffectSpecial(self._skillId, {buffMetas[1], buffMetas[2]})
+
+
+    lt.ScheduleUtil:performWithDelayGlobal(function()
+        buffMetas[3]._order = 1
+        buffMetas[4]._order = 2
+        actor:playParallelEffectSpecial(self._skillId, {buffMetas[3], buffMetas[4]})
+    end, 16 * 0.05)
+end
+
+function BuffHyDroConvergence:onClear()
+    local buffMetas = CacheManager:getBuffMetas(self._skillId)
+    self._actor:stopParallelEffect(self._skillId)
+    self._actor:playParallelEffectSpecial(self._skillId, {buffMetas[5], buffMetas[6]})
+
+    lt.ScheduleUtil:performWithDelayGlobal(function()
+        BuffHyDroConvergence.super.onClear(self)
+    end, 0.7)
+end
+
+
+return BuffHyDroConvergence

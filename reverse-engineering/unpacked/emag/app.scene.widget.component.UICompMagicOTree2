@@ -1,0 +1,8 @@
+---@class UICompMagicOTree2 魔族技能树2
+local UICompMagicOTree2 = class("UICompMagicOTree2", lt.UICompMagicOTree)
+
+function UICompMagicOTree2:ctor()
+    UICompMagicOTree2.super.ctor(self)
+end
+
+return UICompMagicOTree2

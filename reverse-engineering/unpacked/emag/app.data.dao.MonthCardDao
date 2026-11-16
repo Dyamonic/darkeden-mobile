@@ -1,0 +1,13 @@
+local MonthCardDao = {}
+
+function MonthCardDao:queryAll()
+    local map = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM MonthCard") do
+        local meta = lt.MonthCardMeta.new(row)
+        map[meta:getMapCode()] = meta
+    end
+    return map
+end
+
+return MonthCardDao

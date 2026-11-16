@@ -1,0 +1,230 @@
+--- 任务界面
+---@class UIWndTask:UIWindowBase
+local UIWndTask = class("UIWndTask", lt.UIWindowBase)
+local NtfManager = lt.NtfManager
+local TaskModule = lt.TaskModule
+local Constant = lt.Constant
+local FITER_TYPES = {
+    TRUNK = 1,      --主线
+    BRANCH = 2,     --支线
+    ADVANCE = 3,    --转职
+}
+
+UIWndTask.ChangeSkinConf = {
+    ["Task"] = {
+        ["bg"] = "bg_youjian_tanchuangdi",
+        ["loader_empty"] = "bg_cwrw_neikuang01",
+        ["branchBg"] = "bg_zxrw_diban01",
+    },
+    ["CommonTL"] = {
+        ["closeButton"] = {bg  = "bg_beibao_anniu01", bgup  = "bg_beibao_anniu02"},
+        ["btnFiter1"] = {n0 = "tab_normal", n1 = "tab_select", n2 = "tab_select", n3 = "tab_select"},
+        ["btnFiter2"] ={n0 = "tab_normal", n1 = "tab_select", n2 = "tab_select", n3 = "tab_select"},
+        ["btnFiter3"] ={n0 = "tab_normal", n1 = "tab_select", n2 = "tab_select", n3 = "tab_select"},
+    }
+}
+
+function UIWndTask:ctor(param)
+    UIWndTask.super.ctor(self, param)
+end
+
+function UIWndTask:onClear()
+    self:unregisterAllComponent()
+    self._emptyNode = nil
+    self._fiterBtns = nil
+    self._controlTab = nil
+    self._branchBg = nil
+    if self._taskList then
+        self._taskList:removeChildrenToPool()
+        self._taskList:removeItemRenderer()
+        self._taskList = nil
+    end
+    if self._branchTaskList then
+        self._branchTaskList:removeChildrenToPool()
+        self._branchTaskList:removeItemRenderer()
+        self._branchTaskList = nil
+    end
+    if self._taskInfoArr then
+        for i = 1,#self._taskInfoArr do
+            self._taskInfoArr[i] = nil
+        end
+        self._taskInfoArr = nil
+    end
+
+    UIWndTask.super.onClear(self)
+end
+
+function UIWndTask:onInit()
+    self:registerComponent("UICompTaskItem", "UICompBranchItem", "UICompTaskRewardItem", "UICompBranchRewardItem", "UICompItem")
+    UIWndTask.super.onInit(self, _GURL.WndTask)
+    self._emptyNode = self:getChild("node_empty")
+    self._taskList = self:getChild("list")
+    self._taskList:setItemRenderer(handler(self, self.taskRender))
+    self._branchTaskList = self:getChild("branchList")
+    self._branchTaskList:setVirtual()
+    self._branchTaskList:setItemRenderer(handler(self, self.taskRender))
+    self._fiterBtns = {}
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        local obj = self:getChild("btnFiter"..fiterType)
+        obj.fiterType = fiterType
+        self._fiterBtns[fiterType] = obj
+    end
+    self._controlTab = self:getController("tabs")
+    self:resetPanel()
+end
+
+function UIWndTask:onShown()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_REFRESH_TASK_MY, handler(self, self.showCurPanel), "UIWndTask:NTF_REFRESH_TASK_MY")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_ITEM_EVENT, handler(self, self.showCurPanel), "UIWndTask:NTF_UPDATE_ITEM_EVENT")
+
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_GAME_TIME_UPDATE, handler(self, self.timeUpdate), "UIWndTask:timeUpdate")
+
+    for k, v in ipairs(self._fiterBtns) do
+        v:addClickListener(handler(self, self.openFiterBtnClick))
+    end
+    local closeButton = self:getChild("closeButton")
+    closeButton:addClickListener(handler(self, self.onCloseBtnClick))
+
+    if self:getContentPane() then
+        self:resetPanel()
+    end
+    self:setVisible(true)
+end
+
+function UIWndTask:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndTask:NTF_REFRESH_TASK_MY")
+    NtfManager:removeNtfListenerByTag("UIWndTask:NTF_UPDATE_ITEM_EVENT")
+    NtfManager:removeNtfListenerByTag("UIWndTask:timeUpdate")
+
+    for k, v in ipairs(self._fiterBtns) do
+        v:removeClickListener()
+    end
+    local closeButton = self:getChild("closeButton")
+    closeButton:removeClickListener()
+
+    UIWndTask.super.onHide(self)
+end
+
+function UIWndTask:timeUpdate()
+    if self._taskList then
+        local objArr = self._taskList:getChildren()
+        for _,item in ipairs(objArr) do
+            if item.timeUpdate then
+                item:timeUpdate()
+            end
+        end
+    end
+
+    if self._branchTaskList then
+        local objArr = self._branchTaskList:getChildren()
+        for _,item in ipairs(objArr) do
+            if item.timeUpdate then
+                item:timeUpdate()
+            end
+        end
+    end
+end
+
+function UIWndTask:taskRender(index, obj)
+    local curIndex = index + 1
+    local curObjInfo = self._taskInfoArr[curIndex]
+    if curObjInfo then
+        obj:setRegClass(self)
+        obj:setObjInfo(curObjInfo)
+        obj:insertObjectToFactory(self)
+    end
+end
+
+function UIWndTask:openFiterBtnClick(context)
+    local sender = context:getSender()
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        if fiterType == sender.fiterType then
+            self._fiterBtns[fiterType]:setSortingOrder(3)
+        else
+            self._fiterBtns[fiterType]:setSortingOrder(1)
+        end
+    end
+    self:openFiterView(sender)
+end
+
+function UIWndTask:openFiterView(sender)
+    if self._openViewType == sender.fiterType then 
+        return 
+    end
+    self._openViewType = sender.fiterType
+    self._controlTab:setSelectedIndex(self._openViewType - 1)
+    self:showCurPanel()
+end
+
+function UIWndTask:showCurPanel(event)
+    local typeTab = {}
+    if event then
+        local param = event.param
+        if param then
+            typeTab = param.taskTypes
+        elseif event and event.name == "NTF_UPDATE_ITEM_EVENT" then
+            if not self._itemEvent then
+                return --没有道具检索类的任务就无需刷新这个事件
+            end
+        end
+    end
+    if self._openViewType == FITER_TYPES.TRUNK then
+        --主线
+        if not event or typeTab[Constant.TASK_TYPES.TRUNK] then
+            self._taskInfoArr = {}
+            local mainTask = TaskModule:getMainTask()
+            table.insert(self._taskInfoArr, mainTask)
+            self._taskList:setNumItems(#self._taskInfoArr)
+            self._taskList:setVisible(#self._taskInfoArr > 0)
+        end
+    elseif self._openViewType == FITER_TYPES.BRANCH then
+        --支线
+        if not event or typeTab[Constant.TASK_TYPES.BRANCH] or typeTab[Constant.TASK_TYPES.SYSTEM]
+            or typeTab[Constant.TASK_TYPES.BRANCH2] then
+            local tasklist = TaskModule:getTaskList(Constant.TASK_TYPES.BRANCH)
+            table.sort(tasklist, function(a, b)
+                -- 优先按是否完成排序（未完成的排在前面）
+                if a.taskState ~= b.taskState then
+                    return a.taskState == Constant.TASK_STATE.FINISH
+                else
+                    -- 如果状态相同，再按任务ID升序排序
+                    return a.taskId < b.taskId
+                end
+            end)
+            self._taskInfoArr = {}
+            for i = 1, #tasklist do
+                table.insert(self._taskInfoArr, tasklist[i])
+            end
+            self._branchTaskList:setNumItems(#self._taskInfoArr)
+            self._branchTaskList:setVisible(#self._taskInfoArr > 0)
+        end
+    elseif self._openViewType == FITER_TYPES.ADVANCE then
+        --转职
+        if not event or typeTab[Constant.TASK_TYPES.ADVANCE] then
+            self._taskInfoArr = {}
+            local advanceTask = TaskModule:getAdvanceTask()
+            table.insert(self._taskInfoArr, advanceTask)
+            self._taskList:setNumItems(#self._taskInfoArr)
+            self._taskList:setVisible(#self._taskInfoArr > 0)
+        end
+    end
+    self._emptyNode:setVisible(#self._taskInfoArr == 0)
+    self._itemEvent = TaskModule:haveItemSearchTask(self._taskInfoArr)
+end
+
+function UIWndTask:resetPanel()
+    self._openViewType = FITER_TYPES.TRUNK
+    self._controlTab:setSelectedIndex(self._openViewType - 1)
+    self:showCurPanel()
+
+    --转职任务要在接取才显示
+    local btn = self._fiterBtns[table.nums(FITER_TYPES)]
+    local advanceTask = TaskModule:getAdvanceTask()
+    btn:setVisible(advanceTask ~= nil)
+end
+
+function UIWndTask:onCloseBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndTask", close = true})
+end
+
+return UIWndTask

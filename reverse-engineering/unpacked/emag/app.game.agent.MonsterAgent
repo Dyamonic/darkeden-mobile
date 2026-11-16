@@ -1,0 +1,983 @@
+
+local MonsterAgent = class("MonsterAgent", lt.BaseAgent)
+
+local Constant = lt.Constant
+local GameModule = lt.GameModule
+local CacheManager = lt.CacheManager
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+local CommonUtil = lt.CommonUtil
+local AutoFightManager = lt.AutoFightManager
+local WOLFAM = Constant.WILD_WOLF_ATTACK_MODE
+
+MonsterAgent._monsterData  = nil
+MonsterAgent._monsterActor = nil
+MonsterAgent._stateMachine = nil
+MonsterAgent._isOutOfGame  = nil
+
+MonsterAgent._cmdSystem    = nil
+MonsterAgent._bufferSystem = nil
+
+-- MN，与服务器严格对应
+MonsterAgent._mCur = nil
+MonsterAgent._nCur = nil
+
+MonsterAgent._xCur = nil
+MonsterAgent._yCur = nil
+
+MonsterAgent._duplicateList = nil -- 怪物技能临时列表
+
+function MonsterAgent:ctor(monsterData, m, n, direction)
+    MonsterAgent.super.ctor(self, Constant.AGENT_TYPE_MONSTER)
+
+    self._monsterData = monsterData
+    self._mCur        = m
+    self._nCur        = n
+    self._xCur        = 0
+    self._yCur        = 0
+    
+    self._heroData = GameModule:getHeroData()
+
+    self._monsterActor = lt.MonsterActor.new(self._monsterData, direction, self._heroData)
+    self:setAgent()
+
+    self:setPositionAndOffset(monsterData:getModelId(), m, n)
+    
+    if monsterData:isAlive() then
+        -- 活着
+        self._stateMachine = lt.StateMachine.new(lt.MonsterStateIdle.new(self), lt.MonsterStateGlobal.new(self))
+
+        -- lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_MINIMAP_ADD_MN, {agentId=self._agentId,m=m,n=n,colorType=Constant.MINIMAP_GREEN})
+        GameModule:addUpdateEventMiniMap(lt.NtfManager.NTF.NTF_MINIMAP_ADD_MN, {agentId=self._agentId,m=m,n=n,colorType=Constant.MINIMAP_GREEN})
+
+        self._isOutOfGame = false
+    else
+        -- 死亡
+        -- 是否完成挖掘，用于判断播放死亡动作的最后一帧
+        self._monsterActor:setDead()
+        if self:isDig() then
+            self._monsterActor:dieFinishDig()
+        end
+    
+        self._stateMachine = lt.StateMachine.new(lt.MonsterStateDead.new(self), lt.MonsterStateGlobal.new(self))
+        self._isOutOfGame = true
+    end
+
+    lt.AgentManager:addAgent(self)
+    self._cmdSystem = lt.CmdSystem.new()
+    self._bufferSystem = lt.BufferSystem.new(self._monsterActor)
+
+    -- 测试
+    if DEBUG > 0 then
+        -- local rect = self:getRect()
+        -- local modelMeta = self:getModelMeta()
+
+        -- local offsetX = 0
+        -- local offsetY = 0
+        -- if modelMeta then
+        --     offsetX = modelMeta:getOffsetX()
+        --     offsetY = modelMeta:getOffsetY()
+        -- end
+
+        -- local spriteRect = display.newSprite("ui/common/rect.png")
+        -- spriteRect:setAnchorPoint(0.5, 0)
+        -- spriteRect:setScale(rect.width / 100, rect.height / 100)
+
+        -- local ox, oy = self:getPositionOffset(self._monsterData:getModelId(), false)
+        -- spriteRect:setPosition(offsetX + ox, offsetY + oy)
+
+        -- self._monsterActor:addChild(spriteRect, 999999)
+
+        -- self._spriteRect = spriteRect
+    end
+
+    -- 龙卷风不显示名字
+    if self:getModelId() == SkillEnum.SUMMON.SUMMON_WIND then
+        self:hideNameNode()
+    end
+    if self:getModelId() == SkillEnum.SUMMON.SUMMON_MIGA then
+        self:setIsOutOfGame(true)
+    end
+    if monsterData:getFakeCreatureType() == Constant.FAKE_CREATURE_TYPE.WILD_WOLF then
+        self:hideNameNode()
+        lt.ScheduleUtil:performWithDelayGlobal(function()
+            self:changeState(lt.MonsterWolfAttack.new(self))
+        end,  lt.GameBoard:getDeltaTime())
+    end
+end
+
+
+-- 能否移动
+function MonsterAgent:canMove()
+    return self._bufferSystem:canMove()
+end
+
+function MonsterAgent:refreshSpriteRect()
+    if not self._spriteRect then
+        return
+    end
+
+    local rect = self:getRect()
+    local modelMeta = self:getModelMeta()
+
+    local offsetX = 0
+    local offsetY = 0
+    if modelMeta then
+        offsetX = modelMeta:getOffsetX()
+        offsetY = modelMeta:getOffsetY()
+    end
+
+    self._spriteRect:setScale(rect.width / 100, rect.height / 100)
+    local ox, oy = self:getPositionOffset(self._monsterData:getModelId(), false)
+    self._spriteRect:setPosition(offsetX + ox, offsetY + oy)
+end
+
+function MonsterAgent:setPositionAndOffset(mid, m, n)
+    -- 特殊城门怪对齐位置偏移处理
+    local monsterX, monsterY = lt.MapUtil:calcMNMid(m, n)
+    local ox, oy = self:getPositionOffset(mid, true)
+    self:setPosition(monsterX + ox, monsterY + oy)
+end
+
+function MonsterAgent:getPositionOffset(mid, off)
+    local ox = 0
+    local oy = 0
+    if mid == 20187 then
+        ox = 23
+        oy = -59
+    elseif mid == 20188 then
+        ox = 10
+        oy = -58
+    elseif mid == 20189 then
+        ox = -11
+        oy = -70
+    elseif mid == 20190 then
+        ox = 10
+        oy = -90
+    else
+        return ox, oy 
+    end
+    if off then
+        return -ox, -oy
+    end
+    return ox, oy
+end
+
+function MonsterAgent:onClear()
+    GameModule:removeDropAndBodyGridMap(self)
+    -- 从AgentManager中移除
+    lt.AgentManager:removeAgent(self)
+    self._delayedFrame = nil
+    if self._stateMachine then
+        self._stateMachine:onClear()
+    end
+    if self._monsterActor then
+        self._monsterActor:onClear()
+    end
+
+    self._monsterActor = nil
+    self._stateMachine = nil
+    self._cmdSystem = nil
+    self._bufferSystem = nil
+
+    self:clearDuplicateList()
+
+    -- lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_MINIMAP_DEL_MN, {agentId=self._agentId})
+    -- lt.GameModule:addUpdateEventMiniMap(lt.NtfManager.NTF.NTF_MINIMAP_DEL_MN, {agentId=self._agentId})
+end
+
+function MonsterAgent:onUpdate(dt)
+    local delta = lt.GameBoard:getDeltaTime()
+    if self._stateMachine then
+        self._stateMachine:onUpdate()
+    end
+    if self._delayedFrame and self._delayedFrame > 0 then
+        if self._monsterActor then
+            local _deltatime = delta*0.5
+            self._monsterActor:onUpdate(_deltatime)
+            self._monsterActor:onUpdate(_deltatime)
+        end
+        self._delayedFrame = self._delayedFrame - 1
+    end
+    if self._monsterActor then
+        self._monsterActor:onUpdate(delta)
+    end
+end
+
+function MonsterAgent:onDelayUpdate(dt,delaylevel)
+    if delaylevel >= 3 then
+        if not self:isAlive() then
+            return
+        end
+    end
+    local delta = lt.GameBoard:getDeltaTime()
+    if self._stateMachine then
+        self._stateMachine:onUpdate()
+    end
+    if delaylevel >= 3 then
+        self._delayedFrame = self._delayedFrame or 0
+        self._delayedFrame = self._delayedFrame + 1
+    else
+        if self._monsterActor then
+            self._monsterActor:onUpdate(delta)
+        end
+    end
+end
+
+function MonsterAgent:checkDieDelayUpdate()
+    if self._delayedFrame then
+        local delta = lt.GameBoard:getDeltaTime()
+        for i = 1,self._delayedFrame do
+            if self._stateMachine then
+                self._stateMachine:onUpdate()
+                if self._monsterActor then
+                    self._monsterActor:onUpdate(delta)
+                end
+            end
+        end
+        self._delayedFrame = nil
+    end
+end
+
+function MonsterAgent:onMessage(msg)
+    if self._stateMachine then
+        self._stateMachine:onMessage(msg)
+    end
+end
+
+function MonsterAgent:hideNameNode()
+    if self._monsterActor then
+        self._monsterActor:hideNameNode()
+    end
+end
+
+function MonsterAgent:defaultState()
+    if not self._monsterData then
+        return
+    end
+
+    if self._monsterData:isAlive() then
+        self:changeState(lt.MonsterStateIdle.new(self))
+    else
+        self:changeState(lt.MonsterStateDead.new(self))
+    end
+end
+
+function MonsterAgent:getCurState()
+    return self._stateMachine:getCurState()
+end
+
+function MonsterAgent:getCurStateId()
+    if not self._stateMachine then
+        return
+    end
+    return self._stateMachine:getCurStateId()
+end
+
+function MonsterAgent:isAlive()
+    if not self._monsterData then
+        return false
+    end
+
+    return self._monsterData:isAlive()
+end
+
+-- State
+function MonsterAgent:changeState(newState)
+    if self._stateMachine then
+        self._stateMachine:changeState(newState)
+    end
+end
+
+function MonsterAgent:isInStateId(stateId)
+    if self._stateMachine then
+        return self._stateMachine:isInStateId(stateId)
+    else
+        return false
+    end
+end
+
+-- 是否死亡
+function MonsterAgent:isDead()
+    return self:isInStateId(Constant.MONSTER_STATE_DIE) or self:isInStateId(Constant.MONSTER_STATE_DEAD)
+end
+
+-- 怪物唯一Id
+function MonsterAgent:getObjId()
+    return self._monsterData:getObjId()
+end
+
+-- buffer
+function MonsterAgent:addBuffer(bufferId, time, skilllevel, source)
+    -- print("MonsterAgent addBuffer", bufferId)
+    self._bufferSystem:addBuffer(bufferId, time, skilllevel, source)
+end
+
+function MonsterAgent:delBuffer(bufferId, time)
+    self._bufferSystem:delBuffer(bufferId)
+end
+
+function MonsterAgent:hasBuffer(bufferId)
+    if not self._bufferSystem then
+        return false
+    end
+
+    return self._bufferSystem:getBuffer(bufferId) ~= nil
+end
+
+function MonsterAgent:getBufferTable()
+    if not self._bufferSystem then
+        return nil
+    end
+    
+    return self._bufferSystem:getBufferTable()
+end
+
+function MonsterAgent:getBufferIsExit(bufferId)
+    if not self._bufferSystem then
+        return false
+    end
+
+    return self._bufferSystem:getBufferIsExit(bufferId)
+end
+
+-- 命令
+function MonsterAgent:hasDieCmd()
+    return self._cmdSystem:hasDieCmd()
+end
+
+function MonsterAgent:getDieCmd()
+    return self._cmdSystem:getDieCmd()
+end
+
+function MonsterAgent:handleCmd(cmd)
+    if cmd:getCmdId() == Constant.CmdId.CMD_MOVE then
+        --print("怪物移动cmd:", cmd:getMoveType(), cmd:getDirection(), cmd:getMNext(), cmd:getNNext())
+        self:move(cmd:getMoveType(), cmd:getDirection(), cmd:getMNext(), cmd:getNNext())
+    elseif cmd:getCmdId() == Constant.CmdId.CMD_ATTACK then
+        -- print("怪物攻击cmd:", cmd:getSkillId(), cmd:getSkillLevel(), cmd:getDirection(), cmd:getTargetObjId(), cmd:getTargetM(), cmd:getTargetN())
+        self:attack(cmd:getSkillId(), cmd:getSkillLevel(), cmd:getDirection(), cmd:getTargetObjId(), cmd:getTargetM(), cmd:getTargetN())
+    elseif cmd:getCmdId() == Constant.CmdId.CMD_DIE then
+        -- 执行怪物死亡命令
+        self:die(cmd:getM(), cmd:getN(), cmd:getDirection())
+    elseif cmd:getCmdId() == Constant.CmdId.CMD_JUMP then
+        self:jump(cmd)
+    elseif cmd:getCmdId() == Constant.CmdId.CMD_TRANSFORM then
+        self:changeState(lt.HeroStateTransform.new(self, cmd:getBuffId(), cmd:getIsExist(), cmd:getState(), cmd:getSrcId()))
+    elseif cmd:getCmdId() == Constant.CmdId.CMD_PROPERTY then
+        self:propertyChange(cmd:getProperty(),cmd:getValue())
+    end
+end
+
+function MonsterAgent:propertyChange(property,value)
+    if property == lt.ServerClientEnum.CreatureValueDef.Attr_Hide then
+        self:changeSkillHide(value)
+    elseif property == lt.ServerClientEnum.CreatureValueDef.Attr_MoveSpeedRate then
+        self:getRoleData():setValue(property, value)
+    end
+end
+
+function MonsterAgent:move(moveType, direction, mNext, nNext)
+    if self:getMonsterId() == lt.MonsterEnum.NORMAL_RANGE then
+        --夜啸鬼移动加残影
+        self:changeState(lt.MonsterStateFastMove.new(self, mNext, nNext))
+        return
+    end
+    self:changeState(lt.MonsterStateMove.new(self, moveType, direction, mNext, nNext))
+end
+
+function MonsterAgent:attack(skillCode, skillLevel, direction, targetObjId, targetM, targetN)
+    self:changeState(lt.MonsterStateSkill.new(self, skillCode, skillLevel, direction, targetObjId, targetM, targetN))
+end
+
+function MonsterAgent:jump(cmd)
+    lt.GameModule:agentJump(cmd:getProto())
+end
+
+-- 执行怪物死亡 -> 躺尸
+function MonsterAgent:die(m, n, direction)
+    self:setPositionAndOffset(self._monsterData:getModelId(), m, n)
+    self:setDirection(direction)
+
+    -- 是否完成挖掘，用于判断播放死亡动作的最后一帧
+    self._monsterActor:setDie()
+
+    -- 怪物死亡特效
+    -- EffectScreen 74 写死
+    self._monsterActor:playDieEffect()
+
+    self:changeState(lt.MonsterStateDie.new(self))
+    -- lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_MINIMAP_DEL_MN, {agentId=self._agentId})
+    
+    -- 小地图消失通知
+    GameModule:addUpdateEventMiniMap(lt.NtfManager.NTF.NTF_MINIMAP_DEL_MN, {agentId=self._agentId})
+
+    -- 添加怪物挖掘列表
+    GameModule:addDropAndBodyGridMap(self)
+
+    --击杀的判断是否需要吸蓝
+    AutoFightManager:setAbsorbSoul(true)
+
+    -- 测试模型框 debug模式
+    self:refreshSpriteRect()
+end
+
+-- 刷新死亡完成挖掘 播放死亡动作的最后一帧
+function MonsterAgent:refreshDieFinishDig()
+    self._monsterActor:dieFinishDig()
+    GameModule:removeDropAndBodyGridMap(self)
+    -- self:roleRemoveAnentMN()
+end
+
+-- 是否需要移除地图上占用的格子
+function MonsterAgent:roleRemoveAnentMN()
+    -- if not self._monsterData:isAlive() and self._monsterData:isDig() then
+    if not self._monsterData:isAlive() then
+        -- 普通移除地图上占用的点 死亡完成挖掘后不占用格子
+        local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+        mapAgent:removeAgentMN(self, self:getMNExactly())
+    end
+
+end
+
+-- 执行怪物消失
+function MonsterAgent:disappear(m,n, direction)
+    self:setPositionAndOffset(self._monsterData:getModelId(), m, n)
+    self:setDirection(direction)
+end
+
+function MonsterAgent:changeHp(curHp, maxHp)
+    self._monsterData:setCurHp(curHp)
+    self._monsterData:setMaxHp(maxHp)
+
+    self._monsterActor:changeHp()
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_UPDATE_SELECT_HP, {objId = self:getObjId()})
+end
+
+function MonsterAgent:changeName(name)
+    lt.LogUtil:debug("MonsterAgent:changeName:", name)
+    self._monsterData:setName(name)
+    self._monsterActor:changeName()
+end
+
+function MonsterAgent:changeNameColor(intValue)
+    self._monsterData:setNameColor(intValue)
+    self._monsterActor:changeNameColor()
+end
+
+function MonsterAgent:changeLevel(level)
+    lt.LogUtil:debug("MonsterAgent:changeLevel:" .. level)
+end
+
+function MonsterAgent:changeAppr(appr)
+    self._monsterData:setModelId(appr)
+    self._monsterActor:changeAppr(appr)
+end
+
+function MonsterAgent:onBack(mTarget, nTarget, needDisappear, skillId)
+    self:changeState(lt.MonsterStateBack.new(self, mTarget, nTarget, needDisappear, skillId))
+end
+
+-- 动画 skillId 存在作为技能释放 普攻为空
+function MonsterAgent:playAction(actionId, skillId)
+    self._monsterActor:playAction(actionId, skillId)
+
+end
+
+function MonsterAgent:playDeadAction(actionId)
+    self._monsterActor:playAction(actionId)
+end
+
+function MonsterAgent:lastActionStep()
+    self._monsterActor:lastActionStep()
+end
+
+function MonsterAgent:getModelHeight()
+    local modelMeta = self:getModelMeta()
+    if modelMeta then
+        return modelMeta:getHeight()
+    else
+        return 0
+    end
+end
+
+-- 出现特效
+function MonsterAgent:showAppearEffect()
+    -- 此处可添加特殊怪物出场特效
+    
+    self:changeState(lt.MonsterStateAppear.new(self))
+end
+
+-- 出现音效
+function MonsterAgent:playAppearAudio()
+    -- FIXME 后续添加出现音效
+    -- local modelMeta = self:getModelMeta()
+    -- if modelMeta and modelMeta:getBornAudio() and modelMeta:getBornAudio() > 0 then
+    --     lt.AudioManager:playBattleSound(modelMeta:getBornAudio())
+    -- end
+end
+
+--卡帧补充快速播放动作补帧
+function MonsterAgent:setCurSpeedRate(speedRate)
+    self._speedRate = speedRate
+    self:resetActionStep()
+end
+
+function MonsterAgent:getCurSpeedRate()
+    return self._speedRate or 1
+end
+
+-- 位移
+function MonsterAgent:getRect()
+    if self:isDead() then
+        return self:getDieRect()
+    end
+
+    local modelRadius = 0
+    local modelHeight = 0
+    local offsetX = 0
+    local offsetY = 0
+    local modelMeta = self:getModelMeta()
+    if modelMeta then
+        modelRadius = modelMeta:getRadius()
+        modelHeight = modelMeta:getHeight()
+        -- x y 坐标便宜
+        offsetX = modelMeta:getOffsetX()
+        offsetY = modelMeta:getOffsetY()
+    end
+
+    local x, y = self:getPosition()
+    local ox, oy = self:getPositionOffset(self._monsterData:getModelId(), false)
+    local radiusScale = (ox ~= 0) and 4 or 2
+    return cc.rect(x - modelRadius + offsetX + ox, y + offsetY + oy, modelRadius * radiusScale, modelHeight)
+end
+
+function MonsterAgent:getDieRect()
+    local modelRadius = 0
+    local modelHeight = 0
+    local offsetX = 0
+    local offsetY = 0
+    local modelMeta = self:getModelMeta()
+    if modelMeta then
+        modelRadius = modelMeta:getDeadRadius()
+        modelHeight = modelMeta:getDeadHeight()
+        offsetX = modelMeta:getDeadOffsetX()
+        offsetY = modelMeta:getDeadOffsetY()
+    end
+
+    local x, y = self:getPosition()
+    local ox, oy = self:getPositionOffset(self._monsterData:getModelId(), false)
+    local radiusScale = (ox ~= 0) and 4 or 2
+
+    return cc.rect(x - modelRadius + offsetX + ox, y + offsetY + oy, modelRadius * radiusScale, modelHeight)
+end
+
+-- 怪物移动速度
+function MonsterAgent:getMoveSpeed()
+    if not self._moveSpeedMap then
+        self._moveSpeedMap = {}
+    end
+
+    if not self._moveSpeedMap[self:getDirection()] then
+        local modelMeta = self:getModelMeta()
+        if not modelMeta then
+            self._moveSpeedMap[self:getDirection()] = Constant:getMonsterWalkSpeed(self:getDirection())
+            return self._moveSpeedMap[self:getDirection()]
+        end
+        
+        -- modelMeta:getMoveInterval() 移动间隔 距离
+        self._moveSpeedMap[self:getDirection()] = Constant:getMonsterWalkSpeedByTime(self:getDirection(), modelMeta:getMoveInterval())
+    end
+
+    local moveRate = self._monsterData:getMoveSpeed()
+    if moveRate == 0 then
+        moveRate = 100
+    end
+    local moveSpeedRate = moveRate / 100
+
+    return self._moveSpeedMap[self:getDirection()] * moveSpeedRate
+end
+
+function MonsterAgent:getAttackInterval()
+    self:getMonsterInfoMeta()
+    return self._monsterMeta:getAttackInterval()
+end
+
+function MonsterAgent:getMN()
+    local x, y = self:getPosition()
+    return lt.MapUtil:calcMN(x, y)
+end
+
+function MonsterAgent:getMNExactly()
+    return self._mCur, self._nCur
+end
+
+function MonsterAgent:setMNExactly(m, n)
+    self._mCur = m
+    self._nCur = n
+    
+    -- lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_MINIMAP_CHANGE_MN, {agentId=self._agentId,m=self._mCur,n=self._nCur})
+    GameModule:addUpdateEventMiniMap(lt.NtfManager.NTF.NTF_MINIMAP_CHANGE_MN, {agentId=self._agentId,m=self._mCur,n=self._nCur})
+end
+
+function MonsterAgent:getPosition()
+    return self._xCur, self._yCur
+    -- return self._monsterActor:getPosition()
+end
+
+function MonsterAgent:setPosition(x, y)
+    self._xCur = x
+    self._yCur = y
+
+    self._monsterActor:setPositionEx(x, y)
+
+    local m, n = self:getMN()
+    local zOrderOffset = 1
+    if self._monsterData:getFakeCreatureType() == Constant.FAKE_CREATURE_TYPE.WILD_WOLF then
+        zOrderOffset = -100
+    end
+    local zOrder = (n * 10000 + m + 9999) * 10 + zOrderOffset
+    self._monsterActor:setLocalZOrder(zOrder)
+    -- self._monsterActor:setLocalZOrder((n  * 10000 + m + 9999) * 10 + 1)
+    
+
+    --[[
+        local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+        if mapAgent:isMNMask(m, n) then
+            self._monsterActor:setAlpha(0.5)
+        else
+            self._monsterActor:setAlpha(1)
+        end
+    ]]
+end
+
+function MonsterAgent:getDirection()
+    if self._monsterActor then
+        return self._monsterActor:getDirection()
+    else
+        return Constant.DIRECTION_DOWN
+    end
+end
+
+function MonsterAgent:setDirection(direction)
+    if self._monsterActor then
+        self._monsterActor:setDirection(direction)
+    end
+end
+
+function MonsterAgent:setForceDirection(direction)
+    self._monsterActor:setForceDirection(direction)
+end
+
+function MonsterAgent:showTargetMark()
+    self._monsterActor:showTargetMark()
+end
+
+function MonsterAgent:hideTargetMark()
+    self._monsterActor:hideTargetMark()
+end
+
+-- Setter && Getter
+function MonsterAgent:getName()
+    return self._monsterData:getName()
+end
+
+function MonsterAgent:getMonsterData()
+    return self._monsterData
+end
+
+function MonsterAgent:getModelId()
+    if self._monsterData then
+        return self._monsterData:getModelId()
+    else
+        return 0
+    end
+end
+
+function MonsterAgent:isModelId239()
+    return self:getModelId() == 239
+end
+
+function MonsterAgent:getMonsterId()
+    if self._monsterData then
+        return self._monsterData:getMonsterId()
+    else
+        return 0
+    end
+end
+
+function MonsterAgent:getMasterObjId()
+    if self._monsterData then
+        return self._monsterData:getMasterObjId()
+    else
+        return 0
+    end
+end
+
+function MonsterAgent:getRace()
+    if self._monsterData then
+        return self._monsterData:getRace()
+    else
+        return 0
+    end
+end
+
+function MonsterAgent:queryMasterAgent()
+    local masterObjId = self:getMasterObjId()
+    if not masterObjId or masterObjId <= 0 then
+        return nil
+    end
+
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    if not worldAgent then
+        return nil
+    end
+
+    local masterAgent = worldAgent:getAgent(masterObjId)
+    if not masterAgent or masterAgent:getAgentType() ~= Constant.AGENT_TYPE_HERO then
+        return nil
+    end
+    
+    return masterAgent
+end
+
+function MonsterAgent:isPet()
+    local masterObjId = self:getMasterObjId()
+    if masterObjId and masterObjId > 0 and self._monsterData:isPet() then
+        return true
+    end
+    return false
+end
+
+function MonsterAgent:getModelMeta()
+    return CacheManager:getModelMeta(self:getModelId())
+end
+
+function MonsterAgent:getMonsterInfoMeta()
+    if not self._monsterMeta then
+        self._monsterMeta = self._monsterData:getMonsterInfoMeta()
+    end
+
+    return self._monsterMeta
+end
+
+function MonsterAgent:getRoleData()
+    return self:getMonsterData()
+end
+
+function MonsterAgent:getActor()
+    return self._monsterActor
+end
+
+function MonsterAgent:getCmdSystem()
+    return self._cmdSystem
+end
+
+-- 是否挖掘
+function MonsterAgent:isDig()
+   return self._monsterData:isDig()
+end
+
+function MonsterAgent:setAgent()
+    self._monsterActor:setAgent(self)
+end
+
+function MonsterAgent:playEffect(skillId, isDelay, index)
+    if isDelay then
+        self:addDelayEffect(skillId)
+        return
+    end
+    
+    self._monsterActor:playEffect(skillId, index)
+end
+
+function MonsterAgent:addDelayEffect(skillId)
+    -- self._monsterActor:addDelayEffect(skillId)
+end
+
+function MonsterAgent:changeDarkness(darknessId)
+    -- yflog:Info("MonsterAgent:changeDarkness(darknessId)", darknessId)
+    for index, bitInfo in pairs(SkillEnum.DARKNESS_BITS) do
+        if CommonUtil:isBitSet(darknessId, bitInfo.bit) == 1 then
+            if bitInfo.buffId ~= BuffEnum.EFFECT_GROUND_VISIBLE  then --怪物土精灵隐身忽略
+                self:addBuffer(bitInfo.buffId)
+            end
+        else
+            if self:hasBuffer(bitInfo.buffId) then
+                self:delBuffer(bitInfo.buffId)
+            end
+        end
+    end
+    self._monsterData:setDarkness(darknessId)
+end
+
+function MonsterAgent:getHeroData()
+    return self._monsterData
+end
+
+function MonsterAgent:clearAllBuffer()
+    if self._bufferSystem then
+        self._bufferSystem:clearAllBuffer()
+    end
+end
+
+function MonsterAgent:updateTargetArrow(show)
+    self:getActor():updateTargetArrow(show)
+end
+
+function MonsterAgent:getDigTimes()
+    return self._monsterData:getDigTimes()
+end
+function MonsterAgent:setCorpseVisible(isVisible)
+    self._monsterActor._corpseSprite:setVisible(isVisible)
+end
+
+function MonsterAgent:changePetLevel(value)
+    local petLevel = self._monsterData:getPetLevel()
+    if petLevel ~= value and self:getActor() then
+        self:getActor():showLevelUpSpine()
+    end
+    self._monsterData:setPetLevel(value)
+end
+
+function MonsterAgent:getKillObjId()
+    return self._monsterData:getKillObjId()
+end
+
+function MonsterAgent:getPetUid()
+    return self._monsterData:getPetUid()
+end
+
+function MonsterAgent:getIsSelf()
+    return false
+end
+
+---------------------------------------------------------------------
+-- 迷幻术
+function MonsterAgent:setHalluCreature()
+    self._isHallu = lt.Constant.HALLUMODLE[math.random(1,#lt.Constant.HALLUMODLE)]
+    self:initActionInfo()
+end
+
+function MonsterAgent:unSetHalluCreature()
+    self._isHallu = nil
+    self:initActionInfo()
+end
+
+function MonsterAgent:initActionInfo()
+    local actor = self:getActor()
+    if actor and actor.initActionInfo then
+        actor:initActionInfo()
+    end
+end
+
+function MonsterAgent:getIsHallu()
+    return self._isHallu
+end
+
+---------------------------------------------------------------------
+--- 分身术
+function MonsterAgent:addDuplicateList(objectId)
+    if not self._duplicateList then
+        self._duplicateList = {}
+    end
+    table.insert(self._duplicateList, objectId)
+end
+
+function MonsterAgent:clearDuplicateList()
+    self._duplicateList = nil
+end
+
+function MonsterAgent:getDuplicateList()
+    return self._duplicateList or {}
+end
+---------------------------------------------------------------------
+-- 隐蔽
+function MonsterAgent:changeSkillHide(hide)
+    self._monsterData:setSkillHide(hide)
+    self._monsterActor:changeSkillHide()
+end
+
+function MonsterAgent:isSkillHide()
+    if not self._monsterData then
+        return false
+    end
+    
+    return self._monsterData:isSkillHide()
+end
+
+---------------------------------------------------------------------
+
+---------------------------------------------------------------------
+-- 初始化特殊buff逻辑处理（隐身等）
+function MonsterAgent:addEffectStatus()
+    if self:hasBuffer(BuffEnum.EFFECT_CLASS_INVISIBILITY) then
+        self:getActor():getCreature():setInvisibleSoon()
+    end
+end
+
+---------------------------------------------------------------------
+-- 是否是爆炸物
+function MonsterAgent:isDeathExplosion()
+    if not self._monsterData then
+        return false
+    end
+    return  Constant.EXPLOSION[self._monsterData:getMonsterId() or 0] or false
+end
+
+---------------------------------------------------------------------
+-- 移动模式
+function MonsterAgent:getCurMoveMode()
+    if self._monsterData then
+        return self._monsterData:getMoveMode()
+    else
+        return 0
+    end
+end
+
+function MonsterAgent:isStateTelePort()
+    return false
+end
+
+function MonsterAgent:showBorder()
+    yflog:Info("MonsterAgent:showBorder")
+end
+
+function MonsterAgent:isCrossCount()
+    if self._monsterData then
+        return self._monsterData:isCrossCount()
+    else
+        return false
+    end
+end
+
+function MonsterAgent:isGroundElf()
+    local modelId = self:getModelId()
+    return modelId == SkillEnum.SUMMON.SUMMON_GROUND
+end
+
+function MonsterAgent:isSkillHide()
+    if self._monsterData then
+        return self._monsterData:isSkillHide()
+    else
+        return true
+    end
+end
+
+function MonsterAgent:getTransformId()
+    return self._transformId
+end
+function MonsterAgent:setTransformId(transformId)
+    self._transformId = transformId
+end
+
+function MonsterAgent:checkIsMoveAction(actionId)
+    -- 移动动作
+    if actionId == Constant.ACTION_MOVE then
+        return true
+    end
+
+    return false
+end
+
+return MonsterAgent

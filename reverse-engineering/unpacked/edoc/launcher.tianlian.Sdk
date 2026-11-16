@@ -1,0 +1,22 @@
+local Sdk = class("Sdk")
+local LaunchModuleTL = require("launcher.tianlian.LaunchModuleTL")
+
+function Sdk:getUUID()
+    local uuid = ""
+    if cpp.SdkService:shared().getUuid then
+        uuid = cpp.SdkService:shared():getUuid()
+    end
+    if uuid == "" then
+        local deviceID = "11111-00000-11111-22223"
+        local account = LaunchModuleTL:getAccoutInfo()
+        uuid = deviceID .. account
+    end
+
+    return uuid
+end
+
+function Sdk:getVipLevel()
+    return 0
+end
+
+return Sdk

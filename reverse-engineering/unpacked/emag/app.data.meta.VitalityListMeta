@@ -1,0 +1,22 @@
+--精力系统
+local VitalityListMeta = class("VitalityListMeta")
+
+function VitalityListMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function VitalityListMeta:initWithRow(row)
+    self._idxId = row.idxID
+    self._name = row.Name
+    self._jumpPage = row.JumpPage
+    self._jumpStore = row.JumpStore
+    self._displayContent = row.DisplayContent
+end
+
+function VitalityListMeta:getIdxId() return self._idxId end
+function VitalityListMeta:getName() return self._name end
+function VitalityListMeta:getJumpPage() return self._jumpPage end
+function VitalityListMeta:getJumpStore() return self._jumpStore end
+function VitalityListMeta:getDisplayContent() return self._displayContent end
+
+return VitalityListMeta

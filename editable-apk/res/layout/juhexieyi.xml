@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout android:orientation="vertical" android:background="@drawable/juhexieyi_rounded_bg" android:layout_width="match_parent" android:layout_height="match_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <WebView android:id="@id/juhewv" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_marginTop="15.0dp" android:layout_marginBottom="50.0dp" />
+    <LinearLayout android:gravity="center" android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="50.0dp" android:layout_alignParentBottom="true">
+        <LinearLayout android:gravity="center" android:layout_width="wrap_content" android:layout_height="match_parent" android:layout_weight="1.0">
+            <TextView android:textSize="15.0sp" android:textColor="#ff4751" android:gravity="center" android:id="@id/tv_noagree" android:background="@drawable/juhexieyi_btn_border" android:layout_width="0.0dp" android:layout_height="32.0dp" android:layout_marginLeft="30.0dp" android:layout_marginRight="20.0dp" android:text="不同意" android:layout_weight="1.0" />
+        </LinearLayout>
+        <LinearLayout android:gravity="center" android:layout_width="wrap_content" android:layout_height="match_parent" android:layout_weight="1.0">
+            <TextView android:textSize="15.0sp" android:textStyle="bold" android:textColor="@android:color/white" android:gravity="center" android:id="@id/tv_agree" android:background="@drawable/juhexieyi_btn_bg" android:layout_width="0.0dp" android:layout_height="32.0dp" android:layout_marginLeft="20.0dp" android:layout_marginRight="30.0dp" android:text="同意" android:layout_weight="1.0" />
+        </LinearLayout>
+    </LinearLayout>
+</RelativeLayout>

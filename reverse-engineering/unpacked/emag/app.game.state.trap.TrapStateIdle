@@ -1,0 +1,36 @@
+
+local TrapStateIdle = class("TrapStateIdle", lt.TrapStateBase)
+
+local Constant = lt.Constant
+
+function TrapStateIdle:ctor(trapAgent)
+    TrapStateIdle.super.ctor(self, trapAgent)
+end
+
+function TrapStateIdle:onClear()
+    TrapStateIdle.super.onClear(self)
+end
+
+function TrapStateIdle:onEnter()
+end
+
+function TrapStateIdle:onExit()
+end
+
+function TrapStateIdle:onUpdate()
+    -- 队列检查需要执行的命令
+    local cmd = self._trapAgent:getCmdSystem():pop()
+    if cmd then
+        self._trapAgent:handleCmd(cmd)
+    end
+end
+
+function TrapStateIdle:getStateId()
+    return Constant.TRAP_STATE_IDLE
+end
+
+function TrapStateIdle:getStateName()
+    return "TrapStateIdle"
+end
+
+return TrapStateIdle

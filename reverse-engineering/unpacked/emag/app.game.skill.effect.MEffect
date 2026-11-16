@@ -1,0 +1,211 @@
+-- MEffect.lua
+
+local MEffect = class("MEffect",lt.BulletBase)
+local MapUtil = lt.MapUtil
+-- 定义效果类型
+MEffect.EFFECT_TYPE = {
+    SECTOR = 0,           -- Sector 固定效果
+    MOVING = 1,            -- 移动效果
+    LINEAR = 2,            -- 直线移动
+    GUIDANCE = 3,          -- 追踪效果
+    HOMING = 4,            -- 曲线导弹
+    PARABOLA = 5,          -- 抛物线
+    ATTACH = 6,            -- 附着效果
+    SCREEN= 7,            -- 屏幕坐标效果
+    CHASE= 8,             -- 持续追踪
+    ATTACH_ORBIT= 9       -- 附着并旋转
+}
+
+function MEffect:ctor(blt_type)
+    MEffect.super.ctor(self)
+
+
+    -- 初始化成员变量
+    self._bltType = blt_type
+    self._endFrame = 0
+    self._endLinkFrame = 0
+    self._direction = 0
+    self._light = 0
+    self._pixelX = 0
+    self._pixelY = 0
+    self._pixelZ = 0
+    self._stepPixel = 0
+    self._power = 0
+    self._est = 0
+    self._nActionInfo = nil
+    self._pEffectTarget = nil
+    self._bMulti = false
+    self._bDrawSkip = false
+    self._delayFrame = 0
+    self._waitFrame = 0
+
+    return self
+end
+
+function MEffect:setFrameID(frameID, max)
+    -- 设置帧 ID 的逻辑
+end
+
+function MEffect:getEffectType()
+    return MEffect.EFFECT_TYPE.SECTOR
+end
+
+function MEffect:setCount(last, linkCount)
+    self._endFrame = g_CurrentFrame + last
+    self._endLinkFrame = linkCount or 0xFFFF
+end
+
+function MEffect:getEndFrame()
+    return self._endFrame
+end
+
+function MEffect:getEndLinkFrame()
+    return self._endLinkFrame
+end
+
+function MEffect:isEnd()
+    return g_CurrentFrame >= self._endFrame
+end
+
+function MEffect:onUpdate()
+    -- 更新逻辑
+    return false
+end
+
+function MEffect:setPosition(x, y)
+    self.m_X = x; 
+	self.m_Y = y; 
+    self._pixelX = MapUtil:MapToPixelX(x)
+    self._pixelY = MapUtil:MapToPixelY(y)
+end
+
+function MEffect:setX(x)
+    self.m_X = x
+    self._pixelX = MapUtil:MapToPixelX(x)
+
+end
+
+function MEffect:setY(y)
+    self.m_Y = y
+    self._pixelY = MapUtil:MapToPixelY(y)
+
+end
+
+function MEffect:setZ(z)
+    self._pixelZ = z
+end
+
+function MEffect:setDirection(direction)
+    self._direction = direction
+end
+
+function MEffect:getDirection()
+    return self._direction
+end
+
+function MEffect:setLight(light)
+    self._light = light
+end
+
+function MEffect:setPixelPosition(x, y, z)
+    self._pixelX = x
+    self._pixelY = y
+    self._pixelZ = z
+end
+
+function MEffect:getLight()
+    return self._light
+end
+
+function MEffect:getPixelX()
+    return math.floor(self._pixelX)
+end
+
+function MEffect:getPixelY()
+    return math.floor(self._pixelY)
+end
+
+function MEffect:getPixelZ()
+    return math.floor(self._pixelZ)
+end
+
+function MEffect:setPower(power)
+    self._power = power
+end
+
+function MEffect:getPower()
+    return self._power
+end
+
+function MEffect:setStepPixel(step)
+    self._stepPixel = step
+end
+
+function MEffect:getStepPixel()
+    return self._stepPixel
+end
+
+function MEffect:setLink(actionInfo, effectTarget)
+    self._nActionInfo = actionInfo
+    self._pEffectTarget = effectTarget
+end
+
+function MEffect:setEffectTargetNULL()
+    self._pEffectTarget = nil
+end
+
+function MEffect:getActionInfo()
+    return self._nActionInfo
+end
+
+function MEffect:getEffectTarget()
+    return self._pEffectTarget
+end
+
+function MEffect:getLinkSize()
+    return (self._pEffectTarget == nil or self._pEffectTarget:isEnd()) and 0 or self._pEffectTarget:getCurrentPhase()
+end
+
+function MEffect:setMulti(bMulti)
+    self._bMulti = bMulti
+end
+
+function MEffect:isMulti()
+    return self._bMulti
+end
+
+function MEffect:setDelayFrame(frame)
+    self._delayFrame = frame
+end
+
+function MEffect:isDelayFrame()
+    return self._delayFrame > 0
+end
+
+function MEffect:setWaitFrame(frame)
+    self._waitFrame = frame
+end
+
+function MEffect:isWaitFrame()
+    return self._waitFrame > 0
+end
+
+function MEffect:isSkipDraw()
+    return self._bDrawSkip
+end
+
+function MEffect:setDrawSkip(bSkip)
+    self._bDrawSkip = bSkip
+end
+
+function MEffect:affectPosition()
+    -- 更新 Sector 坐标的逻辑
+    self.m_X = MapUtil:PixelToMapX( self._pixelX );
+	self.m_Y = MapUtil:PixelToMapY( self._pixelY );
+end
+
+function MEffect:nextFrame()
+	
+end
+
+return MEffect

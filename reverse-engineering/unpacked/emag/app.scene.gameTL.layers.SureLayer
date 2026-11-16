@@ -1,0 +1,68 @@
+---@class SureLayer 确定层
+local SureLayer = class("SureLayer", lt.UICompBase)
+local NtfManager = lt.NtfManager
+function SureLayer:ctor()
+    SureLayer.super.ctor(self)
+    self:registerComponent("UICompMessageBoxSure")
+    self._view = fgui.UIPackage:createObject("Main", "SureLayer")
+    self._view:makeFullScreen()
+    self._view:center()
+    self:addChild(self._view)
+    self._compSure = self._view:getChild("compSure")
+    self._compSure:insertObjectToFactory(self)
+    self._title = self._compSure:getChild("title")
+    self._btnOk = self._compSure:getChild("ok")
+    self._btnCancel = self._compSure:getChild("cancel")
+end
+
+function SureLayer:onEnter()
+    self._btnOk:addClickListener(handler(self, self.btnOkClick));
+    self._btnCancel:addClickListener(handler(self, self.btnCancelClick));
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_ALERT_TIP, handler(self, self.alertTipNtf), "SureLayer:alertTipNtf")
+end
+
+function SureLayer:onExit()
+    NtfManager:removeNtfListenerByTag("SureLayer:alertTipNtf")
+
+    self._btnOk:removeClickListener()
+    self._btnCancel:removeClickListener()
+end
+
+function SureLayer:onClear()
+    self:unregisterAllComponent()
+    self:removeFromParent()
+    self._view = nil
+    self._compSure = nil
+    self._title = nil
+    self._btnOk = nil
+    self._btnCancel = nil
+    self._offLine = nil
+    SureLayer.super.onClear(self)
+
+end
+
+function SureLayer:alertTipNtf(event)
+    local param = event.param
+    self._compSure:setVisible(true)
+    self._title:setText(tostring(param.content))
+    local param = event.param
+    self._offLine = param.offLine
+end
+
+function SureLayer:btnCancelClick()
+    self._compSure:setVisible(false)
+end
+
+function SureLayer:btnOkClick()
+    if self._offLine then
+        lt.RoleModule:clear()
+        if _G_Game then
+            _G_Game:resetScene()
+        end
+    end
+    self._compSure:setVisible(false)
+end
+
+
+
+return SureLayer

@@ -1,0 +1,299 @@
+-- 交易行
+---@class UIWndTransactionMain:UIWindowBase
+local UIWndTransactionMain = class("UIWndTransactionMain", lt.UIWindowBase)
+
+local NtfManager           = lt.NtfManager
+local TransactionModule    = lt.TransactionModule
+local GameModule           = lt.GameModule
+local Constant             = lt.Constant
+
+local FITER_TYPES          = {
+    TransactionBuy  = 1, --购买
+    TransactionShow = 2, --公示
+    TransactionSell = 3, --出售
+}
+
+UIWndTransactionMain.ChangeSkinConf = {
+    ["Transaction"] = {
+        ["bg"] = "bg_pmh_beijinban",
+    },
+    ["CommonTL"] = {
+        ["btnFiter1"] = {n0 = "tab_normal", n1 = "tab_select", n2 = "tab_select", n3 = "tab_select"},
+        ["btnFiter2"] ={n0 = "tab_normal", n1 = "tab_select", n2 = "tab_select", n3 = "tab_select"},
+        ["btnFiter3"] ={n0 = "tab_normal", n1 = "tab_select", n2 = "tab_select", n3 = "tab_select"},
+        ["frame"] = {
+            closeButton = { bg = "bg_beibao_anniu01", bgup = "bg_beibao_anniu02" },
+        },
+    }
+}
+
+function UIWndTransactionMain:ctor(param)
+    self:registerComponent("UICompTransactionSell", "UICompTransactionBuy", "UICompTransactionShow", "UICompItem")
+    UIWndTransactionMain.super.ctor(self, param)
+end
+
+function UIWndTransactionMain:onClear()
+    if self._fiterBtns then
+        for _, obj in pairs(self._fiterBtns) do
+            obj:removeClickListener()
+        end
+        self._fiterBtns = nil
+    end
+
+    self._transactionBuyPanel  = nil
+    self._transactionSellPanel = nil
+    self._transactionShowPanel = nil
+    self._emptyNode            = nil
+    self._controlTab           = nil
+    self:unregisterAllComponent()
+    UIWndTransactionMain.super.onClear(self)
+end
+
+function UIWndTransactionMain:onExit()
+    if self._transactionBuyPanel then
+        self._transactionBuyPanel:onExit()
+    end
+    if self._transactionShowPanel then
+        self._transactionShowPanel:onExit()
+    end
+    if self._transactionSellPanel then
+        self._transactionSellPanel:onExit()
+    end
+    UIWndTransactionMain.super.onExit(self)
+end
+
+function UIWndTransactionMain:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndTransactionMain:selectBuyPanelMainIdx")
+    NtfManager:removeNtfListenerByTag("UIWndTransactionMain:selectBuyPanelSubIdx")
+    NtfManager:removeNtfListenerByTag("UIWndTransactionMain:cancelEquipChoose")
+    NtfManager:removeNtfListenerByTag("UIWndTransactionMain:onTransactionList")
+    NtfManager:removeNtfListenerByTag("UIWndTransactionMain:onSimpleListChange")
+    NtfManager:removeNtfListenerByTag("UIWndTransactionMain:onDetailListChange")
+    NtfManager:removeNtfListenerByTag("UIWndTransactionMain:refreshGold")
+    NtfManager:removeNtfListenerByTag("UIWndTransactionMain:onClickItemDetail")
+    NtfManager:removeNtfListenerByTag("UIWndTransactionMain:onTransactionBuyResp")
+    NtfManager:removeNtfListenerByTag("UIWndTransactionMain:onUpdateSellList")
+
+    if self._fiterBtns then
+        for _, obj in pairs(self._fiterBtns) do
+            obj:removeClickListener()
+        end
+    end
+
+    UIWndTransactionMain.super.onHide(self)
+end
+
+function UIWndTransactionMain:onShown()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_TRANSACTION_SELECT_FIRST, handler(self, self.selectBuyPanelMainIdx),
+        "selectBuyPanelMainIdx:selectMainIdx")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_TRANSACTION_SELECT_SECOND, handler(self, self.selectBuyPanelSubIdx),
+        "UIWndTransactionMain:selectBuyPanelSubIdx")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CANCEL_TRANSACTION_CHOOSE, handler(self, self.cancelEquipChoose),
+        "UIWndTransactionMain:cancelEquipChoose")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_TRANSACTION_LIST_RESP, handler(self, self.onTransactionList),
+        "UIWndTransactionMain:onTransactionList")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_TRANSACTION_SIMPLE_LIST_CHANGE, handler(self, self.onSimpleListChange),
+        "UIWndTransactionMain:onSimpleListChange")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_TRANSACTION_DETAIL_LIST_CHANGE, handler(self, self.onDetailListChange),
+        "UIWndTransactionMain:onDetailListChange")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_MONEY_EVENT, handler(self, self.refreshGold),
+        "UIWndTransactionMain:refreshGold")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_TRANSACTION_SHOW_DETAIL, handler(self, self.onClickItemDetail),
+        "UIWndTransactionMain:onClickItemDetail")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_TRANSACTION_BUY_RESP, handler(self, self.onTransactionBuyResp),
+        "UIWndTransactionMain:onTransactionBuyResp")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_HERO_EQUIP_EVENT, handler(self, self.onUpdateSellList),
+        "UIWndTransactionMain:onUpdateSellList")
+
+    if self._fiterBtns then
+        for _, obj in pairs(self._fiterBtns) do
+            obj:addClickListener(handler(self, self.openFiterBtnClick))
+        end
+    end
+    --进入先获取一次收藏列表
+    -- TransactionModule:sendTransactionListReq(TransactionModule.TRANSACTIONTYPE.COLLECT)
+
+    local param = self:getParam().param or {}
+    local mainIdx = param.index or FITER_TYPES.TransactionBuy
+    local defaultView = self._fiterBtns[mainIdx]
+    for i = 1, #self._fiterBtns do
+        defaultView:setSortingOrder(i == mainIdx and 99 or i)
+    end
+    self:openFiterView(defaultView)
+end
+
+function UIWndTransactionMain:onInit()
+    UIWndTransactionMain.super.onInit(self, _GURL.TransactionMain)
+    self._emptyNode = self:getChild("emptyNode")
+    self._emptyNode:setSortingOrder(99)
+    self._controlTab = self:getController("tabs")
+    self._fiterBtns = {}
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        local obj = self:getChild("btnFiter" .. fiterType)
+        obj.fiterType = fiterType
+        self._fiterBtns[fiterType] = obj
+    end
+end
+
+function UIWndTransactionMain:openFiterBtnClick(context)
+    local sender = context:getSender()
+    for fiterType = 1, table.nums(FITER_TYPES) do
+        if fiterType == sender.fiterType then
+            self._fiterBtns[fiterType]:setSortingOrder(99)
+        else
+            if fiterType == FITER_TYPES.TransactionShow then
+                self._fiterBtns[fiterType]:setSortingOrder(1)
+            else
+                self._fiterBtns[fiterType]:setSortingOrder(2)
+            end
+        end
+    end
+    self:openFiterView(sender)
+end
+
+function UIWndTransactionMain:openFiterView(sender)
+    -- if self._openViewType == sender.fiterType then
+    --     return
+    -- end
+    self._openViewType = sender.fiterType
+    self._controlTab:setSelectedIndex(self._openViewType - 1)
+    self:showCurPanel()
+end
+
+function UIWndTransactionMain:showCurPanel()
+    if self._openViewType == FITER_TYPES.TransactionBuy then
+        TransactionModule:sendTransactionListReq(TransactionModule.TRANSACTIONTYPE.COLLECT)
+        if not self._transactionBuyPanel then
+            self._transactionBuyPanel = fgui.UIPackage:createObject("Transaction", "TransactionBuyPanel")
+            self._transactionBuyPanel:insertObjectToFactory(self)
+            self._transactionBuyPanel:setPosition(20, 27)
+            self._emptyNode:addChild(self._transactionBuyPanel)
+            self._transactionBuyPanel:initUI()
+        else
+            self._transactionBuyPanel:refreshView()
+        end
+    elseif self._openViewType == FITER_TYPES.TransactionSell then
+        TransactionModule:sendTransactionListReq(TransactionModule.TRANSACTIONTYPE.PERSONAL_SELL)
+    elseif self._openViewType == FITER_TYPES.TransactionShow then
+        TransactionModule:sendTransactionListReq(TransactionModule.TRANSACTIONTYPE.COLLECT)
+        if not self._transactionShowPanel then
+            self._transactionShowPanel = fgui.UIPackage:createObject("Transaction", "TransactionShowPanel")
+            self._transactionShowPanel:insertObjectToFactory(self)
+            self._transactionShowPanel:setPosition(20, 27)
+            self._emptyNode:addChild(self._transactionShowPanel)
+            self._transactionShowPanel:initUI()
+        else
+            self._transactionShowPanel:refreshView()
+        end
+    end
+
+    --显示
+    if self._transactionBuyPanel then
+        self._transactionBuyPanel:setVisible(self._openViewType == FITER_TYPES.TransactionBuy)
+    end
+    if self._transactionSellPanel then
+        self._transactionSellPanel:setVisible(self._openViewType == FITER_TYPES.TransactionSell)
+    end
+    if self._transactionShowPanel then
+        self._transactionShowPanel:setVisible(self._openViewType == FITER_TYPES.TransactionShow)
+    end
+end
+
+function UIWndTransactionMain:selectBuyPanelMainIdx(event)
+    if self._openViewType == FITER_TYPES.TransactionBuy and self._transactionBuyPanel then
+        local param = event.param or {}
+        local mainIdx = param.mainIdx or 1
+        self._transactionBuyPanel:selectMainIdx(mainIdx)
+    elseif self._openViewType == FITER_TYPES.TransactionShow and self._transactionShowPanel then
+        local param = event.param or {}
+        local mainIdx = param.mainIdx or 1
+        self._transactionShowPanel:selectMainIdx(mainIdx)
+    end
+end
+
+function UIWndTransactionMain:selectBuyPanelSubIdx(event)
+    if self._openViewType == FITER_TYPES.TransactionBuy and self._transactionBuyPanel then
+        local param = event.param or {}
+        local subIdx = param.subIdx or 1
+        self._transactionBuyPanel:selectSubIdx(subIdx)
+    elseif self._openViewType == FITER_TYPES.TransactionShow and self._transactionShowPanel then
+        local param = event.param or {}
+        local subIdx = param.subIdx or 1
+        self._transactionShowPanel:selectSubIdx(subIdx)
+    end
+end
+
+function UIWndTransactionMain:cancelEquipChoose(event)
+    if self._transactionSellPanel then
+        self._transactionSellPanel:cancelEquipChoose()
+    end
+end
+
+function UIWndTransactionMain:onTransactionList(event)
+    local param = event.param or {}
+    if param.type == TransactionModule.TRANSACTIONTYPE.PERSONAL_SELL then
+        if not self._transactionSellPanel then
+            self._transactionSellPanel = fgui.UIPackage:createObject("Transaction", "TransactionSellPanel")
+            self._transactionSellPanel:insertObjectToFactory(self)
+            self._transactionSellPanel:setPosition(20, 27)
+            self._emptyNode:addChild(self._transactionSellPanel)
+            self._transactionSellPanel:setRegClass(self)
+        end
+        self._transactionSellPanel:refreshView()
+    end
+end
+
+function UIWndTransactionMain:onSimpleListChange(event)
+    if self._openViewType == FITER_TYPES.TransactionBuy and self._transactionBuyPanel then
+        self._transactionBuyPanel:onSimpleListChange()
+    elseif self._openViewType == FITER_TYPES.TransactionShow and self._transactionShowPanel then
+        self._transactionShowPanel:onSimpleListChange()
+    end
+end
+
+function UIWndTransactionMain:onDetailListChange(event)
+    if self._openViewType == FITER_TYPES.TransactionBuy and self._transactionBuyPanel then
+        self._transactionBuyPanel:onDetailListChange()
+    elseif self._openViewType == FITER_TYPES.TransactionShow and self._transactionShowPanel then
+        self._transactionShowPanel:onDetailListChange()
+    end
+end
+
+function UIWndTransactionMain:refreshGold(event)
+    if self._openViewType == FITER_TYPES.TransactionBuy and self._transactionBuyPanel then
+        self._transactionBuyPanel:refreshGold()
+    elseif self._openViewType == FITER_TYPES.TransactionShow and self._transactionShowPanel then
+        self._transactionShowPanel:refreshGold()
+    end
+end
+
+function UIWndTransactionMain:onClickItemDetail(event)
+    local param = event.param or {}
+    local index = param.index
+    if self._openViewType == FITER_TYPES.TransactionBuy and self._transactionBuyPanel then
+        self._transactionBuyPanel:onClickItemDetail(index)
+    elseif self._openViewType == FITER_TYPES.TransactionShow and self._transactionShowPanel then
+        self._transactionShowPanel:onClickItemDetail(index)
+    end
+end
+
+function UIWndTransactionMain:onTransactionBuyResp(event)
+    if self._openViewType == FITER_TYPES.TransactionBuy and self._transactionBuyPanel then
+        self._transactionBuyPanel:onTransactionBuyResp()
+    elseif self._openViewType == FITER_TYPES.TransactionShow and self._transactionShowPanel then
+        self._transactionShowPanel:onTransactionBuyResp()
+    end
+end
+
+function UIWndTransactionMain:onUpdateSellList()
+    if self._openViewType == FITER_TYPES.TransactionSell and self._transactionSellPanel then
+        self._transactionSellPanel:refreshView()
+    end
+end
+
+
+function UIWndTransactionMain:onLayerClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndTransactionMain", close = true })
+end
+
+return UIWndTransactionMain

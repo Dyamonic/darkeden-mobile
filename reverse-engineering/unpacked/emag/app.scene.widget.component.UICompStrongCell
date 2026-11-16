@@ -1,0 +1,68 @@
+---@class UICompStrongCell
+---
+local UICompStrongCell = class("UICompStrongCell", lt.UIGButtonBase, lt.UICompChangeSkin)
+
+UICompStrongCell.ChangeSkinConf = {
+    ["Strong"] = {
+        ["n0"] = "bg_wybq_lbdi",
+        ["icon_di"] = "bg_wybq_icondi",
+    },
+    ["CommonTL"] = {
+        ["btn_goto"] = {bg = "bg_youjian_changanniu01", disabled = "bg_youjian_changanniu02"},
+    },
+}
+
+function UICompStrongCell:ctor()
+    UICompStrongCell.super.ctor(self)
+    --UI
+    self._title = nil
+    self._iconLoader = nil
+    self._gotoBtn = nil
+    --数据
+    self._data = nil
+end
+
+function UICompStrongCell:onClear()
+    --UI
+    self._title = nil
+    self._iconLoader = nil
+    self._gotoBtn = nil
+    --数据
+    self._data = nil
+end
+
+function UICompStrongCell:onConstruct()
+    self:startSkin()
+    self._title = self:getChild("title")
+    self._iconLoader = self:getChild("loader_icon")
+    self._gotoBtn = self:getChild("btn_goto")
+end
+
+function UICompStrongCell:onEnter()
+    self._gotoBtn:addClickListener(function()
+        self:onGotoBtn()
+    end)
+end
+
+function UICompStrongCell:onExit()
+    self._gotoBtn:removeClickListener()
+end
+
+function UICompStrongCell:setObjInfo(data, index)
+    self._data = data
+    self._title:setText(data:getContect())
+    local iconUrl = data:getIcon() ~= "" and string.format(_GURL.GetImageMain, data:getIcon()) or ""
+    self._iconLoader:setURL(iconUrl)
+    self._gotoBtn:setVisible(data:getJumpTarget() ~= 0)
+end
+
+function UICompStrongCell:onGotoBtn()
+    local jumpTarget = self._data:getJumpTarget()
+    if jumpTarget == 0 then
+        return
+    end
+    lt.GameModule:gotoSystemFunc(jumpTarget)
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStrong", close = true})
+end
+
+return UICompStrongCell

@@ -1,0 +1,930 @@
+
+local TrapActor = class("TrapActor", function()
+    return display.newNode()
+end)
+
+local CacheManager = lt.CacheManager
+local SkillEnum = lt.SkillEnum
+local EffectQueueActor = lt.EffectQueueActor
+local SkillManager = lt.SkillManager
+local EffectParallelActor = lt.EffectParallelActor
+local Constant = lt.Constant
+local HeroAndMonsterEffect = lt.HeroAndMonsterEffect
+local ScheduleUtil = lt.ScheduleUtil
+local GameModule = lt.GameModule
+local TimeTrigger = lt.TimeTrigger
+local NtfManager = lt.NtfManager
+
+TrapActor._timeTrigger    = nil
+TrapActor._trapData = nil
+TrapActor._nameNode = nil
+TrapActor._actionMountInfo = nil
+--[[
+	陷阱
+]]
+function TrapActor:ctor(trapData)
+	self._trapData = trapData
+    self._specialEffectArr = {}
+
+	local offsetX, offsetY = -25, 15
+    local zorder = 0
+
+	zorder = zorder + 1
+	self._queueEffectNode = display.newNode()
+    self._queueEffectNode:setPosition(offsetX, offsetY)
+
+    if self._trapData:getSkillId() == SkillEnum.BLOODY_TUNNEL then
+        self:createSelectNode()
+    end
+
+
+    
+    self._nameNode = display.newNode()
+    self._nameNode:setPosition(offsetX, offsetY)
+
+    -- self._shadowActor = ShadowActor.new(2,nil)
+    -- 路标
+    if self._trapData:getSubObjType() == Constant.FloorSubType.FLOOR_CUSTOMIZE_TEXT then
+        self:createCustomize()
+    end
+    self._timeTrigger = TimeTrigger.new()
+    -- 坐骑
+    if self._trapData:getSubObjType() == Constant.FloorSubType.FLOOR_SLAYER_RIDER then
+        self:createMount()
+    end 
+    
+    self:addChild(self._queueEffectNode, zorder)
+	self._queueEffectActorArr = {}
+	self._parallelEffectActorArr = {}
+    local skillId = trapData:getSkillId()
+    if skillId then
+        self:playEffect(skillId,trapData:getSkillLevel())
+    end
+    self._disappearTime = trapData:getDisappearTime()
+    if self._disappearTime > 0 then
+        self._timeDisapearTrigger = TimeTrigger.new(self._disappearTime)
+    end
+end
+
+
+function TrapActor:createSelectNode()
+    ---选中tips
+    self._selectLayer = display.newLayer(cc.c4b(0, 0, 0, 255), cc.size(85, 54))
+    self._selectLayer:setColor(cc.c3b(49, 40, 24))
+    self._selectLayer:setLocalZOrder(99999)
+    self._selectLayer:setVisible(false)
+
+    self._selectLayer:setAnchorPoint(cc.p(0.5, 0.5))
+
+    local heroData = lt.GameModule:getHeroData()
+    local heroName = heroData:getName()
+    local mapName = lt.AgentManager:getWorldAgent():getMapAgent():getMapName()
+    local m,n = self._trapData:getMN()
+
+    local showInfos = {
+        [1] = {text = string.format("X:%s Y:%s", m,n), color = cc.c3b(255, 203, 255)},
+        [2] = {text = mapName, color = cc.c3b(255, 255, 255)},
+        [3] = {text = heroName, color = cc.c3b(255, 255, 0)},
+    }
+
+    local maxWidth = 0
+    for i, info in ipairs(showInfos) do
+        local labelTitle = display.newTTFLabel({text=info.text, color = info.color, size = 13, font = lt.Constant.FONT_4})
+        labelTitle:setAnchorPoint(0, 1)
+        labelTitle:setPosition(8, 2.5 + i * 16)
+        self._selectLayer:addChild(labelTitle)
+        local size = labelTitle:getContentSize()
+        if size.width > maxWidth then
+            maxWidth = size.width
+        end
+    end
+
+    local selectWidth = maxWidth + 16
+    self._selectLayer:setContentSize(selectWidth, 54)
+
+    --- 选中标志
+    self._select = display.newSprite("ui/common/tunnelPoint.png")
+    self._selectLayer:addChild(self._select)
+    self._select:setAnchorPoint(cc.p(0.5, 0))
+    self._select:setPosition(selectWidth / 2, -25)
+end
+
+-- 创建路牌
+function TrapActor:createCustomize()
+    local dimensions = cc.size(190, 0) -- 原大小(194 128)
+    local _customizeBg = display.newSprite("game/common/bg_ggp_kuang.png",0,0,{scale9 = true, size = cc.size(194, 0), capInsets = cc.rect(11, 13, 164, 90)})
+    local content = self._trapData:getName()
+    local auther = self._trapData:getAuther()
+    local showInfos = {
+        [1] = {text = "From."..auther, color = cc.c3b(255, 255, 0),pos = { y= 20},align = cc.TEXT_ALIGNMENT_RIGHT},
+        [2] = {text = content, color = cc.c3b(255, 255, 255),pos = { y= 40 }},
+    }
+    local height = 0
+    for i, info in ipairs(showInfos) do
+        local labelTitle = display.newTTFLabel({text=info.text, color = info.color, size = 18, font = lt.Constant.FONT_4,dimensions = dimensions ,align = info.align})
+        labelTitle:setAnchorPoint(0, 0)
+        local size = labelTitle:getContentSize()
+        height = height + size.height
+        labelTitle:setPosition(2,info.pos.y)
+        _customizeBg:addChild(labelTitle)
+    end
+    _customizeBg:setAnchorPoint(0.5, 0)
+    _customizeBg:setPosition(60, 50)
+    _customizeBg:setOpacity(125) -- FIXME这边设置没有用
+    _customizeBg:setContentSize(194,height + 25)
+    -- self:addChild(_customizeBg,1)
+
+    self._nameNode:addChild(_customizeBg)
+
+    self._sprite = display.newSprite()
+    self._sprite:setAnchorPoint(0.5, 0)
+    self._sprite:setPosition(8, 0)
+    self:addChild(self._sprite)
+    self._actionInfo = lt.ActionManager:getActionMonsterInfo("monster", 139, 0, 2)
+
+    self._spriteShadow = display.newSprite()
+    self._spriteShadow:setAnchorPoint(0.5, 0)
+    self._spriteShadow:setPosition(-40, 0)
+    self:addChild(self._spriteShadow)
+    self._actionSadowInfo = lt.ActionManager:getActionMonsterInfo("monster_s", 139, 0, 2, true)
+end
+
+-- 坐骑
+function TrapActor:createMount()
+    local mountId = self._trapData:getItemId()
+    local mountInfo = lt.Constant.MOUNT_ITEMS[mountId]
+    if not mountInfo then
+        return 
+    end
+    local heroData = GameModule:getHeroData()
+    local race = heroData:getRace()
+    local sex = heroData:getSex()
+    -- 魔族外需要设定性别
+    if race ~= Constant.RaceType.Ousters then
+        -- 服务器定义: 0男 1女, 所以本地需要 +1
+        sex = sex + 1
+    end
+
+    local baseName = string.format("%d_%d_%d_%d", race, sex, mountInfo.adv, mountInfo.lv)
+
+    local mountModelName = string.format("mount_%s", baseName)
+    local mountModelShadowName = string.format("mount_s_%s", baseName)
+
+    local offsetX, offsetY = -25, 15
+    local zorder = 0
+    self._trapNode = display.newNode()
+    self._trapNode:setPosition(offsetX, offsetY)
+    self:addChild(self._trapNode, zorder)
+
+    local mZorder = 0
+    --影子
+    self._spriteShadowMount = display.newSprite()
+    self._spriteShadowMount:setAnchorPoint(0.5, 0.5)
+    self._trapNode:addChild(self._spriteShadowMount, mZorder)
+    --模型
+    mZorder = mZorder + 1
+    self._spriteMount = display.newSprite()
+    self._spriteMount:setAnchorPoint(0.5, 0.5)  
+    self._trapNode:addChild(self._spriteMount, mZorder)
+
+    local heroAgent = lt.AgentManager:getHeroAgent()
+    local direction = heroAgent and heroAgent:getDirection() or Constant.DIRECTION_DOWN
+
+    local action = lt.MountModule:getMountActionId(mountId)
+
+    self._actionMountInfo = lt.ActionManager:getActionMountInfo(mountModelName, action, direction)
+    self._actionMountShadowInfo = lt.ActionManager:getActionMountInfo(mountModelShadowName, action, direction ,true)
+    -- 设置控制参数
+    self._timeTrigger:reset(self._actionMountInfo:getStep())
+    self._loopCount = 0
+    self._nextFrameIndex = 1
+    self:gotoNextFrame()
+end
+
+function TrapActor:getNameNode()
+    return self._nameNode
+end
+
+function TrapActor:getSeletNode()
+    return self._selectLayer
+end
+
+function TrapActor:setSelect(isSelect)
+    self._selectLayer:setVisible(isSelect)
+end
+
+function TrapActor:getcustomizeLayer()
+    return self._customizeLayer
+end
+
+function TrapActor:onClear()
+    self:stopAllActions()
+    
+    self:removeAllParalEffect()
+    self:removeAllParallelEffect()
+    self:removeAllQueueEffect()
+    if self._selectLayer then
+        self._selectLayer:removeFromParent()
+        self._selectLayer = nil
+    end
+    self:removeAllChildren()
+    self._queueEffectNode = nil
+    self._queueEffectActorArr = nil
+    self._parallelEffectActorArr = nil
+    self._actionInfo = nil
+    self._actionSadowInfo = nil
+    self._specialEffectArr = nil
+    self._actionMountInfo = nil
+    self._shadowActor = nil
+    self._spriteMount = nil
+end
+
+function TrapActor:onUpdate()
+	self:onUpdateQueueEffect()
+    self:onUpdateParalEffect()
+    self:updateFrameCustmoize()
+    self:updateSpecicalEffect()
+    self:onUpdateAction()
+    self:onUpdateDisappear()
+end
+
+function TrapActor:onUpdateAction()
+    if not self._actionMountInfo or not self._actionMountInfo:getLoop() then
+        return
+    end
+    
+    local frameCount = self._actionMountInfo:getSpriteFrameCount()
+    local loop = self._actionMountInfo:getLoop()
+    if loop ~= -1 and (self._loopCount >= loop or self._nextFrameIndex > frameCount) then
+        return
+    end
+    if self._timeTrigger:tick() then
+        self:gotoNextFrame()
+
+        if self._nextFrameIndex > frameCount then
+            self._nextFrameIndex = 1
+            self._loopCount = self._loopCount + 1
+        end
+    end
+end
+
+function TrapActor:onUpdateDisappear() 
+    if self._timeDisapearTrigger then
+        if self._disappearTime > 0 and not self:isVisible() then
+            self:setVisible(true)
+        end
+        if self._timeDisapearTrigger:tick() then
+            if self:getAgent():isClearImmediately() then
+                self:setVisible(false)
+            else
+                self:getAgent():playClearEffect()
+            end
+        end
+    end
+end
+
+function TrapActor:gotoNextFrame()
+    --- 已经下了坐骑
+    self:onUpdateMount()
+    self._nextFrameIndex = self._nextFrameIndex + 1
+end
+
+function TrapActor:onUpdateMount()
+    if not self._actionMountInfo then
+        return
+    end
+    self._spriteMount:setVisible(true)
+    local frame = self._actionMountInfo:getSpriteFrame(self._nextFrameIndex)
+    if frame then
+        self._spriteMount:setSpriteFrame(frame.sprite)
+        local pos = self:conversionOffsetPoint(cc.p(0, 0), cc.p(frame.x, frame.y), frame.size)
+        self._spriteMount:setPosition(pos)
+    end
+
+    local frame = self._actionMountShadowInfo:getSpriteFrame(self._nextFrameIndex)
+    if frame then
+        self._spriteShadowMount:setSpriteFrame(frame.sprite)
+        local pos = self:conversionOffsetPoint(cc.p(0, 0), cc.p(frame.x, frame.y), frame.size)
+        self._spriteShadowMount:setPosition(pos)
+    end
+end
+
+function TrapActor:updateFrameCustmoize()
+    if not self._actionInfo then
+        return
+    end
+    self._sprite:setVisible(true)
+    local frame = self._actionInfo:getSpriteFrame(1)
+    if frame then
+        self._sprite:setSpriteFrame(frame.sprite)
+    end
+
+    if not self._actionSadowInfo then
+        return
+    end
+    self._spriteShadow:setVisible(true)
+    local frame = self._actionSadowInfo:getSpriteFrame(1)
+    if frame then
+        self._spriteShadow:setSpriteFrame(frame.sprite)
+    end
+end
+
+function TrapActor:setPositionEx(x, y)
+    self:setPosition(x, y)
+    if self._shadowActor then
+        self._shadowActor:setPosition(x, y)
+    end
+
+    if self._nameNode then
+        local _, n = lt.MapUtil:calcMN(x, y)
+        self._nameNode:setPosition(x, y)
+        self._nameNode:setLocalZOrder(n)
+    end
+end
+
+-- function TrapActor:isSole()
+--     local isSole = false
+--     if self._trapData and (self._trapData:getSkillId()  == SkillEnum.SKILL_MERCY_GROUND) then
+--         return true
+--     end
+--     return isSole
+-- end
+
+function TrapActor:playEffect(skillId,skillLevel)
+	-- if skillId == SkillEnum.SKILL_GREEN_POISON or skillId == SkillEnum.SKILL_YELLOW_POISON or skillId == SkillEnum.MAGIC_ACID_SWAMP then
+		-- 荧绿之毒 艳黄之毒 酸性沼泽 队列类型
+    if skillId == SkillEnum.SKILL_MERCY_GROUND 
+    or skillId == SkillEnum.MAGIC_REGENERATION 
+    or skillId == SkillEnum.SKILL_SWORD_OF_THOR
+    or skillId == SkillEnum.MAGIC_GROUND_ATTACK
+    or skillId == SkillEnum.MAGIC_BLOODY_SNAKE
+    or skillId == SkillEnum.SKILL_ICE_WAVE
+    or skillId == SkillEnum.SKILL_THROWING_AXE
+    or skillId == SkillEnum.SKILL_CHOPPING_FIREWOOD 
+    or skillId == SkillEnum.SKILL_CHAIN_THROWING_AXE 
+    or skillId == SkillEnum.SKILL_MULTI_THROWING_AXE
+    or skillId == SkillEnum.SKILL_DRAGON_TORNADO
+    then
+        self:playParallelEffectMetasDelay(skillId,skillLevel)
+    elseif skillId == SkillEnum.SKILL_INSTALL_TRAP  then
+        local worldAgent = lt.AgentManager:getWorldAgent()
+        local heroAgent = worldAgent:getHeroAgent()
+        if heroAgent:getRaceType() == Constant.RaceType.Slayer then -- 人族
+            self:playParallelEffectMetasDelay(skillId,skillLevel) 
+        end
+    elseif skillId == SkillEnum.SKILL_SANCTUARY then
+        self:playQueueEffectByLv(skillId, skillLevel, Constant.EFFECT.SELF)
+    elseif skillId == SkillEnum.SKILL_ICE_HORIZON then
+        self:playQueueEffectByLv(skillId, skillLevel, Constant.EFFECT.HIT)
+    elseif skillId == (SkillEnum.SKILL_INSTALL_TRAP .. "CLIENT") then
+    elseif skillId == SkillEnum.SKILL_HALO then
+        local sx, sy = self._trapData:getMN()
+
+        -- local bullet = lt.BullectScreenEffect.new(skillId, 0, cc.p(sx, sy + sz))
+        -- bullet:addEffect(self._skillId, processMetas[1], true)
+        -- local zorder = (trapN  * 10000 + trapM + 9999) * 10 + 1
+        -- lt.BulletManager:addBulletToMapZOrder(bullet, zorder)
+        --固定的
+        self:playQueueEffectByLv(skillId, skillLevel, Constant.EFFECT.SELF)
+        lt.SkillManager:playTraceHole(skillId, self._trapData:getTargetId(), sx, sy, self._trapData:getObjId())
+    
+    elseif skillId == SkillEnum.SKILL_SHINE_SWORD then
+        if self:isTrapTop() then
+            self:playParallelEffectMetasDelay(skillId,skillLevel)
+        else
+            self:playQueueEffectByLv(skillId, skillLevel, Constant.EFFECT.SELF)
+        end
+    elseif skillId == SkillEnum.SKILL_SUMMON_CLAY  then
+        self:playQueueEffectByLv(skillId, skillLevel, Constant.EFFECT.SELF)
+    elseif skillId == SkillEnum.SKILL_HEAVEN_GROUND then
+        self:playParallelEffectMetasDelay(skillId,skillLevel)
+    elseif skillId == SkillEnum.SKILL_HELLFIRE then
+        local effectMetas = CacheManager:getHitMetas(skillId,skillLevel)
+        local effectParabolaActor = EffectParallelActor.new(self, skillId, 0)
+        self._queueEffectNode:addChild(effectParabolaActor)
+        effectParabolaActor:addEffect(skillId, {effectMetas[1],effectMetas[2], effectMetas[3]})
+        table.insert(self._parallelEffectActorArr, effectParabolaActor)
+
+        local effectQueueActor = EffectQueueActor.new(self, skillId, 0)
+        effectQueueActor:addEffect(skillId, {effectMetas[4], effectMetas[5]})
+        self._queueEffectNode:addChild(effectQueueActor)
+        table.insert(self._queueEffectActorArr, effectQueueActor)
+    elseif skillId == SkillEnum.SKILL_FURY_OF_GNOME then
+        local actionInfoMetas = lt.CacheManager:getBuffMetas(skillId,skillLevel)
+        local metas = {actionInfoMetas[1],actionInfoMetas[2],actionInfoMetas[3]}
+        local metasStone = {actionInfoMetas[4],actionInfoMetas[5],actionInfoMetas[6]}
+        if self:isTrapBottom() then
+            self:addSpecialEffect(skillId, metas)
+        else
+            self:addSpecialEffect(skillId, metasStone)
+        end
+    elseif skillId == SkillEnum.SKILL_ICE_FIELD 
+    or skillId == SkillEnum.SKILL_WIDE_ICE_FIELD 
+    then
+        local hitMetas = lt.CacheManager:getHitMetas(skillId,skillLevel)
+        self:addSpecialEffect(skillId, hitMetas)
+    elseif skillId == SkillEnum.SKILL_MAGIC_METEOR then
+        local function endCallBack()
+            if self and self._queueEffectNode then
+                local actionInfoMetas = CacheManager:getBulletMetas(skillId)
+                local effectParabolaActor = EffectParallelActor.new(self, skillId, 0)
+                self._queueEffectNode:addChild(effectParabolaActor)
+                effectParabolaActor:addEffect(skillId, {actionInfoMetas[2], actionInfoMetas[3]})
+                table.insert(self._parallelEffectActorArr, effectParabolaActor)
+            end
+        end
+        local targetM, targetN = self._trapData:getMN()
+        local tx, ty = lt.MapUtil:calcMNMid(targetM, targetN)
+        lt.SkillManager:playMagicMeteor({skillId = skillId, tx = tx, ty = ty, callback = endCallBack})
+    else
+        self:playQueueEffectDelay(skillId)
+    end
+	-- end
+end
+
+function TrapActor:playQueueEffectDelay(skillId)
+    local delayTime = SkillManager:getActionDelayTime(skillId)
+    delayTime = delayTime * self:getSlowDown()
+    if skillId == SkillEnum.SKILL_CASTING_FIRE then
+        delayTime = 1
+    end
+
+    if delayTime > 0 then
+        local delayAction = cc.Sequence:create(cc.DelayTime:create(delayTime),cc.CallFunc:create(function()
+            self:playQueueEffect(skillId)
+        end))
+        self:runAction(delayAction)
+    else
+        self:playQueueEffect(skillId)
+    end
+end
+
+function TrapActor:playParallelEffectMetasDelay(skillId,skillLevel)
+    local delayTime = SkillManager:getActionDelayTime(skillId)
+    delayTime = delayTime * self:getSlowDown()
+    if delayTime > 0 then
+        local delayAction = cc.Sequence:create(cc.DelayTime:create(delayTime),cc.CallFunc:create(function()
+            self:playParallelEffectByLv(skillId,skillLevel)
+        end))
+        self:runAction(delayAction)
+    else
+        self:playParallelEffectByLv(skillId,skillLevel)
+    end
+end
+
+-- ***************** 并列式播放特效 ************************
+function TrapActor:playParallelEffectByLv(skillId, skillLevel)
+    if not self._queueEffectNode then
+        return
+    end
+
+    local effectParabolaActor = EffectParallelActor.new(self, skillId, 0)
+    self._queueEffectNode:addChild(effectParabolaActor)
+    
+    table.insert(self._parallelEffectActorArr, effectParabolaActor)
+
+    if skillId == SkillEnum.SKILL_MERCY_GROUND then
+        local effectMetas = CacheManager:getHitMetas(skillId,skillLevel) or {}
+        local tempMetas = {}
+        if self._trapData and self._trapData:getGroundIndex() then
+            local groundIndex = self._trapData:getGroundIndex()
+            local changeGroundIndex = {1, 4, 7, 2, 5, 8, 3, 6, 9}
+            local offsetPosArr = {
+                {x = 48, y = -24}, {x = 0, y = -24}, {x = -48, y = -24}, {x = 48, y = 0}, {x = 0, y = 0}, {x = -48, y = 0}, {x = 48, y = 24}, {x = 0, y = 24}, {x = -48, y = 24}
+            }
+            groundIndex = changeGroundIndex[groundIndex]
+            if offsetPosArr[groundIndex] then
+                effectParabolaActor:setPosition(offsetPosArr[groundIndex].x, offsetPosArr[groundIndex].y)
+            end
+            if groundIndex == 5 then
+                tempMetas[1] = effectMetas[1]
+            end
+            tempMetas[#tempMetas+1] = effectMetas[groundIndex+1]
+        end
+        for i,meta in ipairs(tempMetas) do
+            meta._order = i
+        end
+
+        if tempMetas[#tempMetas] and tempMetas[#tempMetas].getOrder then
+            effectParabolaActor:setLoopOrder(tempMetas[#tempMetas]:getOrder())
+        end
+        effectParabolaActor:addEffect(skillId, tempMetas) 
+    elseif skillId == SkillEnum.SKILL_INSTALL_TRAP then
+        local effectMetas = CacheManager:getHitMetas(skillId,skillLevel)
+        effectParabolaActor:setLoopOrder(1)
+        effectParabolaActor:addEffect(skillId, effectMetas)
+    elseif skillId == SkillEnum.MAGIC_REGENERATION then
+        local effectMetas = CacheManager:getBuffMetas(skillId,skillLevel)
+        effectParabolaActor:setLoopOrder(2)
+        effectParabolaActor:addEffect(skillId, effectMetas)
+    elseif skillId == SkillEnum.SKILL_SHINE_SWORD then
+        local effectMetas = CacheManager:getHitMetas(skillId,skillLevel)
+        effectParabolaActor:addEffect(skillId, effectMetas)
+    elseif skillId == SkillEnum.SKILL_HEAVEN_GROUND then
+        local effectMetas = CacheManager:getBuffMetas(skillId,skillLevel)
+        effectParabolaActor:addEffect(skillId, effectMetas)
+    elseif skillId == SkillEnum.SKILL_DRAGON_TORNADO then -- 巨龙卷风
+        local effectMetas = CacheManager:getBuffMetas(skillId,skillLevel)
+        if self._trapData:getIsTornadoParent() == 1 then
+            effectParabolaActor:addEffect(skillId, {effectMetas[1]})
+        else
+            if effectMetas[2] then
+                effectMetas[2]:setOrder(1)
+            end
+            effectParabolaActor:addEffect(skillId, {effectMetas[2]})
+        end
+    elseif skillId == SkillEnum.MAGIC_GROUND_ATTACK then
+        local effectMetas = CacheManager:getBuffMetas(skillId,skillLevel)
+        effectParabolaActor:addEffect(skillId, effectMetas)
+    elseif skillId == SkillEnum.MAGIC_BLOODY_SNAKE 
+    or skillId == SkillEnum.SKILL_ICE_WAVE
+    then
+        local effectMetas = CacheManager:getProcessMetas(skillId, skillLevel)
+        effectParabolaActor:addEffect(skillId, effectMetas)
+    elseif skillId == SkillEnum.SKILL_THROWING_AXE 
+    or skillId == SkillEnum.SKILL_CHOPPING_FIREWOOD 
+    or skillId == SkillEnum.SKILL_CHAIN_THROWING_AXE 
+    or skillId == SkillEnum.SKILL_MULTI_THROWING_AXE 
+    then
+        local effectMetas = CacheManager:getBuffMetas(skillId, skillLevel)
+        effectParabolaActor:addEffect(skillId, effectMetas)
+        local delayTime = effectMetas[1]:getDelayFrame() / 1000
+        ScheduleUtil:performWithDelayGlobal(function()
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_EVENTFLAG_SHAKE_SCREEN, {eventDelay = 500, parameter3 = 3, eventType = Constant.SHARK_SCREEN_TYPE.EVENTID_METEOR_SHAKE})
+        end, delayTime)
+
+    elseif skillId == SkillEnum.SKILL_SWORD_OF_THOR then
+        local effectMetas = CacheManager:getProcessMetas(skillId,skillLevel)
+        effectParabolaActor:addEffect(skillId, effectMetas)
+
+        ---三个永久的
+        --[[
+        固定多久消失， -》多久出现
+        ]]
+        local hitMetas = CacheManager:getHitMetas(skillId,skillLevel)
+        self._specialEffectArr = {}
+        for key, hitMeta in ipairs(hitMetas) do
+            local delayTime = hitMeta:getDelayFrame() / 1000
+            ScheduleUtil:performWithDelayGlobal(function()
+                if self and self._specialEffectArr then
+                    local effectActor = lt.EffectActor.new(hitMeta, 1, nil, true)
+                    if hitMeta:getEffectId() == 1007 then
+                        effectActor:setRandomDraw(true)
+                    end
+                    table.insert(self._specialEffectArr, effectActor)
+                    self:addChild(effectActor)
+                    effectActor:setPosition(-25, 15)
+                end
+            end, delayTime)
+        end
+
+        ScheduleUtil:performWithDelayGlobal(function()
+            if self and self._specialEffectArr then
+                for _, effectActor in pairs(self._specialEffectArr) do
+                    effectActor:setVisible(false)
+                end
+            end
+        end, 0.24)
+
+        ScheduleUtil:performWithDelayGlobal(function()
+            if self and self._specialEffectArr then
+                for _, effectActor in pairs(self._specialEffectArr) do
+                    effectActor:setVisible(true)
+                end
+            end
+        end, 0.37)
+    end
+end
+
+-- 清除某个持续特效
+function TrapActor:removeParalEffect(skillId)
+    for i, effectActor in ipairs(self._parallelEffectActorArr) do
+        if skillId == effectActor:getSkillId() then
+            effectActor:onClear()
+            table.remove(self._parallelEffectActorArr, i)
+            break
+        end
+    end
+end
+
+-- 主要是停止循环播放的队列
+function TrapActor:stopParallelEffect(skillId)
+    for i, effectActor in ipairs(self._parallelEffectActorArr) do
+        if skillId == effectActor:getSkillId() then
+            effectActor:stopParallelEffect()
+            break
+        end
+    end
+end
+
+function TrapActor:onUpdateParalEffect()
+	local parallelEffectActorArr = self._parallelEffectActorArr 
+	if not parallelEffectActorArr or #parallelEffectActorArr == 0 then
+		return
+	end
+    local removeTable = {}
+	for index, effectActor in ipairs(parallelEffectActorArr) do
+        if effectActor then
+            if effectActor:isCloseEffect() then
+                removeTable[index] = true
+                if self._trapData:getSkillId() == SkillEnum.SKILL_CHAIN_THROWING_AXE
+                or self._trapData:getSkillId() == SkillEnum.SKILL_THROWING_AXE
+                or self._trapData:getSkillId() == SkillEnum.SKILL_CHOPPING_FIREWOOD
+                or self._trapData:getSkillId() == SkillEnum.SKILL_MULTI_THROWING_AXE then
+                    --BOSS飞斧特殊释放
+                    if self._agent:inDisappearing() then
+                        self._agent:deleteSelfFromTable()
+                    end
+                end
+            else
+                effectActor:onUpdate()
+            end
+        end
+	end
+
+    self:removeEffectFromRemoveTable(parallelEffectActorArr, removeTable)
+end
+
+-- ***************** 列表式播放特效 ************************
+function TrapActor:playQueueEffect(skillId)
+    if not self._queueEffectNode then
+        return
+    end
+
+    local effectQueueActor = EffectQueueActor.new(self, skillId, 0)
+    self._queueEffectNode:addChild(effectQueueActor)
+
+    -- 此处存在2个一样的技能效果 移除时会出问题，存在不及时移除
+    table.insert(self._queueEffectActorArr, effectQueueActor)
+
+    if skillId == SkillEnum.SKILL_GREEN_POISON then
+        -- 荧绿之毒 
+        effectQueueActor:setLoopOrder(2) -- 循环的队列顺序
+        effectQueueActor:addEffectEName(skillId, "result_magic_green_poison")
+	elseif skillId == SkillEnum.SKILL_YELLOW_POISON then
+		-- 艳黄之毒
+		effectQueueActor:setLoopOrder(2) -- 循环的队列顺序
+        effectQueueActor:addEffectEName(skillId, "result_magic_yellow_poison")
+    elseif skillId == SkillEnum.MAGIC_ACID_SWAMP then
+		-- 酸性沼泽
+		effectQueueActor:setLoopOrder(2) 
+        effectQueueActor:addEffectEName(skillId, "result_magic_acid_swamp")
+    elseif skillId == SkillEnum.MAGIC_BLOODY_WALL then
+        effectQueueActor:setLoopOrder(1)  --血墙
+        effectQueueActor:addEffectEName(skillId, "result_magic_bloody_wall")
+    elseif skillId == SkillEnum.SKILL_CASTING_FIRE then
+        effectQueueActor:setLoopOrder(2)  --地狱火海
+        effectQueueActor:addEffectEName(skillId, "result_skill_prominence_" .. self._trapData:getSkillLevel())
+    elseif skillId == SkillEnum.BLOODY_TUNNEL then
+        effectQueueActor:setLoopOrder(2)  --血之漩涡
+        effectQueueActor:addEffectEName(skillId, "result_magic_bloody_tunnel")
+    elseif skillId == SkillEnum.HAND_OF_DARKNESS or skillId == SkillEnum.SKILL_GRAY_DARKNESS then
+        local effectMetas = CacheManager:getBuffMetas(skillId)
+        effectQueueActor:setLoopOrder(2)
+        local random = math.random(0, 4)
+        local tempMetas = clone(effectMetas)
+        for index, meta in ipairs(tempMetas) do
+            meta._spriteId = meta:getSpriteId() + random
+        end
+        effectQueueActor:addEffect(skillId, tempMetas)
+        effectQueueActor:setStartFrameIndex(math.random(1,10))
+    else
+        effectQueueActor:addEffectGenerator(skillId, 0) 
+    end
+end
+
+function TrapActor:addSpecialEffect(skillId, metas)
+    if not self._queueEffectNode then
+        return
+    end
+
+    local effectQueueActor = EffectQueueActor.new(self, skillId, 0)
+    self._queueEffectNode:addChild(effectQueueActor)
+    table.insert(self._queueEffectActorArr, effectQueueActor)
+
+    effectQueueActor:addEffect(skillId, metas)
+
+end
+
+function TrapActor:playQueueEffectByLv(skillId, skillLevel, effectName)
+    HeroAndMonsterEffect:playQueueEffectByLv(self, skillId, skillLevel, effectName)
+end
+
+-- 主要是停止循环播放的队列
+function TrapActor:stopQueueEffect(skillId)
+    if self._queueEffectActorArr and (#self._queueEffectActorArr or table.nums(self._queueEffectActorArr)) == 0 then
+        if self._agent:inDisappearing() then
+            self:checkParalAndQueueEffectEnd()
+        end
+        return--没有停止的动作
+    end
+    for i, effectActor in ipairs(self._queueEffectActorArr) do
+        if skillId == effectActor:getSkillId() then
+            effectActor:stopQueueEffect()
+            break
+        end
+    end
+end
+
+-- 清除某个持续特效
+function TrapActor:removeQueueEffect(skillId)
+    for i, effectActor in ipairs(self._queueEffectActorArr) do
+        if skillId == effectActor:getSkillId() then
+            effectActor:onClear()
+            table.remove(self._queueEffectActorArr, i)
+            break
+        end
+    end
+end
+
+function TrapActor:onUpdateQueueEffect()
+	local queueEffectActorArr = self._queueEffectActorArr 
+	if not queueEffectActorArr or #queueEffectActorArr == 0 then
+        if self._agent:inDisappearing() then
+            self:checkParalAndQueueEffectEnd()
+        end
+		return
+	end
+    local removeTable = {}
+	for index, effectActor in pairs(queueEffectActorArr) do
+        if effectActor:isEndEffect() then
+            removeTable[index] = true
+            if self._agent:inDisappearing() then
+                self:checkParalAndQueueEffectEnd()
+            end
+        end
+		effectActor:onUpdate()
+	end
+    self:removeEffectFromRemoveTable(queueEffectActorArr, removeTable)
+    
+end
+
+-- 清除某个全部持续特效
+function TrapActor:removeAllQueueEffect()
+    for i, effectActor in ipairs(self._queueEffectActorArr) do
+        effectActor:onClear()
+        table.remove(self._queueEffectActorArr, i)
+        self:checkParalAndQueueEffectEnd()
+        break
+    end
+end
+--检测并行和穿行都消失
+function TrapActor:checkParalAndQueueEffectEnd()
+    if self._trapData:getSkillId() == SkillEnum.SKILL_CHAIN_THROWING_AXE
+        or self._trapData:getSkillId() == SkillEnum.SKILL_THROWING_AXE
+        or self._trapData:getSkillId() == SkillEnum.SKILL_CHOPPING_FIREWOOD
+        or self._trapData:getSkillId() == SkillEnum.SKILL_MULTI_THROWING_AXE then
+        --BOSS的技能走并行结束释放
+    else
+        if self._agent:inDisappearing() then
+            self._agent:deleteSelfFromTable()
+        end
+    end
+end
+-- ***************** 列表特效 end ************************
+
+function TrapActor:updateSpecicalEffect()
+    if not self._specialEffectArr then
+        return
+    end
+    if #self._specialEffectArr > 0 then
+        local removeTable = {}
+        for index, effect in pairs(self._specialEffectArr) do
+            if effect then
+                if effect:isEndEffect() then
+                    removeTable[index] = true
+                else
+                    effect:onUpdateEffect()
+                end
+            end
+        end
+        self:removeEffectFromRemoveTable(self._specialEffectArr, removeTable)
+    end
+end
+
+function TrapActor:setAgent(agent)
+    self._agent = agent
+end
+function TrapActor:getAgent()
+    return self._agent
+end
+
+function TrapActor:conversionOffsetPoint(point, offset, size)
+    local conX, conY
+    conX = point.x + offset.x + size.width/2
+    conY = point.y - offset.y - size.height/2
+    return cc.p(conX, conY)
+end
+
+function TrapActor:isTrapTop()
+    if not self._trapData then
+       return false 
+    end
+
+    local clientObjId = self._trapData:getClientObjId() or ""
+
+    local start,_,_ = string.find(clientObjId, Constant.CLIENTIDNAME.TRAPTOP)
+    return (start or 0) > 0
+end
+
+function TrapActor:isTrapBottom()
+    if not self._trapData then
+       return false 
+    end
+
+    local clientObjId = self._trapData:getClientObjId() or ""
+
+    local start,_,_ = string.find(clientObjId, Constant.CLIENTIDNAME.TRAPBOTTOM)
+    return (start or 0) > 0
+end
+
+function TrapActor:getSlowDown()
+    if not self._trapData then
+        return lt.Constant.STEPMULTIPLE.ONE
+    end
+    local isSlowDown = self._trapData:getIsSlowDown()
+    if isSlowDown then
+        return lt.Constant.STEPMULTIPLE.TWO
+    end
+
+    return lt.Constant.STEPMULTIPLE.ONE
+end
+
+--清掉所有持续特效
+function TrapActor:removeAllParalEffect()
+    if self._parabEffectActorArr then
+        for i = #self._parabEffectActorArr, 1, -1 do
+            if self._parabEffectActorArr[i].onClear then
+                self._parabEffectActorArr[i]:onClear()
+            end
+            table.remove(self._parabEffectActorArr, i)
+        end
+    end
+    
+    if self._rotateEffectActorArr then
+        for j = #self._rotateEffectActorArr, 1, -1 do
+            if self._rotateEffectActorArr[j].onClear then
+                self._rotateEffectActorArr[j]:onClear()
+            end
+            table.remove(self._rotateEffectActorArr,j)
+        end
+    end
+end
+
+function TrapActor:removeAllParallelEffect()
+    if self._parallelEffectActorArr == nil then
+        return
+    end
+    for i = #self._parallelEffectActorArr, 1, -1 do
+        if self._parallelEffectActorArr[i].onClear then
+            self._parallelEffectActorArr[i]:onClear()
+        end
+        table.remove(self._parallelEffectActorArr, i)
+    end
+end
+
+function TrapActor:getRotateEffectActorArr()
+    return self._rotateEffectActorArr
+end
+
+function TrapActor:getDirection()
+    return Constant.DIRECTION_LEFT
+end
+
+function TrapActor:getRoleData()
+    return nil
+end
+
+function TrapActor:getQueueEffectNode()
+    return self._queueEffectNode
+end
+
+function TrapActor:getParabEffectActorArr()
+    return self._parabEffectActorArr
+end
+
+function TrapActor:getQueueEffectActorArr()
+    return self._queueEffectActorArr
+end
+
+function TrapActor:addParabEffectActor(parabEffectActor)
+    if self._parabEffectActorArr then
+        table.insert(self._parabEffectActorArr, parabEffectActor)
+    end
+end
+
+-- 清理removeTable
+function TrapActor:removeEffectFromRemoveTable(originEffectArr, removeTable)
+    if  #originEffectArr == 0 or table.nums(removeTable) == 0 then
+        return
+    end
+
+    for i = #originEffectArr, 1, -1 do
+        if removeTable[i] then
+            originEffectArr[i]:onClear()
+            table.remove(originEffectArr,i)
+        end
+    end
+end
+
+return TrapActor

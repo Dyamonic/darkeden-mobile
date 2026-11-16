@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>frames</key>
+        <dict>
+            <key>normaleffect_12_51.png</key>
+            <dict>
+                <key>aliases</key>
+                <array/>
+                <key>spriteOffset</key>
+                <string>{-2,0}</string>
+                <key>spriteSize</key>
+                <string>{13,8}</string>
+                <key>spriteSourceSize</key>
+                <string>{17,8}</string>
+                <key>textureRect</key>
+                <string>{{1,1},{13,8}}</string>
+                <key>textureRotated</key>
+                <false/>
+            </dict>
+        </dict>
+        <key>metadata</key>
+        <dict>
+            <key>format</key>
+            <integer>3</integer>
+            <key>pixelFormat</key>
+            <string>RGBA4444</string>
+            <key>premultiplyAlpha</key>
+            <false/>
+            <key>realTextureFileName</key>
+            <string>normaleffect_12_1.pvr.ccz</string>
+            <key>size</key>
+            <string>{15,10}</string>
+            <key>smartupdate</key>
+            <string>$TexturePacker:SmartUpdate:3eca3fe923181a4565c193c019109b5d:bd6bd28d525eb393d609cb8c857bf50e:633ebeae5852cfdc655e3bbf476c1364$</string>
+            <key>textureFileName</key>
+            <string>normaleffect_12_1.pvr.ccz</string>
+        </dict>
+    </dict>
+</plist>

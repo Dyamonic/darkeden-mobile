@@ -1,0 +1,222 @@
+
+local BulletSystem = {}
+--[[
+    子弹管理器
+]]
+BulletSystem._bulletTable              = {}
+BulletSystem._bulletGroupTable         = {}
+
+BulletSystem.activeBullets = {}       -- 活动子弹
+BulletSystem.inactiveBullets = {}     -- 空闲子弹池
+BulletSystem.pendingBullets = {}      -- 等待创建的子弹队列
+BulletSystem.maxPerFrame = 20         -- 每帧最多创建数量
+BulletSystem.maxPoolSize = 500        -- 对象池最大容量，默认2000
+
+-- 请求创建子弹（加入队列）
+function BulletSystem:requestBullet(params)
+    table.insert(self.pendingBullets, params)
+end
+
+-- 处理所有子弹逻辑（每帧调用）
+function BulletSystem:onUpdate(dt)
+    -- 处理子弹创建请求
+    self:processRequests()
+    
+    -- 更新活动子弹
+    self:updateBullets(dt)
+
+    --
+    self:checkPoolCapacity(dt)
+end
+
+-- 处理子弹创建队列
+function BulletSystem:processRequests()
+    if #self.pendingBullets == 0 then return end
+    
+    local processed = 0
+    
+    -- 处理队列中的子弹请求
+    for i = math.min(self.maxPerFrame, #self.pendingBullets), 1, -1 do
+        local request = table.remove(self.pendingBullets, 1)
+        self:createBullet(request)
+        processed = processed + 1
+    end
+end
+
+-- 动态创建子弹（优先使用对象池）
+function BulletSystem:createBullet(params)
+    local bullet
+    
+    if #self.inactiveBullets > 0 then
+        -- 从对象池获取
+        bullet = table.remove(self.inactiveBullets, 1)
+        -- bullet:onInit(params.skillId)
+    else
+        -- 动态创建新子弹
+        bullet = lt.BulletLinear.new(params.skillId)
+        local mapActor = self:getMapActor()
+        if not mapActor then
+            yflog:Error("addBullet mapActor is nil")
+            return
+        end
+        mapActor:addChild(bullet)
+    end
+    -- 初始化子弹属性
+    local src = params.srcPixelPosition
+    local target = params.targetPixelPosition
+    bullet:setPixelPosition(src.x, src.y, src.z)
+    bullet:setDirection(params.direction)
+    bullet:setTarget(target.x, target.y, target.z, target.step)
+    bullet:addEffectActor(params.skillId)
+    bullet:setEndCallBack(params.callback)
+    bullet:setWaitingForClear(false)
+    bullet:setVisible(true)
+    if params.lastBullet then
+        --队尾的子弹
+        bullet.lastBullet = true
+    else
+        bullet.lastBullet = nil
+    end
+    -- lt.BulletManager:addBulletToMap(bullet)
+    -- 存储自定义数据
+    bullet.active = true
+    
+    table.insert(self.activeBullets, bullet)
+    return bullet
+end
+
+-- 更新所有活动子弹
+function BulletSystem:updateBullets(dt)
+    for i = #self.activeBullets, 1, -1 do
+        local bullet = self.activeBullets[i]
+        
+        if bullet.active then
+            bullet:onUpdate()
+            -- -- 高效位置更新（避免创建临时对象）
+            -- local posX, posY = bullet:getPosition()
+            -- local velX, velY = bullet.velocity.x, bullet.velocity.y
+            -- bullet:setPosition(posX + velX * dt, posY + velY * dt)
+            
+            -- -- 边界检查（超出屏幕回收）
+            -- local visibleSize = cc.Director:getInstance():getVisibleSize()
+            -- if posX < -50 or posX > visibleSize.width + 50 or
+            --    posY < -50 or posY > visibleSize.height + 50 then
+            --     self:recycleBullet(bullet)
+            --     table.remove(self.activeBullets, i)
+            -- end
+            if bullet:getWaitingForClear() then
+                --队尾的子弹将会在回收时检测触发回调函数
+                bullet:onEnd(bullet.lastBullet,true)
+                self:recycleBullet(bullet)
+                table.remove(self.activeBullets, i)
+            end
+
+        else
+            -- 不活跃的子弹回收
+            self:recycleBullet(bullet)
+            table.remove(self.activeBullets, i)
+        end
+    end
+end
+
+
+-- 回收子弹到对象池
+function BulletSystem:recycleBullet(bullet)
+    -- bullet:setDirection(0)
+    bullet:setVisible(false)
+    bullet.active = false
+
+    -- 检查对象池容量
+    if #self.inactiveBullets < self.maxPoolSize then
+        table.insert(self.inactiveBullets, bullet)
+    else
+        -- 对象池已满，直接销毁
+        bullet:removeFromParent()
+        bullet:onClear()
+        -- print("对象池已满，子弹销毁")
+    end
+end
+
+-- 定期检查对象池容量
+function BulletSystem:checkPoolCapacity()
+    -- 每60帧检查一次
+    self.checkCounter = (self.checkCounter or 0) + 1
+    if self.checkCounter < 60 then return end
+    self.checkCounter = 0
+    
+    -- 计算当前内存占用
+    local activeCount = #self.activeBullets
+    local inactiveCount = #self.inactiveBullets
+    local total = activeCount + inactiveCount
+    
+    -- 如果空闲子弹超过最大池大小的一半，且总数量超过最大池大小
+    if inactiveCount > self.maxPoolSize * 0.5 and total > self.maxPoolSize then
+        self:trimPool()
+    end
+end
+
+-- 缩减对象池大小
+function BulletSystem:trimPool()
+    local targetSize = math.max(100, self.maxPoolSize * 0.5) -- 至少保留100个
+    
+    while #self.inactiveBullets > targetSize do
+        local bullet = table.remove(self.inactiveBullets, 1)
+        bullet:onClear()
+        bullet:removeFromParent()
+    end
+    
+    -- print("对象池已缩减:", #self.inactiveBullets, "/", self.maxPoolSize)
+end
+
+
+-- 清理系统
+function BulletSystem:onClear()
+    -- 清理所有子弹
+    for _, bullet in ipairs(self.activeBullets) do
+        bullet:onClear()
+        -- bullet:removeFromParent()
+    end
+    
+    for _, bullet in ipairs(self.inactiveBullets) do
+        bullet:onClear()
+        -- bullet:removeFromParent()
+    end
+    
+    self.activeBullets = {}
+    self.inactiveBullets = {}
+    self.pendingBullets = {}
+end
+
+-- 获取系统状态（调试用）
+function BulletSystem:getStats()
+    return {
+        active = #self.activeBullets,
+        inactive = #self.inactiveBullets,
+        pending = #self.pendingBullets
+    }
+end
+
+function BulletSystem:getMapActor()
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    if not worldAgent then
+        return nil
+    end
+
+    local mapAgent = worldAgent:getMapAgent()
+    if not mapAgent then
+        return nil
+    end
+
+    local mapActor = mapAgent:getMapActor()
+    if not mapActor then
+        return nil
+    end
+
+    return mapActor
+end
+
+function BulletSystem:getBulletList()
+    return self._bulletTable
+end
+
+return BulletSystem

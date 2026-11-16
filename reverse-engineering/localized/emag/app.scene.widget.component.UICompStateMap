@@ -1,0 +1,236 @@
+---@class UICompStateMap 州地图块
+
+local UICompStateMap = class("UICompStateMap",lt.UICompBase)
+
+local CacheManager = lt.CacheManager
+local Constant = lt.Constant
+local NtfManager = lt.NtfManager
+local GameModule = lt.GameModule
+local MapModule = lt.MapModule
+local smallSize = 128
+local bigSize = 256
+local singleMap = "81"
+local placeName = "Northwest"
+
+function UICompStateMap:ctor()
+    UICompStateMap.super.ctor(self)
+    --数据
+    self._isUnderground = nil
+    self._mapData = nil
+    self._myMapMeta = nil
+    self._race = nil
+    self._mWidth = nil
+    self._nHeight = nil
+    self._dungeonlist = {}
+    self._teamlist = {}
+end
+
+function UICompStateMap:onClear()
+    --数据
+    self._isUnderground = nil
+    self._mapData = nil
+    self._myMapMeta = nil
+    self._race = nil
+    self._mWidth = nil
+    self._nHeight = nil
+    self._dungeonlist = nil
+    self._teamlist = nil
+    self._mapChilds = nil
+    UICompStateMap.super.onClear(self)
+end
+function UICompStateMap:onConstruct()
+
+end
+
+function UICompStateMap:onEnter()
+    UICompStateMap.super.onEnter(self)
+end
+
+function UICompStateMap:onExit()
+    if self._mapChilds then
+        for _,obj in pairs(self._mapChilds) do
+            if obj.touchFunc then
+                obj:removeClickListener()
+            end
+        end 
+    end
+    UICompStateMap.super.onExit(self)
+end
+
+function UICompStateMap:refreshStateMapInfo(isUnderground)
+    self._isUnderground = isUnderground
+    -- 获取自己当前数据
+    self._mapData = lt.AgentManager:getWorldAgent():getMapAgent():getMapData()
+    self._myMapMeta = lt.AgentManager:getWorldAgent():getMapAgent():getMapMeta()
+    self._race = lt.GameModule:getHeroRace()
+    self._mapChilds = self._mapChilds or {}
+    local children =  self:getChildren()
+    for _, child in pairs(children) do
+        if child.name ~= "stateMap" then
+            self:refreshTargetInfo(child)
+            table.insert(self._mapChilds,child)
+        end
+    end
+
+    -- 州大地图透明
+    local stateMap = self:getChild("stateMap")
+    local stateMapAlpha = 1
+    if self._isUnderground then
+        stateMapAlpha = 0.5
+    end
+    stateMap:setAlpha(stateMapAlpha)
+end
+
+function UICompStateMap:refreshTargetInfo(child)
+    local mapMeta = CacheManager:getMapMetaByMapCoord(child.name)
+    -- 刷新静态数据
+    if not mapMeta then
+        return
+    end
+    -- yflog:Info("name%s",child.name)
+    local nameT = child:getChild("name")
+    if mapMeta and MapModule:getStateSelectTable(Constant.StateSelect.MapName) then
+        nameT:setText(mapMeta:getMapName())
+    else
+        nameT:setText("")
+    end
+
+    local lvl = child:getChild("lvl")
+    local frame = child:getChild("frame")
+    local lvlbg = child:getChild("lvlbg")
+    lvl:setText("")
+    frame:setVisible(false)
+    lvlbg:setVisible(false)
+
+    local startLvl,endLvl = mapMeta:getLvlRecommend()
+    if startLvl and endLvl and MapModule:getStateSelectTable(Constant.StateSelect.Level) then
+        if mapMeta:getMapCode() == singleMap or string.split(mapMeta:getMapName(), "_")[2] == placeName then
+            lvl:setText(string.format("Lv%s-Lv%s",startLvl,endLvl))
+            frame:setVisible(true)
+            lvlbg:setVisible(true)
+        end
+    end
+
+    local mCount = mapMeta:isSmallMap() and smallSize or bigSize
+    local nCount = bigSize
+    self._mWidth = Constant.MAP_BLOCK_WIDTH * mCount
+    self._nHeight = Constant.MAP_BLOCK_HEIGHT * nCount
+
+    -------------------------------------------------------------------------------------
+    -- 刷新动态数据
+    -- 刷新坐标位置
+    local select = child:getChild("select")
+    select:setVisible(false)
+
+    local my = child:getChild("my")
+    my:setURL(string.format(_GURL.GetMinMapPlayer,(Constant.RaceSkinRes[self._race] or "_o")))
+    my:setVisible(false)
+
+    if self._myMapMeta and self._myMapMeta:getMapCode() == mapMeta:getMapCode() then
+        -- 选中框
+        select:setVisible(true)
+
+        -- 我的位置
+        if MapModule:getStateSelectTable(Constant.StateSelect.Pos) then
+            my:setVisible(true)
+            local myPos = MapModule:getMyPosData() or {}
+            local childSize = child:getSize()
+            local posX,posY = self:posToMapPos(childSize, myPos[2] or 0, myPos[3] or 0)
+            my:setPosition(posX,posY)
+        end
+    end
+
+    --地牢入口
+    local mapCode = mapMeta:getMapCode()
+    local dungeonEntraMeta = CacheManager:getMapTransferMeta(mapCode)
+    if #dungeonEntraMeta > 0 then
+        if not self._dungeonlist[mapCode] then
+            self._dungeonlist[mapCode] = {}
+            local childSize = child:getSize()
+            local dungeonNode = child:getChild("dungeonNode")
+            for i = 1, #dungeonEntraMeta do
+                local meta = dungeonEntraMeta[i]
+                if #meta:getLandMark() == 3 then
+                    local dungeonObj = fgui.UIPackage:createObject("MiniMap","DungeonBig")
+                    dungeonNode:addChild(dungeonObj)
+                    local posX, posY = self:posToMapPos(childSize, meta:getLandMark()[2] or 0, meta:getLandMark()[3] or 0)
+                    dungeonObj:setPosition(posX, posY)
+                    dungeonObj:setVisible(false)
+                    table.insert(self._dungeonlist[mapCode], dungeonObj)
+                end
+            end
+        end
+    end
+    self:showEntrance(MapModule:getStateSelectTable(Constant.StateSelect.Entrance))
+
+    self:showTeamMate(MapModule:getStateSelectTable(Constant.StateSelect.Team))
+    
+    -------------------------------------------------------------------------------------
+    -- 点击事件
+    if not child.touchFunc then
+        child.touchFunc = true
+        child:addClickListener(handler(self, function()
+            if self._isUnderground then
+               return 
+            end
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStateMap", close = true})
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndCurrentMap", param = {mapMeta = mapMeta}})
+        end))
+    end
+end
+
+function UICompStateMap:posToMapPos(childSize, posX, posY)
+    local minimapPosX = posX*Constant.MAP_BLOCK_WIDTH*childSize.width/self._mWidth
+    local minimapPosY = posY*Constant.MAP_BLOCK_HEIGHT*childSize.height/self._nHeight
+
+    return minimapPosX, minimapPosY
+end
+
+-- 显示地牢入口
+function UICompStateMap:showEntrance(show)
+    for k, v in pairs(self._dungeonlist) do
+        for i = 1, #v do
+            v[i]:setVisible(show)
+        end
+    end
+end
+
+-- 显示组队
+function UICompStateMap:showTeamMate(show)
+    local children = self:getChildren()
+    for _, child in pairs(children) do
+        if child.name ~= "stateMap" then
+            child:getChild("teamNode"):setVisible(show)
+        end
+    end
+end
+
+--更新队友位置信息
+function UICompStateMap:onTeamMeteInfo(param)
+    --清空原有数据
+    for k, v in pairs(self._teamlist) do
+        v:removeFromParent()
+        self._teamlist[k] = nil
+    end
+    --自己剔除
+    local playerId = GameModule:getHeroData():getPlayerId()
+    if playerId == param.playerId then return end
+    --新数据
+    local children = self:getChildren()
+    for _, child in pairs(children) do
+        if child.name ~= "stateMap" then
+            local mapMeta = CacheManager:getMapMetaByMapCoord(child.name)
+            if param.mapCode == mapMeta:getMapCode() then
+                local teamNode = child:getChild("teamNode")
+                local teamObj = fgui.UIPackage:createObject("MiniMap","TeamMatePoint")
+                teamNode:addChild(teamObj)
+                local childSize = child:getSize()
+                local posX, posY = self:posToMapPos(childSize, param.Xpos, param.Ypos)
+                teamObj:setPosition(posX, posY)
+                self._teamlist[param.playerId] = teamObj
+            end
+        end
+    end
+end
+
+return UICompStateMap

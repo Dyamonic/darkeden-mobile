@@ -1,0 +1,85 @@
+local EffectData = class("EffectData")
+local EffectEnum = lt.EffectEnum
+--[[
+    json：结构
+
+    "Direction_n":
+    [
+        [
+            {
+                "spriteId": 6374,
+                "x": -101,
+                "y": -45
+            },
+            ...
+        ],
+        ...
+    ]
+]]
+
+EffectData._effectData = nil
+EffectData._directionTable = nil
+EffectData._data = lt.NetData.new()
+
+function EffectData:ctor(modelId, bltType)
+
+    local content = self:loadEfpkBuffer(modelId, bltType)
+    self:EffectFramePack(content)
+
+    self._use = 1
+end
+
+function EffectData:loadEfpkBuffer(modelId, bltType)
+    local bltTypeName = EffectEnum.BltTypeName[bltType]
+    local pathName = string.format("effect/efpk/%s/%s_%s.efpk", bltTypeName, bltTypeName, modelId)
+    local efpkFullPath = cc.FileUtils:getInstance():fullPathForFilename(pathName)
+
+    return cc.FileUtils:getInstance():getDataFromFile(efpkFullPath)
+end
+
+function EffectData:EffectFramePack(content)
+    if not content then
+        return
+    end
+
+    self._directionTable = {}
+
+    self._data:reset()
+    self._data:prepare(content, #content)
+
+    local directionCount = self._data:readByte()
+    local directionTable = {}
+    for d = 1, directionCount, 1 do
+        local frameCount = self._data:readUInt16()
+        local directionArray = {}
+        for f = 1, frameCount, 1 do
+            local spriteId = self._data:readUInt16()
+            local x = self._data:readInt16()
+            local y = self._data:readInt16()
+
+            directionArray[#directionArray + 1] = {spriteId = spriteId, x = x, y = y}
+        end
+
+        directionTable["direction_"..(d-1)] = directionArray
+    end
+
+    self._directionTable = directionTable
+end
+
+function EffectData:getDirectionFrame(directionId)
+    return self._directionTable["direction_"..directionId]
+end
+
+function EffectData:addUse()
+    self._use = self._use + 1
+end
+
+function EffectData:setUse(use)
+    self._use = use
+end
+
+function EffectData:getUse()
+    return self._use
+end
+
+return EffectData

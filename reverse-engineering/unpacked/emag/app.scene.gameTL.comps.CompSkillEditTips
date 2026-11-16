@@ -1,0 +1,107 @@
+---@class CompSkillEditTips 技能编辑tips组件
+---
+local CompSkillEditTips = class("CompSkillEditTips", lt.UIGButtonBase)
+
+local CacheManager = lt.CacheManager
+local SkillModule = lt.SkillModule
+local GameModule = lt.GameModule
+local Constant = lt.Constant
+local raceType = Constant.RaceType
+
+local Elements = {
+    [1] ={ele = "fire" , color = cc.c3b(192,79,75), text = "火"}, 
+    [2] ={ele = "water" , color = cc.c3b(198,195,255), text = "水"}, 
+    [3] ={ele = "earth" , color = cc.c3b(238,169,112), text = "土"}, 
+}
+function CompSkillEditTips:ctor()
+    CompSkillEditTips.super.ctor(self)
+    self.eleNodeGroups = {}
+end
+
+function CompSkillEditTips:onConstruct()
+    self._name = self:getChild("name")
+    self._enName = self:getChild('enName')
+    self._titleGrade = self:getChild("gradeTitle")
+    self._level = self:getChild("level")
+    self._titleMp = self:getChild("MPTitle")
+    self._valueMP = self:getChild("valueMP")
+    self._bgImg = self:getChild("n0")
+end
+
+function CompSkillEditTips:onClear()
+    for k, _ in pairs(self.eleNodeGroups or {}) do
+        self.eleNodeGroups[k] = nil
+    end
+    self.eleNodeGroups = nil
+
+    self._name = nil
+    self._enName = nil
+    self._titleGrade = nil
+    self._level = nil
+    self._titleMp = nil
+    self._valueMP = nil
+    self._bgImg = nil
+end
+
+function CompSkillEditTips:refreshContent(skillId)
+    local skillMeta = CacheManager:queryMetaBySkillId(skillId)
+    self._name:setText(skillMeta:getName())
+    self._enName:setText(string.format("(%s)",skillMeta:getEnName()))
+    self._level:setText(SkillModule:getSkillLevel(skillId))
+    self._level:setVisible(skillMeta:getSkillRace() ~= raceType.Vampire)
+    self._titleGrade:setVisible(skillMeta:getSkillRace() ~= raceType.Vampire)
+    local race = GameModule:getHeroRace()
+    self._titleMp:setText(GReadText["KEY_EDIT_SKILL_TIPS"..race])
+    self._valueMP:setText(skillMeta:getMana())
+    self._titleMp:setY(skillMeta:getSkillRace() ~= raceType.Vampire and 96 or 72)
+    self._valueMP:setY(skillMeta:getSkillRace() ~= raceType.Vampire and 96 or 72)
+    local addHeight = skillMeta:getSkillRace() ~= raceType.Vampire and 126 or 112
+    local totalHeight = skillMeta:getSkillRace() ~= raceType.Vampire and 132 or 110
+    local number = 1
+    for index, info in ipairs(Elements) do
+        local value = skillMeta[string.format("_%s",info.ele)]
+        if value ~= 0 then
+            local node = self.eleNodeGroups[index]
+            if not node then
+                node = fgui.GBasicTextField:create()
+                self:addChild(node)
+                self.eleNodeGroups[index] = node
+            end
+            local text = string.format("所需精灵等级(%s)(%s)",info.text, value)
+            node:setText(text)
+            node:setFontSize(18)
+            node:setColor(info.color)
+            node:setPosition(8, addHeight + (number - 1) * 33)
+            totalHeight = totalHeight + 33
+            number = number + 1
+        end
+        if self.eleNodeGroups[index] then
+            self.eleNodeGroups[index]:setVisible(value ~= 0)
+        end
+    end
+    --技能详情
+    if skillMeta:getSkillInfo() ~= "" then
+        local node = self._detailNode
+        if not node then
+            node = fgui.GBasicTextField:create()
+            self:addChild(node)
+            self._detailNode = node
+        end
+        node:setVisible(true)
+        node:setText(skillMeta:getSkillInfo())
+        node:setAutoSize(2)
+        node:setWidth(200)
+        node:setFontSize(18)
+        node:setColor(Constant.COLORS.white)
+        node:setPosition(8, totalHeight - 10)
+        totalHeight = totalHeight + node:getSize().height
+    else
+        if self._detailNode then
+            self._detailNode:setVisible(false)
+        end
+    end
+    local width = self._enName:getWidth() + 20 > 214 and self._enName:getWidth() + 20 or 214
+    self._bgImg:setSize(width, totalHeight)
+end
+
+return CompSkillEditTips

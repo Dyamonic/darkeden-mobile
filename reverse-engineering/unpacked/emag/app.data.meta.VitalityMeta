@@ -1,0 +1,24 @@
+--精力系统
+local VitalityMeta = class("VitalityMeta")
+
+function VitalityMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function VitalityMeta:initWithRow(row)
+    self._idxId = row.idxID
+    self._level = row.Level
+    self._race = row.Race
+    self._dailyExperienceLimit = row.DailyExperienceLimit
+    self._experienceValuePerVitality = row.ExperienceValuePerVitality
+    self._vitalityBonus = row.VitalityBonus
+end
+
+function VitalityMeta:getIdxId() return self._idxId end
+function VitalityMeta:getLevel() return self._level end
+function VitalityMeta:getRace() return self._race end
+function VitalityMeta:getDailyExperienceLimit() return self._dailyExperienceLimit end
+function VitalityMeta:getExperienceValuePerVitality() return self._experienceValuePerVitality end
+function VitalityMeta:getVitalityBonus() return self._vitalityBonus end
+
+return VitalityMeta

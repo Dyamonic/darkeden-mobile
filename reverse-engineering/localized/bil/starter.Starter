@@ -1,0 +1,881 @@
+
+require("game")
+require("log.Log")
+
+local scheduler = require("cocos.framework.scheduler")
+local StarterHttpApi = require("starter.StarterHttpApi")
+
+local STARTER_MAP_TXT = "res_map.txt"
+local STARTER_VERSION_TXT = "version.txt"
+
+-- 版本获取地址
+-- local BaseVersionUrl = _G_TL_URL .. "api/v1/center/getVersion?centerFlag=%s"
+local BaseVersionChannelUrl = _G_TL_URL .. "api/v1/center/getVersion?centerFlag=%s&channelId=%s&os=%s&version=%s"
+
+local Starter = class("Starter")
+
+function Starter:cppUpdateHandler(event, value)
+    if event == "success" then
+        scheduler.performWithDelayGlobal(handler(self, self.downloadStep), 0)
+        
+    elseif event == "state" then
+        -- 过程事件
+        if value == "downloadStart" then
+        elseif value == "downloadDone" then
+        elseif value == "uncompressStart" then
+        elseif value == "uncompressDone" then
+        elseif value == "stateUnknown" then
+        end
+    elseif event == "error" then
+        -- 错误事件
+        local errorCode = -1
+        if value == "errorCreateFile" then
+            -- 创建文件失败 没权限?
+            print("Failed to create file")
+            errorCode = 1
+        elseif value == "errorNetwork" then
+            -- 网络下载失败 网不好?
+            print("Network download failed")
+            errorCode = 2
+        elseif value == "errorUncompress" then
+            -- 解压失败 资源坏了?
+            print("decompression failed")
+            errorCode = 3
+        elseif value == "errorCopyFile" then
+            -- 拷贝文件失败
+            print("Copy failed")
+            errorCode = 4
+        elseif value == "errorMD5" then
+            -- MD5校验失败
+            print("MD5 verification failed")
+            errorCode = 5
+        elseif value == "errorUnknown" then
+            print("errorUnknown wtf?")
+        end
+
+        self:downloadFail(errorCode)
+
+    elseif event == "progress" then
+        -- 下载进度
+        self:downloadProgress(value) 
+    end
+end
+
+Starter.ERROR_CODE_1 = 1 -- 未知错误
+Starter.ERROR_CODE_2 = 2 -- 更新请求失败
+Starter.ERROR_CODE_3 = 3 -- 必要参数不足
+Starter.ERROR_CODE_4 = 4 -- 没有资源地址
+Starter.ERROR_CODE_5 = 5 --	starter_map请求失败
+Starter.ERROR_CODE_6 = 6 -- centerurl请求失败
+-- 10000+ PHP CODE
+
+function Starter:run()
+	_G_STARTER = self
+	_G_STARTER_MODE = true
+
+	self._cppUpdater = cpp.Updater:new()
+	self._cppUpdater:registerScriptHandler(handler(self, self.cppUpdateHandler))
+	
+	-- 初始化资源搜索路径
+	self:initSearchPath()
+
+	-- 记录启动时间
+	self:recordStartAppTime()
+
+	-- 获取加密地址地址
+	-- _G_CDN_URL = cdn地址, _G_TL_URL = 区服地址, _G_API_CENTER_FLAG = centerFlag, _G_PHP_CENTER_URL = 中心服地址
+	if _G_ENCRYPT_TEXT and _G_PUBLIC_KEY then
+		self._centereErrorCount = 0
+		self:initCenterUrl(_G_ENCRYPT_TEXT)
+		return
+	end
+
+	yflog:Info("-------------------------------------------------- _G_ENCRYPT_TEXT:%s ", _G_ENCRYPT_TEXT)
+
+	self:gotoGame()
+end
+
+function Starter:gotoGame()
+	if SKIP_UPT then
+		self:checkStarterUpdateComplete()
+		return
+	end
+
+	-- 检测更新
+	self:checkOn()
+end
+
+function Starter:initSearchPath()
+	if not _G_BASE_SEARCH_PATHS then
+        _G_BASE_SEARCH_PATHS = cc.FileUtils:getInstance():getSearchPaths()
+    end
+
+	local searchPaths = {}
+	local writablePath = device.writablePath
+
+	if device.platform == "windows" then
+		-- windows 确定绝对路径
+		local workPath = ""
+		if _G_BASE_SEARCH_PATHS then
+			workPath = _G_BASE_SEARCH_PATHS[1]
+		end
+
+		searchPaths[#searchPaths + 1] = writablePath .. "download/res/"
+		searchPaths[#searchPaths + 1] = writablePath .. "download/src/"
+		searchPaths[#searchPaths + 1] = writablePath .. "download/"
+
+		searchPaths[#searchPaths + 1] = workPath .. "sh/"
+		searchPaths[#searchPaths + 1] = workPath .. "res/"
+		searchPaths[#searchPaths + 1] = workPath .. "src/"
+		searchPaths[#searchPaths + 1] = workPath
+	else
+		searchPaths[#searchPaths + 1] = writablePath .. "res/"
+		searchPaths[#searchPaths + 1] = writablePath .. "src/"
+		searchPaths[#searchPaths + 1] = writablePath
+
+		searchPaths[#searchPaths + 1] = "sh/"
+		searchPaths[#searchPaths + 1] = "res/"
+		searchPaths[#searchPaths + 1] = "src/"
+		searchPaths[#searchPaths + 1] = ""
+	end
+
+	cc.FileUtils:getInstance():setSearchPaths(searchPaths)
+
+    print("============================== Starter search path begin ==============================")
+    for i, path in ipairs(searchPaths) do
+        print(i, path)
+    end
+    print("============================== Starter search path end ==============================")
+end
+
+--[[__fmt
+	_G_CDN_URL = cdn地址,
+	_G_TL_URL = 区服地址,
+	_G_API_CENTER_FLAG = centerFlag,
+	_G_PHP_CENTER_URL = 中心服地址
+]]
+
+
+
+
+function Starter:initCenterUrl(url)
+	self:removeTimeScheduler()
+	
+
+	yflog:Info("22:00 run initCenterUrl url: %s", url)
+
+
+	local request = network.createHTTPRequest(handler(self, self.onInitCenterUrl), url, "GET")
+	request:start()
+
+	self._timeoutScheduler = cc.Director:getInstance():getScheduler():scheduleScriptFunc(function()
+        if self._timeoutScheduler then
+            cc.Director:getInstance():getScheduler():unscheduleScriptEntry(self._timeoutScheduler)
+            self._timeoutScheduler = nil
+        end
+		
+
+		-- kCCHTTPRequestStateInProgress 2
+		yflog:Info("request.getState 1")
+        if request and not tolua.isnull(request) then
+			if request.getState then
+				local success, state = pcall(function()
+        			return request:getState()
+    			end)
+				yflog:Info("request.getState 2:state: %s success:%s", state, success)
+				if success then
+					if state and state == 2 then
+						request:cancel()
+						self:onRequestTimeout()
+					end
+				end
+			end
+        end
+    end, 5, false) -- 默认超时时间4秒
+end
+
+function Starter:removeTimeScheduler()
+	if self._timeoutScheduler then
+		cc.Director:getInstance():getScheduler():unscheduleScriptEntry(self._timeoutScheduler)
+		self._timeoutScheduler = nil
+	end
+end
+
+function Starter:onRequestTimeout()
+	self._centereErrorCount = self._centereErrorCount + 1
+	if self._centereErrorCount < 2 then
+		self:initCenterUrl(_G_ENCRYPT_TEXT)
+	elseif self._centereErrorCount < 5 then
+		self:initCenterUrl(_G_ENCRYPT_TEXT_BAK)
+	else
+		self:gotoGame()
+	end
+end
+
+function Starter:onInitCenterUrl( event )
+
+	local errorCode = nil
+	while true do
+		if event.name == "failed" then
+			errorCode = self.ERROR_CODE_6
+			break
+		end
+
+		if event.name ~= "completed" then
+			return
+		end
+
+		self:removeTimeScheduler()
+
+		local request = event.request
+
+	    local code = request:getResponseStatusCode()
+	    if code ~= 200 then
+			errorCode = 30000 + code
+	    	break
+	    end
+
+		local centerStr = request:getResponseString()
+
+		if centerStr ~= "" then
+			local result = self:decryptByPublicKey(centerStr, _G_PUBLIC_KEY)
+			if result and result ~= "" then
+				local centerInfo = json.decode(result)
+
+				_G_CDN_URL = centerInfo._G_CDN_URL
+				_G_TL_URL = centerInfo._G_TL_URL
+				_G_PHP_CENTER_URL = centerInfo._G_PHP_CENTER_URL
+				_G_API_CENTER_FLAG = centerInfo._G_API_CENTER_FLAG
+			end
+		end
+
+		self:gotoGame()
+		return
+	end
+
+	self._centereErrorCount = self._centereErrorCount + 1
+	if self._centereErrorCount < 2 then
+		self:initCenterUrl(_G_ENCRYPT_TEXT)
+	elseif self._centereErrorCount < 5 then
+		self:initCenterUrl(_G_ENCRYPT_TEXT_BAK)
+	else
+		if errorCode then
+			self:checkStarterUpdateFail(errorCode)
+		end
+
+		self:gotoGame()
+	end
+end
+
+function Starter:checkOn()
+	-- 加载Scene
+	self:runStartererScene()
+
+	self._errorCount = 0
+
+	-- -- 检测更新
+	StarterHttpApi:reportGameStage(1)
+
+	-- 开始检测
+	self:checkStarterUpdate()
+end
+
+function Starter:runStartererScene()
+	local launcherScene = require("starter.StarterScene").new()
+	display.runScene(launcherScene)
+end
+
+function Starter:checkStarterUpdate()
+	-- local url = string.format(tostring(BaseVersionUrl), _G_API_CENTER_FLAG)
+	local url = string.format(tostring(BaseVersionChannelUrl), _G_API_CENTER_FLAG,self:getChannelId(), self:getApiPlat(), self:getVersion())
+
+	yflog:Info("Starter:checkStarterUpdate url: %s", url)
+	local request = network.createHTTPRequest(handler(self, self.onCheckStarterUpdate), url, "GET")
+	request:start()
+end
+
+function Starter:onCheckStarterUpdate(event)
+	local errorCode = nil
+	while true do
+		if event.name == "failed" then
+			errorCode = self.ERROR_CODE_2
+			break
+		end
+
+		if event.name ~= "completed" then
+			return
+		end
+
+		local request = event.request
+		local code = request:getResponseStatusCode()
+		if code ~= 200 then
+			errorCode = 10000 + code
+			break
+		end
+
+		local response = json.decode(request:getResponseString()) or {}
+		if not response.data or not response.data.starterVersion or response.data.starterVersion == "" then
+			errorCode = self.ERROR_CODE_3
+			break
+		end
+
+		-- isExamine 是否审核 0否 1是
+		if response.data.isExamine == 1 then
+			_G_IS_EXAMINE = true
+
+			-- 审核服审核状态下不更新启动器
+			self:checkStarterUpdateComplete()
+			return
+		end
+
+
+		-- 首先判断 version
+		local remotestartVersion = response.data.starterVersion
+
+		local localStartVersion = self:getStartVersion()
+		if remotestartVersion ~= localStartVersion then
+			-- 版本不同则需要更新 url=http://xxxlauncher/v1.0.1/
+			self._starterResUrl = string.format("%slauncher/v%s/", _G_CDN_URL, remotestartVersion)
+			self._errorCount = 0
+			self:getStarterMap()
+		else
+			self:checkStarterUpdateComplete()
+		end
+
+		-- 补充处理
+		self:fixCheckStarterUpdate(response)
+		return
+	end
+
+	self._errorCount = self._errorCount + 1
+	if self._errorCount < 4 then
+		-- 重新请求
+		self:checkStarterUpdate()
+	else
+		if errorCode then
+			self:checkStarterUpdateFail(errorCode)
+		end
+	end
+end
+
+-- 开始下载远程res_map.txt
+function Starter:getStarterMap()
+	local baseUrl = self._starterResUrl .. STARTER_MAP_TXT
+	local url = baseUrl
+
+	print("Download remote res_map.txt:", url)
+
+	local request = network.createHTTPRequest(handler(self, self.onGetStarterMap), url, "GET")
+	request:start()
+end
+
+-- 下载res_map.txt返回
+function Starter:onGetStarterMap(event)
+	local errorCode = nil
+	while true do
+		if event.name == "failed" then
+			errorCode = self.ERROR_CODE_5
+			break
+		end
+
+		if event.name ~= "completed" then
+			return
+		end
+
+		local request = event.request
+	    local code = request:getResponseStatusCode()
+	    if code ~= 200 then
+	    	self:checkStarterUpdateFail(20000 + code)
+	    	return
+	    end
+
+		-- res_map.txt 内容，文件更新目录以及md5，大小
+	    self._tarStarterMapStr = request:getResponseString()
+	    self:compareStarterMap()
+		return
+	end
+
+	self._errorCount = self._errorCount + 1
+	if self._errorCount < 4 then
+		self:getStarterMap()
+	else
+		if errorCode then
+			self:checkStarterUpdateFail(errorCode)
+		end
+	end
+end
+
+-- 比较md5，并下载
+function Starter:compareStarterMap()
+	local downloadList = {}
+	local localStarterMap = self:getLocalStarterMap()
+	local remoteStarterMap = self:getRemoteStarterMap()
+
+	-- 比较文件内容，并生成下载地址列表
+	for key, value in pairs(remoteStarterMap) do
+		if key ~= "nil" then
+			if not isset(localStarterMap, key) then
+				downloadList[#downloadList + 1] = value
+			else
+				if value[2] ~= localStarterMap[key][2] then
+					downloadList[#downloadList + 1] = value
+				end
+			end
+		end
+	end
+
+	if #downloadList == 0 then
+		self:checkStarterUpdateComplete()
+	else
+		-- 排序规则 version始终最后加载，因为version会用于判断是否需要进入下载，所以最后下载。
+		table.sort(downloadList, function(value1, value2)
+			if value1[1] == "version.txt" then
+				return false
+			elseif value2[1] == "version.txt" then
+				return true
+			else
+				return tonumber(value1[3]) > tonumber(value2[3])
+			end
+		end)
+
+		self:prepareStarterDownload(downloadList)
+	end
+end
+
+-- 下载文件
+function Starter:prepareStarterDownload(downloadList)
+	self._isDownloading = false
+	self._downloadUrl  = self._starterResUrl
+	self._downloadPath = device.writablePath
+	if device.platform == "mac" or device.platform == "windows" then
+		self._downloadPath = self._downloadPath .. "download/"
+	end
+	self._downloadList = downloadList
+	self._downloadIdx = 0
+	self._downloadProgress = 0
+
+	-- 下载总和大小
+	local sumSize = 0
+	for _, value in ipairs(self._downloadList) do
+		if not self:isFileDownload(value) then
+			-- 为空则，过滤已下载
+			sumSize = sumSize + value[3]
+		end
+	end
+
+	self._downloadSumSize = sumSize
+
+	-- 当前下载大小
+	self._downloadCurSize = 0
+
+	local runningScene = display.getRunningScene()
+	if runningScene and runningScene.downloadCommit then
+		-- 下载大小确认框，供玩家点击确认
+		runningScene:downloadCommit(sumSize)
+		return
+	end
+
+	self:startDownload()
+end
+
+-- 开始下载 玩家确认后下载 From: StarterLayer:downloadCommit
+function Starter:startDownload()
+	if not self._downloadHandler then
+		-- 定时器 每帧执行
+		self._downloadHandler = scheduler.scheduleUpdateGlobal(handler(self, self._download))
+
+		self:displayDownloadProgress()
+	end
+end
+
+function Starter:stopDownload()
+	if self._downloadHandler then
+		scheduler.unscheduleGlobal(self._downloadHandler)
+		self._downloadHandler = nil
+	end
+end
+
+-- 更新下载进度
+function Starter:displayDownloadProgress()
+	local curSize1 = self._downloadCurSize or 0
+	local curSize2 = 0
+	local sumSize = self._downloadSumSize or 0
+	local curIdx = 0
+	local sumIdx = 1
+	if self._downloadList then
+		curIdx = self._downloadIdx or 0
+		sumIdx = #self._downloadList
+
+		local value = self._downloadList[self._downloadIdx]
+		if value and self._downloadProgress then
+			curSize2 = value[3] * self._downloadProgress / 100
+		end
+	end
+
+	local runningScene = display.getRunningScene()
+	if runningScene and runningScene.displayDownloadProgress then
+		runningScene:displayDownloadProgress(curSize1 + curSize2, sumSize, curIdx, sumIdx)
+		return
+	end
+
+	if sumSize > 0 then
+		print(string.format("displayDownloadProgress %.1f%%(%d/%d)", (curSize1 + curSize2) / sumSize * 100, curIdx, sumIdx))
+	end
+end
+
+-- 下载回调函数
+function Starter:_download()
+	if self._isDownloading then
+		return
+	end
+
+	self._downloadIdx = self._downloadIdx + 1
+	if self._downloadIdx > #self._downloadList then
+		-- 完成下载
+		self:completeDownload()
+		return
+	end
+
+	self._isDownloading = true
+
+	local value = self._downloadList[self._downloadIdx]
+	if self:isFileDownload(value) then
+		-- 更新下载进度,并通知本文件已经下载完成
+		self:downloadStep(true)
+		return
+	end
+
+	self:downloadFile(value)
+end
+
+-- 
+function Starter:downloadStep(noSave)
+	local value = self._downloadList[self._downloadIdx]
+	self._downloadCurSize = self._downloadCurSize + value[3]
+	self._downloadProgress = 0
+
+	if not noSave then
+		-- 标记这个文件已经下载
+		self:saveFileDownloadInfo(value)
+	end
+
+	self:displayDownloadProgress()
+
+	self._isDownloading = false
+end
+
+function Starter:downloadProgress(progress)
+	self._downloadProgress = progress
+
+	self:displayDownloadProgress()
+end
+
+-- remote下载文件判断文件类型并下载
+function Starter:downloadFile(value)
+	value = value or self._downloadList[self._downloadIdx]
+
+	print("Starter:downloadFile", value[1])
+
+	-- 分析文件
+	local pathinfo = io.pathinfo(value[1])
+	if pathinfo.extname == ".zip" then
+		-- 压缩包
+		local zipUrl  		 = self._downloadUrl .. value[1]
+
+		-- 下载至当前目录
+		local uncompressPath = self._downloadPath
+
+		local zipName 		 = pathinfo.filename
+		local fileMd5  		 = value[2]
+
+		self:_downloadZipFile(zipUrl, uncompressPath, zipName, fileMd5)
+
+	else
+		-- 普通文件
+		local fileUrl  = self._downloadUrl .. value[1]
+		local filePath = self._downloadPath .. pathinfo.dirname
+		local fileName = pathinfo.filename
+		local fileMd5  = value[2]
+
+		self:_downloadNormalFile(fileUrl, filePath, fileName, fileMd5)
+	end
+end
+
+-- 下载普通文件
+function Starter:_downloadNormalFile(fileUrl, filePath, fileName, fileMd5)
+	self._cppUpdater:downloadNormalFile(fileUrl, filePath, fileName, fileMd5)
+end
+
+-- 下载zip文件
+function Starter:_downloadZipFile(zipUrl, uncompressPath, zipName, fileMd5)
+	self._cppUpdater:downloadZipFile(zipUrl, uncompressPath, zipName, fileMd5)
+end
+
+function Starter:downloadFail(errorCode)
+	self:stopDownload()
+
+	local runningScene = display.getRunningScene()
+	if runningScene and runningScene.downloadFail then
+		runningScene:downloadFail(errorCode)
+		return
+	end
+
+	self:checkStarterUpdate()
+end
+
+-- 完成下载
+function Starter:completeDownload()
+	StarterHttpApi:reportGameStage(2)
+
+	self:stopDownload()
+	self:clearFileDownloadInfo()
+	self:saveLocalStarterMap()
+	self:checkStarterUpdateComplete()
+end
+
+-- 获取downloadInfo
+function Starter:getFileDownloadInfo()
+	if not self._downloadInfo then
+		local downloadList = cc.UserDefault:getInstance():getStringForKey("GAME_UPDATE_DOWNLOAD_LIST", "")
+		if downloadList == "" then
+			self._downloadInfo = {}
+		else
+			self._downloadInfo = json.decode(downloadList) or {}
+		end
+	end
+
+	return self._downloadInfo
+end
+
+-- 保存下载文件信息，便于断点续传或判断已下载
+function Starter:saveFileDownloadInfo(value)
+	local downloadInfo = self:getFileDownloadInfo()
+	self._downloadInfo[value[1]] = value[2]
+	cc.UserDefault:getInstance():setStringForKey("GAME_UPDATE_DOWNLOAD_LIST", json.encode(self._downloadInfo))
+	cc.UserDefault:getInstance():flush()
+end
+
+function Starter:clearFileDownloadInfo()
+	self._downloadInfo = {}
+	cc.UserDefault:getInstance():setStringForKey("GAME_UPDATE_DOWNLOAD_LIST", json.encode(self._downloadInfo))
+end
+
+-- 文件是否已下载，download信息: 格式：[res/bil.pk] = 8b8fa82ad6d2b3f3c2ef0c7562baf2e5
+function Starter:isFileDownload(value)
+	local downloadInfo = self:getFileDownloadInfo()
+	return isset(downloadInfo, value[1]) and downloadInfo[value[1]] == value[2]
+end
+
+function Starter:analysisResMapLine(line)
+	local lineArray = string.split(line, ",")
+	if #lineArray < 3 then
+		return nil
+	end
+
+	return {lineArray[1] or "nil", lineArray[2] or "", lineArray[3] or 0}
+end
+
+-- 获取本地res_map.txt
+function Starter:getLocalStarterMapPath()
+	local path = device.writablePath
+	if device.platform == "mac" or device.platform == "windows" then
+		path = path .. "download/"
+	end
+
+	local filePath = path .. STARTER_MAP_TXT
+	if not io.exists(filePath) then
+		cc.FileUtils:getInstance():createDirectory(path)
+		
+		local fullPath = cc.FileUtils:getInstance():fullPathForFilename(STARTER_MAP_TXT)
+		local dataFromFile = cc.FileUtils:getInstance():getDataFromFile(fullPath)
+
+		local file = io.open(filePath, "w+b")
+        file:write(dataFromFile)
+        file:close()
+	end
+
+	return filePath
+end
+
+-- 获取本地version.txt
+function Starter:getLocalStartVersionPath()
+	local path = device.writablePath
+	if device.platform == "mac" or device.platform == "windows" then
+		path = path .. "download/"
+	end
+
+	local filePath = path .. STARTER_VERSION_TXT
+	if not io.exists(filePath) then
+		cc.FileUtils:getInstance():createDirectory(path)
+		
+		local fullPath = cc.FileUtils:getInstance():fullPathForFilename(STARTER_VERSION_TXT)
+		local dataFromFile = cc.FileUtils:getInstance():getDataFromFile(fullPath)
+
+		local file = io.open(filePath, "w+b")
+        file:write(dataFromFile)
+        file:close()
+	end
+
+	return filePath
+end
+
+function Starter:getStartVersion()
+	local version = ""
+	local f = io.open(self:getLocalStartVersionPath(), "r")
+	if f then
+		for line in f:lines()  do
+			version = line
+			break
+		end
+
+		f:close()
+	end
+
+	return version
+end
+
+function Starter:getLocalStarterMapMd5()
+	return crypto.md5file(self:getLocalStarterMapPath())
+end
+
+function Starter:getLocalStarterMap()
+	local resMap = {}
+	local f = io.open(self:getLocalStarterMapPath(), "r")
+	if f then
+		for line in f:lines()  do
+			if line and line ~= "" then
+				local value = self:analysisResMapLine(line)
+				if value then
+					resMap[value[1]] = value
+				end
+			end
+		end
+
+		io.close(f)
+	end
+
+	return resMap
+end
+
+function Starter:getRemoteStarterMap()
+	local resMap = {}
+
+	if self._tarStarterMapStr then
+		local lines = string.split(self._tarStarterMapStr, "\n")
+		for _, line in ipairs(lines) do
+			if line and line ~= "" then
+				local value = self:analysisResMapLine(line)
+				if value then
+					resMap[value[1]] = value
+				end
+			end
+		end
+	end
+
+	return resMap
+end
+
+function Starter:saveLocalStarterMap()
+	if not self._tarStarterMapStr then
+		return
+	end
+
+	io.writefile(self:getLocalStarterMapPath(), self._tarStarterMapStr)
+end
+
+function Starter:fixCheckStarterUpdate(response)
+	local starterFix = require("launcher.StarterFix")
+	if starterFix and starterFix.fixCheckStarterUpdate then
+		starterFix:fixCheckStarterUpdate(response)
+	end
+end
+
+function Starter:checkStarterUpdateFail(code)
+	code = code or self.ERROR_CODE_1
+
+	local runningScene = display.getRunningScene()
+	if runningScene and runningScene.checkStarterUpdateFail then
+		runningScene:checkStarterUpdateFail(code)
+		return
+	end
+
+	scheduler.performWithDelayGlobal(handler(self, self.checkStarterUpdate), 2)
+end
+
+function Starter:reloadLauncher()
+	for k, _ in pairs(package.preload) do
+		if string.sub(k, 1, 9) == "launcher." then
+			package.preload[k] = nil
+		end
+	end
+	for k, _ in pairs(package.loaded) do
+		if string.sub(k, 1, 9) == "launcher." then
+			package.preload[k] = nil
+		end
+	end
+
+	if device.platform == "mac" or (device.platform == "windows" and cc.FileUtils:getInstance():isFileExist("developer")) then
+		return
+	end
+
+	local path = cc.FileUtils:getInstance():fullPathForFilename("edoc.pk")
+	cc.LuaLoadChunksFromZIP(path)
+end
+
+function Starter:checkStarterUpdateComplete()
+	self:reloadLauncher()
+
+	local launcherScene = require("launcher.LauncherScene").new()
+	display.runScene(launcherScene)
+end
+
+-- 记录初始登录时间
+function Starter:recordStartAppTime()
+	_G_START_APP_TIME = cc.UserDefault:getInstance():getIntegerForKey("startAppTime", 0) or 0
+	yflog:Info("_____---------- _G_START_APP_TIME:%s", _G_START_APP_TIME)
+	if _G_START_APP_TIME > 0 then
+		return 
+	end
+
+	_G_START_APP_TIME = os.time()
+
+	yflog:Info("_____---------- _G_START_APP_TIME:%s", _G_START_APP_TIME)
+	cc.UserDefault:getInstance():setIntegerForKey("startAppTime", _G_START_APP_TIME)
+end
+
+function Starter:decryptByPublicKey(encryptedText, publicKey)
+	local decryptedData = cpp.Utils:decryptByPublicKey(encryptedText, publicKey)
+	return decryptedData
+end
+
+function Starter:getChannelId()
+    return cpp.SdkService:shared().getChannelType and cpp.SdkService:shared():getChannelType()
+end
+
+-- os  windows:0, android:1, ios:2, ohos:4
+function Starter:getApiPlat()
+    if device.platform == "windows" then
+        return 0
+    elseif device.platform == "android" then
+        return 1
+    elseif device.platform == "ios" then
+        return 2
+    elseif device.platform == "ohos" then
+        return 4
+    end
+end
+
+function Starter:getVersion()
+	local appVersion = ""
+    if cpp.GamePlatform and cpp.GamePlatform.getAppVersion then
+        appVersion = cpp.GamePlatform:getAppVersion()
+    end
+
+	if appVersion == "" then
+		appVersion = "1.0.0"
+	end
+
+	return appVersion
+end
+
+return Starter

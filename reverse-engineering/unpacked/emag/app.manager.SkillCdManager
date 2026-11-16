@@ -1,0 +1,85 @@
+
+local SkillCdManager = {}
+
+local SkillEnum = lt.SkillEnum
+
+SkillCdManager._cdTable = {}
+SkillCdManager._cdSet = {}
+
+
+function SkillCdManager:init()
+end
+
+function SkillCdManager:clear()
+	self._cdTable = {}
+	self._cdSet = {}
+end
+
+function SkillCdManager:onUpdate()
+	local delta = lt.GameBoard:getDeltaTime()
+
+	for skillId, cdRemain in pairs(self._cdTable) do
+		cdRemain = cdRemain - delta
+		if cdRemain <= 0 then
+			self._cdTable[skillId] = nil
+		else
+			self._cdTable[skillId] = cdRemain
+		end
+	end
+end
+
+function SkillCdManager:isReady(skillId)
+	if not skillId then
+		return false
+	end
+
+	local cdLimit = 0
+	-- 枪连击技能 <= 0.2 不检测
+	if self:ignoreGunShotCD(skillId) then
+		cdLimit = 0.2
+	end
+
+	return (not self._cdTable[skillId] or self._cdTable[skillId] <= cdLimit)
+end
+
+function SkillCdManager:setCd(skillId, cdRemain, stepMultiple)
+	local stepMultiple = stepMultiple or 1
+	if not skillId then
+		return
+	end
+
+	if not cdRemain then
+		cdRemain = 0
+    	
+    	local skillMeta = lt.CacheManager:querySkillMeta(skillId)
+    	if skillMeta then
+    		cdRemain = skillMeta:getCd() / 1000
+    	end
+	end
+	self._cdTable[skillId] = cdRemain * stepMultiple
+	self._cdSet[skillId] = true
+end
+
+--  枪连击技能 <= 0.2 不检测
+function SkillCdManager:ignoreGunShotCD(skillId)
+	local shotRepeatSkill = SkillEnum.GUN_SHOT_SKILL_REPEATED_TIMES_TABLE[skillId]
+	if not shotRepeatSkill then
+		return false
+	end
+
+    return shotRepeatSkill == -1 or shotRepeatSkill > 1
+end
+
+function SkillCdManager:isSet(skillId)
+	return self._cdSet[skillId]
+end
+
+function SkillCdManager:getCd(skillId)
+	return self._cdTable[skillId]
+end
+
+function SkillCdManager:IsNormalSkill(skillId)
+	return SkillEnum.NORAML_MELEE == skillId or SkillEnum.NORMAL_RANGE == skillId
+end
+
+return SkillCdManager

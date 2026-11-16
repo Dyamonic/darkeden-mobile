@@ -1,0 +1,60 @@
+---@class CompImprove -- 提升界面
+local CompImprove = class("CompImprove", lt.UIGButtonBase)
+
+local Constant = lt.Constant
+
+function CompImprove:ctor(view)
+    CompImprove.super.ctor(self)
+end
+
+function CompImprove:onConstruct()
+    self:initUI()
+end
+
+function CompImprove:onClear()
+    self._improveList = nil
+end
+
+function CompImprove:initUI()
+    self._improveList = self:getChild("list_improve")
+    self._improveList:setItemRenderer(handler(self, self.renderListItem))
+end
+
+function CompImprove:onEnter()
+    self._improveList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+end
+
+function CompImprove:onExit()
+    self._improveList:removeEventListener(fgui.UIEventType.ClickItem)
+end
+
+function CompImprove:refreshView(list)
+    self._list = list
+    local count = #self._list
+    self._improveList:setNumItems(count)
+    if count < 4 then
+        self._improveList:setSize(142, 50*count+4)
+    else
+        self._improveList:setSize(142, 182)
+    end
+    if count > 0 then
+        self._improveList:scrollToView(0)
+    end
+end
+
+function CompImprove:renderListItem(index, obj)
+    local data = self._list[index+1]
+    obj.index = index
+    local race = lt.GameModule:getHeroRace()
+    obj:getChild("bg"):setURL(string.format(_GURL.GetImageCommonTL,"bg_youjian_changanniu01"..Constant.RaceSkinRes[race]))
+    obj:setText(data.name)
+end
+
+function CompImprove:onClickItem(context)
+    local data = context:getData()
+    local index = data.index + 1
+    local improveData = self._list[index]
+    improveData.func()
+end
+
+return CompImprove

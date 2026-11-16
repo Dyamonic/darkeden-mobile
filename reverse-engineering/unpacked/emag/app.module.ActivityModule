@@ -1,0 +1,523 @@
+local ActivityModule = {}
+
+local SocketApi = lt.SocketApi
+local Constant = lt.Constant
+local ServerCmdDef = lt.ServerCmdDef
+local NtfManager = lt.NtfManager
+local Constant   = lt.Constant
+local StringManager = lt.StringManager
+local ActivityConst = lt.ActivityConst
+
+ActivityModule.ActType = {
+    Daily   = 1,            --日常活动
+    Time    = 2,            --限时活动
+}
+
+-- 活动时间类型
+ActivityModule.DateType = {
+    Close       = -1,       --活动关闭
+    KeepOn      = 0,        --活动常驻
+    OpenServer  = 1,        --开服活动
+    Operation   = 2,        --运营活动
+}
+
+function ActivityModule:init()
+    self._openListData = {}     --开启的活动列表
+    self._unOpenListData = {}   --未开启的活动列表
+
+    SocketApi:addProtoListener(ServerCmdDef.ACTIVITY_UPDATE_ACK, handler(self, self.onActivityUpdateAck), "ActivityModule:onActivityUpdateAck")
+    SocketApi:addProtoListener(ServerCmdDef.ACTIVITY_UPDATE_FINISH, handler(self, self.onActivityUpdateFinish), "ActivityModule:onActivityUpdateFinish")
+
+    self:initListModule()
+end
+
+function ActivityModule:clear()
+    self:clearListModule()
+    
+    SocketApi:removeProtoListenerByTag("ActivityModule:onActivityUpdateAck")
+    SocketApi:removeProtoListenerByTag("ActivityModule:onActivityUpdateFinish")
+    self._openListData = nil
+    self._unOpenListData = nil
+
+    if self._scheduleHandler then
+        lt.ScheduleUtil:unscheduleGlobal(self._scheduleHandler)
+        self._scheduleHandler = nil
+    end
+
+
+    self._checkAct = nil
+end
+
+function ActivityModule:initListModule()
+    local lookupTable = {}
+    for _,v in pairs(ActivityConst.Config) do
+        if v.module and not lookupTable[v.module] then
+            lt.getClass(v.module):init()
+            lookupTable[v.module] = true
+        end
+    end
+end
+
+function ActivityModule:clearListModule()
+    local lookupTable = {}
+    for _,v in pairs(ActivityConst.Config) do
+        if v.module and not lookupTable[v.module] then
+            lt.getClass(v.module):clear()
+            lookupTable[v.module] = true
+        end
+    end
+end
+
+function ActivityModule:isVaild(activityId)
+    return self._openListData[activityId] and true or false
+end
+
+function ActivityModule:onActivityUpdateAck(event)
+    local proto = event.param
+    if proto and proto.infoList then
+        for i,v in ipairs(proto.infoList) do
+            local meta = lt.TimeLimitSetDao:query(v.activityID)
+
+            local compress=lt.zlib.deflate()
+            local uncompress=lt.zlib.inflate()
+            local content = v.encodeFlag == 1 and uncompress(v.content) or v.content
+            self:writeActivity2Db(meta:getFormName(), content)
+            
+            compress=lt.zlib.deflate()
+            uncompress=lt.zlib.inflate()
+            local cfgContent = v.encodeFlag == 1 and uncompress(v.contentConfig) or v.contentConfig
+            self:writeActivity2Db(meta:getConfigName(), cfgContent)
+        end
+    end
+end
+
+function ActivityModule:writeActivity2Db(tbName, content)
+    if not tbName or tbName == "" or not content then
+        return 
+    end
+
+    local retM = json.decode(content)
+    local rmt = true
+    for _,val in ipairs(retM) do
+        if val and type(val) == "table" then
+            if rmt then
+                lt.PrefManager:insertTableLostKey(val, tbName)
+                lt.PrefManager:deleteSelfTables(tbName)
+                rmt = false
+            end
+            lt.PrefManager:insertTableDbByTables(val, tbName, true)
+        end
+    end
+
+    -- local str, retM
+    -- str = string.gsub(content, "%[", "")
+    -- str = string.gsub(str, "%]", "") 
+    -- str = string.gsub(str, "\n", "") 
+    -- str = string.gsub(str, "\"", "'") 
+    -- str = string.gsub(str, "},", "}||")
+    
+    -- retM = string.split(str,"||")
+
+    -- if #retM <= 0 then return end
+
+    -- local rmt = true
+    -- for j,val in ipairs(retM) do
+    --     if val ~= "" then
+    --         local tab = json.decode(val)
+    --         if rmt then
+    --             lt.PrefManager:insertTableLostKey(tab, tbName)
+    --             lt.PrefManager:deleteSelfTables(tbName)
+    --             rmt = false
+    --         end
+    --         lt.PrefManager:insertTableDbByTables(tab, tbName, true)
+    --     end
+    -- end
+
+    -- print("ActivityModule:writeActivity2Db: ", tbName)
+    -- print("ActivityModule:writeActivity2Db: ", content)
+end
+
+function ActivityModule:onActivityUpdateFinish(event)
+    local ret = lt.TimeLimitSetDao:queryActivityTab()
+    for k,v in pairs(ret) do
+        local data = {
+            tag = k,
+            title = v:getTitle(),
+            order = v:getOrder(),
+            timeType = lt.TimeLimitSetDao:queryTimeType(k),
+            timeValue = lt.TimeLimitSetDao:queryTimeValue(k),
+        }
+        self:uptListDataItem(data)
+    end
+
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_ACTIVITY_LIST_CHG)
+    self:checkRedTips()
+end
+
+function ActivityModule:uptListDataItem(data)
+    local isChange = false
+    -- 活动时间
+    local open = self:testActivityTime(data)
+
+
+    -- 强制关闭活动
+    local forceClose = data.timeType == ActivityModule.DateType.Close
+
+    -- 部分常驻活动领取完奖励需要自动隐藏(首充, 登录有礼)
+    if data.tag == lt.ActivityConst.ID.LoginGift then
+        open = remain
+    end
+
+    -- 已结束需要清理的活动数据
+    local clean = not open and not remain 
+    
+    local isUnOpen = false
+    -- 未开启的活动列表
+    if data.timeType == ActivityModule.DateType.Operation then
+        local tmp = lt.TimeCounter:fmt2TimeStamp(data.timeValue, { timeType = data.timeType })
+        isUnOpen = tmp.sTime > lt.TimeCounter:serverTime()
+    end
+
+    if self._openListData[data.tag] and (clean or forceClose) then
+        isChange = true
+        self._openListData[data.tag] = nil
+    elseif (open or remain) and not forceClose then
+        isChange = (not self._openListData[data.tag]) and true or false
+        -- insert or update data
+        self._openListData[data.tag] = data
+    end
+
+    if self._unOpenListData[data.tag] and open then
+        self._unOpenListData[data.tag] = nil
+    elseif not self._unOpenListData[data.tag] and isUnOpen then
+        self._unOpenListData[data.tag] = data
+    end
+
+    return isChange
+end
+
+function ActivityModule:checkActivityList()
+    local change = false
+    for k,v in pairs(self._unOpenListData) do
+        self:uptListDataItem(v)
+    end
+
+    for k,v in pairs(self._openListData) do
+        local tmp = self:uptListDataItem(v)
+        change = change or tmp
+    end
+
+    if change then  -- 通知变化
+        -- print("==================> 活动列表更新 ")
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_ACTIVITY_LIST_CHG)
+    end
+end
+
+function ActivityModule:testActivityTime(data)
+    local tType, tValue = data.timeType, data.timeValue
+    local sTime, eTime 
+    if tType == ActivityModule.DateType.Close then
+        return false
+    elseif tType == ActivityModule.DateType.KeepOn then
+        return true
+    elseif tType == ActivityModule.DateType.OpenServer then
+        -- 开服活动, 活动结束时间为当天12点+活动开启天数
+        sTime = lt.TimeCounter:getServerOpenTime()
+        eTime = lt.TimeCounter:fmt2TimeStamp(tonumber(tValue), { timeType = tType })
+    elseif tType == ActivityModule.DateType.Operation then
+        local tmp = lt.TimeCounter:fmt2TimeStamp(tValue, { timeType = tType })
+        sTime = tmp.sTime
+        eTime = tmp.eTime
+    end
+
+    return lt.TimeCounter:timeInRange(sTime, eTime)
+end
+
+function ActivityModule:getListData(aType)
+    local ret = {}
+    local config = lt.ActivityConst.Config
+    for aID, v in pairs(self._openListData) do
+        if config[aID] and config[aID].aType == aType then
+            ret[#ret + 1] = v
+        end
+    end
+
+    table.sort(ret, function (a, b)
+        return a.order < b.order
+    end)
+
+    return ret
+end
+
+function ActivityModule:requestKeyCode(code)
+    local msg = lt.netcmd_pb.ActiveCode()
+    msg.code = code
+    SocketApi:sendToGs(lt.ClientCmdDef.ACTIVECODE, msg)
+end
+
+function ActivityModule:reqUpdateActivityCfg()
+    local tlsTable = lt.TimeLimitSetDao:queryAll()
+    local tlsArr = {}
+    local db = lt.DbManager:getDb()
+    for k,v in pairs(tlsTable) do
+        local tls = {}
+        tls.id = v:getId()
+
+        local cfgName = v:getConfigName()
+        if cfgName then
+            --print("reqUpdateActivityCfg++++++++++++:  "..cfgName)
+            for row in db:nrows(string.format("SELECT version AS version FROM %s;", cfgName)) do
+                tls.version = row.version
+                break
+            end
+            tlsArr[#tlsArr + 1] = tls
+        end
+    end
+    self:reqActivityUpdate(tlsArr)
+end
+
+function ActivityModule:reqActivityUpdate(actArrTable)
+    local req = lt.netcmd_pb.ActivityUpdate()
+    req.infoList = {}
+    for i,v in ipairs(actArrTable) do
+        local info = lt.netcmd_pb.ActivityInfo()
+        info.activityID = v.id
+        info.version = v.version
+        req.infoList[#req.infoList + 1] = info
+    end
+
+    SocketApi:sendToGs(lt.ClientCmdDef.ACTIVITY_UPDATE_REQ, req)
+end
+
+
+-- 活动相关的倒计时
+function ActivityModule:checkActTime()
+    self:checkActTimeRedTips()
+    
+    self:checkActNotice()
+    self:checkActivityList()
+
+end
+
+function ActivityModule:checkActNotice()
+    local cw, ct, cd, openT, meta, mArr, od
+    cw = lt.TimeCounter:getServerWeek()
+    ct = lt.TimeCounter:getServerHour()*100 + lt.TimeCounter:getServerMin()
+    cd = lt.TimeCounter:getServerMonth()*100 + lt.TimeCounter:getServerDay()
+    od = lt.TimeCounter:getServerOpenDay()
+
+    -- meta = lt.RegularnoticeDao:query(cw, ct)
+    for i=1, 4 do
+        local meta, day, time, tType
+        tType = i
+        if i == 1 then
+            day = cw
+        elseif i == 2 then
+            day = cd
+        elseif i == 3 then
+            day = od
+        elseif i == 4 then
+            day = 0
+            tType = 0
+        end
+        time = ct
+
+        meta = lt.RegularnoticeDao:query(tType, day, time)
+        self:playLanternNotice(meta)
+    end
+end
+
+function ActivityModule:playLanternNotice(meta)
+    if meta then
+        lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_LANTERN_NOTICE, {content = meta:getNotice()})
+
+        local contentArr = lt.TaskModule:parseTaskString(meta:getNotice().."<>")
+        local content = ""
+
+        for _,v in ipairs(contentArr) do
+            if v.content then
+                content = content .. v.content 
+            end
+        end
+
+        if meta:getState() ~= 0 then
+            content = content .. "[传送]"
+        end
+
+        lt.ChatModule:sendClientInfo(content, 5, function ()
+            if meta:getState() ~= 0 then
+                lt.FlyModule:useFlyshoe(meta:getState())
+            end
+        end)
+    end
+end
+
+function ActivityModule:checkActTimeRedTips()
+    local day = tonumber(os.date("%j"))
+    if self._checkDay ~= day then
+        for k,v in pairs(self._checkAct) do
+            self._checkAct[k] = true
+        end
+    end
+
+    local ActArray = lt.ActCentreDao:queryPhaseOpenByType(2, lt.CommonModule:getServerPrase())
+    for _,v in ipairs(ActArray) do
+        if self._checkAct[v:getActId()] then
+            local less, inTime = self:isInTime(v)
+            lt.RedDotModule:setTipsStateByName("GameLayerUI_ActTime_" .. v:getActId(), inTime)
+        end
+    end
+end
+
+function ActivityModule:detachCheckActTimeRed(actId)
+    lt.RedDotModule:setTipsStateByName("GameLayerUI_ActTime_" .. actId, false)
+    self._checkAct[actId] = false
+end
+
+function ActivityModule:isInTime(meta)
+    local ct = os.date("%H")*100 + os.date("%M")
+    local cw = os.date("%w")*10000
+    if cw == 0 then cw = 70000 end
+
+    local less = 0
+    local intime = false
+
+    local week = meta:getDayOfWeek()
+    local tMsg, st, et, eh
+
+    tMsg = meta:getTime()
+
+    st = tMsg.st
+    et = tMsg.et
+    
+    if week then
+        local msg = string.split(week, ",")
+        table.sort(msg, function (a, b)
+            return tonumber(a) < tonumber(b)
+        end)
+        for i=1,#msg do
+            local aw = tonumber(msg[i]) * 10000
+
+            if et and et > 2400 then
+
+                local day = math.floor(tMsg.eh/24)*10000
+
+                local awDay = aw + day
+                local gap = (cw - aw)/10000
+
+                if awDay > 70000 then
+                    awDay = awDay - 70000
+                    gap = gap + 7
+                end
+
+                if awDay <= cw and aw ~= cw then
+                    if ct >= 0 and ct <= (et - 2400*gap) then
+                        less = et - ct
+                        intime = true
+                    else
+                        less = st - ct + gap*2400
+                        --  
+                    end
+                    break
+                end
+            end
+
+            if aw >= cw then
+                if st and et then
+                    if aw == cw then 
+                        if ct >= st and ct <= et then
+                            less = et - ct
+                            intime = true
+                        else
+                            less = st - ct
+                            -- if less < 0 then
+                            --     less = less + 2400
+                            -- end
+                        end
+                    else
+                        less = aw - cw + st
+                    end
+                else
+                    intime = true
+                    less = aw - cw
+                end
+                break
+            end
+        end
+    else
+        if st and et then
+            if ct >= st and ct <= et then
+                less = et - ct
+                intime = true
+            else
+                less = st - ct
+                -- if less < 0 then
+                --     less = less + 2400
+                -- end
+            end
+        else
+            less = 0
+            intime = true
+        end
+    end
+    return less, intime
+end
+
+function ActivityModule:getRedKey(k)
+    return string.format("GameLayerUI_Activity_ID_%d", k)
+end
+
+function ActivityModule:initRedTips()
+
+end
+
+function ActivityModule:checkRedTips()
+    for k,v in pairs(ActivityConst.Config) do
+        if not v.noRed and v.module then
+            local class = lt.getClass(v.module)
+            if class.checkRedTips then
+                class:checkRedTips()
+            end
+        end
+    end
+end
+
+function ActivityModule:updateRedState(aID, visible)
+    visible = visible and self:isVaild(aID)
+    lt.RedDotModule:setTipsStateByName(self:getRedKey(aID), visible)
+end
+
+--[[
+获取活动的时间
+activityId, 活动ID
+params 
+    countDown 返回倒计时格式文本
+]]
+function ActivityModule:fmtTime(activityId, params)
+    params = params or {}
+
+    local aType = lt.TimeLimitSetDao:queryTimeType(activityId)
+    local aValue = lt.TimeLimitSetDao:queryTimeValue(activityId)
+
+    local sTime, eTime
+    if aType == ActivityModule.DateType.Close then
+        return StringManager:getString(StringManager.TIME_OUT_OF_DATE)
+    elseif aType == ActivityModule.DateType.KeepOn then
+        return ""
+    elseif aType == ActivityModule.DateType.OpenServer then
+        -- 开始时间设置为开服时间,如果需要显示天以下更精确的时间,需要注意开始时间是否正确
+        sTime = lt.TimeCounter:getServerOpenTime()
+        eTime = lt.TimeCounter:fmt2TimeStamp(tonumber(aValue), { timeType = lt.TimeCounter.TIME_TYPE.INTERVAL})
+    elseif aType == ActivityModule.DateType.Operation then
+        local tmp = lt.TimeCounter:fmt2TimeStamp(aValue)  
+        sTime, eTime = tmp.sTime, tmp.eTime
+    end
+
+    if params.countDown then
+        return lt.TimeCounter:fmt2TimeText(eTime, {countDown = true})
+    else
+        return (params.prefix or "") .. lt.TimeCounter:fmt2TimeText(sTime) .. "~" .. lt.TimeCounter:fmt2TimeText(eTime)
+    end
+end
+
+return ActivityModule

@@ -1,0 +1,410 @@
+---@class CompQuickBar 快捷栏
+local CompQuickBar = class("CompQuickBar", lt.UIGButtonBase, lt.UICompChangeSkin)
+
+local ItemModule = lt.ItemModule
+local WndLockManager = lt.WndLockManager
+local Constant = lt.Constant
+local NtfManager = lt.NtfManager
+local GameModule = lt.GameModule
+local SkillEnum = lt.SkillEnum
+local SkillModule = lt.SkillModule
+local GuideModule = lt.GuideModule
+local AutoFightManager = lt.AutoFightManager
+local ScheduleUtil = lt.ScheduleUtil    
+
+CompQuickBar.ChangeSkinConf = {
+   ["Main"] = {
+        ["left"] = "bg_yaodai_xinxikuangzuo",
+        ["right"] = "bg_yaodai_xinxikuangyou"
+   } 
+}
+
+local iconCfgOusters = {
+    [5] = { icon="bg_yaodai_01_o", pos = Constant.OustersEquipPos.ElfStone1 },
+    [6] = { icon="bg_yaodai_02_o", pos = Constant.OustersEquipPos.ElfStone2 },
+    [7] = { icon="bg_yaodai_03_o", pos = Constant.OustersEquipPos.ElfStone3 },
+    [8] = { icon="bg_yaodai_04_o", pos = Constant.OustersEquipPos.ElfStone4 },
+}
+
+function CompQuickBar:ctor()
+    CompQuickBar.super.ctor(self)
+
+    self._curType = Constant.BeltBarType.Main
+    self._race = nil
+    self._perPos = nil
+    self._selectItem = nil
+end
+
+function CompQuickBar:onClear()
+    self._curType = nil
+    self._perPos = nil
+    self._selectItem = nil
+    self._quickList = nil
+end
+
+function CompQuickBar:onEnter()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_BELT_EVENT, handler(self, self.refreshBeltInfo), "CompQuickBar:refreshBeltInfo" .. (self._curType or ""))
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_HERO_EQUIP_EVENT, handler(self, self.refreshBeltInfo), "Equip:CompQuickBar:refreshBeltInfo" .. (self._curType or ""))
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CHANGE_SETTINGS, handler(self, self.changeSettings), "CompQuickBar:changeSettings")
+
+    self._quickList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+end
+
+function CompQuickBar:onExit()
+    NtfManager:removeNtfListenerByTag("CompQuickBar:refreshBeltInfo" .. (self._curType or ""))
+    NtfManager:removeNtfListenerByTag("Equip:CompQuickBar:refreshBeltInfo" .. (self._curType or ""))
+    NtfManager:removeNtfListenerByTag("CompQuickBar:changeSettings")
+
+    self._quickList:removeEventListener(fgui.UIEventType.ClickItem)
+end
+
+function CompQuickBar:setType(curType)
+    self._curType = curType
+    self._race = GameModule:getHeroRace()
+    self._perPos = self:getPosition()
+end
+
+function CompQuickBar:onConstruct()
+    self:enableComponentEvents()
+    -- self.bg = self:getChild("bg")
+    self:startSkin()
+
+    self._quickList = self:getChild("list")
+    self._quickList:setItemRenderer(handler(self, self.renderListItem))
+    self:refreshBeltInfo()
+end
+
+function CompQuickBar:refreshBeltInfo(event)
+    local param = event and event.param or nil
+    local type = param and param.type or nil
+    if type and self._selectItem then
+        self._selectItem:setVisible(true)
+        fgui.GTween:kill(self._selectItem)
+        fgui.GTween:to(0, 10, 1)
+        :setTarget(self._selectItem, fgui.TweenPropType.Progress)
+        :onComplete(function()
+            if self._selectItem then
+                self._selectItem:setVisible(false)
+                self._selectItem = nil
+            end
+        end)
+    end
+    
+    self:refreshCanSelect()
+    -- yflog:Info("CompQuickBar:refreshBeltInfo--------------->>>>>" .. (self._curType or ""))
+    local pocketCount = ItemModule:getPocketCount()
+    if pocketCount <= 0 then
+        self:setVisible(false)
+        return
+    end
+
+    -- 主界面这边控制隐藏和显示
+    if self._curType == Constant.BeltBarType.Main then
+        self:setVisible(true)
+    end
+    
+    local list = self:getChild("list")
+    list:setNumItems(pocketCount)
+    list:setSize(pocketCount*58,71)
+
+    self:setSize(pocketCount*58,71)
+
+    local right = self:getChild("right")
+    right:setPosition(pocketCount*58,0)
+end
+
+function CompQuickBar:renderListItem(index, obj)
+    -- local objSize = obj:getSize()
+    local icon = obj:getChild("icon")
+    local num = obj:getChild("num")
+    -- 图标缩放
+    -- if not obj.item then
+    --     local item = fgui.UIPackage:createObject("Item", "Item");
+    --     item:setPivot(0.5,0.5, true)
+    --     local itemSize = item:getSize()
+    --     local scale = objSize.width/itemSize.width
+    --     -- item:setScale(scale,scale)
+    --     item:setPosition(objSize.width/2,objSize.height/2)
+    --     obj:addChild(item)
+    --     obj.item = item
+    -- end
+
+    -- local depotArray = ItemModule:getDepotArray()
+    -- if depotArray[1] then
+    --     item:setVisible(true)
+    --     item:setItemInfo(depotArray[1], self.openViewType)
+    -- end
+
+    -- local beltArray = ItemModule:getBeltArray()
+    local beltItem = ItemModule:getBeltByPos(index)
+    if beltItem then
+        local itemConfig = beltItem:getItemMeta()
+        if not itemConfig then return end
+        
+        local iconId = itemConfig:getIconId()
+        local itemType = beltItem:getItemType()
+        local iconPath = ""
+        if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+            iconPath = "prop"
+        elseif itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+            iconPath = "equip"
+        end
+        local resUrl = string.format("ui://Item/%s_%s", iconPath,iconId)
+
+        icon:setVisible(true)
+        icon:setURL(resUrl)
+        icon:setScale(0.8, 0.8)
+
+        local itemConfig = beltItem:getItemMeta()
+        local maxNum = itemConfig:getAddLimit()
+        local effectParam = itemConfig:getEffectParamJson()
+        if effectParam and effectParam["Use"] and effectParam["Maintain"] then
+            --对讲机/风精灵石单独走剩余次数逻辑
+            num:setText(beltItem:getUseCount())
+        else
+            if maxNum and maxNum > 0 then
+                num:setText(beltItem:getNum())
+            else
+                num:setText("")
+            end
+        end
+        -- obj.item:setVisible(true)
+        -- obj.item:setItemInfo(beltItem)
+
+        -- local objSize = obj:getSize()
+        -- local itemSize = obj.item:getSize()
+        -- local heightS = objSize.height/itemSize.height
+        -- local widthS = objSize.width/itemSize.width
+        -- local scale = heightS
+        -- if widthS < heightS then
+        --     scale = widthS
+        -- end
+        -- obj.item:setScale(scale,scale)
+        
+        -- yflog:Info("visible--------------->>>>>,%s",index)
+    else
+        -- yflog:Info("visiblefalse--------------->>>>>,%s",index)
+        -- obj.item:setVisible(false)
+        icon:setVisible(false)
+        num:setText("")
+
+        if not self._race then
+            self._race = GameModule:getHeroRace()
+        end
+        -- 如果是魔族 5,6,7,8号位置显示图片
+        if self._race == Constant.RaceType.Ousters and iconCfgOusters[index+1] then
+            icon:setVisible(true)
+            icon:setURL(string.format("ui://Main/%s",iconCfgOusters[index+1].icon))
+        end
+        icon:setScale(1, 1)
+    end
+
+    obj.index = index
+
+    --设置透明度
+    local bgdown = obj:getChild("bgdown")
+    local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.QUICK_OPACITY)
+    local isBGOpacity = editTable.switch == 1
+    if isBGOpacity then
+        editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.WINDOW_OPACITY)
+        bgdown:setAlpha(editTable.value/100)
+    else
+        bgdown:setAlpha(1)
+    end
+end
+
+function CompQuickBar:refreshCanSelect()
+    local list = self:getChild("list")
+    local children = list:getChildren()
+    for k,v in ipairs(children) do
+        -- 放入腰带高亮逻辑
+        local itemInfo = WndLockManager:getSelectItemInfo()
+        local select = v:getChild("select")
+        
+        -- yflog:Info("Inventory--------------->>>>>,%s",k)
+        if itemInfo and self._curType == Constant.BeltBarType.Inventory then
+            local itemType = itemInfo:getItemType()
+            -- 魔族装备
+            if itemType == Constant.ItemType.ITEM_TYPE_EQUIP and self._race == Constant.RaceType.Ousters then
+                if iconCfgOusters[k] then
+                    select:setVisible(true)
+                else
+                    select:setVisible(false)
+                end
+            elseif itemType ==  Constant.ItemType.ITEM_TYPE_PROP then
+                select:setVisible(true)
+            end
+        else
+            select:setVisible(false)
+        end
+    end
+end
+
+function CompQuickBar:btnClik(target)
+    local pos = target.index
+    local beltItem = ItemModule:getBeltByPos(pos)
+    self._selectItem = nil
+    self._isAmmunition = false -- 是不是弹药
+    if self._curType == Constant.BeltBarType.Inventory then
+        -- 背包界面点击逻辑
+        -- yflog:Info("----->>>> Inventory")
+        local itemInfo = WndLockManager:getSelectItemInfo()
+        if ((not beltItem) and itemInfo) or (beltItem and itemInfo) then
+            -- 放入             or            替换
+            local itemType = itemInfo:getItemType()
+            -- 魔族水晶石只能放在制定地方
+            if itemType == Constant.ItemType.ITEM_TYPE_EQUIP and (not iconCfgOusters[pos+1]) and self._race == Constant.RaceType.Ousters then
+                NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_FLOAT_TIP,{content = string.format(GReadText.KEY_BELT_TIPS4, GReadText.KEY_BELT_3)})
+                return
+            end
+            ItemModule:sendBeltItemOperate(0,itemInfo:getObjId(),pos)
+            WndLockManager:clearSelectItemInfo()
+            --延迟0.5s关闭腰带
+            ScheduleUtil:performWithDelayGlobal(function()
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_CLOSE_BELT_EVENT)
+            end, 0.5)
+            --立刻关闭遮罩
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_CLOSE_INVENTORY_MASK)
+        elseif beltItem and not itemInfo then
+            -- 取下 1
+            -- self:showTips(beltItem)
+            ItemModule:sendBeltItemOperate(1,beltItem:getObjId(),beltItem:getPos())
+        else
+            WndLockManager:clearSelectItemInfo()
+        end
+        self:refreshCanSelect()
+    elseif self._curType == Constant.BeltBarType.Main then
+        -- 主界面点击逻辑
+        local curPos = self:getPosition()
+        if self._perPos and curPos and ((self._perPos.x ~= curPos.x) or (self._perPos.y ~= curPos.y)) then
+            self._perPos = self:getPosition()
+            return
+        end
+
+        -- if target.touchDelay then
+        --     yflog:Info("----->>>> touchDelay 0.5")
+        --     return
+        -- end
+        -- target.touchDelay = true
+        -- fgui.GTween:delayedCall(0.5):onComplete(function()
+        --     target.touchDelay = false
+        --     yflog:Info("----->>>> touchDelay")
+        -- end)
+
+        if beltItem then
+            local itemType = beltItem:getItemType()
+            local showCd = false
+            if itemType == Constant.ItemType.ITEM_TYPE_EQUIP and iconCfgOusters[pos+1] and iconCfgOusters[pos+1].pos then
+                -- 快捷装备
+                -- yflog:Info("----->>>>itemType: %s,%s", beltItem:getObjId(), Constant.ItemTypePos.Item_InBelt)
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_EQUIP_AUTOUSE_RMV,{ itemInfo = beltItem})
+                ItemModule:sendEquipItem(beltItem:getObjId(), iconCfgOusters[pos+1].pos,Constant.ItemTypePos.Item_InBelt)
+                showCd = true
+            elseif itemType ==  Constant.ItemType.ITEM_TYPE_PROP then
+                -- 快捷使用
+                local itemId = beltItem:getItemId()
+                if lt.CommonFunc:isInArray(SkillEnum.USE_SKILL_ITEMS[SkillEnum.BLOODY_TUNNEL], itemId) then --技能相关物品
+                    if (beltItem:getMarkMapId() == nil or tonumber(beltItem:getMarkMapId()) == 0) then
+                        if SkillModule:hasSkill(SkillEnum.MAGIC_BLOODY_MARK) then
+                            local itemObjId = beltItem:getObjId()
+                            GameModule:sendAttack(SkillEnum.MAGIC_BLOODY_MARK, 0, 0, 0, 0, itemObjId)
+                            showCd = true
+                        else
+                            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = "未学习技能：血之印记"})
+                        end
+                    elseif beltItem:getMarkMapId() and tonumber(beltItem:getMarkMapId()) > 0 then
+                        if SkillModule:hasSkill(SkillEnum.BLOODY_TUNNEL) then
+                            local itemObjId = beltItem:getObjId()
+                            GameModule:sendAttack(SkillEnum.BLOODY_TUNNEL, 0, 0, 0, 0, itemObjId)
+                            showCd = true
+                        else
+                            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = "未学习技能：血之漩涡"})
+                        end
+                    end
+                else
+                    showCd = true
+                    local result = ItemModule:sendUseItemLimit(beltItem)
+                    local itemMeta = beltItem:getItemMeta()
+                    if itemMeta then 
+                        local kind = itemMeta:getKind()
+                        if kind == Constant.PropType.AMMUNITION then
+                            if result ~= Constant.ClientErrorCode.AMMUNITION_NO_USE then
+                                self._isAmmunition = true
+                            end
+                        end 
+                    end
+                end
+            end
+
+            if showCd then
+                local barCd = target:getChild("barCd")
+                if barCd then
+                    if self._isAmmunition then -- 弹药
+                        if not fgui.GTween:isTweening(barCd,fgui.TweenPropType.Progress) then -- 动效不给堆叠
+                            barCd:setVisible(true)
+                            fgui.GTween:to(0, 10, 2.5)
+                            :setTarget(barCd, fgui.TweenPropType.Progress)
+                            :onComplete(function()
+                                barCd:setVisible(false)
+                            end)
+                        end
+                    else
+                        self._selectItem = barCd
+                    end
+                end
+                
+            end
+        else
+            -- yflog:Info("----->>>> main empty")
+        end
+    end
+
+    self._perPos = self:getPosition()
+end
+
+function CompQuickBar:showTips(itemInfo)
+    if not itemInfo then
+        return
+    end
+    local itemType = itemInfo:getItemType()
+    if itemType ==  Constant.ItemType.ITEM_TYPE_PROP then
+        self:showPropTips(itemInfo)
+    elseif itemType ==  Constant.ItemType.ITEM_TYPE_EQUIP then
+        self:showEquipTips(itemInfo)
+    end
+end
+
+function CompQuickBar:showPropTips(itemInfo)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,{itemInfo = itemInfo, tipsType = Constant.PROPTIPS_FORM.BELT})
+end
+
+function CompQuickBar:showEquipTips(itemInfo)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,{itemInfo = itemInfo,tipsType = Constant.EquipShowTipsType.Belt})
+end
+
+function CompQuickBar:onClickItem(context)
+    local data = context:getData()
+    self:btnClik(data)
+end
+
+--设置改变
+function CompQuickBar:changeSettings(params)
+    local param = params.param
+    local childs = self:getChild("list"):getChildren()
+    if param.index == Constant.SETTINGS_TYPES.QUICK_OPACITY or param.index == Constant.SETTINGS_TYPES.WINDOW_OPACITY then
+        --设置透明度
+        for i = 1, #childs do
+            local bgdown = childs[i]:getChild("bgdown")
+            local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.QUICK_OPACITY)
+            local isBGOpacity = editTable.switch == 1
+            if isBGOpacity then
+                editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.WINDOW_OPACITY)
+                bgdown:setAlpha(editTable.value/100)
+            else
+                bgdown:setAlpha(1)
+            end
+        end
+    end
+end
+
+return CompQuickBar

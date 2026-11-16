@@ -1,0 +1,15 @@
+
+local AttrLevelExpInfoDao = {}
+
+function AttrLevelExpInfoDao:queryAll()
+    local attrLevelExpInfoMap = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM AttributeExpInfo;") do
+    	local attrLevelExpInfoMeta = lt.AttrLevelExpInfoMeta.new(row)
+        attrLevelExpInfoMap[attrLevelExpInfoMeta:getLevel()] = attrLevelExpInfoMeta
+    end
+
+    return attrLevelExpInfoMap
+end
+
+return AttrLevelExpInfoDao

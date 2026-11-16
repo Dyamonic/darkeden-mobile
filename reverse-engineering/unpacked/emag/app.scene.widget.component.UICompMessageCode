@@ -1,0 +1,167 @@
+---@class UICompUseCode
+local UICompUseCode = class("UICompUseCode",lt.UICompBase)
+local GameModule = lt.GameModule
+local NtfManager = lt.NtfManager
+
+UICompUseCode.ChangeSkinConf = {
+    ["MessageBox"] = {
+        ["bg"] = "bg_tytanchuang_01",
+    },
+    ["CommonTL"] = {
+        closeButton = {bg  = "bg_beibao_anniu01",bgup = "bg_beibao_anniu02"},
+        confirm = {bg  = "sort"},
+    } 
+}
+
+function UICompUseCode:ctor(param)
+    UICompUseCode.super.ctor(self)
+end
+
+function UICompUseCode:onConstruct()
+    self:startSkin()
+    self._confirmBtn = self:getChild("confirm")
+    self._closeButton = self:getChild("closeButton")
+    self:initCocosInputUI(self:getChild("textInput"),self:getChild("textBg"))
+end
+
+function UICompUseCode:onEnter()
+    UICompUseCode.super.onEnter(self)
+    self._confirmBtn:addClickListener(handler(self, self.onBtnClick))
+    self._closeButton:addClickListener(handler(self, self.onCloseBtnClick))
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_USE_GIFTCODE_END, handler(self, self.useGiftCodeSuccess), "UICompUseCode:NTF_USE_GIFTCODE_END")
+end
+
+
+function UICompUseCode:initUI()
+    
+end
+
+function UICompUseCode:onExit()
+    UICompUseCode.super.onExit(self)
+    self._confirmBtn:removeClickListener()
+    self._closeButton:removeClickListener()
+    NtfManager:removeNtfListenerByTag("UICompUseCode:NTF_USE_GIFTCODE_END")
+end
+
+function UICompUseCode:onClear()
+    if self._codeInput then
+        self._codeInput:removeFromParent()
+        self._codeInput = nil
+    end
+    self._confirmBtn = nil
+    self._closeButton = nil
+    UICompUseCode.super.onClear(self)
+end
+
+
+function UICompUseCode:onCloseBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_RENAME_GIFTCODE_BOX)
+end
+
+function UICompUseCode:useGiftCodeSuccess()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_GET_CODE_SUCESS_TIP})
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_RENAME_GIFTCODE_BOX)
+end
+
+local function validateCode(_code)
+    if #_code == 0 then
+        return 1
+    end
+    if #_code > 32 then
+        return 2
+    end
+    for i = 1, #_code do
+        local char = string.sub(_code, i, i)
+        if not (char:match('%d') or char:match('%a')) then
+            return 3
+        end
+    end
+    return 0
+end
+
+function UICompUseCode:onBtnClick()
+    local currentTime = os.time()
+    self._lastClickTime = self._lastClickTime or 0
+    if currentTime - self._lastClickTime >= 1 then
+        self._lastClickTime = currentTime
+        local _code = self._codeInput:getText()
+        local _codevalue = validateCode(_code)
+        if _codevalue > 0 then
+            if _codevalue == 1 then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_INPUT_CODE_TIP})
+            elseif _codevalue == 2 then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_INPUT_CODE_ERROR_TIP})
+            elseif _codevalue == 3 then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_INPUT_CODE_ERROR_TIP})
+            end
+        else
+            GameModule:useGiftCodeReq(_code)
+        end
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_FREQUENT_OPERATION_TIP})
+    end
+end
+
+function UICompUseCode:initCocosInputUI(label,bg)
+    if not self._codeInput then
+        local position = bg:getPosition()
+        local bgSize = bg:getSize()
+        local textSize = label:getFontSize()
+        self._codeInput = ccui.EditBox:create(bg:getSize(),"", ccui.TextureResType.localType)
+        self._codeInput:setAnchorPoint(bg:getPivot())
+        self._codeInput:setFontName(lt.Constant.FONT_4)
+        self._codeInput:setFontSize(textSize)
+        self._codeInput:setReturnType(cc.KEYBOARD_RETURNTYPE_SEND)
+        self._codeInput:setInputMode(cc.EDITBOX_INPUT_MODE_SINGLELINE)
+        self._codeInput:setPosition(cc.p(position.x,position.y+bgSize.height*0.5 + textSize*0.25))
+        self._codeInput:registerScriptEditBoxHandler(handler(self, self.editBoxEvent))
+        label:getParent():displayObject():addChild(self._codeInput)
+        self._codeInput:setPlaceHolder(GReadText.KEY_INPUT_CODE_TIP)
+        label:setVisible(false)
+    end
+end
+
+function UICompUseCode:editBoxEvent(eventType,sender)
+    if eventType == "began" then
+        sender:setText("")
+    elseif eventType == "ended" then
+    elseif eventType == "changed" then
+        -- self.reString = sender:getText()
+        -- sender:setText("")
+        -- self._codeInput:setText(self.reString)
+        local str = sender:getText()
+        str = string.gsub(str," ","")--过滤掉空格
+        str = lt.CommonUtil:rmSpecChars(str)
+        local count = string.len(str)
+        local reCount = 0
+        local beginIndex = -1
+        local reString = ""
+        for i = 1, count do
+            local s = string.sub(str, i, i)
+            local t = string.byte(s)
+            if t < 128 then
+                reCount = reCount + 1--1字节文字，长度加1
+            elseif t >= 192 then
+                reCount = reCount + 2--1字节以上文字，长度加2
+            end
+            if reCount > 30 then
+                beginIndex = i - 1
+                break
+            end
+            beginIndex = i
+        end
+        reString = string.sub(str, 1, beginIndex)
+        sender:setText("")
+        self._codeInput:setText(reString)
+    elseif eventType == "return" then
+
+    end
+end
+
+function UICompUseCode:refreshTips()
+    if self._codeInput then
+        
+    end
+end
+
+return UICompUseCode

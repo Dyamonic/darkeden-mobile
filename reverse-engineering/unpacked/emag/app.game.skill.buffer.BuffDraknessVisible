@@ -1,0 +1,45 @@
+local BuffDraknessVisible = class("BuffDraknessVisible", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+local ScheduleUtil  = lt.ScheduleUtil
+local Constant = lt.Constant
+
+--[[
+    黑暗之触视野效果
+]]
+function BuffDraknessVisible:ctor(time, actor,skilllevel, source, bufferId)    
+    BuffDraknessVisible.super.ctor(self, bufferId, time, actor)
+    self._agent = actor:getAgent()
+    local function createEyeEffect()
+        if self._agent and self._agent:isHeroAgent() and actor:isSelf() and actor:getRoleData():getRace() ~= Constant.RaceType.Vampire then
+            actor:createEyeShot()
+        end
+    end
+    if bufferId == BuffEnum.EFFECT_CLASS_DARKNESS then
+        if not self._agent:hasBuffer(BuffEnum.EFFECT_CLASS_GRAY_DARKNESS) then
+            createEyeEffect()
+        end
+    elseif bufferId == BuffEnum.EFFECT_CLASS_GRAY_DARKNESS then
+        if not self._agent:hasBuffer(BuffEnum.EFFECT_CLASS_DARKNESS) then
+            createEyeEffect()
+        end
+    end
+    
+end
+
+function BuffDraknessVisible:onClear()
+    if self._agent and self._agent:isHeroAgent() and self._agent:getActor():isSelf() then
+        if self._bufferId == BuffEnum.EFFECT_CLASS_DARKNESS then
+            if not self._agent:hasBuffer(BuffEnum.EFFECT_CLASS_GRAY_DARKNESS) then
+                self._agent:getActor():removeEyeShot()
+            end
+        elseif self._bufferId == BuffEnum.EFFECT_CLASS_GRAY_DARKNESS then
+            if not self._agent:hasBuffer(BuffEnum.EFFECT_CLASS_DARKNESS) then
+                self._agent:getActor():removeEyeShot()
+            end
+        end
+    end
+    BuffDraknessVisible.super.onClear(self)
+end
+
+return BuffDraknessVisible

@@ -1,0 +1,68 @@
+[
+ [
+  "Skill",
+  14,
+  60,
+  "最大限度地利用自身剩余能量攻击对方的持续性技术。在攻击持续的期间可得到5%~10%杀伤力的奖励。",
+  "A continuous technique that maximizes the use of one's own remaining energy to attack the opponent. While the attack continues, you can get a bonus of 5%~10% of the lethality.",
+  [],
+  [
+   "% o"
+  ]
+ ],
+ [
+  "Skill",
+  50,
+  60,
+  "快速挥动剑，形成剑膜进行防御的技术。有效时间内可减少50%的攻击。还能给对方施加一定的伤害。",
+  "A technique of quickly swinging the sword to form a sword membrane for defense. It can reduce attacks by 50% during the effective time. It can also cause certain damage to the opponent.",
+  [],
+  [
+   "% d"
+  ]
+ ],
+ [
+  "Skill",
+  102,
+  60,
+  "以消耗自己的精神力为代价，在一定时间内100%抵御吸血鬼的魔法攻击。但对于物理攻击不起作用。",
+  "At the cost of consuming your own mental power, you can 100% resist vampire magic attacks for a certain period of time. But has no effect on physical attacks.",
+  [],
+  [
+   "% r"
+  ]
+ ],
+ [
+  "Skill",
+  187,
+  60,
+  "吸血鬼利用天生具有的魔法能力，可以轻易的变形成为其他动物的样子。其中小而迅速的蝙蝠是潜逃时的最佳选择。吸血鬼变成蝙蝠后移动速度会提高200%，而且不会受到刀和剑之类的近战武器的伤害。但是变成蝙蝠之后不能进行攻击和吸血，防御力也会急剧下降，因此不小心的话会更容易死掉。",
+  "Vampires can easily transform into other animals by using their natural magical abilities. Among them, small and fast bats are the best choice when absconding. After transforming into a bat, a vampire will move 200% faster and will not be damaged by melee weapons such as knives and swords. However, after turning into a bat, you cannot attack or suck blood, and your defense will drop sharply, so you will die more easily if you are not careful.",
+  [],
+  [
+   "% f"
+  ]
+ ],
+ [
+  "Skill",
+  231,
+  62,
+  "战斗系被动技能，有一定概率100%抵消物理伤害，1、2、3号精灵石槽位必须分别佩戴水、水、土灵石。",
+  "Combat-type passive skills have a certain probability of 100% negating physical damage. Water, water, and earth spirit stones must be worn in the 1, 2, and 3 spirit stone slots respectively.",
+  [],
+  [
+   "% n"
+  ]
+ ],
+ [
+  "Settings",
+  4,
+  4,
+  "魔法值低于({value})%自动使用({table})",
+  "The magic value is lower than ({value})% and automatically used ({table})",
+  [],
+  [
+   "% a"
+  ]
+ ]
+]

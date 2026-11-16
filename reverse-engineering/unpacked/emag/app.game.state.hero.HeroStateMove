@@ -1,0 +1,338 @@
+
+local HeroStateMove = class("HeroStateMove", lt.HeroStateBase)
+local Constant = lt.Constant
+local MapUtil = lt.MapUtil
+local NtfManager = lt.NtfManager
+local NpcModule = lt.NpcModule
+local MAX_RANGE = 2  --n格范围可以点击到npc
+
+HeroStateMove._moveTypeCur = nil
+HeroStateMove._mTarget = nil
+HeroStateMove._nTarget = nil
+HeroStateMove._xTarget = nil
+HeroStateMove._yTarget = nil
+
+-- onMessage使用
+HeroStateMove._moveType      = nil
+HeroStateMove._moveDirection = nil
+HeroStateMove._mNext         = nil
+HeroStateMove._nNext         = nil
+HeroStateMove._speedRate     = 1
+
+function HeroStateMove:ctor(heroAgent, moveType, direction, mTarget, nTarget)
+    HeroStateMove.super.ctor(self, heroAgent)
+
+    -- 脚步身间隔
+    self._audioInterval = 0.4
+    self._audioElapse = self._audioInterval
+
+    --是否为走向npc
+    self._isRunToNpc = moveType == Constant.MOVE_RUN_NPC
+    if self._isRunToNpc then
+        moveType = Constant.MOVE_RUN
+    end
+    self._targetAgentId = self._heroAgent:getTargetAgentId()
+
+    self:initMove(moveType, direction, mTarget, nTarget)
+end
+
+function HeroStateMove:onClear()
+    HeroStateMove.super.onClear(self)
+
+end
+
+function HeroStateMove:onEnter()
+    if not self._heroAgent:getIsSelf() then
+        local leftCount = self._heroAgent:getCmdSystem():getCmdCount()
+        if leftCount > 0 then
+            self._speedRate = 1 + leftCount * 0.3
+        end
+    end
+    self:moveToNpc()
+end
+
+function HeroStateMove:onExit()
+    -- self._mSkillNext = nil
+    -- self._nSkillNext = nil
+    if self._isRunToNpc then
+        self._heroAgent:setTargetAgentId(nil)
+    end
+    self._isRunToNpc = nil
+end
+
+function HeroStateMove:onUpdate()
+    -- 无法移动
+    if not self._heroAgent:canMove() then
+        self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+        return false
+    end
+    local xHero, yHero = self._heroAgent:getPosition()
+    local directionV = cc.pSub(cc.p(self._xTarget, self._yTarget), cc.p(xHero, yHero))
+    local length = cc.pGetLength(directionV)
+
+    local step = self._heroAgent:getMoveSpeed(self._moveTypeCur) * lt.GameBoard:getDeltaTime() * self._speedRate
+    -- yflog:Info("step: %02f, self._moveTypeCur:%d, moveSpeed:%d, self._speedRate:%d", step,self._moveTypeCur, self._heroAgent:getMoveSpeed(self._moveTypeCur),self._speedRate)
+
+    if length < step or length > 300 then
+        -- 到达
+        self._heroAgent:setPosition(self._xTarget, self._yTarget)
+
+        -- 捡取
+        self._heroAgent:checkPickUp()
+
+        -- 定位
+        self._heroAgent:mapTileSound()
+
+        -- 判断是否继续移动
+        if not self:checkMoveOn() then
+            return
+        end
+    -- elseif self._heroAgent:isNoDelaySkill() then
+    --     if not self:checkMoveOn() then
+    --         return
+    --     end
+    else
+        -- 未到
+        directionV = cc.pMul(cc.pNormalize(directionV), step)
+        -- yflog:Info("directionV:%s, cc.pNormalize(directionV):%s", yflog:Positon(directionV), yflog:Positon(cc.pNormalize(directionV)))
+
+        self._heroAgent:setPosition(xHero + directionV.x, yHero + directionV.y)
+
+        if self._fixDirection then
+            self._fixDirection = false
+            
+            self._heroAgent:setDirection(lt.MapUtil:calcDirectionXY(directionV.x, directionV.y))
+        end
+    end
+
+    self._moveType      = nil
+    self._moveDirection = nil
+    self._mNext         = nil
+    self._nNext         = nil
+
+    -- 脚步声
+    self._audioElapse = self._audioElapse + lt.GameBoard:getDeltaTime()
+    if self._audioElapse > self._audioInterval then
+        self._audioElapse = self._audioElapse - self._audioInterval
+
+        self._heroAgent:mapTileAudio(self._moveTypeCur)
+    end
+
+    local tagetAgent = self._heroAgent:getTargetAgent()
+    if tagetAgent then
+        local mHero, nHero = self._heroAgent:getMNExactly()
+        local m, n = tagetAgent:getMNExactly()
+        if math.abs(mHero - m) > 11 or math.abs(nHero - n) > 13 then
+            self._heroAgent:setTargetAgentId(nil)
+        end
+    end
+      
+end
+
+function HeroStateMove:onMessage(msg)
+    if msg.msgId == lt.Constant.MSG_MOVE_JOYSTICK then
+        -- 摇杆控制移动
+        self._moveType      = msg.moveType
+        self._moveDirection = msg.moveDirection
+        self._mNext         = msg.mNext
+        self._nNext         = msg.nNext
+    elseif msg.msgId == lt.Constant.MSG_MOVE_TOUCH then
+        -- 点击控制移动
+        if msg.moveType == lt.Constant.MOVE_NONE then
+        else
+           
+            self._moveType      = msg.moveType
+            if self._moveType == Constant.MOVE_RUN_NPC then
+                self._moveType = Constant.MOVE_RUN
+            end
+            self._moveDirection = msg.moveDirection
+            self._mNext         = msg.mNext
+            self._nNext         = msg.nNext
+        end
+    elseif msg.msgId == lt.Constant.MSG_ROUTE then
+        self._needStop = true
+        self._routeMsg = msg
+    elseif msg.msgId == lt.Constant.MSG_SKILL then
+        -- 技能
+        self._heroAgent:handleSkillMsg(msg)
+        -- self._mSkillNext = msg.mNext
+        -- self._nSkillNext = msg.nNext
+        -- yflog:Info("%s %s",self._mSkillNext,self._nSkillNext)
+    end
+end
+
+function HeroStateMove:getStateId()
+    return lt.Constant.HERO_STATE_MOVE
+end
+
+function HeroStateMove:getStateName()
+    return "HeroStateMove"
+end
+
+function HeroStateMove:checkMoveOn()
+    if self._heroAgent:getIsSelf() then
+        -- 自己
+        if self._heroAgent:getIsOutOfGame() then
+            self._heroAgent:changeState(lt.HeroStateDie.new(self._heroAgent))
+            return false
+        end
+
+        -- 无法移动
+        if not self._heroAgent:canMove() then
+            self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+            return false
+        end
+
+        -- 是否进入NPC范围
+        if self:moveToNpc() then
+            return false
+        end
+
+        local canUse = false
+        local skillId = lt.GameBoard:getSkillIdNext()
+        local level = 0
+        if skillId then
+            canUse = true
+        else
+            skillId, level = self._heroAgent:getSkillId()
+
+            -- 自动技能
+            canUse = not self._heroAgent:getIsSkillIdUsed(skillId)
+        end
+        -- 坐骑状态下 不释放自动技能
+        if level == 0 then
+            canUse = false
+        end
+        if canUse then
+            canUse = canUse and lt.SkillCdManager:isReady(skillId)
+        end
+        if canUse and skillId then
+            -- lt.GameBoard:setSkillMNext(self._mSkillNext)
+            -- lt.GameBoard:setSkillNNext(self._nSkillNext)
+            if self:handleSkill(skillId, {level = level}) then
+                return
+            end
+        end
+
+        if self._needStop then
+            if self._routeMsg then
+                self._heroAgent:handleRouteMsg(self._routeMsg)
+                self._routeMsg = nil
+            else
+                self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+            end
+            return false
+        end
+
+        if self._moveType then
+            self:initMove(self._moveType, self._moveDirection, self._mNext, self._nNext)
+            return true
+        else
+            self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+            return false
+        end
+    else
+        -- 其他玩家
+        local cmd = self._heroAgent:getCmdSystem():get()
+        if cmd then
+            if cmd:getCmdId() == lt.Constant.CmdId.CMD_MOVE then
+                self._heroAgent:getCmdSystem():pop()
+
+                self:initMove(cmd:getMoveType(), cmd:getDirection(), cmd:getMNext(), cmd:getNNext())
+
+                local leftCount = self._heroAgent:getCmdSystem():getCmdCount()
+                if leftCount > 0 then
+                    self._speedRate = 1 + leftCount * 0.3
+                else
+                    self._speedRate = 1
+                end
+
+                return true
+            else
+                self._heroAgent:getCmdSystem():pop()
+                self._heroAgent:handleCmd(cmd)
+                return false
+            end
+        else
+            self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+            return false
+        end
+    end
+end
+
+function HeroStateMove:initMove(moveType, direction, mNext, nNext)
+    self._moveTypeCur = moveType
+    self._mTarget = mNext
+    self._nTarget = nNext
+    self._xTarget, self._yTarget = lt.MapUtil:calcMNMid(self._mTarget, self._nTarget)
+
+    -- 设置方向
+    self._heroAgent:setDirection(direction)
+
+    -- 修改MapAgent的AgentSystem
+    local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+    mapAgent:changeAgentMN(self._heroAgent, self._mTarget, self._nTarget)
+
+    -- 播放动画
+    self:playMoveAction()
+
+    if self._heroAgent:getIsSelf() then
+        lt.GameModule:sendMove(self._moveTypeCur, direction, mNext, nNext)
+    end
+
+    -- 按照动作定义脚步声音间隔
+    local actionInfo = self._heroAgent:getActor():getActionInfo()
+    if actionInfo then
+        self._audioInterval = (actionInfo:getStep() or 0.1) * 4
+    end
+end
+
+function HeroStateMove:playMoveAction()
+    self._heroAgent:playMoveAction(self._moveTypeCur)
+end
+
+function HeroStateMove:handleSkill(skillId, params)
+    params = params or {}
+    params.showTips = self._handleSkillRet
+    self._handleSkillRet = self._heroAgent:handleSkill(skillId, params)
+    return self._handleSkillRet
+end
+
+-- 修正方向
+function HeroStateMove:setFixDirection()
+    self._fixDirection = true
+end
+
+-- 进入npc 范围（需走入格子中心点）
+function HeroStateMove:isArriveNpcRect()
+    --初始化范围
+    local targetAgent = lt.AgentManager:getAgent(self._targetAgentId)
+    local npcId = targetAgent:getObjId()
+    local npcMeta = lt.CacheManager:queryNpc(npcId)
+    MAX_RANGE = npcMeta:getDialogueDistance()
+
+    local mHero, nHero = self._heroAgent:getMNExactly()
+    local disX = mHero - self._mTarget
+    local disY = nHero - self._nTarget
+    local isArrive = math.sqrt(disX * disX + disY * disY) <= MAX_RANGE
+
+    local xHero, yHero = self._heroAgent:getPosition()
+    local xMidHero, yMidHero = MapUtil:calcMNMid(mHero, nHero)
+    local isArriveMid = math.abs(xHero - xMidHero) < 10 and math.abs(yHero - yMidHero) < 5
+    return isArriveMid and isArrive
+end
+
+function HeroStateMove:moveToNpc()
+   if self._isRunToNpc and self:isArriveNpcRect() then
+        self._heroAgent:setTargetAgentId(nil)
+        self._heroAgent:changeState(lt.HeroStateIdle.new(self._heroAgent))
+        local targetAgent = lt.AgentManager:getAgent(self._targetAgentId)
+        local npcId = targetAgent:getObjId()
+        NpcModule:onClickNpc(npcId)
+        return true
+    end
+    return false     
+end
+
+
+return HeroStateMove

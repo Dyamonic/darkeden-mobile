@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>frames</key>
+        <dict>
+            <key>monster_s_267_58276.png</key>
+            <dict>
+                <key>aliases</key>
+                <array/>
+                <key>spriteOffset</key>
+                <string>{0,0}</string>
+                <key>spriteSize</key>
+                <string>{305,114}</string>
+                <key>spriteSourceSize</key>
+                <string>{305,114}</string>
+                <key>textureRect</key>
+                <string>{{1,1},{305,114}}</string>
+                <key>textureRotated</key>
+                <false/>
+            </dict>
+        </dict>
+        <key>metadata</key>
+        <dict>
+            <key>format</key>
+            <integer>3</integer>
+            <key>pixelFormat</key>
+            <string>RGBA4444</string>
+            <key>premultiplyAlpha</key>
+            <false/>
+            <key>realTextureFileName</key>
+            <string>monster_s_267_1.pvr.ccz</string>
+            <key>size</key>
+            <string>{307,116}</string>
+            <key>smartupdate</key>
+            <string>$TexturePacker:SmartUpdate:9c6742aafe6e081ac867a6d7084828d5:8d7e25f69a09088c8a29045be2e7ff34:0ceaa3ff1e05775ed5398448e810aa97$</string>
+            <key>textureFileName</key>
+            <string>monster_s_267_1.pvr.ccz</string>
+        </dict>
+    </dict>
+</plist>

@@ -1,0 +1,96 @@
+---@通用提示框
+---@class StarterCommitLayerTL:fgui.GComponent
+local StarterCommitLayerTL = class("StarterCommitLayerTL", fgui.GComponent)
+
+local scheduler = require("cocos.framework.scheduler")
+local LauncherStr = require("launcher.LauncherStr")
+
+---@param param table
+--[[
+--- {content = "",noCancel = true, confirmCallback = function() end }
+]]
+function StarterCommitLayerTL:ctor(content, confirmCallback, param)
+    self.content = content
+    self.param = param or {}
+    self.noCancel = self.param.noCancel
+    self.confirmCallback = confirmCallback
+    self._countDown = self.param.countDown or 0
+
+    self._view = fgui.UIPackage:createObject("Login","LayerCommit")
+    self:addChild(self._view)
+	self._view:setPivot(0.5, 0.5 , true)
+    self._view:setPosition(display.cx, display.cy)
+
+    self.contentLabel = self._view:getChild("content")
+    self.cancelBtn = self._view:getChild("cancelBtn")
+    self.commitBtn = self._view:getChild("commitBtn")
+    self.styleControl = self._view:getController("style")
+    if self.noCancel == true then
+        self.styleControl:setSelectedIndex(1)
+    end
+
+    self.commitBtn:addClickListener(handler(self, self.onCommitBtnClick))
+    self.cancelBtn:addClickListener(handler(self, self.onCancelBtnClick))
+
+    --如果有倒计时启动定时器
+    if self._countDown > 0 then
+        self._countDownHandler = scheduler.scheduleGlobal(function()
+            self:countDown()
+        end, 1)
+        self:countDown()
+    else
+        self.contentLabel:setText(self.content)
+    end
+end
+
+function StarterCommitLayerTL:onCommitBtnClick()
+    local confirmCallback = self.confirmCallback
+    self:close()
+    if confirmCallback then
+        confirmCallback()
+    end
+end
+function StarterCommitLayerTL:onCancelBtnClick()
+    self:close()
+end
+
+function StarterCommitLayerTL:unscheduleCountDown()
+    if self._countDownHandler then
+        scheduler.unscheduleGlobal(self._countDownHandler)
+        self._countDownHandler = nil
+    end
+end
+
+function StarterCommitLayerTL:close()
+    self:unscheduleCountDown()
+    self:removeFromParent()
+end
+
+function StarterCommitLayerTL:countDown()
+    if self._countDown == 0 then
+        self:unscheduleCountDown()
+        self.contentLabel:setText(LauncherStr.SETVER_ISOPEN)
+        return
+    end
+    local leftTime = self._countDown
+    local day = math.floor(leftTime / (24 * 3600))
+    leftTime = leftTime % (24 * 3600)
+    local hour = math.floor(leftTime / 3600)
+    leftTime = leftTime % 3600
+    local minite = math.floor(leftTime / 60)
+    leftTime = leftTime % 60
+    local timeStr = ""
+    if day > 0 then
+        timeStr = day..LauncherStr.COUNTDOWN_DAY..hour..LauncherStr.COUNTDOWN_HOUR..minite..LauncherStr.COUNTDOWN_MINITE..leftTime..LauncherStr.COUNTDOWN_SECOND
+    elseif hour > 0 then
+        timeStr = hour..LauncherStr.COUNTDOWN_HOUR..minite..LauncherStr.COUNTDOWN_MINITE..leftTime..LauncherStr.COUNTDOWN_SECOND
+    elseif minite > 0 then
+        timeStr = minite..LauncherStr.COUNTDOWN_MINITE..leftTime..LauncherStr.COUNTDOWN_SECOND
+    else
+        timeStr = leftTime..LauncherStr.COUNTDOWN_SECOND
+    end
+    self.contentLabel:setText(LauncherStr.SETVER_COUNTDOWN..timeStr)
+    self._countDown = self._countDown - 1
+end
+
+return StarterCommitLayerTL

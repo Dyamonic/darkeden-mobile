@@ -1,0 +1,46 @@
+
+local StarterScene = class("StarterScene", function()
+    return display.newScene("StarterScene")
+end)
+
+function StarterScene:ctor()
+	-- self._starterLayer = require("starter.StarterLayer").new()
+	-- self:addChild(self._starterLayer)
+
+	self._groot = fgui.GRoot:create(self, 1)
+    self._groot:retain()
+
+    fgui.UIPackage:addPackage("launcherfgui/Login")
+	self:registerFont()
+
+	self._starterLayer = require("starter.StarterLayerTL").new()
+    self._groot:addChild(self._starterLayer)
+end
+
+function StarterScene:onExit()
+	self._groot:release()
+end
+
+function StarterScene:registerFont()
+    fgui.UIConfig:registerFont("fangzheng", "font/fangzheng.ttf");
+    fgui.UIConfig.defaultFont = "fangzheng"
+	fgui.UIConfig.buttonSound = "ui://Login/SLAYER_BUTTON"
+end
+
+function StarterScene:checkStarterUpdateFail(code)
+	self._starterLayer:checkStarterUpdateFail(code)
+end
+
+function StarterScene:downloadCommit(sumSize)
+	self._starterLayer:downloadCommit(sumSize)
+end
+
+function StarterScene:displayDownloadProgress(curSize, sumSize, curIdx, sumIdx)
+	self._starterLayer:displayDownloadProgress(curSize, sumSize, curIdx, sumIdx)
+end
+
+function StarterScene:downloadFail(code)
+	self._starterLayer:downloadFail(code)
+end
+
+return StarterScene

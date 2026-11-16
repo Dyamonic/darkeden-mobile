@@ -1,0 +1,350 @@
+
+local TrapAgent = class("TrapAgent", lt.BaseAgent)
+
+local Constant = lt.Constant
+local TrapActor = lt.TrapActor
+local AgentManager = lt.AgentManager
+local MapUtil = lt.MapUtil
+local SkillEnum = lt.SkillEnum
+
+function TrapAgent:ctor(trapData, m, n)
+    TrapAgent.super.ctor(self, Constant.AGENT_TYPE_TRAP)
+
+    self._trapData = trapData
+    self._mCur        = m
+    self._nCur        = n
+    self._xCur        = 0
+    self._yCur        = 0
+    self._skillId     = trapData:getSkillId()
+    self._trapData:setMN(self._mCur, self._nCur)
+    self._trapActors = {} --同一个陷阱，客户端创建多个特效
+
+    -- if self._skillId == SkillEnum.HAND_OF_DARKNESS then
+    --     TrapActor.new(self._trapData)
+    --     --自己创建多个
+    --     local points = {
+    --         {-1,-1}, {0,-1}, {1,-1},
+    --         {-1,0}, {0, 0}, {1, 0},
+    --         {-1, 1}, {0,1}, {1, 1},
+    --     }
+    --     for index, point in pairs(points) do
+    --         local trapActor = TrapActor.new(self._trapData)
+    --         local m, n = self._mCur + point[1], self._nCur + point[2]
+    --         local posX, posY = MapUtil:calcMNMid(m, n)
+    --         local zOrder = (n * 10000 + m  + 9999) * 10 + 1 + index
+    --         trapActor:setLocalZOrder(zOrder)
+    --         trapActor:setPositionEx(posX, posY)
+    --         trapActor:setAgent(self)
+    --         self._trapActors[index] = trapActor
+    --     end
+    -- else
+        --服务器传每个陷阱
+        local posX, posY = MapUtil:calcMNMid(self._mCur, self._nCur)
+        self._trapActor = TrapActor.new(self._trapData)
+        self._trapActor:setAgent(self)
+        self:setPosition(posX, posY)
+
+    -- end
+  
+    AgentManager:addAgent(self)
+
+    if self._trapData:isMoveTrap() then
+        self._stateMachine = lt.StateMachine.new(lt.TrapStateIdle.new(self), lt.TrapStateGlobal.new(self), false)
+        self._cmdSystem = lt.CmdSystem.new()
+    end
+    -- self:playEffect()
+end
+
+function TrapAgent:onClear()
+    AgentManager:removeAgent(self)
+    if self._trapActor then
+        self._trapActor:onClear()
+        self._trapActor = nil
+    end
+    if #self._trapActors > 0 then
+        for i, trapActor in ipairs(self._trapActors) do
+            trapActor:onClear()
+            trapActor = nil
+        end
+    end
+
+    if self._stateMachine then
+        self._stateMachine:onClear()
+    end
+    self._inDisappearing = nil
+    self._stateMachine = nil
+    self._cmdSystem = nil
+end
+
+function TrapAgent:playClearEffect()
+    if self._trapActor then
+        if not self._inDisappearing then
+            self._inDisappearing = true
+            local skillId = self._trapData:getSkillId()
+            if skillId == SkillEnum.SKILL_CHAIN_THROWING_AXE
+            or skillId == SkillEnum.SKILL_THROWING_AXE
+            or skillId == SkillEnum.SKILL_CHOPPING_FIREWOOD
+            or skillId == SkillEnum.SKILL_MULTI_THROWING_AXE then
+                --boss的斧头没这个特效
+                -- self._trapActor:stopParallelEffect(skillId)
+            else
+                self._trapActor:stopQueueEffect(skillId)
+            end
+        end
+    else
+        AgentManager:getWorldAgent():deleteObjFromTable(self._trapData:getObjId())
+    end
+end
+
+function TrapAgent:inDisappearing()
+    return self._inDisappearing
+end
+
+function TrapAgent:deleteSelfFromTable()
+    if self._inDisappearing then
+        AgentManager:getWorldAgent():deleteObjFromTable(self._trapData:getObjId())
+    else
+        
+    end
+end
+
+function TrapAgent:getRect()
+    local x, y = self:getPosition()
+    return cc.rect(x - 48 / 2, y - 24/2, 48, 24)
+end
+
+--是否立即移除
+function TrapAgent:isClearImmediately()
+    local skillId = self._trapData:getSkillId()
+    if skillId == SkillEnum.SKILL_CASTING_FIRE
+        or skillId == SkillEnum.SKILL_ICE_FIELD 
+        or skillId == SkillEnum.SKILL_WIDE_ICE_FIELD
+
+        or skillId == SkillEnum.SKILL_SANCTUARY
+        or skillId == SkillEnum.SKILL_GRAY_DARKNESS
+        or skillId == SkillEnum.SKILL_INSTALL_TRAP .. "CLIENT"
+        or skillId == SkillEnum.SKILL_HELLFIRE
+        or skillId == SkillEnum.SKILL_FURY_OF_GNOME
+        or skillId == SkillEnum.SKILL_THROWING_AXE
+        or skillId == SkillEnum.SKILL_CHOPPING_FIREWOOD 
+        or skillId == SkillEnum.SKILL_CHAIN_THROWING_AXE 
+        or skillId == SkillEnum.SKILL_MULTI_THROWING_AXE 
+        or skillId == SkillEnum.SKILL_MAGIC_METEOR
+        then
+        return false
+    end   
+    return true
+end
+
+function TrapAgent:onUpdate(dt)
+    if self._delayedFrame and self._delayedFrame > 0 then
+        if self._stateMachine then
+            self._stateMachine:onUpdate()
+        end
+        if self._trapActor then
+            self._trapActor:onUpdate()
+        end
+        if #self._trapActors > 0  then
+            for i, trapActor in ipairs(self._trapActors) do
+                trapActor:onUpdate()
+            end
+        end
+        self._delayedFrame = self._delayedFrame - 1
+        --存在追帧额外执行一次
+    end
+    if self._stateMachine then
+        self._stateMachine:onUpdate()
+    end
+    if self._trapActor then
+        self._trapActor:onUpdate()
+    end
+    if #self._trapActors > 0  then
+        for i, trapActor in ipairs(self._trapActors) do
+            trapActor:onUpdate()
+        end
+    end
+end
+
+function TrapAgent:onDelayUpdate(dt,delaylevel)
+    --延迟更新
+    if delaylevel >= 2 then
+        self._delayedFrame = self._delayedFrame or 0
+        self._delayedFrame = self._delayedFrame + 1
+    else
+        if self._delayedFrame and self._delayedFrame > 0 then
+            if self._stateMachine then
+                self._stateMachine:onUpdate()
+                self._stateMachine:onUpdate()
+            end
+            if self._trapActor then
+                self._trapActor:onUpdate()
+                self._trapActor:onUpdate()
+            end
+            if #self._trapActors > 0  then
+                for i, trapActor in ipairs(self._trapActors) do
+                    trapActor:onUpdate()
+                    trapActor:onUpdate()
+                end
+            end
+            self._delayedFrame = self._delayedFrame - 1
+        else
+            if self._stateMachine then
+                self._stateMachine:onUpdate()
+            end
+            if self._trapActor then
+                self._trapActor:onUpdate()
+            end
+            if #self._trapActors > 0  then
+                for i, trapActor in ipairs(self._trapActors) do
+                    trapActor:onUpdate()
+                end
+            end
+        end
+    end
+end
+
+function TrapAgent:getMN()
+    local x, y = self:getPosition()
+    return MapUtil:calcMN(x, y)
+end
+
+function TrapAgent:getMNExactly()
+    return self._mCur, self._nCur
+end
+
+function TrapAgent:getPosition()
+    return self._xCur, self._yCur
+end
+
+function TrapAgent:setPosition(x, y)
+    self._xCur = x
+    self._yCur = y
+
+    self._trapActor:setPositionEx(x, y)
+
+    local m, n = self:getMN()
+    local skillId = self._trapData:getSkillId()
+    local skillZOrder = 0
+    local zOrder = 1
+    if skillId == SkillEnum.HAND_OF_DARKNESS or
+    skillId == SkillEnum.SKILL_GREEN_POISON or 
+    skillId == SkillEnum.SKILL_YELLOW_POISON or 
+    skillId == SkillEnum.SKILL_SWORD_OF_THOR 
+    then
+        skillZOrder = 2
+    elseif skillId == SkillEnum.SKILL_SANCTUARY 
+        or skillId == SkillEnum.MAGIC_REGENERATION 
+        or skillId == SkillEnum.MAGIC_ACID_SWAMP
+        then
+        skillZOrder = 0
+        zOrder = 0
+    end
+
+    ----------------------------------------------------------------------------
+    -- 显示在顶部
+    local addTopZorder = 0
+    if self._trapActor:isTrapTop() then
+        addTopZorder = 99999999
+    end
+    ----------------------------------------------------------------------------
+
+    local finalZOrder = (n  * 10000 + m + 9999) * 10 * zOrder + skillZOrder + addTopZorder
+
+    ----------------------------------------------------------------------------
+    -- 显示在底部
+    if self._trapActor:isTrapBottom() then
+        finalZOrder = 1
+    elseif skillId == SkillEnum.SKILL_HEAVEN_GROUND then
+        finalZOrder = 1
+    end
+    ----------------------------------------------------------------------------
+
+    self._trapActor:setLocalZOrder(finalZOrder)
+    local selectNode = self._trapActor:getSeletNode()
+    if selectNode then
+        local size = selectNode:getContentSize()
+        selectNode:setPosition(x - size.width / 2 , y - size.height / 2 + 50)
+    end
+end
+
+
+function TrapAgent:playEffect()
+    if self._trapActor then
+        self._trapActor:playEffect(self._trapData:getSkillId())
+    end
+end
+
+function TrapAgent:getActor()
+    return self._trapActor
+end
+
+function TrapAgent:getActors()
+    return self._trapActors
+end
+
+function TrapAgent:onAttack()
+	-- self._trapActor:onAttack()
+end
+
+function TrapAgent:getTrapData()
+    return self._trapData
+end
+
+function TrapAgent:getObjId()
+    return self:getTrapData():getObjId()
+end
+
+function TrapAgent:isTrapTop()
+    if not self._trapActor then
+       return false 
+    end
+    self._trapActor:isTrapTop()
+end
+
+function TrapAgent:isTrapBottom()
+    if not self._trapActor then
+       return false 
+    end
+    self._trapActor:isTrapBottom()
+end
+
+-- function TrapAgent:showMercyGroundEffect(value)
+--     if not self._trapData or not self._trapActor then
+--         return
+--     end
+--     self._trapData:setGroundIndex(value)
+--     self._trapActor:playEffect(self._trapData:getSkillId(),self._trapData:getSkillLevel())
+-- end
+
+function TrapAgent:getCmdSystem()
+    return self._cmdSystem
+end
+
+function TrapAgent:handleCmd(cmd)
+    if cmd:getCmdId() == Constant.CmdId.CMD_MOVE then
+        self:move(cmd:getMoveType(), cmd:getDirection(), cmd:getMNext(), cmd:getNNext())
+    elseif cmd:getCmdId() == Constant.CmdId.CMD_IDLE then
+        self:idle()
+    end
+end
+
+function TrapAgent:move(moveType, direction, mNext, nNext)
+    self:changeState(lt.TrapStateMove.new(self, moveType, direction, mNext, nNext))
+end
+
+function TrapAgent:idle()
+    self:changeState(lt.TrapStateIdle.new(self))
+end
+
+function TrapAgent:changeState(newState)
+    if not self._stateMachine then
+       return 
+    end
+    self._stateMachine:changeState(newState)
+end
+
+function TrapAgent:getMoveSpeed()
+    return self._trapData:getMoveSpeed()
+end
+
+return TrapAgent

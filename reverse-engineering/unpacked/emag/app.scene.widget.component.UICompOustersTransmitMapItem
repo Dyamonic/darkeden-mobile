@@ -1,0 +1,71 @@
+---@class UICompOustersTransmitMapItem 魔族传送cell
+---
+local UICompOustersTransmitMapItem = class("UICompOustersTransmitMapItem", lt.UIGButtonBase)
+
+local NtfManager = lt.NtfManager
+
+function UICompOustersTransmitMapItem:ctor()
+    UICompOustersTransmitMapItem.super.ctor(self)
+    --UI
+    self._list = nil
+    self._icon = nil
+    --数据
+    self._dungeonlist = nil
+    self._mapGroup = nil
+end
+
+function UICompOustersTransmitMapItem:onClear()
+    --UI
+    self._list = nil
+    self._icon = nil
+    --数据
+    self._dungeonlist = nil
+    self._mapGroup = nil
+    UICompOustersTransmitMapItem.super.onClear(self)
+end
+
+function UICompOustersTransmitMapItem:onEnter()
+    UICompOustersTransmitMapItem.super.onEnter(self)
+    self._list:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickTargetItem))
+    self._icon:addClickListener(handler(self, self.onIconBtnClick))
+end
+
+function UICompOustersTransmitMapItem:onExit()
+    self._list:removeEventListener(fgui.UIEventType.ClickItem)
+    self._icon:removeClickListener()
+    UICompOustersTransmitMapItem.super.onExit(self)
+end
+
+function UICompOustersTransmitMapItem:onConstruct()
+    self._list = self:getChild("list")
+    self._list:setItemRenderer(handler(self, self.renderTargetItem))
+    self._icon = self:getChild("icon")
+end
+
+function UICompOustersTransmitMapItem:setObjInfo(dungeonlist, mapGroup)
+    self._dungeonlist = dungeonlist
+    self._mapGroup = mapGroup
+    self._list:setNumItems(#self._dungeonlist)
+    self._list:setSize(140, 55 * #self._dungeonlist)
+end
+
+function UICompOustersTransmitMapItem:renderTargetItem(index, obj)
+    local meta = self._dungeonlist[index + 1]
+    if index == 0 then
+        obj:getChild("title"):setText(meta)
+    else
+        obj:getChild("title"):setText(meta:getMapName())
+    end
+    obj.index = index + 1
+end
+
+function UICompOustersTransmitMapItem:onClickTargetItem(context)
+    local obj = context:getData()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSFER_MAP_SELECT, {index = self._mapGroup, isGround = obj.index == 1 and 0 or 1, mustIn = true})
+end
+
+function UICompOustersTransmitMapItem:onIconBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSFER_MAP_SELECT, {index = self._mapGroup, isGround = 0, mustIn = false})
+end
+
+return UICompOustersTransmitMapItem

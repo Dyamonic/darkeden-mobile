@@ -1,0 +1,19 @@
+local SpeedMeta = class("SpeedMeta")
+
+function SpeedMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function SpeedMeta:initWithRow(row)
+    self._speedId    = row.SpeedID
+    self._name       = row.Name
+    self._minValue   = row.MinValue
+    self._maxValue   = row.MaxValue
+end
+
+function SpeedMeta:getSpeedId() return self._speedId end
+function SpeedMeta:getName() return self._name end
+function SpeedMeta:getMinValue() return self._minValue end
+function SpeedMeta:getMaxValue() return self._maxValue end
+
+return SpeedMeta

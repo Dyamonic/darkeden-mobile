@@ -1,0 +1,49 @@
+local DungeonMeta = class("DungeonMeta")
+
+function DungeonMeta:ctor(row)
+    self:initWithRow(row)
+end
+
+function DungeonMeta:initWithRow(row)
+    self._dungeonID          = row.DungeonID
+    self._mapCode            = row.MapCode
+    self._playType           = row.PlayType
+    self._lastTime           = row.LastTime
+    self._maxEnterNum        = row.MaxEnterNum
+    self._minDomainLv        = row.MinDomainLv
+    self._maxDomainLv        = row.MaxDomainLv
+    self._minLv              = row.MinLv
+    self._maxLv              = row.MaxLv
+    self._positionX          = row.PositionX
+    self._positionY          = row.PositionY
+    self._transferByConfigId = row.TransferByConfigId
+    self._recommendLevel     = row.RecommendLevel
+    self._dungeonDescribe    = row.DungeonDescribe
+    self._pKType             = row.PKType
+    self._dungeonTarget      = row.DungeonTarget
+    self._dungeonEnvironment = row.DungeonEnvironment
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function DungeonMeta:getDungeonID() return self._dungeonID end
+function DungeonMeta:getMapCode() return self._mapCode end
+function DungeonMeta:getPlayType() return self._playType end
+function DungeonMeta:getLastTime() return self._lastTime end
+function DungeonMeta:getMaxEnterNum() return self._maxEnterNum end
+function DungeonMeta:getMinDomainLv() return self._minDomainLv end
+function DungeonMeta:getMaxDomainLv() return self._maxDomainLv end
+function DungeonMeta:getMinLv() return self._minLv end
+function DungeonMeta:getMaxLv() return self._maxLv end
+function DungeonMeta:getPositionX() return self._positionX end
+function DungeonMeta:getPositionY() return self._positionY end
+function DungeonMeta:getTransferByConfigId() return self._transferByConfigId end
+function DungeonMeta:getRecommendLevel() return self._recommendLevel end
+function DungeonMeta:getDungeonDescribe() return self._dungeonDescribe end
+function DungeonMeta:getPKType() return self._pKType end
+function DungeonMeta:getDungeonTarget() return self._dungeonTarget end
+function DungeonMeta:getDungeonEnvironment() return self._dungeonEnvironment end
+
+-- AUTO GENERATED GETTERS END
+return DungeonMeta

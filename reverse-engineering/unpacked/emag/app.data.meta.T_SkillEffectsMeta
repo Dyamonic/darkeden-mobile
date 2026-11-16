@@ -1,0 +1,197 @@
+
+local SkillEffectsMeta = class("SkillEffectsMeta")
+
+local CommonFunc = lt.CommonFunc
+
+
+function SkillEffectsMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function SkillEffectsMeta:initWithRow(row)
+    self._skillId       = row.SkillId
+
+    self._skillLevel    = row.SkillLevel
+    self._levelTable = {}
+    if type(self._skillLevel) == "string" and #self._skillLevel > 0 then
+        local arr = string.split(self._skillLevel, ",")
+        self._minLevel = tonumber(arr[1])
+        self._maxLevel = tonumber(arr[2])
+
+        for i = self._minLevel, self._maxLevel do
+            self._levelTable[i] = true
+        end
+    end
+
+    -- 起手特效参数
+    local actionEffects = CommonFunc:analysisJsonToTable(row.ActionEffects, true)
+    local actionType    = CommonFunc:analysisJsonToTable(row.ActionType, true)
+    local actionStep    = CommonFunc:analysisJsonToTable(row.ActionStep, true)
+    local actionDelay   = CommonFunc:analysisJsonToTable(row.ActionDelay, true)
+    self._actionMap = {
+        effects   = actionEffects,        -- 特效Ids
+        approach  = row.ActionApproach,   -- 特效播放方式
+        type      = actionType,           -- 特效Ids对应特效类型
+        step      = actionStep,           -- 特效播放步长
+        delay     = actionDelay,      -- 特效播放延时
+    }
+
+    -- 过程特效参数
+    local processEffects = CommonFunc:analysisJsonToTable(row.ProcessEffects, true)
+    local processType    = CommonFunc:analysisJsonToTable(row.ProcessType, true)
+    local processStep    = CommonFunc:analysisJsonToTable(row.ProcessStep, true)
+    local processDelay   = CommonFunc:analysisJsonToTable(row.ProcessDelay, true)
+    local processSpeed   = CommonFunc:analysisJsonToTable(row.ProcessSpeed, true)
+    self._processMap = {
+        effects   = processEffects,
+        approach  = row.ProcessApproach,
+        type      = processType,
+        step      = processStep,
+        delay     = processDelay,       
+        speed     = processSpeed,           -- 子弹速度（过程特效）
+        bulletType= row.ProcessBulletType,  -- 子弹类型（过程特效）
+    }
+
+    -- 受击特效参数 
+    local selfEffects = CommonFunc:analysisJsonToTable(row.SelfEffects, true)
+    local selfType    = CommonFunc:analysisJsonToTable(row.SelfType, true)
+    local selfStep    = CommonFunc:analysisJsonToTable(row.SelfStep, true)
+    local selfNumber  = CommonFunc:analysisJsonToTable(row.SelfNumber, true)
+    local selfDelay   = CommonFunc:analysisJsonToTable(row.SelfDelay, true)
+    self._selfMap = {
+        effects       = selfEffects,
+        approach      = row.SelfApproach,
+        type          = selfType,
+        step          = selfStep,
+        delay         = selfDelay,
+        loopCount     = selfNumber,     -- 循环次数
+    }
+
+    -- 自身特效参数
+    local hitEffects = CommonFunc:analysisJsonToTable(row.HitEffects, true)
+    local hitType    = CommonFunc:analysisJsonToTable(row.HitType, true)
+    local hitStep    = CommonFunc:analysisJsonToTable(row.HitStep, true)
+    local hitNumber  = CommonFunc:analysisJsonToTable(row.HitNumber, true)
+    local hitDelay   = CommonFunc:analysisJsonToTable(row.HitDelay, true)
+    self._hitMap = {
+        effects       = hitEffects,
+        approach      = row.HitApproach,
+        type          = hitType,
+        step          = hitStep,
+        delay         = hitDelay,
+        loopCount     = hitNumber,      -- 循环次数
+    }
+    
+end
+
+function SkillEffectsMeta:getActionMetas()
+    if not self._actionMetaArr then
+        self._actionMetaArr = self:mapToEffectMetaArr(self._actionMap)
+        self._actionMap = nil
+    end
+
+    return self._actionMetaArr
+end
+
+function SkillEffectsMeta:getProcessMetas()
+    if not self._processMetaArr then
+        self._processMetaArr = self:mapToEffectMetaArr(self._processMap)
+        self._processMap = nil
+    end
+
+    return self._processMetaArr
+end
+
+function SkillEffectsMeta:getSelfMetas()
+    if not self._selfMetaArr then
+        self._selfMetaArr = self:mapToEffectMetaArr(self._selfMap)
+        self._selfMap = nil
+    end
+
+    return self._selfMetaArr
+end
+
+function SkillEffectsMeta:getHitMetas()
+    if not self.hitMeatArr then
+        self.hitMeatArr = self:mapToEffectMetaArr(self._hitMap)
+        self._hitMap = nil
+    end
+
+    return self.hitMeatArr
+end
+
+function SkillEffectsMeta:mapToEffectMetaArr(map)
+    local metaArr = {}
+    if type(map) ~= "table" then
+       return metaArr
+    end
+
+    local effects    = map.effects or {}
+    local actionType = map.type or {}
+    local step       = map.step or {}
+    local delay      = map.delay or {}
+    local speed      = map.speed or {}
+    local approach   = map.approach
+    local loopCount  = map.loopCount or {}
+    local bulletType = map.bulletType
+    local randomTime = nil
+    -- 当 approach 是随机类型的时候， 配置的loopCount第一个元素是随机次数
+    if lt.Constant.EFFECT_PLAY_TYPE.RANDOM == approach and type(loopCount) == "table" then
+        randomTime = loopCount[1]
+    end
+
+    for k,v in ipairs(effects) do
+        local effectMeta = lt.EffectMeta.new({
+            SkillId          = self._skillId,
+            OrderId          = k,
+            EffectSpriteType = v,
+            BltType          = actionType[k] or actionType[1],
+            Step             = step[k],
+            DelayFrame       = delay[k] or 0,
+            Owner            = 0,
+            Approach         = approach,
+            RandomTime       = randomTime,
+            Speed            = speed[k],
+            BulletType       = bulletType,
+            LoopCount        = loopCount[k]
+        })
+        table.insert(metaArr,effectMeta)
+    end
+
+    return metaArr
+end
+
+function SkillEffectsMeta:getMinLevel()
+    return self._minLevel
+end
+
+function SkillEffectsMeta:getMaxLevel()
+    return self._maxLevel
+end
+
+function SkillEffectsMeta:checkMetaLevel(level)
+    return self._levelTable[level]
+end
+
+-- 判断是否是子弹
+function SkillEffectsMeta:isBullet()
+    local metas = self:getProcessMetas()
+    if #metas > 0 and metas[1]:getSpeed() then
+        return true
+    end
+
+    return false
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function SkillEffectsMeta:getSkillId() return self._skillId end
+function SkillEffectsMeta:getSkillLevel() return self._skillLevel end
+function SkillEffectsMeta:getActionMap() return self._actionMap end
+function SkillEffectsMeta:getProcessMap() return self._processMap end
+function SkillEffectsMeta:getSelfMap() return self._selfMap end
+function SkillEffectsMeta:getHitMap() return self._hitMap end
+
+-- AUTO GENERATED GETTERS END
+return SkillEffectsMeta

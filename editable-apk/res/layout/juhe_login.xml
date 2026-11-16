@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:gravity="center" android:orientation="vertical" android:layout_width="match_parent" android:layout_height="match_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <LinearLayout android:orientation="vertical" android:background="#ffffffff" android:layout_width="300.0dp" android:layout_height="wrap_content">
+        <TextView android:textSize="18.0dp" android:textColor="#ffa9a9a9" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="10.0dp" android:layout_marginTop="10.0dp" android:layout_marginBottom="15.0dp" android:text="请输入:" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="44.0dp">
+            <EditText android:id="@id/login_name_editText" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_marginLeft="10.0dp" android:layout_marginRight="10.0dp" android:hint="账号" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="44.0dp">
+            <EditText android:id="@id/password_editText" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_marginLeft="10.0dp" android:layout_marginRight="10.0dp" android:hint="密码" />
+        </LinearLayout>
+        <LinearLayout android:gravity="right" android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="44.0dp" android:layout_marginTop="10.0dp">
+            <Button android:textColor="#ff5f9ea0" android:id="@id/cancel_action_btn" android:background="@android:color/transparent" android:layout_width="55.0dp" android:layout_height="wrap_content" android:text="取消" android:height="44.0dp" />
+            <Button android:textColor="#ff5f9ea0" android:id="@id/login_action_btn" android:background="@android:color/transparent" android:layout_width="55.0dp" android:layout_height="wrap_content" android:layout_marginLeft="5.0dp" android:layout_marginRight="10.0dp" android:text="登录" android:height="44.0dp" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

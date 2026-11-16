@@ -1,0 +1,28 @@
+-- @Date    : 2019-08-06 17:28:53
+-- @Author  : ZhaoCi
+-- @Desc    :
+
+local EveryDayCheckinData = class("EveryDayCheckinData")
+--[[
+    每日签到 信息
+]]
+
+table.merge(EveryDayCheckinData, {
+    _day            = nil,            -- 天数
+    _state          = nil,        -- 领取状态
+})
+
+function EveryDayCheckinData:setData(data)
+    self._day = data.day
+    self._state = data.state
+end
+
+function EveryDayCheckinData:getDay()
+    return self._day
+end
+
+function EveryDayCheckinData:getState()
+    return self._state
+end
+
+return EveryDayCheckinData

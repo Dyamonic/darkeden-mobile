@@ -1,0 +1,188 @@
+local BulletSnowEffect = class("BulletSnowEffect", lt.BulletBase)
+
+--[[
+    自天空移动到 目标位置点 并落下后加上爆炸特效
+]]
+
+local AgentManager = lt.AgentManager
+local Constant = lt.Constant
+local GameBoard = lt.GameBoard
+local CacheManager = lt.CacheManager
+local EffectEnum = lt.EffectEnum
+local EffectActor = lt.EffectActor
+local SkillEnum = lt.SkillEnum
+
+BulletSnowEffect._targetAgentId  = nil
+BulletSnowEffect._effectActor = nil
+--[[
+    startX, startY
+    endX, endY
+]]
+function BulletSnowEffect:ctor(skillId, startPos, endPos, direction, groupId)
+    BulletSnowEffect.super.ctor(self, skillId, groupId)
+
+    self._skillId = skillId
+    self._direction = direction
+
+    self._startPos = startPos
+    self._endPos = endPos
+    self:setPosition(self._startPos)
+
+    self._effectNode = display.newNode()
+    self:addChild(self._effectNode)
+    
+
+    local offsetX = -25
+    local offsetY = 15
+    self._effectNode:setPosition(offsetX, offsetY)
+    
+    self._isEndEffect = false
+    -- 移动阶段
+    self._finishFirstPhase = false 
+
+    self:playFirstEffectActor(skillId)
+end
+
+function BulletSnowEffect:onClear()
+    if self._effectActor then
+        self._effectActor:onClear()
+        self._effectActor = nil
+    end
+    
+    self:removeAllChildren()
+
+    self._isEndEffect = nil
+    self._effectNode = nil
+end
+
+function BulletSnowEffect:playFirstEffectActor(skillId)
+    -- 毒性风暴 17 下落子弹
+    local effectGeneratorId = EffectEnum.EFFECTGENERATORID_MULTIPLE_FALLING
+    if skillId == SkillEnum.MAGIC_BLOODY_SPEAR then
+        effectGeneratorId = EffectEnum.EFFECTGENERATORID_FALLING
+    elseif skillId == SkillEnum.SKILL_MAGIC_METEOR then
+        effectGeneratorId = EffectEnum.EFFECTGENERATORID_METEOR_DROP
+    end
+    
+    local actionInfoMetas = CacheManager:getSkillEffectBySkillIdAndGenerator(skillId, effectGeneratorId)
+    if not actionInfoMetas or #actionInfoMetas < 1 then
+        yflog:InfoLine(" BulletSnowEffect playFirstEffectActor the skill:%d has no skill effect meta", skillId)
+        return
+    end
+
+    local meta = actionInfoMetas[1]
+    -- 存在旋转 所以需要加上锚点
+    self._effectActor = EffectActor.new(meta, self._direction, nil, true)
+    self._effectNode:addChild(self._effectActor)
+    self._actionInfoMeta = actionInfoMetas[1]
+
+
+    self._isEndEffect = true
+end
+
+function BulletSnowEffect:playSecondEffectActor(skillId)
+    local effectGeneratorId = EffectEnum.EFFECTGENERATORID_ATTACH_CREATURE
+
+    -- 毒性风暴 7 地上爆炸
+    if skillId == SkillEnum.MAGIC_BLOODY_SPEAR or skillId == SkillEnum.SKILL_MAGIC_METEOR then
+        effectGeneratorId = EffectEnum.EFFECTGENERATORID_STOP_ZONE
+    end
+
+    local actionInfoMetas = CacheManager:getSkillEffectBySkillIdAndGenerator(skillId, effectGeneratorId)
+    if not actionInfoMetas or #actionInfoMetas < 1 then
+        yflog:InfoLine(" BulletSnowEffect playSecondEffectActor the skill:%d has no skill effect meta", skillId)
+        return
+    end
+
+    if self._effectActor then
+        self._effectActor:onClear()
+        self._effectActor = nil
+    end
+
+    if self._effectNode then
+        self._effectNode:removeAllChildren()
+    end
+
+    if skillId == SkillEnum.SKILL_MAGIC_METEOR then
+        self._effectActor = lt.EffectParallelActor.new(nil, skillId, self._direction)
+        local bulletMetas = CacheManager:getBulletMetas(skillId)
+        self._effectActor:addEffect(skillId, {bulletMetas[2], bulletMetas[3]})
+        self._effectNode:addChild(self._effectActor)
+    else
+        -- 存在旋转 所以需要加上锚点
+        self._effectActor = EffectActor.new(actionInfoMetas[1], self._direction, nil)
+        self._effectNode:addChild(self._effectActor)
+    end
+
+
+    self._actionInfoMeta = actionInfoMetas[1]
+
+    self._isEndEffect = true
+end
+
+function BulletSnowEffect:onUpdate()
+    self:onUpdateMove()
+    self:onUpdateEffect()
+end
+
+function BulletSnowEffect:onUpdateMove()
+    if self:updateFirstMove() then
+        return
+    end
+end
+
+-- 第一阶段移动
+function BulletSnowEffect:updateFirstMove()
+    if self._finishFirstPhase then
+        return false
+    end
+
+    local meta = self._actionInfoMeta
+    local offsetSpeed = meta:getBulletOffsetMoveSpeed(1)
+    local speed = Constant.MODEL_BULLET_SPEED + offsetSpeed
+
+    local step = speed * GameBoard:getDeltaTime()
+    local curX, curY = self:getPosition()
+    local endPos = self._endPos
+    local directionV = cc.pSub(endPos, cc.p(curX, curY))
+
+    if cc.pGetLength(directionV) < step then
+        self:setPosition(endPos)
+
+        self._finishFirstPhase = true
+        self._isEndEffect = false
+
+        self:playSecondEffectActor(self._skillId)
+
+        return false
+    end
+
+    directionV = cc.pMul(cc.pNormalize(directionV), step)
+    self:setPosition(curX + directionV.x, curY + directionV.y)
+
+    return true
+end
+
+function BulletSnowEffect:onEnd(isLastGroupMember)
+    self:onClear()
+end
+
+function BulletSnowEffect:onUpdateEffect()
+    if not self._isEndEffect then
+		return
+	end
+
+    if not self._effectActor then 
+        return
+    end
+
+    self._effectActor:onUpdateEffect()
+
+    if self._finishFirstPhase and self._effectActor:getEffectActorClose() then
+        self._isEndEffect = false
+        self._waitingForClear = true
+        return
+    end
+end
+
+return BulletSnowEffect

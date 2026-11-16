@@ -1,0 +1,288 @@
+---@class UICompRechargeBuy 商城购买
+---
+local UICompRechargeBuy = class("UICompRechargeBuy", lt.UICompBase, lt.UICompChangeSkin)
+local CacheManager = lt.CacheManager
+local Constant = lt.Constant
+local NtfManager = lt.NtfManager
+local RechargeModule = lt.RechargeModule
+local ItemModule = lt.ItemModule
+local GameModule = lt.GameModule
+
+function UICompRechargeBuy:ctor()
+    UICompRechargeBuy.super.ctor(self)
+    --UI
+    self._touchLayer = nil
+    self._item = nil
+    self._nameLabel = nil
+    self._descLabel = nil
+    self._timesLabel = nil
+    self._totalLabel = nil
+    self._addBtn = nil
+    self._minusBtn = nil
+    self._maxBtn = nil
+    self._buyBtn = nil
+    self._numInput = nil
+    --数据
+    self._itemMeta = nil
+    self._num = nil
+    self._maxNum = nil
+end
+
+function UICompRechargeBuy:onClear()
+    --UI
+    if self._numInput then
+        self._numInput:removeFromParent()
+        self._numInput = nil
+    end
+    self._touchLayer = nil
+    self._item = nil
+    self._nameLabel = nil
+    self._descLabel = nil
+    self._timesLabel = nil
+    self._totalLabel = nil
+    self._addBtn = nil
+    self._minusBtn = nil
+    self._maxBtn = nil
+    self._buyBtn = nil
+    self._numInput = nil
+    --数据
+    self._itemMeta = nil
+    self._num = nil
+    self._maxNum = nil
+    UICompRechargeBuy.super.onClear(self)
+end
+
+function UICompRechargeBuy:onConstruct()
+    self._touchLayer = self:getChild("touch")
+    self._item = fgui.UIPackage:createObject("Item", "Item")
+    self:getChild("itemNode"):addChild(self._item)
+    self._item:setPosition(0, 0)
+
+    self._nameLabel = self:getChild("label_name")
+    self._descLabel = self:getChild("label_desc")
+    self._timesLabel = self:getChild("label_times")
+    self._totalLabel = self:getChild("label_total")
+    
+    self._addBtn = self:getChild("btn_add")
+    self._minusBtn = self:getChild("btn_minus")
+    self._maxBtn = self:getChild("btn_max")
+    self._buyBtn = self:getChild("btn_buy")
+
+    self:initCocosInputUI()
+end
+
+function UICompRechargeBuy:onEnter()
+    UICompRechargeBuy.super.onEnter(self)
+    self._touchLayer:addEventListener(fgui.UIEventType.TouchBegin, handler(self, self.onLayerClick))
+    self._addBtn:addClickListener(handler(self, self.onAddBtnClick))
+    self._minusBtn:addClickListener(handler(self, self.onMinusBtnClick))
+    self._maxBtn:addClickListener(handler(self, self.onMaxBtnClick))
+    self._buyBtn:addClickListener(handler(self, self.onBuyBtnClick))
+    self._item:insertObjectToFactory(self:getRegClass())
+end
+function UICompRechargeBuy:onExit()
+    self._touchLayer:removeEventListener(fgui.UIEventType.TouchBegin)
+    self._addBtn:removeClickListener()
+    self._minusBtn:removeClickListener()
+    self._maxBtn:removeClickListener()
+    self._buyBtn:removeClickListener()
+    UICompRechargeBuy.super.onExit(self)
+end
+
+function UICompRechargeBuy:refreshUI(shopItemMeta)
+    self._itemMeta = shopItemMeta
+    self._nameLabel:setText(shopItemMeta:getName())
+
+    self._num = 1
+    self:refreshInfo()
+    self._quotaType = shopItemMeta:getQuotaType()
+    -- 限购次数 + vip限购次数
+    self._quotaNum = shopItemMeta:getQuotaNum() + RechargeModule:getVipQuotaNum(shopItemMeta) 
+
+    self._timesLabel:setVisible(self._quotaType ~= Constant.QUOTA_TYPE.UNLIMITE)
+    local buyTimes = RechargeModule:getShoppingData(shopItemMeta:getId()) or 0
+    local color = buyTimes < self._quotaNum and "[color=#00ff00]" or "[color=#ff0000]"
+    if self._quotaType == Constant.QUOTA_TYPE.DAY then
+        self._timesLabel:setText(GReadText.KEY_SHOPPING_TIPS7.."："..color..(self._quotaNum - buyTimes).."/"..self._quotaNum.."[/color]")
+    elseif self._quotaType == Constant.QUOTA_TYPE.WEEK then
+        self._timesLabel:setText(GReadText.KEY_SHOPPING_TIPS8.."："..color..(self._quotaNum - buyTimes).."/"..self._quotaNum.."[/color]")
+    elseif self._quotaType == Constant.QUOTA_TYPE.MONTH then
+        self._timesLabel:setText(GReadText.KEY_SHOPPING_TIPS9.."："..color..(self._quotaNum - buyTimes).."/"..self._quotaNum.."[/color]")
+    elseif self._quotaType == Constant.QUOTA_TYPE.ALWAYS then
+        self._timesLabel:setText(GReadText.KEY_SHOPPING_TIPS10.."："..color..(self._quotaNum - buyTimes).."/"..self._quotaNum.."[/color]")
+    end
+
+    --计算最大数量
+    local heroData = GameModule:getHeroData()
+    local have = 0 --self._itemMeta:getCostType() == Constant.SHOP_TYPE.POINT and heroData:getGold() or heroData:getBindGold()
+    local costType =  self._itemMeta:getCostType()
+    if costType == Constant.SHOP_TYPE.POINT then
+        have = heroData:getGold()
+    elseif costType == Constant.SHOP_TYPE.SCORE then
+        have = heroData:getBindGold()
+    elseif costType == Constant.SHOP_TYPE.JINBI then
+        have = heroData:getJinBi()
+    end
+    local cost = shopItemMeta:getCost()
+    self._maxNum = math.floor(have/cost[3])
+    if self._quotaType ~= Constant.QUOTA_TYPE.UNLIMITE then
+        if self._maxNum > self._quotaNum-buyTimes then
+            self._maxNum = self._quotaNum-buyTimes
+        end
+    end
+    if self._maxNum == 0 then self._maxNum = 1 end
+
+    local shopItem = shopItemMeta:getShopItem()
+    if shopItem[1] == Constant.ItemType.ITEM_TYPE_PROP then
+        local itemMeta = CacheManager:getItemMeta(shopItem[2])
+        self._item:setInfo(string.format("ui://Item/prop_%s", itemMeta:getIconId()))
+        self._descLabel:setText(itemMeta:getDes())
+    elseif shopItem[1] == Constant.ItemType.ITEM_TYPE_EQUIP then
+        local itemMeta = CacheManager:queryEquipMeta(shopItem[2])
+        self._item:setInfo(string.format("ui://Item/equip_%s", itemMeta:getIconId()))
+        self._descLabel:setText(itemMeta:getDes())
+    end
+    self._item:setItemNums(shopItem[3])
+    
+    --图标缩放
+    local itemSize = self._item:size()
+    local heightS = 50/itemSize.height
+    local widthS = 50/itemSize.width
+    local scale = heightS
+    if widthS < heightS then
+        scale = widthS
+    end
+    self._item:setIconScale(scale, scale)
+end
+
+function UICompRechargeBuy:onBuyBtnClick()
+    local buyTimes = RechargeModule:getShoppingData(self._itemMeta:getId()) or 0
+    if self._quotaType ~= Constant.QUOTA_TYPE.UNLIMITE and self._quotaNum - buyTimes <= 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_SHOPPING_TIPS18})
+        return
+    end
+    local cost = self._itemMeta:getCost()
+    local total = cost[3] * self._num
+    local heroData = GameModule:getHeroData()
+    local have = 0 --self._itemMeta:getCostType() == Constant.SHOP_TYPE.POINT and heroData:getGold() or heroData:getBindGold()
+    local costType =  self._itemMeta:getCostType()
+    if costType == Constant.SHOP_TYPE.POINT then
+        have = heroData:getGold()
+    elseif costType == Constant.SHOP_TYPE.SCORE then
+        have = heroData:getBindGold()
+    elseif costType == Constant.SHOP_TYPE.JINBI then
+        have = heroData:getJinBi()
+    end
+    if have < total then
+        if self._itemMeta:getCostType() == Constant.SHOP_TYPE.POINT then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {type = 2, content = GReadText.KEY_SHOPPING_TIPS16, confirmCallback = function()
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_RECHARGE_GORO)
+            end})
+        elseif costType == Constant.SHOP_TYPE.JINBI then
+             NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = "金币不足"})
+        else
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_SHOPPING_TIPS17})
+        end
+    else
+        RechargeModule:sendShoppingMallBuy(self._itemMeta, self._num)
+    end
+    self:hideSelf()
+end
+
+function UICompRechargeBuy:onLayerClick()
+    self:hideSelf()
+end
+
+function UICompRechargeBuy:hideSelf()
+    self:setVisible(false)
+end
+
+function UICompRechargeBuy:initCocosInputUI()
+    if not self._numInput then
+        self._numInput = ccui.EditBox:create(cc.size(146, 39),"", ccui.TextureResType.localType)
+        self._numInput:setAnchorPoint(cc.p(0, 0))
+        self._numInput:setPosition(cc.p(11, 3))
+        self._numInput:setFontName(lt.Constant.FONT_4)
+        self._numInput:setFontSize(26)
+        self._numInput:setReturnType(cc.KEYBOARD_RETURNTYPE_SEND)
+        self._numInput:setInputMode(cc.EDITBOX_INPUT_MODE_SINGLELINE)
+        self._numInput:setTextHorizontalAlignment(cc.TEXT_ALIGNMENT_CENTER)
+        self._numInput:registerScriptEditBoxHandler(handler(self, self.editBoxEvent))
+        self:getChild("img_input"):displayObject():addChild(self._numInput)
+    end
+end
+
+function UICompRechargeBuy:onAddBtnClick()
+    self._num = self._num + 1
+    if self._num > self._maxNum then
+        self._num = self._maxNum
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_SHOPPING_TIPS13})
+    end
+    self:refreshInfo()
+end
+
+function UICompRechargeBuy:onMinusBtnClick()
+    self._num = self._num - 1
+    if self._num < 1 then
+        self._num = 1
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_SHOPPING_TIPS12})
+    end
+    self:refreshInfo()
+end
+
+function UICompRechargeBuy:onMaxBtnClick()
+    self._num = self._maxNum
+    self:refreshInfo()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_SHOPPING_TIPS14})
+end
+
+function UICompRechargeBuy:editBoxEvent(eventType, sender)
+    if eventType == "began" then
+    elseif eventType == "ended" then
+        --过滤无效字符
+        self._num = tonumber(sender:getText())
+        if self._num == nil then
+            self._num = 1
+        else
+            --判断上下限
+            if self._num <= 0 then
+                self._num = 1
+            elseif self._num > self._maxNum then
+                self._num = self._maxNum
+            end
+        end
+        sender:setText("")
+        --刷新界面
+        self:refreshInfo()
+    elseif eventType == "changed" then
+        local str = sender:getText()
+        str = string.gsub(str, "[^0-9]", "")
+        sender:setText(str) 
+    elseif eventType == "return" then
+    end
+end
+
+function UICompRechargeBuy:refreshInfo()
+    self._numInput:setText(self._num)
+    local cost = self._itemMeta:getCost()
+    local total = cost[3] * self._num
+    local heroData = GameModule:getHeroData()
+    local have = 0
+    local costType =  self._itemMeta:getCostType()
+    local img = _GURL.GetImageCoin
+    if costType == Constant.SHOP_TYPE.POINT then
+        --点券
+        have = heroData:getGold()
+        img = _GURL.GetImagePoint
+    elseif costType == Constant.SHOP_TYPE.SCORE then
+        --积分(未开启)
+        have = heroData:getBindGold()
+    elseif costType == Constant.SHOP_TYPE.JINBI then
+        --金币
+        have = heroData:getJinBi()
+    end
+    local totalColor = total <= have and "[color=#ffff00]" or "[color=#ff0000]"
+    self._totalLabel:setText(GReadText.KEY_SHOPPING_TIPS11..img..totalColor..total.."[/color]")
+end
+
+return UICompRechargeBuy

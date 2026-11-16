@@ -1,0 +1,114 @@
+---@class CompTarget 主界面-左上角(攻击模式)
+local CompTarget = class("CompTarget", lt.UICompBase)
+
+local GameModule = lt.GameModule
+
+local FILTER_LIST = {"Race", "Party", "Guild", "All"}
+local FILTER_COLOR = {cc.c3b(182,255,120),cc.c3b(97,175,220),cc.c3b(215,177,62),cc.c3b(234,108,108)}
+
+function CompTarget:ctor(view)
+    CompTarget.super.ctor(self)
+    self._view = view
+end
+
+function CompTarget:onEnter()
+    CompTarget.super.onEnter(self)
+    self:initUI()
+    self:addAllListener()
+end
+
+function CompTarget:onClear()
+    self._chooseLabel = nil
+    self._chooseBtn = nil
+    self._touchLayer = nil
+    self._control = nil
+    CompTarget.super.onEnter(self)
+end
+
+function CompTarget:initUI()
+    self._filters = {}
+    self._chooseLabel = self._view:getChild("text_choose")
+    self._chooseBtn = self._view:getChild("btn_choose")
+    self._touchLayer = self._view:getChild("touch")
+    self._control = self._view:getController("c1")
+    self._idx = GameModule:getHeroData():getAttackMode()
+    
+    for i = 1, #FILTER_LIST - 1 do
+        self["_selectLabel"..i] = self._view:getChild("text_select"..i)
+        self["_selectImg"..i] = self._view:getChild("img_select"..i)
+    end
+    self:refreshUI()
+end
+
+function CompTarget:refreshUI()
+    local idx = 1
+    for i = 1, #FILTER_LIST do
+        if i ~= self._idx then
+            self["_selectLabel"..idx]:setText(FILTER_LIST[i])
+            self["_selectLabel"..idx]:setColor(FILTER_COLOR[i])
+            idx = idx + 1
+        else
+            self._chooseLabel:setText(FILTER_LIST[i])
+            self._chooseLabel:setColor(FILTER_COLOR[i])
+        end
+    end
+end
+
+function CompTarget:onExit()
+    CompTarget.super.onExit(self)
+    self:removeAllListener()
+end
+
+function CompTarget:addAllListener()
+    self._chooseBtn:addClickListener(handler(self, self.onChooseBtnClick))
+    self._touchLayer:addEventListener(fgui.UIEventType.TouchBegin, handler(self, self.onLayerClick))
+    for i = 1, #FILTER_LIST - 1 do
+        if self["_selectImg"..i] then
+            self["_selectImg"..i]:addClickListener(function()
+                self:selectTargetIdx(i)
+            end)
+        end
+    end
+end
+
+function CompTarget:removeAllListener()
+    self._touchLayer:removeEventListener(fgui.UIEventType.TouchBegin)
+    self._chooseBtn:removeClickListener()
+    for i = 1, #FILTER_LIST - 1 do
+        if self["_selectImg"..i] then
+            self["_selectImg"..i]:removeClickListener()
+        end
+    end
+end
+
+function CompTarget:onChooseBtnClick()
+    local idx = self._control:getSelectedIndex()
+    self._control:setSelectedIndex(idx == 0 and 1 or 0)
+end
+
+function CompTarget:onLayerClick()
+    self:hideSelf()
+end
+
+function CompTarget:hideSelf()
+    self._control:setSelectedIndex(0)
+end
+
+function CompTarget:selectTargetIdx(selectIdx)
+    local idx = 1
+    for i = 1, #FILTER_LIST do
+        if i ~= self._idx then
+            if selectIdx == idx then
+                self._idx = i
+                break
+            else
+                idx = idx + 1
+            end
+        end
+    end
+    GameModule:setAttackType(self._idx-1)
+    self:refreshUI()
+    self:hideSelf()
+end
+
+return CompTarget

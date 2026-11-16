@@ -1,0 +1,42 @@
+local ActivityGiftMeta = class("ActivityGiftMeta")
+
+function ActivityGiftMeta:ctor(row)
+    self:initWithRow(row)
+end
+
+function ActivityGiftMeta:initWithRow(row)
+    self._giftId       = row.GiftId
+    self._giftName     = row.GiftName
+    self._activityType = row.ActivityType
+    self._date         = row.Date
+    self._race         = row.Race
+    if row.FixAward == "" then
+        self._fixAward = nil
+    else
+        self._fixAward = json.decode(row.FixAward)
+    end
+    self._price        = row.Price
+    self._discount     = row.Discount
+    self._buyLimit     = row.BuyLimit
+    self._rechargeId   = row.RechargeId
+end
+
+function ActivityGiftMeta:getFixAward()
+    return self._fixAward
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function ActivityGiftMeta:getGiftId() return self._giftId end
+function ActivityGiftMeta:getGiftName() return self._giftName end
+function ActivityGiftMeta:getActivityType() return self._activityType end
+function ActivityGiftMeta:getDate() return self._date end
+function ActivityGiftMeta:getRace() return self._race end
+function ActivityGiftMeta:getPrice() return self._price end
+function ActivityGiftMeta:getDiscount() return self._discount end
+function ActivityGiftMeta:getBuyLimit() return self._buyLimit end
+function ActivityGiftMeta:getRechargeId() return self._rechargeId end
+
+-- AUTO GENERATED GETTERS END
+return ActivityGiftMeta

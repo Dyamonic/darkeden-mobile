@@ -1,0 +1,19 @@
+local BuffInvisibleFade = class("BuffInvisibleFade", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+
+--[[
+    隐身淡入效果
+]]
+function BuffInvisibleFade:ctor(time, actor, skilllevel)    
+    BuffInvisibleFade.super.ctor(self, BuffEnum.EFFECT_CLASS_FADE_OUT, time, actor)
+    actor:getCreature():setInvisible()
+end
+
+function BuffInvisibleFade:onClear()
+    -- self._actor:visibleFade(nil)
+
+    BuffInvisibleFade.super.onClear(self)
+end
+
+return BuffInvisibleFade

@@ -1,0 +1,12 @@
+---@class CompQuickBar 快捷栏
+local CompQuickBar2 = class("CompQuickBar2", lt.CompQuickBar)
+
+local Constant = lt.Constant
+
+function CompQuickBar2:ctor()
+    CompQuickBar2.super.ctor(self)
+
+    self._curType = Constant.BeltBarType.Inventory
+end
+
+return CompQuickBar2

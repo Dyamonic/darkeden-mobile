@@ -1,0 +1,802 @@
+---@class CompSkillOperateItem 技能轮盘组件
+local CompSkillOperateItem = class("CompSkillOperateItem", lt.UIGButtonBase, lt.UICompChangeSkin)
+local Constant = lt.Constant
+local Operate = Constant.SkillOperate
+local SkillModule = lt.SkillModule
+local BuffEnum = lt.BuffEnum
+local CacheManager = lt.CacheManager
+local AutoFightManager = lt.AutoFightManager
+local SkillEnum = lt.SkillEnum
+local ItemModule = lt.ItemModule
+local MapUtil = lt.MapUtil
+local NtfManager = lt.NtfManager
+local GameBoard = lt.GameBoard
+local ScheduleUtil = lt.ScheduleUtil
+
+local LONG_PRESS_TIME = 0.5
+local OPERATE_RADIUS = 80 --操作盘半径
+local EventTag = {
+    TouchBegin = 1000,
+    TouchMove = 1001,
+    TouchEnd = 1002
+}
+
+CompSkillOperateItem.ChangeSkinConf = {
+    ["Skill"] = {
+        ["bg"] = "bg_jnlp_jinengkuang01",
+        ["lightbg"] = "bg_jnlp_jinengkuang02",
+        ["select"] = "bg_jnlp_jinengkuang02",
+        ["selectTag"] = "bg_jnlp_jinengkuang02",
+        ["operate"] = {
+            ["circle"] = "bg_jnlp_jinenglunpan04",
+            ["move"] = "bg_jnlp_jinenglunpan03"
+        }
+    },
+}
+
+function CompSkillOperateItem:ctor()
+    CompSkillOperateItem.super.ctor(self)
+    self:enableComponentEvents()
+    self._skillId = nil
+    self._allCd = nil
+    self._isTransforming = false
+    self._isBattleModeUI = true
+    self._checkBeginLongTime = nil
+    self._checkMoveLongTime = nil
+    self._touchMovePixel = CacheManager:getVariableById(Constant.Variable.TouchMovePixel) or 5
+    self._moveEvent = false
+    self._releaseOpenTable = {}
+    self._parentNode = nil
+    self._skillMeta = nil
+    self._startStageXY = nil
+    self._touchId = -1
+end
+
+function CompSkillOperateItem:onConstruct()
+    self._iconCom = self:getChild('iconCom')
+    self._title = self:getChild('title')
+    self._select = self:getChild('select')
+    self._selectTag = self:getChild('selectTag')
+    self._icon = self._iconCom:getChild('icon')
+    self._isCondition = self._iconCom:getChild("isCondition")
+    self._cdBar = self._iconCom:getChild("cdBar")
+    self._cdBar:setVisible(false)
+    self._cdText = self._iconCom:getChild("cdText")
+    self._cdText:setVisible(false)
+    self._operate = self:getChild("operate")
+    self._operate:setSortingOrder(999)
+    self._movePoint = self._operate:getChild("move")
+
+    self:startSkin()
+end
+
+function CompSkillOperateItem:onClear()
+    self._skillId = nil
+    self._allCd = nil
+    self._isTransforming = nil
+    self._isBattleModeUI = nil
+    self._checkBeginLongTime = nil
+    self._checkMoveLongTime = nil
+    self._touchMovePixel = nil
+    self._moveEvent = nil
+
+    self._iconCom = nil
+    self._title = nil
+    self._select = nil
+    self._selectTag = nil
+    self._icon = nil
+    self._isCondition = nil
+    self._cdBar = nil
+    self._cdText = nil
+    self._operate = nil
+    self._movePoint = nil
+
+    self._releaseOpenTable = nil
+    self._parentNode = nil
+    self._skillMeta = nil
+    self._startStageXY = nil
+    self._registerEvent = nil
+    CompSkillOperateItem.super.onClear(self)
+end
+
+function CompSkillOperateItem:onEnter()
+    CompSkillOperateItem.super.onEnter(self)
+    if not self._operateMode then
+        yflog:Info("self._operateMode is nil, check skillId: %s", self._skillId)
+        return 
+    end
+
+    if self._operateMode > Operate.Battle then
+        self._cdBar:setVisible(false)
+        self._cdText:setVisible(false)
+        self:setTouchable(true)
+    end
+    self._allCd = nil
+
+    if self:isBattleMode() then
+        self._registerEvent = true
+        self:addEventListener(fgui.UIEventType.TouchBegin, handler(self, self.onTouchBegain), EventTag.TouchBegin);
+        self:addEventListener(fgui.UIEventType.TouchMove, handler(self, self.onTouchMove), EventTag.TouchMove);
+        self:addEventListener(fgui.UIEventType.TouchEnd, handler(self, self.onTouchEnd), EventTag.TouchEnd);
+    end
+end
+
+function CompSkillOperateItem:onExit()
+    CompSkillOperateItem.super.onExit(self)
+    self:removeEventListener(fgui.UIEventType.TouchBegin, EventTag.TouchBegin)
+    self:removeEventListener(fgui.UIEventType.TouchMove, EventTag.TouchMove)
+    self:removeEventListener(fgui.UIEventType.TouchEnd,EventTag.TouchEnd)
+    self._registerEvent = nil
+end
+
+function CompSkillOperateItem:isBattleMode()
+    return self._operateMode == Operate.Battle and self._skillId 
+end
+
+
+function CompSkillOperateItem:isMapSkillSlience()
+    local mapAgent = lt.AgentManager:getMapAgent()
+    if not mapAgent then
+        return true
+    end
+
+    return mapAgent:isMapSkillSlience()
+end
+
+function CompSkillOperateItem:onUpdate(dt)
+    self:cdTimer(dt)
+    self:checkLongPress(dt)
+    self:onLongPressUpdate()
+end
+
+function CompSkillOperateItem:cdTimer(dt)
+    if self:isBattleMode() then
+        local cd = lt.SkillCdManager:getCd(self._skillId)
+        if not self._allCd then
+            self._allCd = cd
+        end
+        self:openCd(cd, self._allCd)
+    end
+end
+
+function CompSkillOperateItem:setItemInfo(param)
+
+    local nodeInfo = param.nodeInfo
+    local iconUrl = param.url
+    local isCondition = param.isCondition
+    self._skillId = nodeInfo.skillId
+    self._operateMode = param.operateMode
+    self._parentNode = param.parent
+    self:setIconUrl(iconUrl)
+    self:setPosition(nodeInfo.x, nodeInfo.y)
+    self:setScale(nodeInfo.scale, nodeInfo.scale)
+    self:setSortingOrder(nodeInfo.zorder)
+    self:setIsCondition(isCondition)
+    
+    if self._skillId == SkillEnum.SKILL_ICE_LANCE and SkillModule:hasSkill(SkillEnum.SKILL_ICE_LANCE_M) then
+        self._skillId = SkillEnum.SKILL_ICE_LANCE_M
+    end
+
+    -- 初始化相关数据
+    if self._skillId then
+        self._showType = SkillModule:getSkillReleaseForm(self._skillId)
+        self._skillMeta = CacheManager:queryMetaBySkillId(self._skillId)
+
+        local shotRepeatSkill = SkillEnum.GUN_SHOT_SKILL_REPEATED_TIMES_TABLE[self._skillId]
+        self._shotRepeatSkill = shotRepeatSkill and (shotRepeatSkill == -1 or shotRepeatSkill > 1)
+        self._shotRepeatSkillCount = shotRepeatSkill
+
+        self._visibleOperators = self._skillMeta:getVisibleSkillOperator()
+        self._releaseOpenTable = self._skillMeta:getReleaseOpen()
+        if not self._registerEvent and self:isBattleMode() then
+            self._registerEvent = true
+            self:addEventListener(fgui.UIEventType.TouchBegin, handler(self, self.onTouchBegain), EventTag.TouchBegin);
+            self:addEventListener(fgui.UIEventType.TouchMove, handler(self, self.onTouchMove), EventTag.TouchMove);
+            self:addEventListener(fgui.UIEventType.TouchEnd, handler(self, self.onTouchEnd), EventTag.TouchEnd);
+        end
+    end
+end
+
+function CompSkillOperateItem:setIconUrl(url)
+    self._icon:setURL(url)
+end
+
+function CompSkillOperateItem:setNodeComVisible(isVisible)
+    self._iconCom:setVisible(isVisible)
+end
+
+function CompSkillOperateItem:setIsCondition(_isCondition)
+    self._isCondition:setVisible(not _isCondition)
+end
+function CompSkillOperateItem:isComVisible()
+    return self._iconCom:isVisible()
+end
+function CompSkillOperateItem:setComVisible(isVisible)
+    return self._iconCom:setVisible(isVisible)
+end
+
+function CompSkillOperateItem:setSelect(isVisible)
+    self._select:setVisible(isVisible)
+end
+
+function CompSkillOperateItem:setSelectTag(isVisible)
+    self._selectTag:setVisible(isVisible)
+end
+
+function CompSkillOperateItem:openCd(remainCd, allCd)
+    local isShow = remainCd and remainCd > 0
+    self._cdBar:setVisible(isShow)
+    self._cdText:setVisible(isShow)
+    if not self._isBattleModeUI then
+        self._cdBar:setVisible(false)
+        self._cdText:setVisible(false)
+    end
+
+    if not isShow then
+        return 
+    end
+    local cdAmount = remainCd / allCd
+    local cdNum = math.ceil(remainCd)
+    if remainCd < 1 and remainCd > 0 then
+        cdNum = tonumber(string.format("%.1f", remainCd))
+    end
+    self._cdText:setText(cdNum.."s")
+    self._cdBar:setFillAmount(tonumber(string.format("%.2f", cdAmount)))
+end
+
+function CompSkillOperateItem:setTransformIcon(transforming)
+    local iconId = ""
+    if not transforming then
+        iconId = SkillModule:getSkillIcon(self._skillId)
+    else
+        iconId = "default"
+    end
+    self._isBattleModeUI = not transforming
+    local url = string.format(_GURL.GetImageSkill, iconId)
+    self._icon:setURL(url)
+end
+
+----------------------------------------- touch listener -----------------------------------------
+function CompSkillOperateItem:onTouchBegain(context)
+    if (self._touchId == -1) then--First touch
+        local heroAgent = self:getHeroAgent()
+        if not heroAgent then
+            return 
+        end
+    
+        self._startSkill = false
+
+        local evt = context:getInput();
+        self._touchId = evt:getTouchId();
+
+        if not self:isReadyBeginTouch() then
+            context:captureTouch()
+            return
+        end
+
+        SkillModule:setSkillOnPress(true)
+
+        -- 烈炎剑清除连击
+   
+        heroAgent:clearLarSlashMultip()
+
+        -- 触摸时检测的条件
+        local isCanAttack, msg = SkillModule:checkSkillEventBegin(heroAgent, self._skillId)
+        if not isCanAttack then
+            if msg then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = msg})
+            end
+            context:captureTouch()
+            SkillModule:setSkillOnPress(false)
+            return
+        end
+
+        local evt = context:getInput();
+        local pt = fgui.GRoot:getInstance():globalToLocal(evt:getPosition());
+        self._operatePt = pt
+        self._startStageXY = cc.p(pt.x, pt.y);
+
+        -- 技能按钮轮盘
+        self:operateUI(heroAgent)
+
+        -- 释放技能
+        self._startSkill = true
+        self:startBeginLongPress()
+
+        context:captureTouch()
+    end
+end
+
+function CompSkillOperateItem:onTouchMove(context)
+    local heroAgent = self:getHeroAgent()
+    if not heroAgent then
+        return 
+    end
+    if not self._startSkill then
+        return
+    end
+
+    local evt = context:getInput();
+    if (self._touchId ~= -1 and evt:getTouchId() == self._touchId) then
+        local pt = fgui.GRoot:getInstance():globalToLocal(evt:getPosition());
+        self._operatePt = pt
+
+        if self._startStageXY == nil then
+            return
+        end
+        local delta = cc.pSub(pt, self._startStageXY)
+        if cc.pGetLength(delta) < tonumber(self._touchMovePixel) then 
+            return
+        end
+
+        if self._moveEvent then
+            self:refreshSkillActor(pt)
+            return
+        end
+
+        SkillModule:setLongPress(false)
+        AutoFightManager:setCanAuto(true)
+
+        self._moveEvent = true
+        self:startSkillActor(pt)
+
+        self:resetBeganLongPress()
+        self:startMoveLongPress()
+    end
+end
+
+function CompSkillOperateItem:onTouchEnd(context)
+    local heroAgent = self:getHeroAgent()
+    if not heroAgent then
+        return 
+    end
+    if not self._startSkill then
+        self._touchId = -1;
+        return
+    end
+    local evt = context:getInput();
+    if (self._touchId ~= -1 and evt:getTouchId() == self._touchId) then
+
+
+        self._operatePt = {}
+        SkillModule:setLongPress(false)
+        AutoFightManager:setCanAuto(true)
+        self._parentNode:setTouchLayerVisible(false)
+
+        local isCanAttack = SkillModule:checkCanUseSkill(self._skillId)
+        if not isCanAttack then
+            self:clear()
+            self:resetTouchEvent()
+            self._touchId = -1;
+
+            return
+        end
+
+        local pt = fgui.GRoot:getInstance():globalToLocal(evt:getPosition());
+        if not self._parentNode:checkCancelRect(pt) and not SkillModule:isLongPress() then
+            self:setSkillMN(self._skillId, pt, heroAgent)
+            if self._releaseOpenTable[3] then
+                SkillModule:useSkill(self._skillId)
+            end
+        end
+        self:clear()
+        self:resetTouchEvent()
+        self._touchId = -1;
+    end
+end
+
+function CompSkillOperateItem:checkLongPress(dt)
+    if self._beginLongPress then
+        self._beginLongPress = self._beginLongPress + dt
+        if self._beginLongPress > LONG_PRESS_TIME then
+            SkillModule:setLongPress(true)
+            AutoFightManager:setCanAuto(false)
+            self._beginLongPress = nil
+
+            self:onBeginLongPressEvent()
+        end
+    end
+
+    if self._moveLongPress then
+        self._moveLongPress = self._moveLongPress + dt
+        if self._moveLongPress > LONG_PRESS_TIME then
+            self:onMoveLongPressEvent()
+
+            self._moveLongPress = nil
+        end
+    end
+end
+
+-- began 长按
+function CompSkillOperateItem:onBeginLongPressEvent()
+    local isOpen = self._releaseOpenTable[1]
+    self:isShowRect(self._visibleOperators[3], self._visibleOperators[4], tonumber(self._showType[1]))
+    if isOpen then
+        self._doingRepeatSkill = true
+    end
+end
+function CompSkillOperateItem:onMoveLongPressEvent()
+    local isOpen = self._releaseOpenTable[2]
+    self:isShowRect(self._visibleOperators[7], self._visibleOperators[8], tonumber(self._showType[1]))
+    if isOpen then
+        self._doingRepeatSkill = true
+    end
+end
+
+-- 长按逻辑执行
+function CompSkillOperateItem:onLongPressUpdate()
+    if not self._doingRepeatSkill then
+        return
+    end
+    local heroAgent = self:getHeroAgent()
+    if not heroAgent then
+        return 
+    end
+
+    if SkillModule:isLongPress() then
+        self:refreshSkillDirection(heroAgent)
+    end
+
+    -- 在long事件的时候 已经有前置条件在begin中判断了
+    local isCanAttack = SkillModule:checkCanUseSkill(self._skillId)
+    if not isCanAttack then
+        return
+    end
+
+    self:setSkillMN(self._skillId, self._operatePt, heroAgent)
+
+    if self._shotRepeatSkill then
+        self:gunRepeatShot(self._skillId, heroAgent)
+    else
+        heroAgent:onMessage({msgId=lt.Constant.MSG_SKILL, skillId=self._skillId, mNext = GameBoard:getSkillMNext(), nNext = GameBoard:getSkillNNext()})
+    end
+end
+
+function CompSkillOperateItem:startBeginLongPress() 
+    self._beginLongPress = 0
+end
+
+function CompSkillOperateItem:resetBeganLongPress()
+    self._beginLongPress = nil
+    self._doingRepeatSkill = nil
+end
+
+function CompSkillOperateItem:startMoveLongPress()
+    self._moveLongPress = 0
+end
+
+function CompSkillOperateItem:resetMoveLongPress()
+    self._moveLongPress = nil
+    self._doingMoveRepeatSkill = nil
+end
+
+function CompSkillOperateItem:resetTouchEvent()
+    SkillModule:setSkillOnPress(false)
+    self._moveEvent = false
+    self._startSkill = false
+    self:resetBeganLongPress()
+    self:resetMoveLongPress()
+end
+----------------------------------------- touch listener -----------------------------------------
+
+function CompSkillOperateItem:clear()
+    self._operate:setVisible(false)
+
+    self:isShowRect(false,false)
+
+    self._parentNode:setCancelVisible(false)
+
+
+    -- 清除连击技能状态
+    local heroAgent = self:getHeroAgent()
+    if heroAgent then
+        heroAgent:clearShotTime()
+    end
+    
+    self._bulletNum = nil
+    self._moveEvent = false
+end
+
+function CompSkillOperateItem:setAttackRect(skillId, color)
+    local attackRect = SkillModule:getAttackRect(skillId)
+    self:addAttackRect(color, attackRect)
+end
+
+function CompSkillOperateItem:startSkillActor(pt)
+    if SkillModule:getAttackRect(self._skillId) < 1 then
+        return 
+    end
+    if not self._releaseOpenTable[2] then
+        self._parentNode:setCancelVisible(true)
+    end
+    local delta = cc.pSub(pt, self._startStageXY)
+
+    if cc.pGetLength(delta) > OPERATE_RADIUS then
+        delta = cc.pMul(cc.pNormalize(delta), OPERATE_RADIUS)
+    end
+    self._movePoint:setPosition(delta.x + OPERATE_RADIUS,  delta.y + OPERATE_RADIUS);
+    self._parentNode:setTouchLayerVisible(true)
+
+
+    local color = self._parentNode:checkCancelRect(pt) == true and cc.c3b(255, 0, 0) or cc.c3b(255, 255, 255)
+    self:setAttackRect(self._skillId, color)
+
+    self:isShowRect(self._visibleOperators[5], self._visibleOperators[6], tonumber(self._showType[1]))
+    local skillDelta = cc.pSub(pt, self._startStageXY)
+    local attackSize = SkillModule:getSkillPixelRect(self._skillId)
+    local params = {
+        color = color,
+        showType = self._showType,
+        delta = skillDelta,
+        skillId = self._skillId,
+        attackSize = attackSize,
+    }
+    self:addSkillRect(params)
+end
+
+function CompSkillOperateItem:refreshSkillActor(pt)
+    if SkillModule:getAttackRect(self._skillId) < 1 then
+        return 
+    end
+    local delta = cc.pSub(pt, self._startStageXY)
+    if cc.pGetLength(delta) > OPERATE_RADIUS then
+        delta = cc.pMul(cc.pNormalize(delta), OPERATE_RADIUS)
+    end
+    self._movePoint:setPosition(delta.x + OPERATE_RADIUS,  delta.y + OPERATE_RADIUS);
+    local skillDelta = cc.pSub(pt, self._startStageXY)
+
+    if not self._releaseOpenTable[2] then
+        local color = self._parentNode:checkCancelRect(pt) == true and cc.c3b(255, 0, 0) or cc.c3b(255, 255, 255)
+        self:setAttackRect(self._skillId, color)
+    end
+    local color = self._parentNode:checkCancelRect(pt) == true and cc.c3b(255, 0, 0) or cc.c3b(255, 255, 255)
+    local attackSize = SkillModule:getSkillPixelRect(self._skillId)
+    self:onUpdateMove(skillDelta, color, attackSize, self._showType)
+
+end
+
+-- 枪连击
+function CompSkillOperateItem:gunRepeatShot(skillId, heroAgent)
+    if not self._bulletNum then
+        self._bulletNum = SkillModule:getBulletNum(self._skillId) or 0 -- 获取子弹数量
+    end
+
+    -----------------------------------------------------------------------------
+    -- 检测到目标的距离
+    local targetAgentId = heroAgent:getTargetAgentId()
+    if targetAgentId and self._skillMeta then
+        local targetAgent = lt.AgentManager:getAgent(targetAgentId)
+        if targetAgent and not targetAgent:getIsOutOfGame() then
+            local mTarget, nTarget = targetAgent:getMNExactly()
+            if not heroAgent:_isInSkillDistance(self._skillMeta, mTarget, nTarget) and heroAgent:canMove() then
+                heroAgent:clearShotTime()
+                self._bulletNum = SkillModule:getBulletNum(self._skillId) or 0 -- 获取子弹数量
+                SkillModule:useSkill(skillId)
+                return
+            else
+                -- yflog:Info('到达可攻击目标的距离')
+            end
+        end
+    end
+
+    if heroAgent:getShotTime() == 0 then
+        heroAgent:addShotTime()
+        SkillModule:useSkill(skillId)
+        return
+    end
+
+    if heroAgent and heroAgent:isStateShot() and heroAgent:getShotTime() > 0 then
+        local targetAgent = heroAgent:getTargetAgent()
+        local mTouch = GameBoard:getSkillMNext()
+        local nTouch = GameBoard:getSkillNNext()
+        local mTarget, nTarget
+        local targetObjId
+        if mTouch and nTouch and not SkillModule:isLongPress() or not targetAgent then
+            mTarget, nTarget = mTouch, nTouch
+        else
+            mTarget, nTarget = targetAgent:getMNExactly()
+            targetObjId= targetAgent:getObjId()
+        end
+
+        -- 枪条件检查
+        local isGun = ItemModule:checkCurEquipIsGun()
+        local isGunCondition = isGun and heroAgent:getShotTime() < self._bulletNum
+
+        -- 非枪
+        local notGun = not isGun
+
+        if self._shotRepeatSkillCount == -1 and (isGunCondition or notGun) then
+            heroAgent:addShotTime()
+        end
+
+        if self._shotRepeatSkillCount > 1 then
+            if heroAgent:getShotTime() < self._shotRepeatSkillCount then
+                heroAgent:addShotTime()
+            end
+        end
+    end
+end
+
+-- 指示器UI
+function CompSkillOperateItem:operateUI(heroAgent)
+    if SkillModule:getAttackRect(self._skillId) < 1 then
+        return 
+    end
+    local isVisibleOperate = self._skillMeta:getSight()
+    self._operate:setVisible(isVisibleOperate);
+    self._parentNode:setCancelVisible(false)
+
+    self._operate:setPosition(35, 35)
+    self._movePoint:setPosition(80, 80);
+    self:isShowRect(self._visibleOperators[1], self._visibleOperators[2], tonumber(self._showType[1]))
+    self:setAttackRect(self._skillId, cc.c3b(255, 255, 255))
+
+    local initSkillDelta = heroAgent:getSkillInitDirection(self._skillId, tonumber(self._showType[1]))
+    local attackSize = SkillModule:getSkillPixelRect(self._skillId)
+    if initSkillDelta then
+        local params = {
+            color = cc.c3b(255, 255, 255),
+            showType = self._showType,
+            delta = initSkillDelta,
+            skillId = self._skillId,
+            attackSize = attackSize,
+        }
+        self:addSkillRect(params)
+    end
+end
+
+function CompSkillOperateItem:refreshSkillDirection(heroAgent)
+    local initSkillDelta = heroAgent:getSkillInitDirection(self._skillId, tonumber(self._showType[1]))
+    if initSkillDelta then
+        self:onUpdateMove(initSkillDelta)
+    end
+end
+
+-- 设置技能MN
+function CompSkillOperateItem:setSkillMN(skillId, pt, heroAgent)
+    if self._skillMeta:getTargetType() == Constant.SkillTargetType.ONE_AREA or self._skillMeta:getTargetType() == Constant.SkillTargetType.AREA then
+        local isMaxDistance = false
+       
+        local delta = cc.pSub(pt, self._startStageXY)
+        local width, height = SkillModule:getSkillOperatorSize(skillId)
+        delta.x = math.max(-width / 2, math.min(delta.x, width / 2))
+        delta.y = math.max(-height / 2, math.min(delta.y, height / 2))
+       
+
+        -- 指定方向最大范围发出弹道的技能
+        if SkillEnum.DIRECTION_MAX_SKILL_ID_TABLE[skillId] then
+            isMaxDistance = true
+        end
+        local angle = math.atan2(delta.y, delta.x)
+        local direction = heroAgent:getDirection()
+        local mHero, nHero = heroAgent:getMNExactly()
+
+        if delta.y == 0 and delta.x == 0 then
+            if SkillEnum.IS_MOVE_SKILL[skillId] then
+                local mTarget, nTarget = MapUtil:getPositionToDirectionFGUI(mHero, nHero, direction)
+                local x1, y1 = MapUtil:calcMNMid(mHero, nHero)
+                local x2, y2 = MapUtil:calcMNMid(mTarget, nTarget)
+                delta.x = x2 - x1
+                delta.y = y2 - y1
+                angle = math.atan2(delta.y, delta.x)
+                isMaxDistance = true
+            else
+                local targetAgent = heroAgent:getTargetAgentMini()
+                if targetAgent then
+                    return 
+                else
+                    local mTarget, nTarget = MapUtil:getPositionToDirection(mHero, nHero, heroAgent:getDirection())
+                    local x1, y1 = MapUtil:calcMNMid(mHero, nHero)
+                    local x2, y2 = MapUtil:calcMNMid(mTarget, nTarget)
+                    delta = cc.p(x2 - x1, y1 - y2)
+                end
+            end
+        end
+
+        if isMaxDistance then
+            local width, height = SkillModule:getSkillOperatorSize(skillId)
+            local halfWidth = width / 2
+            local halfHeight = height / 2
+            local maxDistanceX = math.abs(halfWidth / math.cos(angle))
+            local maxDistanceY = math.abs(halfHeight / math.sin(angle))
+            local maxDistance = math.min(maxDistanceX, maxDistanceY)
+            delta.x = maxDistance * math.cos(angle)
+            delta.y = maxDistance * math.sin(angle)
+        end
+
+        local heroX, heroY = heroAgent:getPosition()
+        local cocosY =  display.cy - delta.y - display.cy 
+
+        local bWorldPosition = cc.pAdd(cc.p(heroX, heroY), cc.p(delta.x, cocosY))
+
+        local mTarget, nTarget = MapUtil:calcMN(bWorldPosition.x, bWorldPosition.y)
+        GameBoard:setSkillMNext(mTarget)
+        GameBoard:setSkillNNext(nTarget)
+        heroAgent:setIsSkillIdUsed(false)
+    end
+end
+
+--- 开始点击的基础前置条件
+function CompSkillOperateItem:isReadyBeginTouch()
+
+    -- 地图屏蔽技能释放
+    if self:isMapSkillSlience() then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KET_SKILL_TIPS63})
+        return false
+    end
+
+    -- 点击中
+    if SkillModule:isSkillOnPress() then
+        return false
+    end
+    return true
+end
+
+function CompSkillOperateItem:isShowRect(isShowAttackRect, isShowSkillRect, showType)
+    local skillActor = self:getSkillActor()
+    if skillActor then
+        skillActor:isShowRect(isShowAttackRect, isShowSkillRect, showType)
+    end
+    local opacitySkillActor = self:getSkillOpacityActor()
+    if opacitySkillActor then
+        opacitySkillActor:isShowRect(isShowAttackRect, isShowSkillRect, showType)
+    end
+end
+
+function CompSkillOperateItem:addSkillRect(params)
+    local skillActor = self:getSkillActor()
+    if skillActor then
+        skillActor:addSkillRect(params)
+    end
+    local opacitySkillActor = self:getSkillOpacityActor()
+    if opacitySkillActor then
+        opacitySkillActor:addSkillRect(params)
+    end
+end
+
+function CompSkillOperateItem:onUpdateMove(skillDelta, color, attackSize, showType)
+    local skillActor = self:getSkillActor()
+    if skillActor then
+        skillActor:onUpdateMove(skillDelta, color, attackSize, showType)
+    end
+
+    local opacitySkillActor = self:getSkillOpacityActor()
+    if opacitySkillActor then
+        opacitySkillActor:onUpdateMove(skillDelta, color, attackSize, showType)
+    end
+end
+
+function CompSkillOperateItem:addAttackRect(color, attackRect)
+    local skillActor = self:getSkillActor()
+    if skillActor then
+        skillActor:addAttackRect(color, attackRect)
+    end
+    local opacitySkillActor = self:getSkillOpacityActor()
+    if opacitySkillActor then
+        opacitySkillActor:addAttackRect(color, attackRect)
+    end
+end
+
+-- heroAgent 外部被清理，每次local 获取， 不进行保存引用
+function CompSkillOperateItem:getHeroAgent()
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    if worldAgent then
+        return worldAgent:getHeroAgent()
+    end
+end
+
+function CompSkillOperateItem:getSkillActor()
+    local heroAgent = self:getHeroAgent()
+    if heroAgent then
+        return heroAgent:getActor():getSkillActor()
+    end
+end
+
+function CompSkillOperateItem:getSkillOpacityActor()
+    local heroAgent = self:getHeroAgent()
+    if heroAgent then
+        return heroAgent:getActor():getOpacitySkillActor()
+    end
+end
+
+return CompSkillOperateItem

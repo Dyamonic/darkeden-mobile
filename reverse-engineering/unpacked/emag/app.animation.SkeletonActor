@@ -1,0 +1,267 @@
+
+local SkeletonActor = class("SkeletonActor", lt.SkeletonBase)
+
+SkeletonActor._spine = nil
+
+function SkeletonActor:ctor(skeletonData)
+
+    self._skeletonData = skeletonData
+
+    self._mapFrontNodeToBone = {}
+    self._mapFrontNodeToBoneName = {}
+    self._mapBackNodeToBone = {}
+    self._mapBackNodeToBoneName = {}
+
+    self._spine = sp.SkeletonAnimation:createWithData(skeletonData)
+
+    self._actorNode = display.newNode()
+
+    self._actorBackNode = display.newNode()
+    self._actorFrontNode = display.newNode()
+
+    self:addChild(self._actorBackNode)
+    self:addChild(self._actorNode)
+    self:addChild(self._actorFrontNode)
+
+
+    self._skeletonFrontRoot = display.newNode()
+    self._skeletonBackRoot = display.newNode()
+
+    self._actorNode:addChild(self._skeletonBackRoot, -1)
+    self._actorNode:addChild(self._spine, 0)
+    self._actorNode:addChild(self._skeletonFrontRoot, 1)
+
+    SkeletonActor.super.ctor(self, skeletonData)
+
+    self._spBoneNone = cc.p(0, 0)
+
+
+    self:registerSpineEventHandler()
+end
+
+function SkeletonActor:setCallback(callback)
+    self._callback = callback
+end
+--[[
+    状态回调函数
+]]
+function SkeletonActor:registerSpineEventHandler()
+    self._spine:registerSpineEventHandler(handler(self, self.onAnimationStateEvent), sp.EventType.ANIMATION_START)
+    self._spine:registerSpineEventHandler(handler(self, self.onAnimationStateEvent), sp.EventType.ANIMATION_END)
+    self._spine:registerSpineEventHandler(handler(self, self.onAnimationStateEvent), sp.EventType.ANIMATION_COMPLETE)
+    self._spine:registerSpineEventHandler(handler(self, self.onAnimationStateEvent), sp.EventType.ANIMATION_EVENT)
+end
+
+function SkeletonActor:removeRegisterSpineEventHandler()
+    self._spine:unregisterSpineEventHandler(sp.EventType.ANIMATION_START)
+    self._spine:unregisterSpineEventHandler(sp.EventType.ANIMATION_END)
+    self._spine:unregisterSpineEventHandler(sp.EventType.ANIMATION_COMPLETE)
+    self._spine:unregisterSpineEventHandler(sp.EventType.ANIMATION_EVENT)
+end
+
+function SkeletonActor:onAnimationStateEvent(event)
+    local callback = self._callback
+    if callback then
+        callback(event)
+    end
+end
+
+function SkeletonActor:onCleanup()
+    SkeletonActor.super.onCleanup(self)
+end
+
+function SkeletonActor:onEnter()
+    SkeletonActor.super.onEnter(self)
+end
+
+function SkeletonActor:onExit()
+    SkeletonActor.super.onExit(self)
+end
+
+function SkeletonActor:playHitAnimation(name, actor)
+    if not name then return false end
+    self._mixState = name
+
+    -- return self:playAnimation(name, false, actor)
+end
+
+function SkeletonActor:playAnimation(name, loop)
+    SkeletonActor.super.playAnimation(self, name, loop)
+end
+
+function SkeletonActor:createWithData(skeletonData)
+    return SkeletonActor.new(skeletonData)
+end
+
+function SkeletonActor:attachNodeToBone(boneName, node, isBackSide, isScaleWithActor)
+    if not node then return false end
+
+    -- lt.LogUtil:debug(" node addChild to SkeletonActor 1 ", node:getEffectId())
+
+    if isBackSide then
+        if self._mapBackNodeToBone[node] then
+            lt.LogUtil:debug("SkeletonActor::attachNodeToBone node have already attached to back node! 1")
+            return false
+        end
+    else
+        if self._mapFrontNodeToBone[node] then
+             lt.LogUtil:debug("SkeletonActor::attachNodeToBone node have already attached to back node! 2")
+            return false
+        end
+    end
+
+    local bone = self:findBone(boneName) or self._spBoneNone
+
+    if isBackSide then
+        if isScaleWithActor then
+            self._skeletonBackRoot:addChild(node)
+        else
+            self._actorBackNode:addChild(node)
+        end
+        self._mapBackNodeToBone[node] = bone
+        self._mapBackNodeToBoneName[node] = boneName
+    else
+        if isScaleWithActor then
+            self._skeletonFrontRoot:addChild(node)
+        else
+            self._actorFrontNode:addChild(node);
+        end
+        self._mapFrontNodeToBone[node] = bone
+        self._mapFrontNodeToBoneName[node] = boneName
+    end
+
+    local pos = self:getBonePosition(boneName)
+    node:setPosition(pos.x, pos.y)
+
+    return true
+end
+
+function SkeletonActor:detachNodeToBone(node)
+    if not node then return false end
+
+    if self._mapFrontNodeToBone[node] then
+        self._mapFrontNodeToBone[node] = nil
+        self._mapFrontNodeToBoneName[node] = nil
+    elseif self._mapBackNodeToBone[node] then
+        self._mapBackNodeToBone[node] = nil
+        self._mapBackNodeToBoneName[node] = nil
+    else
+        return false
+    end
+    node:removeFromParent()
+    return true;
+end
+
+function SkeletonActor:detachAllFrontAndBackNode()
+    for node,_ in pairs(self._mapFrontNodeToBone) do
+        self:detachNodeToBone(node)
+    end
+    for node,_ in pairs(self._mapBackNodeToBone) do
+        self:detachNodeToBone(node)
+    end
+    self._mapFrontNodeToBone = {}
+    self._mapBackNodeToBone = {}
+end
+
+function SkeletonActor:getBonePosition(boneName)
+    if not boneName then return cc.p(0, 0) end
+    local pos = self._spine:getBonePosition(boneName)
+    return pos or cc.p(0, 0)
+end
+
+function SkeletonActor:isBoneExist(boneName)
+    if not boneName then return true end
+
+    if self:findBone(boneName) == 0 then
+        return false
+    end
+    return true
+end
+
+function SkeletonActor:findBone(boneName)
+    if not boneName then return nil end
+    return self._spine:findBone(boneName)
+end
+
+function SkeletonActor:setSkeletonScaleX(scaleX)
+    if self._spine:getScaleX() < 0 then
+        self._spine:setScaleX(-scaleX)
+    else
+        self._spine:setScaleX(scaleX)
+    end
+
+    self._skeletonBackRoot:setScaleX(scaleX)
+    self._skeletonFrontRoot:setScaleX(scaleX)
+end
+
+function SkeletonActor:setSkeletonScaleY(scaleY)
+    self._spine:setScaleY(scaleY)
+
+    self._skeletonBackRoot:setScaleY(scaleY)
+    self._skeletonFrontRoot:setScaleY(scaleY)
+end
+
+function SkeletonActor:flipActor()
+    self._actorNode:setScaleX(-1 * self._actorNode:getScaleX())
+end
+
+function SkeletonActor:fiipSpineActor()
+    self._spine:setScaleX(-1 * self._actorNode:getScaleX())
+end
+
+-- *****************  mix  ****************
+function SkeletonActor:isHitAnimationPlaying()
+    return self._enableMix
+end
+
+function SkeletonActor:stopHitAnimation(trackIndex)
+    if self._enableMix == false then return end
+
+    self:clearTrack(trackIndex)
+    self._enableMix = false
+end
+
+
+function SkeletonActor:resetSkeletonWithAnimation(trackIndex, name, isLoop)
+    if not name then return end
+
+    self:clearTracks()
+
+    if not self:setAnimation(trackIndex, name, isLoop) then return end
+
+    if self._enableMix then
+        self:clearTrack(trackIndex)
+    end
+    self._enableMix = false
+end
+
+
+function SkeletonActor:resetActorWithAnimation(name, isLoop)
+    self:resetSkeletonWithAnimation(0, name, isLoop)
+end
+
+-- =============== replace
+function SkeletonActor:replaceSlotWithSkeletonAnimation(node, sourceBoneName, destBoneName, animation)
+    self:replaceSlotWithSkeletonAnimation2(node, sourceBoneName, destBoneName, animation, 0, 0, 1, 0, false, cc.c4b())
+end
+
+function SkeletonActor:replaceSlotWithSkeletonAnimation2(node, sourceBoneName, destBoneName, animation, offsetX, offsetY, scale, rotation, hsiEnable, color2)
+    self:replaceSlotWithSkeletonAnimation3(node, sourceBoneName, destBoneName, animation, offsetX, offsetY, scale, rotation, hsiEnable, color2, false)
+end
+
+function SkeletonActor:replaceSlotWithSkeletonAnimation3(node, sourceBoneName, destBoneName, animation, offsetX, offsetY, scale, rotation, hsiEnable, color2, drawOriginal)
+    if not node or not sourceBoneName or not destBoneName or not animation then
+        return
+    end
+
+end
+
+
+
+return SkeletonActor
+
+
+
+
+
+

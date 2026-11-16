@@ -1,0 +1,34 @@
+local TransferPointMeta = class("TransferPointMeta")
+
+local CommonFunc = lt.CommonFunc
+
+
+function TransferPointMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function TransferPointMeta:initWithRow(row)
+    self._transferId    = row.TransferId
+    self._raceType      = row.RaceType
+    self._transfeName   = row.TransfeName
+    self._mapId         = row.MapId
+    self._mapResId      = row.MapResId
+    self._transferPoint = row.TransferPoint
+    self._transferPointConvert = CommonFunc:analysisJsonToTable(self._transferPoint, true)
+end
+
+function TransferPointMeta:getTransferPoint()
+    return self._transferPointConvert
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function TransferPointMeta:getTransferId() return self._transferId end
+function TransferPointMeta:getRaceType() return self._raceType end
+function TransferPointMeta:getTransfeName() return self._transfeName end
+function TransferPointMeta:getMapId() return self._mapId end
+function TransferPointMeta:getMapResId() return self._mapResId end
+
+-- AUTO GENERATED GETTERS END
+return TransferPointMeta

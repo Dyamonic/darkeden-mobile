@@ -1,0 +1,56 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.yofijoy.tzlyby'
+    compileSdk 37
+
+    defaultConfig {
+        applicationId 'com.yofijoy.tzlyby'
+        minSdk 24
+        targetSdk 30
+        versionCode 3
+        versionName '1.0.3'
+    }
+
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
+    // Keep the APKTool-decoded sources as the single editable copy. The Smali
+    // folders are attached for browsing in Android Studio but are not Java input.
+    sourceSets {
+        main {
+            manifest.srcFile '../../editable-apk/AndroidManifest.xml'
+            java.srcDirs = [
+                '../../editable-apk/smali',
+                '../../editable-apk/smali_classes2',
+                '../../editable-apk/smali_classes3'
+            ]
+            res.srcDirs = ['../../editable-apk/res']
+            assets.srcDirs = ['../../editable-apk/assets']
+        }
+    }
+}
+
+// Use Apktool to rebuild the original app, preserving its three DEX files.
+// Standard Gradle APK packaging cannot compile Smali into the original DEX.
+tasks.register('rebuildWithApktool', Exec) {
+    group = 'build'
+    description = 'Rebuild the edited APKTool project as an unsigned APK.'
+    def apktoolJar = file('../../tools/apktool_3.0.3.jar')
+    def decodedProject = file('../../editable-apk')
+    def outputApk = file("$buildDir/outputs/apk/apktool/rebuilt-unsigned.apk")
+    outputs.file(outputApk)
+    doFirst {
+        outputApk.parentFile.mkdirs()
+        if (!apktoolJar.exists()) {
+            throw new GradleException("Missing Apktool JAR: $apktoolJar")
+        }
+    }
+    commandLine 'java', '-jar', apktoolJar.absolutePath, 'b', decodedProject.absolutePath,
+            '-o', outputApk.absolutePath
+}

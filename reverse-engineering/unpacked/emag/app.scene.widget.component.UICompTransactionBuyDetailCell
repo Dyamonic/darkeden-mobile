@@ -1,0 +1,188 @@
+---@class UICompTransactionBuyDetailCell
+--- 交易行  详细版单个售卖物品结构
+local UICompTransactionBuyDetailCell          = class("UICompTransactionBuyDetailCell", lt.UIGButtonBase)
+
+local CommonFunc                              = lt.CommonFunc
+local CacheManager                            = lt.CacheManager
+local TransactionModule                       = lt.TransactionModule
+local ItemModule                              = lt.ItemModule
+local GameModule                              = lt.GameModule
+local TimeCounter                             = lt.TimeCounter
+local NtfManager                              = lt.NtfManager
+local Constant                                = lt.Constant
+
+UICompTransactionBuyDetailCell.ChangeSkinConf = {
+    ["Transaction"] = {
+        ["btn"] = "bg_pmh_djkdiban01",
+        ["bg_txt"] = "bg_pmh_wzbtmdiban02",
+    },
+}
+
+function UICompTransactionBuyDetailCell:ctor()
+    UICompTransactionBuyDetailCell.super.ctor(self)
+    --UI
+    self._btn = nil
+    self._icon = nil
+    self._lblCount = nil
+    self._lblName = nil
+    self._lblNum = nil
+    self._lblTitle = nil
+    self._lblPrice = nil
+    self._rareImg = nil
+    self._biddingImg = nil
+    self._lastImg = nil
+    self._lblLast = nil
+    self._collectBtn = nil
+    self._collectControl = nil
+    --数据
+    self._data = nil
+    self._sprite = nil
+end
+
+function UICompTransactionBuyDetailCell:onClear()
+    --UI
+    if self._btn then
+        self:removeCustomClickListener(self._btn)
+        self._btn = nil
+    end
+    if self._collectBtn then
+        self:removeCustomClickListener(self._collectBtn)
+        self._collectBtn = nil
+    end
+    self._icon = nil
+    self._lblCount = nil
+    self._lblName = nil
+    self._lblNum = nil
+    self._lblTitle = nil
+    self._lblPrice = nil
+    self._rareImg = nil
+    self._biddingImg = nil
+    self._lastImg = nil
+    self._lblLast = nil
+    self._collectControl = nil
+    --数据
+    self._data = nil
+    self._sprite = nil
+    UICompTransactionBuyDetailCell.super.onClear(self)
+end
+
+function UICompTransactionBuyDetailCell:onConstruct()
+    self._btn = self:getChild("btn")
+    self._icon = self:getChild("icon")
+    self._lblCount = self:getChild("lbl_count")
+    self._lblName = self:getChild("lbl_name")
+    self._lblNum = self:getChild("lbl_num")
+    self._lblTitle = self:getChild("lbl_title")
+    self._lblPrice = self:getChild("lbl_price")
+    self._rareImg = self:getChild("img_rare")
+    self._biddingImg = self:getChild("img_bidding")
+    --倒计时
+    self._lastImg = self:getChild("img_last")
+    self._lblLast = self:getChild("lbl_last")
+    --收藏
+    self._collectBtn = self:getChild("btn_collect")
+    self._collectControl = self:getController("c1")
+end
+
+function UICompTransactionBuyDetailCell:onEnter()
+    UICompTransactionBuyDetailCell.super.onEnter(self)
+    self._btn:addClickListener(handler(self, self.onBtnClick))
+    self._collectBtn:addClickListener(handler(self, self.onCollectBtnClick))
+end
+
+function UICompTransactionBuyDetailCell:onExit()
+    self:removeCustomClickListener(self._btn)
+    self:removeCustomClickListener(self._collectBtn)
+    UICompTransactionBuyDetailCell.super.onExit(self)
+end
+
+function UICompTransactionBuyDetailCell:setObjInfo(data, hadPrice)
+    self._data = data
+    local cofingId = data.cofingId
+    local itemMeta = nil
+    local sid = nil
+    local itemType = nil
+
+    if self._sprite then
+        self._sprite:removeFromParent()
+        self._sprite = nil
+    end
+
+    if cofingId then
+        local meta = CacheManager:getTransactionsById(cofingId)
+        sid = meta:getItemId()
+        itemType = meta:getType()
+        itemMeta = CacheManager:getItemMeta(sid)
+        self._icon:setURL(string.format("ui://Item/prop_%s", itemMeta and itemMeta:getIconId() or ""))
+        self._icon:setVisible(true)
+    else
+        local itemInfo = ItemModule:getItemDataByProperty(data.objProperty)
+        itemMeta = itemInfo:getItemMeta()
+        sid = itemInfo:getItemId()
+        itemType = itemInfo:getItemType()
+        self._icon:setURL(string.format("ui://Item/equip_%s", itemMeta and itemMeta:getIconId() or ""))
+        self._icon:setVisible(false)
+
+        local iconId = itemMeta:getIconId()
+        if iconId then
+            local affixId = itemInfo:getFirstAffixId() or 0
+            local affixLevel = itemInfo:getFirstAffixLevel() or 0
+            local sprite = lt.CommonFunc.createEquipById(iconId, affixId, affixLevel)
+            self:displayObject():addChild(sprite)
+            local pos = self._icon:getPosition()
+            sprite:setPosition(pos.x, pos.y)
+            self._sprite = sprite
+        end
+    end
+
+    --缩放尺寸
+    local itemSize = self._icon:getSize()
+    local heightS = 50 / itemSize.height
+    local widthS = 50 / itemSize.width
+    local scale = heightS
+    if widthS < heightS then
+        scale = widthS
+    end
+    self._icon:setScale(scale, scale)
+    if self._sprite then
+        self._sprite:setScale(scale)
+    end
+    self._lblName:setText(itemMeta and itemMeta:getName() or "")
+    self._lblCount:setText(data.itemNum)
+    local isBidding = data.IsBidding and data.IsBidding == 1
+    self._lblTitle:setText(isBidding and GReadText.KEY_TRANSACTION_TIPS7 or GReadText.KEY_TRANSACTION_TIPS6)
+    self._lblPrice:setText((isBidding and data.curBiddingPrice or data.sellPrice) .. GReadText.KEY_SHOPPING_TIPS1)
+    local meta = TransactionModule:getTransactionDataByItemIdAndType(sid, itemType)
+    self._rareImg:setVisible(meta:getAnnounce() == 1)
+    local playerId = GameModule:getHeroData():getPlayerId()
+    local myBidding = (tostring(playerId) == data.curBiddingPlayerId)
+    self._biddingImg:setVisible(myBidding)
+    if hadPrice == 1 then
+        self._collectBtn:setVisible(not myBidding)
+    else
+        self._collectBtn:setVisible(false)
+    end
+
+    --倒计时
+    self._lastImg:setVisible(isBidding)
+    self._lblLast:setVisible(isBidding)
+    if isBidding then
+        local serverTime = TimeCounter:serverTime()
+        local lastSeconds = data.downTimeStamp - serverTime
+        self._lblLast:setVisible(not (lastSeconds <= 0))
+        self._lblLast:setText(CommonFunc:secondsToTime4(lastSeconds))
+        self._collectControl:setSelectedIndex(TransactionModule:getIsCollectByUid(data.itemUniqueId) and 1 or 0)
+    end
+end
+
+function UICompTransactionBuyDetailCell:onCollectBtnClick(context)
+    local mark = self._collectControl:getSelectedIndex() == 0 and 1 or 0
+    TransactionModule:sendMarkReq(self._data.itemUniqueId, mark)
+    self._collectControl:setSelectedIndex(mark)
+end
+
+function UICompTransactionBuyDetailCell:onBtnClick(context)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_TRANSACTION_SHOW_DETAIL, { index = self.index })
+end
+
+return UICompTransactionBuyDetailCell

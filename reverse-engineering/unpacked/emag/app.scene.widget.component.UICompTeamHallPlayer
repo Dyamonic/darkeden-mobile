@@ -1,0 +1,61 @@
+---@class UICompTeamHallPlayer
+---
+local UICompTeamHallPlayer = class("UICompTeamHallPlayer",lt.UICompBase, lt.UICompChangeSkin)
+
+UICompTeamHallPlayer.ChangeSkinConf = {
+    ["Team"] = {
+        ["loader_frame"] = "bg_zuduixitong_touxiangkuang",
+    },
+}
+
+function UICompTeamHallPlayer:ctor()
+    UICompTeamHallPlayer.super.ctor(self)
+    --UI
+    self._starImg = nil
+    self._diImg = nil
+    self._emptyLabel = nil
+    self._jobLoader = nil
+    self._lvLabel = nil
+end
+
+function UICompTeamHallPlayer:onClear()
+    --UI
+    self._starImg = nil
+    self._diImg = nil
+    self._emptyLabel = nil
+    self._jobLoader = nil
+    self._lvLabel = nil
+    UICompTeamHallPlayer.super.onClear(self)
+end
+
+function UICompTeamHallPlayer:onConstruct()
+    self:startSkin()
+    self._starImg = self:getChild("img_star")
+    self._diImg = self:getChild("loader_di")
+    self._emptyLabel = self:getChild("label_empty")
+    self._jobLoader = self:getChild("loader_job")
+    self._lvLabel = self:getChild("label_lv")
+end
+
+function UICompTeamHallPlayer:setInfo(playerInfo, isLeader)
+    if playerInfo then
+        self._starImg:setVisible(isLeader)
+        local isAdvanve = playerInfo.advanceState
+        if isAdvanve == lt.Constant.AdvState.NotAdv then
+            local level = playerInfo.level or 0
+            self._lvLabel:setText("Lv."..level)
+        else
+            local level = playerInfo.advanceLv or 1
+            self._lvLabel:setText("Av."..level)
+        end
+        self._jobLoader:setURL(string.format(_GURL.GetImageJob, playerInfo.iconId))
+    else
+        self._starImg:setVisible(false)
+    end
+    self._diImg:setVisible(playerInfo == nil)
+    self._emptyLabel:setVisible(playerInfo == nil)
+    self._jobLoader:setVisible(playerInfo ~= nil)
+    self._lvLabel:setVisible(playerInfo ~= nil)
+end
+
+return UICompTeamHallPlayer

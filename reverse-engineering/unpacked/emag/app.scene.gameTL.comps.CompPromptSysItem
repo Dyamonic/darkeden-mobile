@@ -1,0 +1,59 @@
+---@class CompPromptSysItem 提示小组件
+local CompPromptSysItem = class("CompPromptSysItem", lt.UIGButtonBase, lt.UICompChangeSkin)
+local Constant = lt.Constant
+local SkeletonManager = lt.SkeletonManager
+local GameModule = lt.GameModule
+
+function CompPromptSysItem:ctor()
+    CompPromptSysItem.super.ctor(self)
+    self._race = GameModule:getHeroRace()
+    self._effect = nil 
+    self._promptInfo = nil
+end
+   
+function CompPromptSysItem:onConstruct()
+    local comClip = self:getChild("comClip")
+    self._icon = comClip:getChild("icon")
+    self._bg = self:getChild("bg")
+    --特效
+    if not self._effect then
+        self._effect = SkeletonManager:createSkeletonEffectWithFile("XuanZhuanEffect", "xuanzhuan_skeleton")
+        self:getChild("n10"):displayObject():addChild(self._effect)
+    end
+    self._effect:setAnimation(0, "xuanzhuan", true)
+end
+
+function CompPromptSysItem:onClear()
+    self._icon = nil
+    self._bagType = nil
+    self._effect = nil
+    self._promptInfo = nil
+end
+
+function CompPromptSysItem:onEnter()
+    self:addClickListener(handler(self, self.onClick))
+end
+function CompPromptSysItem:onExit()
+    self:removeClickListener()
+end
+
+function CompPromptSysItem:onClick()
+    local touchFunc = self._promptInfo.touchFunc
+    if type(touchFunc) == "function" then
+        touchFunc()
+    else
+        yflog:Info("touchFunc is nil")
+    end
+end
+
+function CompPromptSysItem:setPromptSysInfo(promptInfo)
+    self._promptInfo = promptInfo
+    local iconUrl = self._promptInfo.icon
+    if iconUrl then
+        self._icon:setURL(iconUrl)
+    end
+    local raceStr = (Constant.RaceSkinRes[self._race] or "_o")
+    self._bg:setURL(string.format(_GURL.GetImageMain, "bg_zjm_msgkuang" .. raceStr))
+end
+
+return CompPromptSysItem

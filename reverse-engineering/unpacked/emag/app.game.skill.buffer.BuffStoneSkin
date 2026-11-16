@@ -1,0 +1,40 @@
+local BuffStoneSkin = class("BuffStoneSkin", lt.BufferBase)
+local BuffEnum = lt.BuffEnum
+local SkillEnum = lt.SkillEnum
+local Constant = lt.Constant
+local CacheManager = lt.CacheManager
+--[[
+    石之肌肤
+]]
+function BuffStoneSkin:ctor(time, actor, skilllevel)    
+    BuffStoneSkin.super.ctor(self, BuffEnum.EFFECT_CLASS_TRAPPED, time, actor)
+    self._skillId = SkillEnum.SKILL_STONE_SKIN
+    -- 播放特效 1为目标对象
+    local effectName = Constant.EFFECT.SELF
+    local skillMeta = CacheManager:getSkillEffectByIdLv(self._skillId)
+    if not skillMeta then
+        yflog:Info("SKill Config not found --->>> self._skillId = %s   skillLevel = %s", self._skillId)
+        return
+    end
+
+    local effectName = Constant.EFFECT.SELF
+    local targetAgentId = actor:getAgent():getAgentId()
+    local key = table.concat({"get" , effectName or "" , "Metas"})
+    local metas = {}
+    if type(skillMeta[key]) == "function" then
+        metas = skillMeta[key](skillMeta)
+    end
+
+    local leftMetas = {metas[1], metas[3]}
+    local rightMetas = {metas[2], metas[4]}
+    actor:playSoleQueueSpecail(self._skillId, leftMetas)
+    actor:playQueueEffectSpecial(self._skillId, rightMetas)
+end
+
+
+function BuffStoneSkin:onClear()
+    self._actor:stopQueueEffect(self._skillId)
+    BuffStoneSkin.super.onClear(self)
+end
+
+return BuffStoneSkin

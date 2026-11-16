@@ -1,0 +1,24 @@
+local NormalGoodsDao = {}
+
+function NormalGoodsDao:query(itemId)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM NormalGoods WHERE ItemId=%d;", tonumber(itemId))) do
+    	local meta = lt.NormalGoodsMeta.new(row)
+        return meta
+    end
+end
+
+function NormalGoodsDao:queryAll()
+    local normalMap = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM NormalGoods") do
+        local meta = lt.NormalGoodsMeta.new(row)
+        if not normalMap[meta:getShopType()] then
+            normalMap[meta:getShopType()] = {}
+        end
+        normalMap[meta:getShopType()][meta:getSite()] = meta
+    end
+    return normalMap
+end
+
+return NormalGoodsDao

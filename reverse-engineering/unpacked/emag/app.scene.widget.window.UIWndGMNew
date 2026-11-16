@@ -1,0 +1,301 @@
+---@class UIWndGMNew 新开发者工具
+local UIWndGMNew = class("UIWndGMNew", lt.UIWindowBase)
+local CacheManager = lt.CacheManager
+
+function UIWndGMNew:ctor(param)
+    self:registerComponent("UICompGmCmdCell")
+    UIWndGMNew.super.ctor(self, param)
+    self._type                  = nil
+    self._curClassMeta          = nil
+    self._curMapMeta            = nil
+    self._curListMeta           = nil
+    self._gmCmdEquipTableFilter = {}
+    self._gmCmdItemTableFilter  = {}
+    self._curListIndex          = 0
+    self._curClassIndex         = 0
+end
+
+function UIWndGMNew:onHide()
+    self._typeList:removeEventListener(fgui.UIEventType.ClickItem)
+    self._classList:removeEventListener(fgui.UIEventType.ClickItem)
+    self._functionMap:removeEventListener(fgui.UIEventType.ClickItem)
+    UIWndGMNew.super.onHide(self)
+end
+
+function UIWndGMNew:onShown()
+    self._typeList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+    self._classList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickClassItem))
+    self._functionMap:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickFuncMapItem))
+end
+
+function UIWndGMNew:onClear()
+    self._typeList              = nil
+    self._classList             = nil
+    self._functionList          = nil
+    self._functionMap           = nil
+    self._type                  = nil
+    self._curClassMeta          = nil
+    self._curMapMeta            = nil
+    self._curListMeta           = nil
+    self._gmCmdEquipTableFilter = {}
+    self._gmCmdItemTableFilter  = {}
+    self:unregisterAllComponent()
+    UIWndGMNew.super.onClear(self)
+end
+
+function UIWndGMNew:onInit()
+    UIWndGMNew.super.onInit(self, "ui://GM3/GMNew")
+    self._typeList = self:getChild("Type_List")
+    self._typeList:setItemRenderer(handler(self, self.renderListItem))
+
+    self._classList = self:getChild("Class_List")
+    self._classList:setItemRenderer(handler(self, self.renderClassItem))
+
+    self._functionList = self:getChild("Function_List")
+    self._functionList:setItemRenderer(handler(self, self.renderFuncList))
+
+    self._functionMap = self:getChild("Function_Map")
+    self._functionMap:setItemRenderer(handler(self, self.renderFuncItem))
+
+    self:initUI()
+end
+
+function UIWndGMNew:initUI()
+    local mapMeta = CacheManager:getGmCmdMap()
+    self._typeList:setNumItems(#mapMeta)
+    self._typeList:setSelectedIndex(0)
+    self:initTypeList(1)
+end
+
+function UIWndGMNew:onClickItem(context)
+    local index = self._typeList:getSelectedIndex() + 1
+    self:initTypeList(index)
+end
+
+function UIWndGMNew:renderListItem(index, obj)
+    local gmCmdMeta = CacheManager:getGmCmdMetaByType(index + 1)
+    obj:setTitle(gmCmdMeta[#gmCmdMeta]:getTypeName())
+end
+
+function UIWndGMNew:initTypeList(index)
+    local gmCmdMeta = CacheManager:getGmCmdMetaByType(index)
+    if not gmCmdMeta then
+        return
+    end
+    self._curClassMeta = gmCmdMeta
+    self._classList:setSelectedIndex(0)
+    if index == 1 then
+        self._classList:setNumItems(1)
+    else
+        self._classList:setNumItems(#gmCmdMeta)
+    end
+
+    if index == 5 then -- 地图
+        self:initFunctionMap(1)
+        self._functionList:setNumItems(0)
+        self._functionList:setVisible(false)
+        self._functionMap:setVisible(true)
+    else
+        self:initFunctionList(self._curClassMeta[1])
+        self._functionMap:setNumItems(0)
+        self._functionMap:setVisible(false)
+        self._functionList:setVisible(true)
+    end
+end
+
+function UIWndGMNew:renderClassItem(index, obj)
+    local perMeta = self._curClassMeta[index + 1]
+    if not perMeta then
+        return
+    end
+    local index = self._typeList:getSelectedIndex() + 1
+    if index == 1 then
+        obj:getChild("n5"):setText(perMeta:getTypeName())
+    else
+        obj:getChild("n5"):setText(perMeta:getClassName())
+    end
+
+    obj.classMeta = perMeta
+end
+
+function UIWndGMNew:onClickClassItem(context)
+    if self._curClassIndex == self._classList:getSelectedIndex() then
+        return
+    end
+
+    self._curClassIndex = self._classList:getSelectedIndex()
+    local typeindex = self._typeList:getSelectedIndex() + 1
+    local classIndex = self._classList:getSelectedIndex() + 1
+    local data = context:getData()
+    if not data then
+        return
+    end
+    -- yflog:Info("---------typeindex"..typeindex.."--classIndex"..classIndex)
+    if typeindex == 5 then
+        local curMapArea = 1 --地上
+        if classIndex == 2 then
+            curMapArea = 2   --副本
+        end
+        self:initFunctionMap(curMapArea)
+    elseif typeindex == 4 then
+        return
+    else
+        local classMeta = data.classMeta
+        self:initFunctionList(classMeta)
+    end
+end
+
+--[[
+	装备根据类型查询 by 种族 性别
+]]
+function UIWndGMNew:getGmCmdEquipTableFilter()
+    local tb = CacheManager:getGmCmdEquipTable()
+    local race = lt.GameModule:getHeroRace()
+    local gender = lt.GameModule:getHeroData():getSex() + 1
+    if not self._gmCmdEquipTableFilter then
+        self._gmCmdEquipTableFilter = {}
+        -- else
+        -- 	return self._gmCmdEquipTableFilter
+    end
+    for _, v in pairs(tb) do
+        local filterMap = {}
+        self._gmCmdEquipTableFilter[_] = {}
+        for kk, vv in ipairs(v or {}) do
+            local vrace = tonumber(vv:getRace())
+            local needSex = vv:getNeedSex()
+            if (vrace == 0 or vrace == race) and (needSex == 0 or needSex == gender) then
+                table.insert(filterMap, vv)
+            end
+        end
+        self._gmCmdEquipTableFilter[_] = filterMap
+    end
+    return self._gmCmdEquipTableFilter
+end
+
+--[[
+	物品根据类型查询 by 种族 性别
+]]
+function UIWndGMNew:getGmCmdItemTableFilter()
+    local tb = CacheManager:getGmCmdItemTable()
+    local race = lt.GameModule:getHeroRace()
+    if not self._gmCmdItemTableFilter then
+        self._gmCmdItemTableFilter = {}
+        -- else
+        -- 	return self._gmCmdItemTableFilter
+    end
+
+    for _, v in ipairs(tb) do
+        local filterMap = {}
+        self._gmCmdItemTableFilter[_] = {}
+        for kk, vv in ipairs(v or {}) do
+            local vrace = tonumber(vv:getRace())
+            if (vrace == 0 or vrace == race) then
+                table.insert(filterMap, vv)
+            end
+        end
+        self._gmCmdItemTableFilter[_] = filterMap
+    end
+    return self._gmCmdItemTableFilter
+end
+
+--[[
+	Gmcmd任务属性表
+]]
+function UIWndGMNew:getGmCmdMetaProp()
+    local gmCmdProp = CacheManager:getGmCmdMetaByType(1)
+    local metas = {}
+    for _, meta in ipairs(gmCmdProp) do
+        table.insert(metas, meta)
+    end
+    return metas
+end
+
+function UIWndGMNew:initFunctionList(classMeta)
+    local typeindex = self._typeList:getSelectedIndex() + 1
+    -- yflog:Info("---typeindex-"..typeindex)
+    local gmCmdMeta = nil
+    local class = classMeta:getClass()
+    local meta = nil
+
+    if typeindex == 1 then -- 大类
+        gmCmdMeta = self:getGmCmdMetaProp()
+        meta = gmCmdMeta
+    elseif typeindex == 2 then
+        gmCmdMeta = self:getGmCmdItemTableFilter()
+        meta = gmCmdMeta[class]
+    elseif typeindex == 3 then
+        gmCmdMeta = self:getGmCmdEquipTableFilter()
+        meta = gmCmdMeta[class]
+    elseif typeindex == 4 then
+        gmCmdMeta = CacheManager:getGmCmdMonsterTable()
+        meta = gmCmdMeta
+    else
+        return
+    end
+
+    self._functionList:setVirtual()
+    if meta then
+        self._curListMeta = meta
+        self._functionList:setNumItems(#meta)
+        self._functionList:scrollToView(0)
+    else
+        self._curListMeta = nil
+        self._functionList:setNumItems(0)
+    end
+end
+
+function UIWndGMNew:renderFuncList(index, obj)
+    local classIndex = self._classList:getSelectedIndex() + 1
+    local typeindex = self._typeList:getSelectedIndex() + 1
+    local curClassMeta = self._curClassMeta[classIndex] -- 小类
+    local curListMeta = self._curListMeta[index + 1]
+    obj:setInfo(curListMeta, curClassMeta, typeindex)
+    obj.listMeta = curListMeta
+    obj.index = index
+end
+
+function UIWndGMNew:initFunctionMap(curMapArea)
+    -- yflog:Info("---------initFunctionList--"..curMapArea)
+    local gmCmdMapMeta = CacheManager:getGmCmdMapTable()
+    if not gmCmdMapMeta then
+        return
+    end
+    if not gmCmdMapMeta[curMapArea] then
+        self._curMapMeta = nil
+        self._functionMap:setNumItems(0)
+    else
+        self._curMapMeta = gmCmdMapMeta[curMapArea]
+        self._functionMap:setNumItems(#gmCmdMapMeta[curMapArea])
+        self._functionMap:setSelectedIndex(0)
+    end
+end
+
+function UIWndGMNew:renderFuncItem(index, obj)
+    local perMeta = self._curMapMeta[index + 1]
+    if perMeta then
+        obj:setTitle(perMeta._mapName)
+        obj.perMeta = perMeta
+
+        local minMapResPath = string.format(_GURL.GetMiniMap, perMeta:getMinimapId())
+        obj:getChild("Map_Loader"):setURL(minMapResPath)
+    end
+end
+
+-- 地图跳转
+function UIWndGMNew:onClickFuncMapItem(context)
+    local data = context:getData()
+    local _mapCode = data.perMeta._mapCode
+    local sendman = lt.GameModule:getHeroData():getName()
+
+    local msg = "@goto " .. _mapCode .. " 0 0"
+    if msg ~= "" then
+        --  for gm
+        local gm = string.sub(msg, 1, 1)
+        if gm ~= "@" then
+            return
+        end
+        lt.ChatModule:sendGMChat(msg, 2, sendman, "")
+    end
+end
+
+return UIWndGMNew

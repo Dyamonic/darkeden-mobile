@@ -1,0 +1,21 @@
+---@class CompQuickItem 快捷道具
+local CompQuickItem = class("CompQuickItem", lt.UIGButtonBase, lt.UICompChangeSkin)
+
+CompQuickItem.ChangeSkinConf = {
+   ["Main"] = {
+        ["bg"] = "bg_yaodai_xinxikuang02",
+        ["bgdown"] = "bg_yaodai_xinxikuang03"
+   } 
+}
+
+function CompQuickItem:ctor()
+    self._miniscale = 1
+end
+
+function CompQuickItem:onConstruct()
+    -- self:enableComponentEvents()
+    -- self.bg = self:getChild("bg")
+    self:startSkin()
+end
+
+return CompQuickItem

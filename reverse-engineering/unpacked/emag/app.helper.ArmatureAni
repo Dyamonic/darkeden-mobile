@@ -1,0 +1,97 @@
+
+local ArmatureAni = class("ArmatureAni", function()
+    return display.newNode()
+end)
+
+ArmatureAni._armature = nil
+
+function ArmatureAni:ctor(armaturePath, armatureName)
+    ccs.ArmatureDataManager:getInstance():addArmatureFileInfo(armaturePath)
+
+    self:enableNodeEvents()
+
+    self._armature = ccs.Armature:create(armatureName)
+    self:addChild(self._armature)
+end
+
+function ArmatureAni:onCleanup( ... )
+    if self._armature then
+        self._armature:stopAllActions()
+        self._armature = nil
+    end
+end
+
+function ArmatureAni:play(aniName, loop, cb)
+    loop = loop and 1 or 0
+    self._armature:getAnimation():play(aniName, -1, loop)
+    self._armature:getAnimation():setMovementEventCallFunc(function(armature, movementType, movementId)
+        if movementType == ccs.MovementEventType.complete --[[or movementType == ccs.MovementEventType.loopComplete]] then
+            self:removeFromParent()
+
+            if cb then
+                cb()
+            end
+        end
+    end)
+end
+
+function ArmatureAni:playWithDelay(delay, aniName, loop, cb)
+    self._armature:setVisible(false)
+
+    self._armature:runAction(cc.Sequence:create({
+        cc.DelayTime:create(delay),
+        cc.CallFunc:create(function()
+            self._armature:setVisible(true)
+
+            loop = loop and 1 or 0
+            self._armature:getAnimation():play(aniName, -1, loop)
+            self._armature:getAnimation():setMovementEventCallFunc(function(armature, movementType, movementId)
+                if movementType == ccs.MovementEventType.complete --[[or movementType == ccs.MovementEventType.loopComplete]] then
+                    self:removeFromParent()
+        
+                    if cb then
+                        cb()
+                    end
+                end
+            end)
+        end)
+    }))
+end
+
+function ArmatureAni:playWithIndex(aniIndex, loop, stop)
+    aniIndex = aniIndex or 0
+    loop = loop and 1 or 0
+    self._armature:getAnimation():playWithIndex(aniIndex, -1, loop)
+    self._armature:getAnimation():setMovementEventCallFunc(function(armature, movementType, movementId)
+        if movementType == ccs.MovementEventType.complete --[[or movementType == ccs.MovementEventType.loopComplete]] then
+            if not stop then
+                self:removeFromParent()
+            end
+        end
+    end)
+end
+
+function ArmatureAni:playWithDelayIndex(delay, aniIndex, cb)
+    self._armature:setVisible(false)
+
+    aniIndex = aniIndex or 0
+
+    self._armature:runAction(cc.Sequence:create({
+        cc.DelayTime:create(delay),
+        cc.CallFunc:create(function()
+            self._armature:setVisible(true)
+
+            self._armature:getAnimation():playWithIndex(aniIndex, -1, 0)
+
+            self._armature:getAnimation():setMovementEventCallFunc(function(armature, movementType, movementId)
+                if movementType == ccs.MovementEventType.complete then
+                    if cb then
+                        cb()
+                    end
+                end
+            end)
+        end)
+    }))
+end
+
+return ArmatureAni

@@ -1,0 +1,314 @@
+---@魔族传送地图二级界面
+---@class UICompOustersTransmitSubMap
+local UICompOustersTransmitSubMap = class("UICompOustersTransmitSubMap", lt.UICompBase, lt.UICompChangeSkin)
+
+local NtfManager = lt.NtfManager
+local CacheManager = lt.CacheManager
+local GameModule = lt.GameModule
+local Constant = lt.Constant
+
+local PIECE_NUM = 4
+local frameWidth = 740
+local mapWidth = 370
+
+function UICompOustersTransmitSubMap:ctor()
+    UICompOustersTransmitSubMap.super.ctor(self)
+    --UI
+    self._titleLabel = nil
+    self._lvLabel = nil
+    self._mapFrame = nil
+    self._crossImg = nil
+    self._targetList = nil
+    self._btnCancel = nil
+    self._confirm = nil
+    self._touchLayer = nil
+    self._transmitBtn = nil
+    self._placeLabel = nil
+    self._posLabel = nil
+    --数据
+    self._mapList = nil
+    self._placeList = nil
+    self._transmitItemList = {}
+    self._testList = {}
+    self._mapSize = nil
+    self._mWidth = nil
+    self._nHeight = nil
+    self._idx = 0
+end
+
+function UICompOustersTransmitSubMap:onClear()
+    --UI
+    self._titleLabel = nil
+    self._lvLabel = nil
+    self._mapFrame = nil
+    self._crossImg = nil
+    self._targetList = nil
+    self._btnCancel = nil
+    self._confirm = nil
+    self._touchLayer = nil
+    self._transmitBtn = nil
+    self._placeLabel = nil
+    self._posLabel = nil
+    --数据
+    self._mapList = nil
+    self._placeList = nil
+    self._transmitItemList = nil
+    self._testList = nil
+    self._mapSize = nil
+    self._mWidth = nil
+    self._nHeight = nil
+    self._idx = nil
+    UICompOustersTransmitSubMap.super.onClear(self)
+end
+
+function UICompOustersTransmitSubMap:onEnter()
+    UICompOustersTransmitSubMap.super.onEnter(self)
+    self._btnCancel:addClickListener(handler(self, self.onCancelBtnClick))
+    self._touchLayer:addClickListener(handler(self, self.hideConfirmView))
+    self._transmitBtn:addClickListener(handler(self, self.onTransmitBtnClick))
+    self._targetList:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickTargetItem))
+end
+
+function UICompOustersTransmitSubMap:onExit()
+    self._targetList:removeEventListener(fgui.UIEventType.ClickItem)
+    self._btnCancel:removeClickListener()
+    self._touchLayer:removeClickListener()
+    self._transmitBtn:removeClickListener()
+    for k, v in pairs(self._transmitItemList) do
+        if v._clickList then
+            if v:getChild("btn_click") then
+                v:getChild("btn_click"):removeClickListener()
+            end
+        end
+        v:removeFromParent()
+    end
+    UICompOustersTransmitSubMap.super.onExit(self)
+end
+
+function UICompOustersTransmitSubMap:onConstruct()
+    self._titleLabel = self:getChild("mapName")
+    self._lvLabel = self:getChild("lvl")
+    self._mapFrame = self:getChild("mapFrame")
+    self._crossImg = self:getChild("img_cross")
+
+    self._targetList = self:getChild("targetList")
+    self._targetList:setItemRenderer(handler(self, self.renderTargetItem))
+    self._mapList = {}
+    for i = 1, PIECE_NUM do
+        local mapNode = self:getChild("map"..i)
+        table.insert(self._mapList, mapNode)
+    end
+
+    self._btnCancel = self:getChild("closeButton")
+
+    --二次确认
+    self._confirm = self:getChild("node_sure")
+    self._touchLayer = self:getChild("touchLayer")
+    self._transmitBtn = self:getChild("btn_transmit")
+    self._placeLabel = self:getChild("label_place")
+    self._posLabel = self:getChild("label_pos")
+end
+
+function UICompOustersTransmitSubMap:initUI()
+   
+end
+
+function UICompOustersTransmitSubMap:refreshView(meta, isGround)
+    local race = GameModule:getHeroRace()
+    self._titleLabel:setText(string.split(meta[1]:getMapName(), "_")[1])
+    local mapMeta = CacheManager:getMapMeta(meta[1]:getMapCode())
+    local startLvl, endLvl = mapMeta:getLvlRecommend()
+    self._lvLabel:setText(string.format("Lv%s-Lv%s",startLvl, endLvl))
+    self._crossImg:setVisible(isGround == 1)
+    self._placeList = {}
+    --清除所有传送点
+    for k, v in pairs(self._transmitItemList) do
+        if v._clickList then
+            if v:getChild("btn_click") then
+                v:getChild("btn_click"):removeClickListener()
+            end
+        end
+        v:removeFromParent()
+    end
+    -- for i = 1, #self._testList do
+    --     self._testList[i]:removeFromParent()
+    -- end
+    self._transmitItemList = {}
+    self._testList = {}
+    for i = 1, #self._mapList do
+        local pieceMeta = self:getMapMetaByIdx(meta, i, isGround)
+        if pieceMeta then
+            mapMeta = CacheManager:getMapMeta(pieceMeta:getMapCode())
+            local minMapResPath = string.format(_GURL.GetSmallMap, mapMeta:getResCode())
+            self._mapList[i]:setURL(minMapResPath)
+            local mapSize = self._mapList[i]:getSize()
+            self._mapSize = mapSize
+            local mCount = mapMeta:getWidth()
+            local nCount = mapMeta:getHeight()
+            self._mWidth = Constant.MAP_BLOCK_WIDTH * mCount
+            self._nHeight = Constant.MAP_BLOCK_HEIGHT * nCount
+            local spriteRectSize = self._mapList[i]:getContentSize()
+            if spriteRectSize.width/spriteRectSize.height == 1 then
+                self._mapFrame:setWidth(372)
+            elseif spriteRectSize.width/spriteRectSize.height == 2 then
+                self._mapFrame:setWidth(714)
+            end
+            local transferMeta = CacheManager:getTransferPointMeta(pieceMeta:getMapCode(), race)
+            for j = 1, #transferMeta do
+                table.insert(self._placeList, transferMeta[j])
+                --生成传送点
+                self:createTransmitPos(transferMeta[j], i)
+            end
+            --test
+            -- local mapTransferMeta = CacheManager:getMapTransferMeta(pieceMeta:getMapCode())
+            -- for j = 1, #mapTransferMeta do
+            --     self:createTransmitPos2(mapTransferMeta[j], i)
+            -- end
+        end
+        self._mapList[i]:setVisible(pieceMeta ~= nil)
+    end
+    self._targetList:setNumItems(#self._placeList)
+end
+
+function UICompOustersTransmitSubMap:closeView()
+    self:setVisible(false)
+end
+
+function UICompOustersTransmitSubMap:onCancelBtnClick()
+    self:closeView()
+end
+
+--根据idx获得对应meta
+function UICompOustersTransmitSubMap:getMapMetaByIdx(meta, idx, isGround)
+    for i = 1, #meta do
+        if meta[i]:getIsDungeon() == isGround and meta[i]:getMapCoord() == idx then
+            return meta[i]
+        end
+    end
+    return nil
+end
+
+function UICompOustersTransmitSubMap:renderTargetItem(index, obj)
+    local meta = self._placeList[index+1]
+    local str = meta:getTransfeName()
+    obj:getChild("title_nodilao"):setText(str)
+    obj:getChild("icon"):setURL(string.format(_GURL.GetMiniMapFGUI, "bg_ditcs_04_o")) 
+    obj.index = index + 1
+end
+
+function UICompOustersTransmitSubMap:onClickTargetItem(context)
+    local obj = context:getData()
+    local meta = self._placeList[obj.index]
+    self:refreshSelect(meta:getTransferId())
+end
+
+--刷新选中状态
+function UICompOustersTransmitSubMap:refreshSelect(transferId)
+    --锁定idx
+    local idx = 0
+    for i = 1, #self._placeList do
+        if self._placeList[i]:getTransferId() == transferId then
+            idx = i
+        end
+    end
+    if self._idx ~= 0 then
+        local childIndex = self._targetList:itemIndexToChildIndex(self._idx - 1)
+        local context = self._targetList:getChildAt(childIndex)
+        context:getChild("icon"):setURL(string.format(_GURL.GetMiniMapFGUI, "bg_ditcs_04_o"))  
+        local transferMeta = self._placeList[self._idx]
+        local item = self._transmitItemList[transferMeta:getTransferId()]
+        item:getChild("img_icon"):setURL("icon_ditcs_qizi_01_o")
+    end
+    self._idx = idx
+    local childIndex = self._targetList:itemIndexToChildIndex(self._idx - 1)
+    local newContext = self._targetList:getChildAt(childIndex)
+    newContext:getChild("icon"):setURL(string.format(_GURL.GetMiniMapFGUI, "bg_ditcs_05_o"))
+    self._targetList:scrollToView(childIndex)
+
+    local transferMeta = self._placeList[self._idx]
+    local newItem = self._transmitItemList[transferMeta:getTransferId()]
+    newItem:getChild("img_icon"):setURL(string.format(_GURL.GetMiniMapFGUI, "icon_ditcs_qizi_02_o"))
+
+    self:openConfirmView()
+end
+
+--重置界面
+function UICompOustersTransmitSubMap:resetView()
+    if self._idx ~= 0 then
+        local childIndex = self._targetList:itemIndexToChildIndex(self._idx - 1)
+        local context = self._targetList:getChildAt(childIndex)
+        context:getChild("icon"):setURL(string.format(_GURL.GetMiniMapFGUI, "bg_ditcs_04_o"))
+
+        local transferMeta = self._placeList[self._idx]
+        local item = self._transmitItemList[transferMeta:getTransferId()]
+        item:getChild("img_icon"):setURL(string.format(_GURL.GetMiniMapFGUI, "icon_ditcs_qizi_01_o"))
+    end
+    self._idx = 0
+end
+
+--生成传送点
+function UICompOustersTransmitSubMap:createTransmitPos(meta, mapIdx)
+    local pos = meta:getTransferPoint()
+    local item = fgui.UIPackage:createObject("MiniMap", "OustersTransmitItem")
+    self._transmitItemList[meta:getTransferId()] = item
+    self:getChild("transmitNode"..mapIdx):addChild(item)
+    local x, y = self:posToMiniMapPos(pos[1], pos[2], mapIdx)
+    item:setPosition(x, y)
+    item._clickList = true
+    item:getChild("btn_click"):addClickListener(function()
+        self:refreshSelect(meta:getTransferId())
+    end)
+    item:getChild("img_icon"):setURL(string.format(_GURL.GetMiniMapFGUI, "icon_ditcs_qizi_01_o"))
+end
+
+--生成传送点2
+function UICompOustersTransmitSubMap:createTransmitPos2(meta, mapIdx)
+    local item = fgui.UIPackage:createObject("MiniMap", "DungeonBig")
+    table.insert(self._testList, item)
+    self:getChild("transmitNode"..mapIdx):addChild(item)
+    local pos = meta:getLandMark()
+    local x, y = self:posToMiniMapPos(pos[2], pos[3], mapIdx)
+    item:setPosition(x, y)
+end
+
+function UICompOustersTransmitSubMap:changePos(posX, posY, mapIdx)
+    local add = 0
+    if self._mapSize.width == mapWidth then
+        add = (mapIdx == 1 or mapIdx == 3) and mapWidth/2 or -mapWidth/2
+    end
+    local y = posY
+    local x = posX + (frameWidth-self._mapSize.width)/2 + add
+    return x, y
+end
+
+--坐标转换
+function UICompOustersTransmitSubMap:posToMiniMapPos(posX, posY, mapIdx)
+    local minimapPosX = posX*Constant.MAP_BLOCK_WIDTH*self._mapSize.width/self._mWidth
+    local minimapPosY = posY*Constant.MAP_BLOCK_HEIGHT*self._mapSize.height/self._nHeight
+
+    local minimapPosX, minimapPosY = self:changePos(minimapPosX, minimapPosY, mapIdx)
+    return minimapPosX*0.463, minimapPosY*0.463
+end
+
+--显示二级确认
+function UICompOustersTransmitSubMap:openConfirmView()
+    local meta = self._placeList[self._idx]
+    self._placeLabel:setText(GReadText.KEY_TRANSMIT_MAP_TIPS1.." "..meta:getTransfeName())
+    local x, y = meta:getTransferPoint()[1], meta:getTransferPoint()[2]
+    self._posLabel:setText(string.format("X:%s   Y:%s", x, y))
+    self._confirm:setVisible(true)
+end
+
+--隐藏二级确认
+function UICompOustersTransmitSubMap:hideConfirmView()
+    self._confirm:setVisible(false)
+    self:resetView()
+end
+
+function UICompOustersTransmitSubMap:onTransmitBtnClick()
+    local meta = self._placeList[self._idx]
+    GameModule:sendTransmitMap(meta:getTransferId())
+    self:hideConfirmView()
+end
+
+return UICompOustersTransmitSubMap

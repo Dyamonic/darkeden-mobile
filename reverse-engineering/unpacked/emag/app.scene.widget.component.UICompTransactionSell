@@ -1,0 +1,326 @@
+--- 交易行 出售
+---@class UICompTransactionSell
+local UICompTransactionSell = class("UICompTransactionSell", lt.UICompBase)
+
+local NtfManager            = lt.NtfManager
+local Constant              = lt.Constant
+local CacheManager          = lt.CacheManager
+local ItemModule            = lt.ItemModule
+local TransactionModule     = lt.TransactionModule
+local ScheduleManager       = lt.ScheduleManager
+
+UICompTransactionSell.ChangeSkinConf = {
+    ["Transaction"] = {
+        ["bg"] = "bg_pmh_nk02",
+    }
+}
+
+function UICompTransactionSell:ctor()
+    self:registerComponent("UICompInventoryTiled", "UICompTransactionSellCell")
+    UICompTransactionSell.super.ctor(self)
+    --UI
+    self._lblCount = nil
+    self._listItem = nil
+    self._richRecord = nil
+    self._gridList = nil
+    self._gridPanel = nil
+    self._tiledPanel = nil
+    self._itemsPanel = nil
+    --数据
+    self._gridManger = nil
+    self._selectItem = nil
+    self._itemInfo = nil
+    self._params = nil
+    self._tiledMap = nil
+    self._tipsShow = nil
+
+    self._counter = 0
+end
+
+function UICompTransactionSell:onClear()
+    --UI
+    self._lblCount = nil
+    if self._listItem then
+        self._listItem:removeChildrenToPool()
+        self._listItem:removeItemRenderer()
+        self._listItem:removeEventListener(fgui.UIEventType.ClickItem)
+        self._listItem = nil
+    end
+    if self._richRecord then
+        self._richRecord:removeEventListener(fgui.UIEventType.ClickLink)
+        self._richRecord = nil
+    end
+    if self._cacheUpdateItems then
+        for i, v in ipairs(self._cacheUpdateItems) do
+            self._cacheUpdateItems[i] = nil
+        end
+    end
+    self._gridList   = nil
+    self._gridPanel  = nil
+    self._tiledPanel = nil
+    self._itemsPanel = nil
+    self._lblEmpty   = nil
+    --数据
+    self._gridManger = nil
+    self._selectItem = nil
+    self._itemInfo   = nil
+    self._params     = nil
+    self._tiledMap   = nil
+    self._tipsShow   = nil
+    self:unregisterAllComponent()
+    UICompTransactionSell.super.onClear(self)
+end
+
+function UICompTransactionSell:onConstruct()
+    self._lblCount = self:getChild("lbl_count")
+    self._listItem = self:getChild("list_item")
+    self._listItem:setItemRenderer(handler(self, self.itemRender))
+    self._richRecord = self:getChild("rich_record")
+    self._lblEmpty   = self:getChild("lbl_empty")
+
+    self._gridList   = self:getChild("list_bag")
+    self._gridList:setScrollItemToViewEnabled(false)
+    self._gridPanel = self._gridList:addItemFromPool()
+    self._tiledPanel = fgui.GComponent:create()
+    self._itemsPanel = fgui.GComponent:create()
+    self._gridPanel:addChild(self._tiledPanel)
+    self._gridPanel:addChild(self._itemsPanel)
+    self:initGridData()
+end
+
+function UICompTransactionSell:onEnter()
+    UICompTransactionSell.super.onEnter(self)
+    self._listItem:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+    self._richRecord:addEventListener(fgui.UIEventType.ClickLink, handler(self, self.ClickLinkRecord))
+    ScheduleManager:startTimeCounter(ScheduleManager.TC.TRANSACTION_SELL_UPDATE, {callback = handler(self, self.onUpdate)})
+end
+
+function UICompTransactionSell:onExit()
+    ScheduleManager:stopTimeCounter(ScheduleManager.TC.TRANSACTION_SELL_UPDATE)
+    if self._listItem then
+        self._listItem:removeEventListener(fgui.UIEventType.ClickItem)
+    end
+    if self._richRecord then
+        self._richRecord:removeEventListener(fgui.UIEventType.ClickLink)
+    end
+    UICompTransactionSell.super.onExit(self)
+end
+
+function UICompTransactionSell:onUpdate(tickTime, dt)
+
+    self._counter = self._counter + 1 
+    if self._counter > 2 then
+        self._counter = 0
+        local itemsChildren = self._itemsPanel:getChildren()
+        for k, child in pairs(itemsChildren) do
+            if child then
+                child:onUpdate(dt)
+            end
+        end
+    end
+end
+
+function UICompTransactionSell:initUI()
+
+end
+
+------------------------- grid -------------------------------
+function UICompTransactionSell:initGridData()
+    self._gridManger = lt.InventoryGridManger.new(Constant.TRANSACTION_SIZE.WIDTH, Constant.TRANSACTION_SIZE.HEIGHT, true)
+end
+
+------------------------- items -------------------------------
+function UICompTransactionSell:createItemUI(itemInfo, objId)
+    local item = fgui.UIPackage:createObject("Item", "Item")
+    item:insertObjectToFactory(self:getRegClass())
+    item:setPivot(0.5, 0.5, true)
+    item:setItemInfo(itemInfo, 2)
+    item:setSortingOrder(10)
+    --设置默认选中
+    if itemInfo:getObjId() == objId then
+        self._selectItem = item
+        self._itemInfo = itemInfo
+        self._selectItem:setItemSelect(true)
+    end
+    self._itemsPanel:addChild(item)
+    return item
+end
+
+---添加一个物品到格子上
+function UICompTransactionSell:addItem(pItem)
+    local gridX, gridY = pItem:getGridX(), pItem:getGridY()
+    local gridWidth = pItem:getGridWidth()
+    local gridHeight = pItem:getGridHeight()
+    local isFilter = pItem:getItemInfo():getFilter()
+    pItem:setGrayed(isFilter == 0)
+    for i = gridY, gridY + gridHeight - 1 do
+        for j = gridX, gridX + gridWidth - 1 do
+            self._gridManger:addItemToGrid(pItem, i, j)
+            if isFilter == 1 then
+                self:showTiledSelect(j, i)
+            end
+            local cellPos = self._gridManger:getCenterXY(pItem)
+            pItem:setPosition(cellPos.x, cellPos.y)
+        end
+    end
+end
+
+-------------------------tiled------------------------------
+function UICompTransactionSell:showTiledSelect(gridX, gridY)
+    if self._tiledMap and self._tiledMap[gridX .. "_" .. gridY] then
+        self._tiledMap[gridX .. "_" .. gridY]:setSelectedShow(true)
+    end
+end
+
+function UICompTransactionSell:clearTitled()
+    self._tiledPanel:removeChildren()
+    -- fgui.registerComponent(_GURL.GetCompInventoryTiled, lt.UICompInventoryTiled)
+    self._tiledMap = {}
+end
+
+function UICompTransactionSell:createTileds()
+    local width, height = self._gridManger:getGridWH()
+    --高度不足8个补足
+    if height < Constant.TRANSACTION_SIZE.HEIGHT then
+        height = Constant.TRANSACTION_SIZE.HEIGHT
+    end
+    for i = 1, height do
+        for j = 1, width do
+            local tiled = fgui.UIPackage:createObject("Inventory", "Tiled")
+            tiled:insertObjectToFactory(self)
+            tiled:setVisible(true)
+            tiled:setPivot(0.5, 0.5, true)
+            local centerPos = self._gridManger:getTiledCenterXY(j, i)
+            self._tiledPanel:addChild(tiled)
+            tiled:setPosition(centerPos.x, centerPos.y)
+            self._tiledMap[j .. "_" .. i] = tiled
+            tiled:setSelectedShow(false)
+        end
+    end
+end
+
+function UICompTransactionSell:clearAllSelectTiled()
+    for _, tiled in pairs(self._tiledMap) do
+        tiled:setSelectedShow(false)
+    end
+end
+
+function UICompTransactionSell:clear()
+    -- self._mask:setVisible(false)
+    self._gridManger:clear()
+    self._itemsPanel:removeChildren()
+    self:clearTitled()
+    self._selectItem = nil
+    self._itemInfo = nil
+    self._params = nil
+end
+
+function UICompTransactionSell:itemRender(index, obj)
+    local list = TransactionModule:getTransactionSellList()
+    obj:setObjInfo(list[index + 1])
+    obj.index = index + 1
+end
+
+function UICompTransactionSell:onClickItem(context)
+    local obj = context:getData()
+    local index = obj.index
+
+    -- TODO 请求详细信息
+end
+
+function UICompTransactionSell:refreshView()
+    self:refreshItemInfo()
+    local list = TransactionModule:getTransactionSellList()
+    local max = CacheManager:getVariableById(Constant.Variable.Number) + lt.VipModule:getVipPosition()
+    self._lblCount:setText(#list .. "/" .. max)
+    self._listItem:setNumItems(#list)
+    self._lblEmpty:setVisible(#list == 0)
+end
+
+function UICompTransactionSell:ClickLinkRecord(context)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW,
+        { class = "UIWndTransactionRecord" })
+end
+
+function UICompTransactionSell:refreshItemInfo(objId)
+    --计算数据
+    local index = Constant.TYPEFILTER.TRANSACTION
+    local info = self._itemInfo
+    local maxHeight = ItemModule:fiterTransactionItems(index, info)
+    local itemArray = ItemModule:getFiterTransactionArr()
+
+    --清理
+    self:clear()
+    --重新设置高度
+    self._gridManger:setGridHeight(maxHeight)
+    self._gridManger:clear()
+    self._gridPanel:setSize(self._gridManger:getGridSize())
+    self:createTileds()
+
+    if not itemArray then return end
+
+    for _, itemInfo in ipairs(itemArray) do
+        local item = self:createItemUI(itemInfo, objId)
+        item:setFromComponent(self)
+        item:setLongCallback(function()
+            self:showTips(itemInfo)
+        end)
+        item:setClickCallback(function()
+            self:selectEquip(item)
+        end)
+        self:addItem(item)
+    end
+end
+
+function UICompTransactionSell:selectEquip(item)
+    --刷新选中状态
+    if self._selectItem then
+        self._selectItem:setItemSelect(false)
+    end
+    self._selectItem = item
+    self._selectItem:setItemSelect(true)
+    self._itemInfo = item:getItemInfo()
+    --刷新界面
+    -- self:refreshView()
+    local itemid = self._itemInfo:getItemId()
+
+    -- 上架
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW,
+        { class = "UIWndTransactionUpTips", itemInfo = self._itemInfo })
+end
+
+function UICompTransactionSell:cancelEquipChoose(event)
+    if self._selectItem then
+        self._selectItem:setItemSelect(false)
+    end
+    self._selectItem = nil
+    self._itemInfo = nil
+end
+------------------------- tips ---------------------------------
+function UICompTransactionSell:showTips(itemInfo)
+    local itemType = itemInfo:getItemType()
+    if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+        self:showPropTips(itemInfo)
+    elseif itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+        self:showEquipTips(itemInfo)
+    end
+end
+
+function UICompTransactionSell:showPropTips(itemInfo)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS, {
+        itemInfo = itemInfo,
+        tipsType = Constant.PROPTIPS_FORM.Display
+    })
+end
+
+function UICompTransactionSell:showEquipTips(itemInfo)
+    if self._itemInfo and self._itemInfo:getObjId() ~= itemInfo:getObjId() and self._itemInfo:getMetaKind() == itemInfo:getMetaKind() and self._itemInfo:getMetaType() == itemInfo:getMetaType() then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,
+            { itemInfo = itemInfo, compareItemInfo = self._itemInfo, tipsType = Constant.EquipShowTipsType.Display })
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,
+            { itemInfo = itemInfo, tipsType = Constant.EquipShowTipsType.Display })
+    end
+end
+
+return UICompTransactionSell

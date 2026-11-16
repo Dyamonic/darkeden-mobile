@@ -1,0 +1,2977 @@
+
+local CacheManager = {}
+
+local Constant = lt.Constant
+local EffectEnum = lt.EffectEnum
+local BERSERKER_PAIRS_FRAMES = EffectEnum.BERSERKER_PAIRS_FRAMES
+local EXTREME_PAIRS_FRAMES = EffectEnum.EXTREME_PAIRS_FRAMES
+
+function CacheManager:init()
+	self._modelTable = {}
+    self._achiveTitleMap = {}
+    self._achiveMap = {}
+    self._accessMap = {}
+    self._addTipsMap = {}
+    self._helpDescribeMap = {}
+    self._expBoxMap = {}
+    self._unionMeta = {}
+    self._flyCodeTable = {}
+    self._flyTable = {}
+    self._shoppingMap = {}
+    self._mapTable = {}
+    self._monsterTable = {}
+    self._weaponAudioTable = {}
+    self._nameFirstTable = {}
+    self._nameLastTable = {}
+    self._safeAreaMap = {}
+    self._SkillRecleTable = {}
+    self._battleChangeTable = {}
+    self._skillEffectTable = {}
+    self._monsterInfoTable = {}
+    self._monsterColorTable = {}
+    self._skillMap = {}
+    self._skillRaceMap = {}
+    self._commonSkillMap = {}
+    self._skillIdSkillMap = {}
+    self._sLevelExpInfoMap = {}
+    self._LevelExpInfoMap = {}
+    self._advLevelExpInfoMap = {}
+    self._attrLevelExpInfoMap = {}
+    self._equipMap = {}
+    self._roleModelMap = {}
+    self._itemMap = {}
+    self._equipUpgradeMap = {}
+    self._enchantingAffixMap = {}
+    self._enchantingAffixMap2 = {}
+    self._equipEnchantingMap = {}
+    self._equipEnchantingCostMap = {}
+    self._affixPoolMap = {}
+    self._npcTalkMap = {}
+    self._npcListMap = {}
+    self._npcListOfMap = {}
+    self._roleRankMap = {}
+    self._tendencyMap = {}
+    self._viewMap = {}
+    self._maintenanceCostsMap = {}
+    self._attributeMap = {}
+    self._attributeList = {}
+    self._shopTypeMap = {}
+    self._normalGoodsMap = {}
+    self._specialGoodsMap = {}
+    self._singleSpecialGoodsMap = {}
+    self._gamblingShopMap = {}
+    self._buffMap = {}
+    self._skill2BuffMap = {}
+    self._exchangeBoxMap = {}
+    self._variableMap = {}
+    self._startActionMap = {}
+    self._actionStepMap = {}
+    self._equipTransformMap = {}
+    self._optionInfoMap = {}
+    self._downgradeCostMap = {}
+    self._rankBonusInfoMap = {}
+    self._teamHallMap = {}
+    self._gmCmdMap = {}
+    self._gmCmdMapTable = {}
+    self._gmCmdItemTable = {}
+    self._gmCmdEquipTable = {}
+    self._gmCmdMonsterTable = {}
+    self._mapTransformMap = {}
+    self._mapTransferPointMap = {}
+    self._transferPointMap = {}
+    self._skillEffectNew = {}
+    self._missionMap = {}
+    self._alTreasureMap = {}
+    self._relicSystemMap = {}
+    self._shoppingMallMap = {}
+    self._settingMap = {}
+    self._allSettingMap = {}
+    self._messageContentMap = {}
+    self._messageFormatMap = {}
+    self._petMap = {}
+    self._allPetMap = {}
+    self._petLevelMap = {}
+    self._allPetLevelMap = {}
+    self._npcVampireLairTable = {}
+    self._privilegeTable = {}
+    self._privilegeDescTable = {}
+    self._transactions = {}
+    self._transactionsDefaultMap = {}
+    self._chatAllMap = {}
+    self._guideMap = {}
+    self._missionDialogueMap = {}
+    self._gateOfAltarMap = {}
+    self._altarOfBloodMap = {}
+    self._bloodTransferPos = {}
+    self._mirrorOfAbyss = {}
+    self._helpMap = {}
+    self._achivementMap = {}
+    self._rechargeMap = {}
+    self._firstRechargeGiftMap = {}
+    self._rechargeArrayOfType = {}
+    self._messageFilterMap = {}
+    self._powerColorSet = {}
+    self._dungeonTransferEffectMap = {}
+    self._berserkerNumPairsIDList = {}
+    self._extremeNumPairsIDList = {}
+    self._soundMap = {}
+    self._soundActionMap = {}
+    self._recycleSettingsMap = {}
+    self._recycleSettingsList = {}
+    self._strongeMap = {}
+    self._sevenDayMap = {}
+    self._activityGiftMap = {}
+    self._sevenDayList = {}
+    self._sevenDayGiftList = {}
+    self._functionToggleMap = {}
+    self._dungeonMap = {}
+	self._mountMap = {}
+	self._haloMap = {}
+	self._monthCardMap = {}
+	self._shoppingMallTable = {}
+	self._monthCardActiveAwards = {}
+	self._monthCardDailyAwards = {}
+	self._vitalityMap = {}
+	self._vitalityListMap = {}
+	self._triggerGiftTable = {}
+	self._dailyRechargeCycleMap = {}
+	self._dailyRechargeArrayMap = {}
+	self._levelGiftMap = {}
+	self._signGiftMap = {}
+	self._speedArray = {}
+end
+
+function CacheManager:clear()
+	self._modelTable = nil
+    self._achiveTitleMap = nil
+    self._achiveMap = nil
+    self._accessMap = nil
+    self._addTipsMap = nil
+    self._helpDescribeMap = nil
+    self._expBoxMap = nil
+    self._unionMeta = nil
+    self._flyCodeTable = nil
+    self._flyTable = nil
+    self._shoppingMap = nil
+    self._mapTable = nil
+    self._monsterTable = nil
+    self._weaponAudioTable = nil
+    self._nameFirstTable = nil
+    self._nameLastTable = nil
+    self._safeAreaMap = nil
+    self._SkillRecleTable = nil
+    self._battleChangeTable = nil
+    self._skillEffectTable = nil
+    self._monsterInfoTable = nil
+    self._monsterColorTable = nil
+    self._skillMap = nil
+    self._skillRaceMap = nil
+    self._commonSkillMap = nil
+    self._skillIdSkillMap = nil
+    self._sLevelExpInfoMap = nil
+    self._LevelExpInfoMap = nil
+    self._advLevelExpInfoMap = nil
+    self._attrLevelExpInfoMap = nil
+    self._equipMap = nil
+    self._roleModelMap = nil
+    self._itemMap = nil
+    self._equipUpgradeMap = nil
+    self._enchantingAffixMap = nil
+    self._enchantingAffixMap2 = nil
+    self._equipEnchantingMap = nil
+    self._equipEnchantingCostMap = nil
+    self._affixPoolMap = nil
+    self._npcTalkMap = nil
+    self._npcListMap = nil
+    self._npcListOfMap = nil
+    self._roleRankMap = nil
+    self._tendencyMap = nil
+    self._viewMap = nil
+    self._maintenanceCostsMap = nil
+    self._attributeMap = nil
+    self._attributeList = nil
+    self._shopTypeMap = nil
+    self._normalGoodsMap = nil
+    self._specialGoodsMap = nil
+    self._singleSpecialGoodsMap = nil
+    self._gamblingShopMap = nil
+    self._buffMap = nil
+    self._skill2BuffMap = nil
+    self._exchangeBoxMap = nil
+    self._variableMap = nil
+    self._startActionMap = nil
+    self._actionStepMap = nil
+    self._equipTransformMap = nil
+    self._optionInfoMap = nil
+    self._downgradeCostMap = nil
+    self._rankBonusInfoMap = nil
+    self._teamHallMap = nil
+    self._gmCmdMap = nil
+    self._gmCmdMapTable = nil
+    self._gmCmdItemTable = nil
+    self._gmCmdEquipTable = nil
+    self._gmCmdMonsterTable = nil
+    self._mapTransformMap = nil
+    self._mapTransferPointMap = nil
+    self._transferPointMap = nil
+    self._skillEffectNew = nil
+    self._missionMap = nil
+    self._alTreasureMap = nil
+    self._relicSystemMap = nil
+    self._shoppingMallMap = nil
+    self._settingMap = nil
+    self._allSettingMap = nil
+    self._messageContentMap = nil
+    self._messageFormatMap = nil
+    self._petMap = nil
+    self._allPetMap = nil
+    self._petLevelMap = nil
+    self._allPetLevelMap = nil
+    self._npcVampireLairTable = nil
+    self._privilegeTable = nil
+    self._privilegeDescTable = nil
+    self._transactions = nil
+    self._transactionsDefaultMap = nil
+    self._chatAllMap = nil
+    self._guideMap = nil
+    self._missionDialogueMap = nil
+    self._gateOfAltarMap = nil
+    self._altarOfBloodMap = nil
+    self._bloodTransferPos = nil
+    self._mirrorOfAbyss = nil
+    self._helpMap = nil
+    self._achivementMap = nil
+    self._rechargeMap = nil
+    self._firstRechargeGiftMap = nil
+    self._rechargeArrayOfType = nil
+    self._messageFilterMap = nil
+    self._powerColorSet = nil
+    self._dungeonTransferEffectMap = nil
+    self._berserkerNumPairsIDList = nil
+    self._extremeNumPairsIDList = nil
+    self._soundMap = nil
+    self._soundActionMap = nil
+    self._recycleSettingsMap = nil
+    self._recycleSettingsList = nil
+    self._strongeMap = nil
+    self._sevenDayMap = nil
+    self._activityGiftMap = nil
+    self._sevenDayList = nil
+    self._sevenDayGiftList = nil
+    self._functionToggleMap = nil
+    self._dungeonMap = nil
+	self._mountMap = nil
+	self._haloMap = nil
+	self._monthCardMap = nil
+	self._shoppingMallTable = nil
+	self._monthCardActiveAwards = nil
+	self._monthCardDailyAwards = nil
+	self._vitality_monthCardMapMap = nil
+	self._vitalityListMap = nil
+	self._triggerGiftTable = nil
+	self._dailyRechargeCycleMap = nil
+	self._dailyRechargeArrayMap = nil
+	self._levelGiftMap = nil
+	self._signGiftMap = nil
+	self._speedArray = nil
+end
+
+-- model 角色模型
+function CacheManager:getModelTable()
+	if not self._modelTable then
+		self._modelTable = {}
+	end
+
+	return self._modelTable
+end
+
+function CacheManager:getModelMeta(modelId)
+	local modelTable = self:getModelTable()
+	if not modelTable[modelId] then
+		modelTable[modelId] = lt.ModelDao:query(modelId)
+	end
+	return modelTable[modelId]
+end
+
+function CacheManager:getModelCountByActionId(modelId,actionId)
+	return self:getModelMeta(modelId) and self:getModelMeta(modelId):getFrameCount(actionId) or nil
+end
+
+function CacheManager:queryAchiveTitleMetaById(id)
+    if not self._achiveTitleMap then
+        self._achiveTitleMap = {}
+    end
+
+    if not self._achiveTitleMap[id] then
+        self._achiveTitleMap[id] = lt.AchiveTitleDao:query(id)
+    end
+
+    return self._achiveTitleMap[id]
+end
+
+function CacheManager:queryAchiveTitleMeta()
+    if not self._achiveTitleMap then
+        self._achiveTitleMap = lt.AchiveTitleDao:queryAll()
+    end
+
+    return self._achiveTitleMap
+end
+
+function CacheManager:queryAchiveMeta()
+    if not self._achiveMap then
+        self._achiveMap = lt.AchivementDao:queryAll()
+    end
+
+    return self._achiveMap
+end
+
+function CacheManager:queryAccessMeta(id)
+	id = tonumber(id) or 1
+	if not self._accessMap then
+    	self._accessMap = {}
+    end
+
+	if not self._accessMap[id] then
+	    self._accessMap[id] = lt.AccessDao:query(id)
+	end
+
+	return self._accessMap[id]
+end
+
+function CacheManager:queryAdditionTipsMeta()
+    if not self._addTipsMap then
+    	self._addTipsMap = lt.AdditionTipsDao:queryAll()
+    end
+
+    return self._addTipsMap
+end
+
+function CacheManager:queryAdditionTipsMetaByKey(key)
+    if not self._addTipsMap then
+    	self._addTipsMap = self:queryAdditionTipsMeta()
+    end
+
+    local meta
+
+    for k,v in pairs(self._addTipsMap) do
+    	if v:getKey() == key then
+    		meta = v
+    		break
+    	end
+    end
+
+    if not meta then
+    	meta = lt.AdditionTipsDao:queryByKey(key)
+    end
+    return meta
+end
+
+function CacheManager:getHelpDescribeMetaByType(helpType)
+    if not helpType or helpType == "" then return end
+
+    if not self._helpDescribeMap then
+    	self._helpDescribeMap = {}
+    end
+
+    if not self._helpDescribeMap[helpType] then
+		self._helpDescribeMap[helpType] = lt.HelpDescribeDao:query(helpType)
+	end
+
+	return self._helpDescribeMap[helpType]
+end
+
+function CacheManager:queryExpBoxMetaByLv(level)
+    level = tonumber(level) or 1
+	if not self._expBoxMap then
+    	self._expBoxMap = {}
+    end
+
+	if not self._expBoxMap[level] then
+		self._expBoxMap[level] = lt.ExpBoxDao:query(level)
+	end
+
+	return self._expBoxMap[level]
+end
+
+function CacheManager:queryUnionMeta()
+    if not self._unionMeta then
+    	self._unionMeta = lt.UnionDao:query()
+    end
+
+    return self._unionMeta
+end
+
+function CacheManager:queryFlyMetaByFlyCode(flyCode)
+    if not self._flyCodeTable then
+        self._flyCodeTable = {}
+    end
+
+    if not self._flyCodeTable[flyCode] then
+        self._flyCodeTable[flyCode] = lt.FlyDao:query(flyCode)
+    end
+
+    return self._flyCodeTable[flyCode]
+end
+
+function CacheManager:queryFlyMeta()
+	if not self._flyTable then
+		self._flyTable = {}
+	end
+
+	if table.nums(self._flyTable) == 0 then
+		self._flyTable = lt.FlyDao:queryAll()
+    end
+
+    return self._flyTable
+end
+
+function CacheManager:queryShopping()
+    if not self._shoppingMap then
+    	self._shoppingMap = {}
+    end
+
+    if table.nums(self._shoppingMap) == 0 then
+		self._shoppingMap = lt.ShopDao:queryAll()
+    end
+
+    return self._shoppingMap
+end
+
+function CacheManager:getMapTable()
+	if not self._mapTable then
+		self._mapTable = {}
+	end
+	return self._mapTable
+end
+
+function CacheManager:getMapMeta(id)
+	local mapTable = self:getMapTable()
+	if not mapTable[id] then
+		mapTable[id] = lt.MapDao:query(id)
+	end
+	return mapTable[id]
+end
+
+function CacheManager:getMapMetaByMapCoord(mapCoord)
+	local mapTable = self:getMapTable()
+	for _,v in pairs(mapTable) do
+		if v:getMapCoord() == mapCoord then
+			return v
+		end
+	end
+
+	local mapMeta = lt.MapDao:queryByMapCoord(mapCoord)
+	if not mapMeta then
+		return
+	end
+	mapTable[mapMeta:getMapCode()] = mapMeta
+
+	return mapMeta
+end
+
+function CacheManager:getMonsterTable()
+	if not self._monsterTable then
+		self._monsterTable = {}
+	end
+
+	return self._monsterTable
+end
+
+function CacheManager:getMonsterMeta(monsterId)
+	local monsterTable = self:getMonsterTable()
+	if not monsterTable[monsterId] then
+		monsterTable[monsterId] = lt.MonsterDao:query(monsterId)
+	end
+	return monsterTable[monsterId]
+end
+
+function CacheManager:getWeaponAudioTable()
+	if not self._weaponAudioTable then
+		self._weaponAudioTable = {}
+	end
+
+	return self._weaponAudioTable
+end
+
+function CacheManager:getWeaponAudioMeta(id)
+	local weaponAudioTable = self:getWeaponAudioTable()
+	if not weaponAudioTable[id] then
+		weaponAudioTable[id] = lt.WeaponAudioDao:query(id)
+	end
+	return weaponAudioTable[id]
+end
+
+function CacheManager:getNameFirstTable()
+	if not self._nameFirstTable then
+		self._nameFirstTable = lt.NameFirstDao:queryAll()
+	end
+	return self._nameFirstTable
+end
+
+function CacheManager:getRandNameFirst(ttype)
+	ttype = ttype or 0
+	local nameFirstTable = self:getNameFirstTable()
+	if not nameFirstTable[ttype] then
+		return ""
+	end
+
+	local nameArray = nameFirstTable[ttype]
+	return nameArray[math.random(#nameArray)]
+end
+
+function CacheManager:getNameLastTable()
+	if not self._nameLastTable then
+		self._nameLastTable = lt.NameLastDao:queryAll()
+	end
+	return self._nameLastTable
+end
+
+function CacheManager:getRandNameLast(ttype)
+	ttype = ttype or 1
+	local nameLastTable = self:getNameLastTable()
+	if not nameLastTable[ttype] then
+		return ""
+	end
+
+	local nameArray = nameLastTable[ttype]
+	return nameArray[math.random(#nameArray)]
+end
+
+--[[
+	地图表 - 安全区|SafeArea
+]]
+function CacheManager:getSafeAreaMap()
+	if not self._safeAreaMap then
+		self._safeAreaMap = lt.SafeAreaDao:queryAll()
+	end
+
+	return self._safeAreaMap
+end
+
+function CacheManager:getSafeAreaArray(mapCode, all)
+	local safeAreaMap = self:getSafeAreaMap()
+
+	-- 当前地图所有安全区信息
+	local safeAreaArray2 = safeAreaMap[mapCode] or {}
+	if all then
+		return safeAreaArray2
+	end
+
+	local safeAreaArray = {}
+	for _, safeAreaMeta in ipairs(safeAreaArray2) do
+		if safeAreaMeta:getType() == 0 then
+			safeAreaArray[#safeAreaArray + 1] = safeAreaMeta
+		end
+	end
+	return safeAreaArray
+end
+
+function CacheManager:getSkillRecycleTable()
+	if not self._SkillRecleTable then
+		self._SkillRecleTable = {}
+	end
+
+	return self._SkillRecleTable
+end
+
+function CacheManager:getSkillRecycle(id)
+	local skillRecycleTable = self:getSkillRecycleTable()
+	if not skillRecycleTable[id] then
+		skillRecycleTable[id] = lt.LibraryDao:queryRecycle(id)
+	end
+	return skillRecycleTable[id]
+end
+
+function CacheManager:getBattleChange(job)
+    if not self._battleChangeTable then
+        self._battleChangeTable = lt.BattleChangeDao:queryAll()
+    end
+    return self._battleChangeTable[job]
+end
+
+-- ********** 天炼 **********
+CacheManager._skillEffectTable = nil 	-- 技能特效资源信息表
+CacheManager._monsterInfoTable = nil 	-- 怪物信息表
+CacheManager._skillMap 	= nil 			-- 技能表
+CacheManager._skillRaceMap = nil 		-- 技能表 种族作为key
+CacheManager._equipMap = nil 		 	-- 装备表
+CacheManager._roleModelMap = nil 		-- 角色外观表
+
+--[[
+	effect 技能特效资源表信息
+	table[skillId][i] = meta
+]]
+function CacheManager:getSkillEffect()
+	if not self._skillEffectTable then
+		self._skillEffectTable = lt.ActionInfoDao:queryAll()
+	end
+
+	return self._skillEffectTable
+end
+
+function CacheManager:getSkillEffectBySkillId(skillId)
+	local tb = self:getSkillEffect()
+	
+	return tb[skillId]
+end
+
+function CacheManager:getSkillEffectBySkillIdAndEName(skillId, eName, owner)
+	local skillMetas = self:getSkillEffectBySkillId(skillId)
+	if not skillMetas then
+		return nil
+	end
+
+	local metas = {}
+	for _, meta in ipairs(skillMetas) do
+		if meta:getEname() == eName then
+			local ret = false
+			if owner == nil or (owner ~= nil and meta:getOwner() == owner) then
+				ret = true
+			end
+
+			if ret then
+				table.insert(metas, meta)
+			end
+		end
+	end
+
+	return metas
+end
+
+function CacheManager:getSkillEffectBySkillIdAndGenerator(skillId, generator, owner)
+	local tb = self:getSkillEffect()
+	local skillMetas = tb[skillId]
+	if not skillMetas then
+		return nil
+	end
+
+	local metas = {}
+	for _, meta in ipairs(skillMetas) do
+		local ret = false
+		if owner == nil or (owner ~= nil and meta:getOwner() == owner) then
+			ret = true
+		end
+
+		if ret and meta:getEffectGeneratorId() == generator then
+			table.insert(metas, meta)
+		end
+	end
+
+	return metas
+end
+
+--[[
+	怪物信息表
+	table[monsterId] = meta
+]]
+function CacheManager:getMonsterInfoTable()
+	if not self._monsterInfoTable then
+		self._monsterInfoTable = {}
+	end
+
+	return self._monsterInfoTable
+end
+
+function CacheManager:getMonsterInfoMeta(monsterId)
+	local monsterInfoTable = self:getMonsterInfoTable()
+	if not monsterInfoTable[monsterId] then
+		monsterInfoTable[monsterId] = lt.MonsterInfoDao:query(monsterId)
+	end
+	return monsterInfoTable[monsterId]
+end
+--[[
+	怪物颜色表
+	table[index] = color
+]]
+function CacheManager:getMonsterColorByIndex(index)
+	if not self._monsterColorTable then
+		self._monsterColorTable = lt.MonsterColor:queryAll()
+	end
+
+	if self._monsterColorTable[index] then
+		return self._monsterColorTable[index]:getColor()
+	end
+end
+
+-----------------------------------------------------------------------------
+--[[  
+	技能表
+	table[skillId] = meta
+]]
+function CacheManager:getSkillMap()
+	if not self._skillMap or not self._dependSkillMap then
+		self._skillMap, self._dependSkillMap = lt.SkillDao:queryAllSkill()
+	end
+end
+
+
+-- 根据技能id 查询技能信息
+function CacheManager:querySkillMeta(skillId)
+	if not skillId then
+		return nil
+	end
+
+	if not self._skillMap then
+		self:getSkillMap()
+	end
+
+	return self._skillMap[skillId]
+end
+
+-- 根据依赖技能 查询技能组信息
+function CacheManager:queryDependSkillMeta(skillId)
+	if not skillId then
+		return {}
+	end
+	if not self._dependSkillMap then
+		self:getSkillMap()
+	end
+
+	return self._dependSkillMap[skillId]
+end
+
+--[[
+	技能表  (TODO 此处存在内存重复，后期需要优化)
+	种族格式
+	table[raceId][i] = meta
+]]
+function CacheManager:getSkillRaceMap()
+	if not self._skillRaceMap then
+		self._skillRaceMap = {}
+	end
+
+	return self._skillRaceMap
+end
+
+-- 根据种族id获取所有技能
+function CacheManager:getSkillByRace(raceId)
+	local skillRaceMap = self:getSkillRaceMap()
+	if not skillRaceMap[raceId] then
+		self._skillRaceMap[raceId] = lt.SkillDao:queryByRace(raceId)
+	end
+
+	return self._skillRaceMap[raceId]
+end
+
+-- 通用技能查询
+function CacheManager:getCommonSkill()
+	if not self._commonSkillMap then
+		self._commonSkillMap = lt.SkillDao:queryCommonSkill()
+	end
+
+	return self._commonSkillMap
+end
+
+function CacheManager:getShowCommonSkill()
+	local commonSkillMap = self:getCommonSkill()
+	local tempMap = {}
+	for k,v in pairs(commonSkillMap) do
+		if v:getSkillMenu() == 1 then
+			table.insert(tempMap, v)
+		end
+	end
+
+	return tempMap
+end
+function CacheManager:getSkillIdMapMeta()
+	if not self._skillIdSkillMap then
+		self._skillIdSkillMap = {}
+	end
+	return self._skillIdSkillMap
+end
+
+function CacheManager:queryMetaBySkillId(skillId)
+	if skillId == nil then return nil end
+	local skillIdMap = self:getSkillIdMapMeta()
+	if not skillIdMap[skillId] then
+		self._skillIdSkillMap[skillId] = lt.SkillDao:queryById(skillId)
+	end
+	return self._skillIdSkillMap[skillId]
+end
+
+------------------------------------------------------------------------------------------------------
+--[[  
+	人族升级表转职前
+	table[领域类型][转职前等级] = meta
+]]
+function CacheManager:getSLevelExpInfoMap()
+	if not self._sLevelExpInfoMap then
+		self._sLevelExpInfoMap = lt.SLevelExpInfoDao:queryAll()
+	end
+	return self._sLevelExpInfoMap
+end
+
+function CacheManager:getSLevelExpInfoMeta(domainType, level)
+	local sLevelExpInfoMap = self:getSLevelExpInfoMap()
+	if not sLevelExpInfoMap[domainType] then
+		return nil
+	end
+
+	if not sLevelExpInfoMap[domainType][level] then
+		return nil
+	end
+
+	return sLevelExpInfoMap[domainType][level]
+end
+
+function CacheManager:getSLevelExpByDomain(domainType)
+	local sLevelExpInfoMap = self:getSLevelExpInfoMap()
+
+	return sLevelExpInfoMap[domainType]
+end
+
+--[[  
+	鬼族魔族升级表转职前
+]]
+function CacheManager:getLevelExpInfoMap()
+	if not self._LevelExpInfoMap then
+		self._LevelExpInfoMap = lt.LevelExpInfoDao:queryAll()
+	end
+	return self._LevelExpInfoMap
+end
+
+function CacheManager:getLevelExpInfoMeta(level)
+	local levelExpInfoMap = self:getLevelExpInfoMap()
+
+	return levelExpInfoMap[level]
+end
+
+--[[  
+	转职后
+]]
+function CacheManager:getAdvLevelExpInfoMap()
+	if not self._advLevelExpInfoMap then
+		self._advLevelExpInfoMap = lt.AdvLevelExpInfoDao:queryAll()
+	end
+	return self._advLevelExpInfoMap
+end
+
+function CacheManager:getAdvLevelExpInfoMeta(level)
+	local advLevelExpInfoMap = self:getAdvLevelExpInfoMap()
+
+	return advLevelExpInfoMap[level]
+end
+
+--[[  
+	人族属性升级
+]]
+function CacheManager:getAttrLevelExpInfoMap()
+	if not self._attrLevelExpInfoMap then
+		self._attrLevelExpInfoMap = lt.AttrLevelExpInfoDao:queryAll()
+	end
+	return self._attrLevelExpInfoMap
+end
+
+function CacheManager:getAttrLevelExpInfoMeta(level)
+	local attrLevelExpInfoMap = self:getAttrLevelExpInfoMap()
+
+	return attrLevelExpInfoMap[level]
+end
+--[[
+	装备表
+	table[equipId] = meta
+]]
+function CacheManager:getEquipMap()
+	if not self._equipMap then
+		self._equipMap = {}
+	end
+
+	return self._equipMap
+end
+-- 根据装备id 查装备信息
+function CacheManager:queryEquipMeta(equipId)
+	if not equipId or equipId == 0 then
+		return nil
+	end
+
+	local tb = self:getEquipMap()
+	if not tb[equipId] then
+		tb[equipId] = lt.EquipDao:query(equipId)
+	end
+	
+	return tb[equipId]
+end
+--[[
+	角色外观表 RoleModel
+]]
+function CacheManager:getRoleModel()
+	if not self._roleModelMap then
+		self._roleModelMap = lt.RoleModelDao:queryAll()
+	end
+
+	return self._roleModelMap
+end
+
+function CacheManager:getRoleModelMeta(modelName)
+	if not modelName then
+		return nil
+	end
+
+	local tb = self:getRoleModel()
+
+	return tb[modelName]
+end
+
+--[[  
+	物品查询
+]]
+function CacheManager:getItemMap()
+	if not self._itemMap then
+		self._itemMap = {}
+	end
+	return self._itemMap
+end
+
+function CacheManager:getItemMeta(itemId)
+	local itemMap = self:getItemMap()
+	if not itemMap[itemId] then
+		itemMap[itemId] = lt.ItemDao:query(itemId)
+	end
+	return itemMap[itemId]
+end
+
+--[[  
+	装备升级查询
+]]
+function CacheManager:getEquipUpgradeMap()
+	if not self._equipUpgradeMap then
+		self._equipUpgradeMap = lt.EquipUpgradeDao:queryAll()
+	end
+	return self._equipUpgradeMap
+end
+
+function CacheManager:getEquipUpgradeMeta(rank, level)
+	local equipUpgradeMap = self:getEquipUpgradeMap()
+	return equipUpgradeMap[rank.."_"..level]
+end
+
+--[[  
+	附魔词条表查询
+]]
+function CacheManager:getEnchantingAffixMap()
+	if not self._enchantingAffixMap then
+		self._enchantingAffixMap = lt.EnchantingAffixDao:queryAll()
+	end
+	return self._enchantingAffixMap
+end
+
+--通过type查找
+function CacheManager:getEnchantingAffixMeta(id)
+	local enchantingAffixMap = self:getEnchantingAffixMap()
+	return enchantingAffixMap[id] or enchantingAffixMap[1]
+end
+
+--通过id查找
+function CacheManager:queryEnchantingAffixMeta(id)
+	id = tonumber(id) or 1
+	if not self._enchantingAffixMap2 then
+    	self._enchantingAffixMap2 = {}
+    end
+
+	if not self._enchantingAffixMap2[id] then
+	    self._enchantingAffixMap2[id] = lt.EnchantingAffixDao:query(id)
+	end
+
+	return self._enchantingAffixMap2[id]
+end
+
+--[[  
+	装备词条强化表查询
+]]
+function CacheManager:getEquipEnchantingMap()
+	if not self._equipEnchantingMap then
+		self._equipEnchantingMap = lt.EquipEnchantingDao:queryAll()
+	end
+	return self._equipEnchantingMap
+end
+
+function CacheManager:getEquipEnchantingMeta(maxlv, curlv)
+	local equipEnchantingMap = self:getEquipEnchantingMap()
+	return equipEnchantingMap[maxlv.."_"..curlv]
+end
+
+--[[  
+	附魔强化消耗表查询
+]]
+function CacheManager:getEquipEnchantingCostMap()
+	if not self._equipEnchantingCostMap then
+		self._equipEnchantingCostMap = lt.EquipEnchantingCostDao:queryAll()
+	end
+	return self._equipEnchantingCostMap
+end
+
+function CacheManager:getEquipEnchantingCostMeta(id)
+	local equipEnchantingCostMap = self:getEquipEnchantingCostMap()
+	return equipEnchantingCostMap[id]
+end
+
+--[[  
+	附魔词条库表查询
+]]
+function CacheManager:getAffixPoolMap()
+	if not self._affixPoolMap then
+		self._affixPoolMap = lt.AffixPoolDao:queryAll()
+	end
+	return self._affixPoolMap
+end
+
+function CacheManager:getAffixPooMapMeta(kind, types)
+	local affixPooMap = self:getAffixPoolMap()
+	return affixPooMap[kind.."_"..types]
+end
+
+--[[
+	NPC 对话
+]]
+function CacheManager:getNpcTalkMap()
+	if not self._npcTalkMap then
+		self._npcTalkMap = {}
+	end
+
+	return self._npcTalkMap
+end
+function CacheManager:queryNpcTalk(talkId)
+	if not talkId or talkId == 0 then
+		return nil
+	end
+
+	local tb = self:getNpcTalkMap()
+	if not tb[talkId] then
+		tb[talkId] = lt.NpcTalkDao:query(talkId)
+	end
+	
+	return tb[talkId]
+end
+
+
+--[[
+	NPC List
+]]
+function CacheManager:getNpcListOfNpcId()
+	if not self._npcListMap then
+		self._npcListMap = {}
+	end
+
+	return self._npcListMap
+end
+function CacheManager:queryNpc(npcId)
+	if not npcId or npcId == 0 then
+		return nil
+	end
+	local tb = self:getNpcListOfNpcId()
+	if not tb[npcId] then
+		tb[npcId] = lt.NpcDao:queryByNpcId(npcId)
+	end
+	return tb[npcId]
+end
+
+function CacheManager:getNpcListOfMap()
+	if not self._npcListOfMap then
+		self._npcListOfMap = {}
+	end
+
+	return self._npcListOfMap
+end
+
+function CacheManager:queryNpcByMapId(mapId)
+	if not mapId or mapId == 0 then
+		return nil
+	end
+	local tb = self:getNpcListOfMap()
+	if not tb[mapId] then
+		tb[mapId] = lt.NpcDao:queryByMapId(mapId)
+	end
+	return tb[mapId]
+end
+
+--[[
+	角色阶级等级表
+]]
+function CacheManager:getRoleRank()
+	if not self._roleRankMap then
+		self._roleRankMap = {}
+	end
+
+	return self._roleRankMap
+end
+
+function CacheManager:getRoleRankByRaceAndLvl(race,classLevel)
+	local roleRankMap = self:getRoleRank()
+	if not roleRankMap[race] then
+		self._roleRankMap[race] = {}
+	end
+
+	if not self._roleRankMap[race][classLevel] then
+		self._roleRankMap[race][classLevel] = lt.RankDao:queryByRaceAndClassLevel(race,classLevel)
+	end
+
+	return self._roleRankMap[race][classLevel]
+end
+
+--[[
+	倾向
+]]
+function CacheManager:getTendencyAll()
+	if not self._tendencyMap then
+		self._tendencyMap = lt.TendencyDao:queryAll()
+	end
+
+	return self._tendencyMap
+end
+
+function CacheManager:getTendencyNameByValue(tendency)
+	local tendencyAll = self:getTendencyAll()
+	
+	for k,v in pairs(tendencyAll) do
+		local minValue = v:getMinValue()
+		local maxValue = v:getMaxValue()
+		if tendency <= maxValue and tendency >= minValue then
+			return v:getName() or ""
+		end
+	end
+
+	return ""
+end
+
+function CacheManager:getTendencyIdByValue(tendency)
+	local tendencyAll = self:getTendencyAll()
+	for k,v in pairs(tendencyAll) do
+		local minValue = v:getMinValue()
+		local maxValue = v:getMaxValue()
+		if tendency <= maxValue and tendency >= minValue then
+			return v:getTendencyID()
+		end
+	end
+	if buglyReportLuaException then
+        buglyReportLuaException("BUGLY LOG: CacheManager:getTendencyIdByValue range error", tostring(tendency))
+    end
+	-- bugly 报错返回了nil, 可能服务端给的值超过的范围 -10000 ~ 10000
+	if tendency > 10000 then
+		return 1
+	elseif tendency < -10000 then
+		return 5
+	end
+	return 1
+end
+
+--[[
+	界面
+]]
+function CacheManager:getViewMap()
+	if not self._viewMap then
+		self._viewMap = {}
+	end
+
+	return self._viewMap
+end
+
+function CacheManager:getViewNameById(viewId)
+	if not viewId or viewId == 0 then
+		return nil
+	end
+	local tb = self:getViewMap()
+	if not tb[viewId] then
+		self._viewMap[viewId] = lt.ViewDao:query(viewId)
+	end
+	if self._viewMap[viewId] then
+		return self._viewMap[viewId]:getViewName()
+	end
+end
+
+function CacheManager:getViewParamById(viewId)
+	if not viewId or viewId == 0 then
+		return nil
+	end
+	local tb = self:getViewMap()
+	if not tb[viewId] then
+		self._viewMap[viewId] = lt.ViewDao:query(viewId)
+	end
+
+	if self._viewMap[viewId] then
+		return self._viewMap[viewId]:getDecodeViewParam()
+	end
+
+	return {}
+end
+
+function CacheManager:getViewDialogueById(viewId)
+	if not viewId or viewId == 0 then
+		return nil
+	end
+	local tb = self:getViewMap()
+	if not tb[viewId] then
+		self._viewMap[viewId] = lt.ViewDao:query(viewId)
+	end
+
+	local dialogue = ""
+	local answer = ""
+	if self._viewMap[viewId] then
+		dialogue = self._viewMap[viewId]:getDialogue()
+		answer = self._viewMap[viewId]:getAnswer()
+	end
+
+	return dialogue, answer
+end
+
+--[[
+	装备维修费用查询
+]]
+function CacheManager:getMaintenanceCostsMap()
+	if not self._maintenanceCostsMap then
+		self._maintenanceCostsMap = lt.MaintenanceCostsDao:queryAll()
+	end
+	return self._maintenanceCostsMap
+end
+
+function CacheManager:getMaintenanceCostsMeta(id)
+	local maintenanceCostsMap = self:getMaintenanceCostsMap()
+	return maintenanceCostsMap[id]
+end
+
+--[[  
+	属性表查询
+]]
+function CacheManager:getAttributeMap()
+	if not self._attributeMap then
+		self._attributeMap = lt.AttributeDao:queryAll()
+	end
+	return self._attributeMap
+end
+
+function CacheManager:getAttributeMeta(types, level)
+	local attributeMap = self:getAttributeMap()
+	return attributeMap[types.."_"..level]
+end
+
+--[[
+	属性表查询
+]]
+function CacheManager:getAttributeList()
+	if not self._attributeList then
+		self._attributeList = {}
+	end
+
+	return self._attributeList
+end
+
+function CacheManager:getAttributeMetaByOptionId(OptionId)
+	local attributeList = CacheManager:getAttributeList()
+	if not attributeList[OptionId] then
+		self._attributeList[OptionId] = lt.AttributeDao:query(OptionId)
+	end
+
+	return self._attributeList[OptionId]
+end
+
+--[[
+	红鸟检测是否是最大等级
+]]
+function CacheManager:getRedBirdMap()
+	if not self._petRaisMap then
+		self._petRaisMap = {}
+	end
+	return self._petRaisMap
+end
+
+function CacheManager:getPetRaiseById(attributeId)
+	local petRaisMap = self:getRedBirdMap()
+	if not petRaisMap[attributeId] then
+		self._petRaisMap[attributeId] = lt.PetRaise1Dao:queryByAttributeId(attributeId)
+	end
+
+	return self._petRaisMap[attributeId]
+end
+
+--[[
+	商店类型表
+	table[npcIndex] = meta
+]]
+function CacheManager:getShopTypeMap()
+	if not self._shopTypeMap then
+		self._shopTypeMap = {}
+	end
+
+	return self._shopTypeMap
+end
+
+-- 根据npcId 查商店信息
+function CacheManager:queryShopTypeMeta(npcIndex)
+	if not npcIndex or npcIndex == 0 then
+		return nil
+	end
+
+	local tb = self:getShopTypeMap()
+	if not tb[npcIndex] then
+		tb[npcIndex] = lt.ShopTypeDao:query(npcIndex)
+	end
+	
+	return tb[npcIndex]
+end
+
+--[[  
+	npc购买一般道具表查询
+]]
+function CacheManager:getNormalGoodsMap()
+	if not self._normalGoodsMap then
+		self._normalGoodsMap = lt.NormalGoodsDao:queryAll()
+	end
+	return self._normalGoodsMap
+end
+
+function CacheManager:getNormalGoodsMeta(shopType)
+	local normalGoodsMap = self:getNormalGoodsMap()
+	return normalGoodsMap[shopType]
+end
+
+--[[  
+	npc购买特殊道具表查询
+]]
+function CacheManager:getSpecialGoodsMap()
+	if not self._specialGoodsMap then
+		self._specialGoodsMap = lt.SpecialGoodsDao:queryAll()
+	end
+	return self._specialGoodsMap
+end
+
+function CacheManager:getSpecialGoodsMeta(shopType)
+	local specialGoodsMap = self:getSpecialGoodsMap()
+	return specialGoodsMap[shopType]
+end
+
+function CacheManager:getSingleSpecialGoodsMap()
+	if not self._singleSpecialGoodsMap then
+		self._singleSpecialGoodsMap = lt.SpecialGoodsDao:querySingle()
+	end
+	return self._singleSpecialGoodsMap
+end
+
+function CacheManager:getSingleSpecialGoodsMeta(itemId)
+	local specialGoodsMap = self:getSingleSpecialGoodsMap()
+	return specialGoodsMap[itemId]
+end
+
+--[[  
+	npc购买乐透道具表查询
+]]
+function CacheManager:getGamblingShopMap()
+	if not self._gamblingShopMap then
+		self._gamblingShopMap = lt.GamblingShopDao:queryAll()
+	end
+	return self._gamblingShopMap
+end
+
+function CacheManager:getGamblingShopMeta(shopType)
+	local gamblingShopMap = self:getGamblingShopMap()
+	return gamblingShopMap[shopType]
+end
+
+--[[
+	buff列表
+]]
+function CacheManager:getBuffMap()
+	if not self._buffMap then
+		self._buffMap = {}
+	end
+
+	return self._buffMap
+end
+
+function CacheManager:getBuffById(buffId)
+	local buffId = buffId
+	if type(buffId) == "string" then
+		local bufferTable = string.split(buffId,"-")
+		buffId = tonumber(bufferTable[1])
+		if type(buffId) ~= "number" then
+			return
+		end
+	end
+
+	local buffMap = CacheManager:getBuffMap()
+	if not buffMap[buffId] then
+		self._buffMap[buffId] = lt.BuffDao:query(buffId)
+	end
+
+	return self._buffMap[buffId]
+end
+
+
+function CacheManager:getSkill2BuffMap(buffId)
+	if not self._skill2BuffMap then
+		self._skill2BuffMap = {}
+	end
+
+	return self._skill2BuffMap
+end
+function CacheManager:getBuffBySkillId(skillId)
+	local buffMap = CacheManager:getSkill2BuffMap()
+	if not buffMap[skillId] then
+		self._skill2BuffMap[skillId] = lt.BuffDao:queryBuffBySkillID(skillId)
+	end
+
+	return self._skill2BuffMap[skillId]
+end
+
+
+--[[  
+	npc兑换宝箱表查询
+]]
+function CacheManager:getExchangeBoxMap()
+	if not self._exchangeBoxMap then
+		self._exchangeBoxMap = lt.ExchangeBoxDao:queryAll()
+	end
+	return self._exchangeBoxMap
+end
+
+function CacheManager:getExchangeBoxMeta(npcId)
+	local exchangeBoxMap = self:getExchangeBoxMap()
+	return exchangeBoxMap[npcId]
+end
+
+--[[
+	常量表查询
+]]
+function CacheManager:getVariableMap()
+	if not self._variableMap then
+		self._variableMap = {}
+	end
+
+	return self._variableMap
+end
+
+function CacheManager:getVariableById(variableId, isToNumber)
+	local variableMap = CacheManager:getVariableMap()
+	if not variableMap[variableId] then
+		local variableMeta = lt.VariableDao:query(variableId)
+		if variableMeta then
+			self._variableMap[variableId] = variableMeta:getValue()
+		end
+	end
+	local value = self._variableMap[variableId]
+	if isToNumber then
+		value = tonumber(self._variableMap[variableId])
+	end
+	return value
+end
+
+function CacheManager:getValueById(variableId)
+	local value = CacheManager:getVariableById(variableId)
+	if lt.Constant.Variable.StorePrice == variableId then
+		return tonumber(value) or 0
+	elseif lt.Constant.Variable.StoreMaxCoin == variableId then
+		return tonumber(value) or 0
+	elseif lt.Constant.Variable.BagMaxCoin == variableId then
+		return tonumber(value) or 0
+	elseif lt.Constant.Variable.Hairdye == variableId then
+		local itemList = string.split(value, ",")
+		for k,v in ipairs(itemList) do
+			itemList[k] = tonumber(v)
+		end
+		return itemList
+	elseif lt.Constant.Variable.WearEquipIconScale == variableId then
+		return tonumber(value) or 0
+	elseif lt.Constant.Variable.Reputation1 == variableId or 
+		lt.Constant.Variable.Reputation2 == variableId or
+		lt.Constant.Variable.Reputation3 == variableId or
+		lt.Constant.Variable.Reputation4 == variableId then
+		local list = string.split(value, ",")
+		for k,v in ipairs(list) do
+			list[k] = tonumber(v)
+		end
+		return list
+	elseif lt.Constant.Variable.AdvanceEquipNumber == variableId then
+		local list = {}
+		local dm = string.split(value, "|")
+		for i = 1, #dm do
+			local ds = string.split(dm[i], ":")
+			list[tonumber(ds[1])] = tonumber(ds[2])
+		end
+		return list
+	elseif lt.Constant.Variable.PetAttr1UnlockLevel == variableId
+		or lt.Constant.Variable.PetAttr2UnlockLevel == variableId
+		or lt.Constant.Variable.PetAttr3UnlockLevel == variableId then
+		return tonumber(value) or 0
+	elseif lt.Constant.Variable.PetSynMain == variableId
+    	or lt.Constant.Variable.PetSynSass == variableId then
+		return tonumber(value) or 0
+	elseif lt.Constant.Variable.GuildQuitAndApplyCD == variableId then
+		return tonumber(value) or 0
+	else
+		return value
+	end
+end
+
+
+--[[  
+	技能起手动作
+]]
+function CacheManager:getSkillStartActionMap()
+	if not self._startActionMap then
+		self._startActionMap = lt.SkillStartActionDao:queryAll()
+	end
+	return self._startActionMap
+end
+
+function CacheManager:getStartActionBySkillId(skillId)
+	local startActionMap = self:getSkillStartActionMap()
+	local meta = startActionMap[skillId]
+	if meta then
+		return meta:getActionId()
+	else
+		return nil
+	end
+end
+
+function CacheManager:getMonActionBySkillId(skillId)
+	local startActionMap = self:getSkillStartActionMap()
+	local meta = startActionMap[skillId]
+	if meta then
+		return meta:getMonActionId()
+	else
+		return nil
+	end
+end
+
+function CacheManager:getActionDelayTimeBySkillId(skillId)
+	local startActionMap = self:getSkillStartActionMap()
+	local meta = startActionMap[skillId]
+	if meta then
+		return meta:getDelayTime()
+	else
+		return 0
+	end
+end
+
+function CacheManager:getHitActionDelayTimeBySkillId(skillId)
+	local startActionMap = self:getSkillStartActionMap()
+	local meta = startActionMap[skillId]
+	if meta then
+		return meta:getHitDelayTime()
+	else
+		return 0
+	end
+end
+
+function CacheManager:getStartActionRaceBySkillId(skillId)
+	local startActionMap = self:getSkillStartActionMap()
+	local meta = startActionMap[skillId]
+	if meta then
+		return meta:getRace()
+	else
+		return nil
+	end
+end
+
+function CacheManager:getStartActionLevelBySkillId(skillId)
+	local startActionMap = self:getSkillStartActionMap()
+	local meta = startActionMap[skillId]
+	if meta then
+		return meta:getLevel()
+	else
+		return nil
+	end
+end
+
+---检测技能等级(150以上不能学习)
+function CacheManager:checkSkillLevel(skillId)
+	local skillVirtualLevel = CacheManager:getStartActionLevelBySkillId(skillId)
+    if skillVirtualLevel and skillVirtualLevel > 150 then
+        return true
+    else
+        return false
+    end
+end
+
+--[[
+	人物动作步长
+]]
+function CacheManager:getActionStepMap()
+	if not self._actionStepMap then
+		self._actionStepMap = lt.ActionStepDao:queryAll()
+	end
+	return self._actionStepMap
+end
+
+function CacheManager:getActionStep(race,actionId)
+	local actionStepMap = self:getActionStepMap()
+	local key = (race or "") .. (actionId or "")
+	local meta = actionStepMap[key]
+	if meta then
+		return meta:getStep()
+	end
+end
+
+function CacheManager:getActionDelayTime(race,actionId)
+	local actionStepMap = self:getActionStepMap()
+	local key = (race or "") .. (actionId or "")
+	local meta = actionStepMap[key]
+	if meta then
+		return meta:getDelayTime()
+	end
+end
+
+function CacheManager:getActionFloorDelay(race,actionId)
+	local actionStepMap = self:getActionStepMap()
+	local key = (race or "") .. (actionId or "")
+	local meta = actionStepMap[key]
+	if meta then
+		return meta:getFloorDelay()
+	end
+end
+
+function CacheManager:getActionLimit(race,actionId)
+	local actionStepMap = self:getActionStepMap()
+	local key = (race or "") .. (actionId or "")
+	local meta = actionStepMap[key]
+	if meta then
+		return meta:getActionLimit()
+	end
+end
+
+--[[  
+	装备转换表查询
+]]
+function CacheManager:getEquipTransformMap()
+	if not self._equipTransformMap then
+		self._equipTransformMap = lt.EquipTransformDao:queryAll()
+	end
+	return self._equipTransformMap
+end
+
+function CacheManager:getEquipTransformMeta(itemId)
+	local equipTransformMap = self:getEquipTransformMap()
+	return equipTransformMap[itemId] or {}
+end
+
+--[[  
+	属性类型表查询
+]]
+function CacheManager:getOptionInfoMap()
+	if not self._optionInfoMap then
+		self._optionInfoMap = lt.OptionInfoDao:queryAll()
+	end
+	return self._optionInfoMap
+end
+
+function CacheManager:getOptionInfoMeta(type)
+	local optionInfoMap = self:getOptionInfoMap()
+	return optionInfoMap[type] or {}
+end
+
+--[[  
+	魔族洗技能消耗表查询
+]]
+function CacheManager:getDowngradeCostMap()
+	if not self._downgradeCostMap then
+		self._downgradeCostMap = lt.DowngradeCostDao:queryAll()
+	end
+	return self._downgradeCostMap
+end
+
+function CacheManager:getDowngradeCostMeta(points)
+	local downgradeCostMap = self:getDowngradeCostMap()
+	return downgradeCostMap[points] or {}
+end
+
+--[[
+	阶级技能数据表
+]]
+function CacheManager:getRankBonusInfoMap()
+	if not self._rankBonusInfoMap then
+		self._rankBonusInfoMap = {}
+	end
+
+	return self._rankBonusInfoMap
+end
+
+function CacheManager:getRankBonusInfoMeta(raceId)
+	local rankBonusInfoMap = self:getRankBonusInfoMap()
+	if not rankBonusInfoMap[raceId] then
+		self._rankBonusInfoMap[raceId] = lt.RankBonusInfoDao:queryByRaceId(raceId)
+	end
+
+	return self._rankBonusInfoMap[raceId]
+end
+
+-- 获取阶级技能数据表 低阶1-4, 高阶5-6
+function CacheManager:getRankBonusInfoCfg(raceId, startPos, endPos)
+    local rankBonusInfoCfg = {}
+    local tempRankBonusInfoCfg = {}
+    local sortIndex = {}
+    local rankBonusInfo = self:getRankBonusInfoMeta(raceId)
+    for k,v in pairs(rankBonusInfo) do
+        local curCalssLevel = v:getClassLevel()
+        if not tempRankBonusInfoCfg[curCalssLevel] then
+            tempRankBonusInfoCfg[curCalssLevel] = {}
+            table.insert(sortIndex, curCalssLevel)
+        end
+
+        table.insert(tempRankBonusInfoCfg[curCalssLevel], v)
+    end
+
+    table.sort(sortIndex,function (a,b)
+        return a < b
+    end)
+
+    for i=startPos,endPos do
+        if sortIndex[i] then
+            local sortTable = tempRankBonusInfoCfg[sortIndex[i]]
+            table.sort(sortTable, function (a,b)
+                return a:getRankId() < b:getRankId()
+            end)
+            table.insert(rankBonusInfoCfg, sortTable)
+        end
+    end
+
+    return rankBonusInfoCfg
+end
+
+--[[  
+	组队大厅设置表查询
+]]
+function CacheManager:getTeamHallMap()
+	if not self._teamHallMap then
+		self._teamHallMap = lt.TeamHallDao:queryAll()
+	end
+	return self._teamHallMap
+end
+
+function CacheManager:getTeamHallMeta(teamType)
+	local teamHallMap = self:getTeamHallMap()
+	return teamHallMap[teamType]
+end
+
+function CacheManager:getTeamHallMetaByIdx(idx)
+	local teamHallMap = self:getTeamHallMap()
+	for i = 1, #teamHallMap do
+		for j = 1, #teamHallMap[i] do
+			if teamHallMap[i][j]:getIdxId() == idx then
+				return teamHallMap[i][j]
+			end
+		end
+	end
+	return nil
+end
+
+--[[  
+	Gmcmd表查询
+]]
+function CacheManager:getGmCmdMap()
+	if not self._gmCmdMap then
+		self._gmCmdMap = lt.GmCmdDao:queryAll()
+	end
+	return self._gmCmdMap
+end
+
+function CacheManager:getGmCmdMetaByType(type)
+	local gmCmdMap = self:getGmCmdMap()
+	return gmCmdMap[type] or {}
+end
+
+--[[  
+	地图根据地图区域查询
+]]
+function CacheManager:getGmCmdMapTable()
+	if not self._gmCmdMapTable then
+		self._gmCmdMapTable = lt.MapDao:queryAllByMapArea()
+	end
+	return self._gmCmdMapTable
+end
+
+--[[  
+	物品根据类型查询
+]]
+function CacheManager:getGmCmdItemTable()
+	if not self._gmCmdItemTable then
+		self._gmCmdItemTable = lt.ItemDao:queryAllByKind()
+	end
+	return self._gmCmdItemTable
+end
+
+--[[  
+	装备根据类型查询
+]]
+function CacheManager:getGmCmdEquipTable()
+	if not self._gmCmdEquipTable then
+		self._gmCmdEquipTable = lt.EquipDao:queryAllByKind()
+	end
+	return self._gmCmdEquipTable
+end
+
+--[[  
+	怪物查询
+]]
+function CacheManager:getGmCmdMonsterTable()
+	if not self._gmCmdMonsterTable then
+		self._gmCmdMonsterTable = lt.MonsterInfoDao:queryAll()
+	end
+	return self._gmCmdMonsterTable
+end
+
+--[[  
+	地图传送表查询
+]]
+function CacheManager:getMapTransferMap()
+	if not self._mapTransformMap then
+		self._mapTransformMap = lt.MapTransferDao:queryAll()
+	end
+	return self._mapTransformMap
+end
+
+function CacheManager:getMapTransferMeta(mapCode)
+	local mapTransformMap = self:getMapTransferMap()
+	return mapTransformMap[mapCode] or {}
+end
+
+--[[  
+	地图传送点表查询
+]]
+function CacheManager:getMapTransferPointMap()
+	if not self._mapTransferPointMap then
+		self._mapTransferPointMap = lt.MapTransferPointDao:queryAll()
+	end
+	return self._mapTransferPointMap
+end
+
+function CacheManager:getMapTransferPointMeta(mapIdx)
+	local mapTransferPointMap = self:getMapTransferPointMap()
+	return mapTransferPointMap[mapIdx] or {}
+end
+
+--[[  
+	传送点坐标表查询
+]]
+function CacheManager:getTransferPointMap()
+	if not self._transferPointMap then
+		self._transferPointMap = lt.TransferPointDao:queryAll()
+	end
+	return self._transferPointMap
+end
+
+function CacheManager:getTransferPointMeta(mapIdx, raceId)
+	local transferPointMap = self:getTransferPointMap()
+	local key = mapIdx.."_"..raceId
+	return transferPointMap[key] or {}
+end
+
+--[[
+	技能特效表新表
+]]
+function CacheManager:getSkillEffectNew()
+	if not self._skillEffectNew then
+		self._skillEffectNew = lt.SkillEffectsDao:queryAll()
+	end
+
+	return self._skillEffectNew
+end
+
+-- 根据SkillId获取技能特效
+function CacheManager:getSkillEffectById(skillId)
+	local tb = self:getSkillEffectNew()
+	return tb[skillId]
+end
+
+-- 根据SkillId && skillLevel 获取技能特效
+function CacheManager:getSkillEffectByIdLv(skillId, skillLevel)
+	local skillEffects = self:getSkillEffectById(skillId) or {}
+	if not skillLevel then
+		return skillEffects[1]
+	end
+
+	for _,meta in ipairs(skillEffects) do
+		if meta:checkMetaLevel(skillLevel) then
+			return meta
+		end
+	end
+
+	return skillEffects[1]
+end
+
+function CacheManager:getActionMetas(skillId,skillLevel)
+	local skillMeta = self:getSkillEffectByIdLv(skillId,skillLevel)
+    if not skillMeta then
+        return
+    end
+    
+    return skillMeta:getActionMetas()
+end
+
+-- 获取buff特效
+function CacheManager:getBuffMetas(skillId,skillLevel)
+    local skillMeta = CacheManager:getSkillEffectByIdLv(skillId,skillLevel)
+    if not skillMeta then
+        return
+    end
+    
+    return skillMeta:getSelfMetas()
+end
+
+-- 获取受击特效
+function CacheManager:getHitMetas(skillId,skillLevel)
+    local skillMeta = CacheManager:getSkillEffectByIdLv(skillId,skillLevel)
+    if not skillMeta then
+        return
+    end
+    
+    return skillMeta:getHitMetas()
+end
+
+-- 获取过程特效
+function CacheManager:getProcessMetas(skillId,skillLevel)
+    local skillMeta = CacheManager:getSkillEffectByIdLv(skillId,skillLevel)
+    if not skillMeta then
+        return
+    end
+    
+    return skillMeta:getProcessMetas()
+end
+
+-- 获取子弹表
+function CacheManager:getBulletMetas(skillId,skillLevel)
+    local skillMeta = self:getSkillEffectByIdLv(skillId,skillLevel)
+    if not skillMeta then
+        return
+    end
+
+	return skillMeta:getProcessMetas()
+end
+
+--[[
+	任务表
+]]
+function CacheManager:getMissionMap()
+	if not self._missionMap then
+		self._missionMap = {}
+	end
+
+	return self._missionMap
+end
+
+function CacheManager:getMissionMeta(missionId)
+	local missionMap = self:getMissionMap()
+	if not missionMap[missionId] then
+		self._missionMap[missionId] = lt.MissionDao:query(missionId)
+	end
+
+	return self._missionMap[missionId]
+end
+
+--[[
+	活跃度宝箱表
+]]
+function CacheManager:getALTreasureMap()
+	if not self._alTreasureMap then
+		self._alTreasureMap = lt.ALTreasureDao:queryAll()
+	end
+	return self._alTreasureMap
+end
+
+function CacheManager:getALTreasureMeta(types)
+	local alTreasureMap = self:getALTreasureMap()
+	return alTreasureMap[types]
+end
+
+--[[
+	圣物表
+]]
+function CacheManager:getRelicSystemMap()
+	if not self._relicSystemMap then
+		self._relicSystemMap = {}
+	end
+
+	return self._relicSystemMap
+end
+
+function CacheManager:getRelicSystemMeta(rewardId)
+	local relicSystemMap = self:getRelicSystemMap()
+	if not relicSystemMap[rewardId] then
+		self._relicSystemMap[rewardId] = lt.RelicSystemDao:query(rewardId)
+	end
+
+	return self._relicSystemMap[rewardId]
+end
+
+--[[
+	商城表
+]]
+function CacheManager:getShoppingMallMap()
+	if not self._shoppingMallMap then
+		self._shoppingMallMap = lt.ShoppingMallDao:queryAll()
+	end
+	return self._shoppingMallMap
+end
+
+function CacheManager:getShoppingMallMeta(types)
+	local shoppingMall = self:getShoppingMallMap()
+	return shoppingMall[types]
+end
+
+--[[
+	商城表
+]]
+
+function CacheManager:getShoppingMallTable()
+	if not self._shoppingMallTable then
+		self._shoppingMallTable = {}
+	end
+	return self._shoppingMallTable
+end
+
+function CacheManager:getShoppingMallMetaById(id)
+	local shoppingMallTable = self:getShoppingMallTable()
+	if not shoppingMallTable[id] then
+		shoppingMallTable[id] = lt.ShoppingMallDao:query(id)
+	end
+	return shoppingMallTable[id]
+end
+
+--[[
+	设置表
+]]
+function CacheManager:getSettingMap()
+	if not self._settingMap then
+		self._settingMap = lt.SettingsDao:queryAll()
+	end
+	return self._settingMap
+end
+
+function CacheManager:getSettingMeta(index)
+	local settingMap = self:getSettingMap()
+	return settingMap[index] or {}
+end
+
+function CacheManager:getAllSettingMeta()
+	if not self._allSettingMap then
+		self._allSettingMap = lt.SettingsDao:queryAllMeta()
+	end
+	return self._allSettingMap
+end
+
+--[[  
+	提示信息表|MessageContent
+]]
+function CacheManager:getMessageContentMap()
+	if not self._messageContentMap then
+		self._messageContentMap = lt.MessageContentDao:queryAll()
+	end
+	return self._messageContentMap
+end
+--[[  
+	根据id获取 提示信息
+]]
+function CacheManager:getMessageContentByID(Id)
+	local tb = self:getMessageContentMap()
+	return tb[Id]
+end
+
+--[[  
+	文字格式表|MessageFormat
+]]
+function CacheManager:getMessageFormatMap()
+	if not self._messageFormatMap then
+		self._messageFormatMap = lt.MessageFormatDao:queryAll()
+	end
+	return self._messageFormatMap
+end
+--[[  
+	根据type获取 文字格式
+]]
+function CacheManager:getMessagFormatBytype(type)
+	local tb = self:getMessageFormatMap()
+	
+	return tb[type]
+end
+
+--[[  
+	宠物表查询
+]]
+function CacheManager:getPetMap()
+	if not self._petMap then
+		self._petMap = {}
+	end
+	return self._petMap
+end
+
+function CacheManager:getPetMeta(id)
+	local petMap = self:getPetMap()
+	if not petMap[id] then
+		petMap[id] = lt.PetDao:query(id)
+	end
+	return petMap[id]
+end
+
+function CacheManager:getAllPetMap()
+	if not self._allPetMap then
+		self._allPetMap = lt.PetDao:queryAll()
+	end
+	return self._allPetMap
+end
+
+--[[  
+	宠物升级表查询
+]]
+function CacheManager:getPetLevelMap()
+	if not self._petLevelMap then
+		self._petLevelMap = {}
+	end
+	return self._petLevelMap
+end
+
+function CacheManager:getAllPetLevelMap()
+	if not self._allPetLevelMap then
+		self._allPetLevelMap = lt.PetLevelDao:queryAll()
+	end
+	return self._allPetLevelMap
+end
+
+function CacheManager:getPetLevelMeta(level)
+	local petLevelMap = self:getPetLevelMap()
+	if not petLevelMap[level] then
+		petLevelMap[level] = lt.PetLevelDao:query(level)
+	end
+	return petLevelMap[level]
+end
+
+function CacheManager:getPetMaxLevel()
+	local allPetLevelMap = self:getAllPetLevelMap()
+	if #allPetLevelMap == 0 then
+		return 0
+	end
+	local maxLevel = allPetLevelMap[#allPetLevelMap]:getLevel()
+	return maxLevel
+end
+
+--[[  
+	宠物升级增加属性表
+]]
+function CacheManager:getPetAttrMap()
+	if not self._petAttrMap then
+		self._petAttrMap = {}
+	end
+	return self._petAttrMap
+end
+
+function CacheManager:getPetAttrCfg(attr)
+	local petAttrMap = self:getPetAttrMap()
+	if not petAttrMap[attr] then
+		petAttrMap[attr] = lt.PetAttrDao:queryPetAttrById(attr)
+	end
+	return petAttrMap[attr]
+end
+
+function CacheManager:getPetAttrByPetLevel(attr,level)
+	local petAttrCfg = CacheManager:getPetAttrCfg(attr)
+	if petAttrCfg then
+		return petAttrCfg[level]
+	end
+
+	return 0
+end
+
+--[[  
+	宠物技能表
+]]
+function CacheManager:getPetCapsuleMap()
+	if not self._petCapsuleMap then
+		self._petCapsuleMap = lt.PetCapsuleDao:queryAll()
+	end
+	return self._petCapsuleMap
+end
+
+function CacheManager:getPetCapsuleById(id)
+	local petCapsuleMap = self:getPetCapsuleMap()
+	return petCapsuleMap[id]
+end
+
+--[[  
+	宠物皮肤类型表
+]]
+function CacheManager:getPetSkinTypeMap()
+	if not self._petSkinTypeMap then
+		self._petSkinTypeMap = lt.PetTypeDao:queryAll()
+	end
+	return self._petSkinTypeMap
+end
+
+function CacheManager:getPetSkinTypeMeta(id)
+	local petSkinTypeMap = self:getPetSkinTypeMap()
+	return petSkinTypeMap[id]
+end
+
+--[[
+	宠物皮肤升级表
+]]
+function CacheManager:getPetSkinMap()
+	if not self._petSkinMap then
+		self._petSkinMap = {}
+	end
+
+	return self._petSkinMap
+end
+
+function CacheManager:getPetSkinById(id)
+	local petSkinMap = self:getPetSkinMap()
+	if not petSkinMap[id] then
+		petSkinMap[id] = lt.PetSkinDao:querySkinUp(id)
+	end
+	return petSkinMap[id]
+end
+
+--[[  
+	巴托里和特普兹行宫
+]]
+function CacheManager:getNpcVampireLairTable()
+	if not self._npcVampireLairTable then
+		self._npcVampireLairTable = lt.NpcVampireLairDao:queryAll()
+	end
+	return self._npcVampireLairTable
+end
+
+--[[  
+	巴托里和特普兹行宫 触发区域
+]]
+function CacheManager:getNpcTriggerAreaTable(mapcode)
+	if self._arrayMap then
+		return self._arrayMap
+	end
+	local npcVampireLairTable = self:getNpcVampireLairTable()
+	local tempMap = {}
+	local table = npcVampireLairTable[tostring(mapcode)]
+	if table and table:getTriggerArea() ~="" then
+		local triggerArea = table:getTriggerArea()
+		local formatted_str = triggerArea:gsub("%[%[", "{{"):gsub("%]%]", "}}"):gsub("%[", "{"):gsub("%]", "}")
+		-- 动态加载字符串生成表
+		local success, result = pcall(loadstring("return " .. formatted_str))
+		if success then
+			tempMap = result
+		end
+	end
+
+	self._arrayMap = tempMap
+
+	return self._arrayMap
+end
+
+--[[  
+	巴托里和特普兹行宫 BOSS召唤怪物时的说话内容
+]]
+function CacheManager:getMasterSummonSayTable(mapcode)
+	local npcVampireLairTable = self:getNpcVampireLairTable()
+	local table = npcVampireLairTable[tostring(mapcode)]
+	if table and table:getMasterSummonSay() ~= "" then
+		local value = table:getMasterSummonSay()
+		value = string.gsub(value, "[\n\r]", '')
+		local itemList = string.split(value, ";")
+		for k,v in ipairs(itemList) do
+			itemList[k] = v
+		end
+		return itemList
+	end
+	return nil
+end
+
+--[[  
+	巴托里和特普兹行宫 杀死BOSS后的说话内容
+]]
+
+function CacheManager:getMasterDeadTable(mapcode)
+	local npcVampireLairTable = self:getNpcVampireLairTable()
+	local table = npcVampireLairTable[tostring(mapcode)]
+	if not table then
+		return nil
+	end
+	local race = lt.GameModule:getHeroRace()
+	local value = nil
+	if race == Constant.RaceType.Slayer then
+		value = table:getMasterDeadSlayerSay()
+	elseif race == Constant.RaceType.Vampire then
+		value = table:getMasterDeadVampireSay()
+	elseif race == Constant.RaceType.Ousters then
+		value = table:getMasterNotDeadSay()
+	end
+	value = string.gsub(value, "[\n\r]", '')
+	local itemList = string.split(value, ";")
+	for k,v in ipairs(itemList) do
+		itemList[k] = v
+	end
+	return itemList
+end
+
+--[[  
+	特权表|Privilege
+]]
+function CacheManager:getPrivilegeArray()
+	if not self._privilegeTable then
+		self._privilegeTable = lt.PrivilegeDao:queryAll()
+	end
+	return self._privilegeTable
+end
+
+--[[  
+	特权描述|PrivilegeDesc
+]]
+function CacheManager:getPrivilegeDescTable()
+	if not self._privilegeDescTable then
+		self._privilegeDescTable = lt.PrivilegeDescDao:queryAll()
+	end
+	return self._privilegeDescTable
+end
+
+--[[  
+	交易行 根据单个
+]]
+
+function CacheManager:getTransactionsById(Id)
+	if not self._transactions then
+        self._transactions = {}
+    end
+
+    if not self._transactions[Id] then
+        self._transactions[Id] = lt.TransactionsDao:queryById(Id)
+    end
+
+    return self._transactions[Id]
+end
+
+--[[  
+	交易行
+]]
+
+function CacheManager:getTransactionsDefaultMap()
+	if not self._transactionsDefaultMap then
+		self._transactionsDefaultMap = lt.TransactionsDao:queryDefault()
+	end
+	return self._transactionsDefaultMap
+end
+
+--[[
+	聊天
+]]
+
+function CacheManager:getChatAllMap()
+	if not self._chatAllMap then
+		self._chatAllMap = lt.ChatDao:queryAll()
+	end
+	return self._chatAllMap
+end
+
+--[[  
+	引导表查询
+]]
+	
+function CacheManager:getGuideMap()
+	if not self._guideMap then
+		self._guideMap = lt.GuidanceDao:queryAll()
+	end
+	return self._guideMap
+end
+
+function CacheManager:getGuideMeta(id)
+	local guideMap = self:getGuideMap()
+	return guideMap[id]
+end
+
+--[[  
+	转职任务对话表查询
+]]
+	
+function CacheManager:getDialogueDaoMap()
+	if not self._missionDialogueMap then
+		self._missionDialogueMap = lt.MissionDialogueDao:queryAll()
+	end
+	return self._missionDialogueMap
+end
+
+function CacheManager:getDialogueDaoMeta(id)
+	local missionMap = self:getDialogueDaoMap()
+	return missionMap[id]
+end
+
+--[[  
+	转职副本祭坛入口表查询
+]]
+	
+function CacheManager:getGateOfAltarMap()
+	if not self._gateOfAltarMap then
+		self._gateOfAltarMap = lt.GateOfAltarDao:queryAll()
+	end
+	return self._gateOfAltarMap
+end
+
+function CacheManager:getGateOfAltarMeta(dungeonId)
+	local gateOfAltarMap = self:getGateOfAltarMap()
+	return gateOfAltarMap[dungeonId]
+end
+
+--[[  
+	转职副本血之祭坛表查询
+]]
+	
+function CacheManager:getAltarOfBloodMap()
+	if not self._altarOfBloodMap then
+		self._altarOfBloodMap = lt.AltarOfBloodDao:queryAll()
+	end
+	return self._altarOfBloodMap
+end
+
+function CacheManager:getAltarOfBloodMeta(dungeonId)
+	local altarOfBloodMap = self:getAltarOfBloodMap()
+	return altarOfBloodMap[dungeonId]
+end
+
+function CacheManager:getBloodTransferPos(dungeonId)
+	if not self._bloodTransferPos then
+		self._bloodTransferPos = {}
+		local altarOfBloodMap = self:getAltarOfBloodMap()
+		local meta = altarOfBloodMap[dungeonId]
+		local leaveAreas = meta:getLeaveArea()
+		for i = 1, #leaveAreas do
+			local m = leaveAreas[i][1]
+			local n = leaveAreas[i][2]
+			local idx = lt.MapUtil:calcMNIndex(m, n)
+			self._bloodTransferPos[idx] = leaveAreas[i]
+		end
+	end
+	return self._bloodTransferPos
+end
+
+--[[  
+	转职副本深渊的镜子表查询
+]]
+	
+function CacheManager:getMirrorOfAbyssMap()
+	if not self._mirrorOfAbyss then
+		self._mirrorOfAbyss = lt.MirrorOfAbyssDao:queryAll()
+	end
+	return self._mirrorOfAbyss
+end
+
+function CacheManager:getMirrorOfAbyssMeta(dungeonId)
+	local mirrorOfAbyss = self:getMirrorOfAbyssMap()
+	return mirrorOfAbyss[dungeonId]
+end
+
+--[[  
+	帮助表查询
+]]
+	
+function CacheManager:getHelpMap()
+	if not self._helpMap then
+		self._helpMap = lt.HelpDao:queryAll()
+	end
+	return self._helpMap
+end
+
+function CacheManager:getHelpMapByRace(myRace)
+	local mapTable = {}
+	local helpMap = self:getHelpMap()
+    for i, meta in ipairs(helpMap or {}) do
+        local race = meta:getRace() or 0
+        if race == 0 or myRace == race then
+            local type = meta:getType()
+            if not mapTable[type] then
+                mapTable[type] = {}
+            end
+			table.insert(mapTable[type], meta)
+        end
+    end
+    return mapTable
+end
+
+
+--[[  
+	成就表查询
+]]
+	
+function CacheManager:getAchivementMap()
+	if not self._achivementMap then
+		self._achivementMap = lt.AchievementDao:queryAll()
+	end
+	return self._achivementMap
+end
+
+--[[  
+	充值表
+]]	
+function CacheManager:getRechargeMap()
+	if not self._rechargeMap then
+		self._rechargeMap = lt.RechargeDao:queryAllSortID()
+	end
+	return self._rechargeMap
+end
+
+--首充表
+function CacheManager:getFirstRechargeGiftMap()
+	if not self._firstRechargeGiftMap then
+		self._firstRechargeGiftMap = lt.FirstRechargeGiftDao:queryAll()
+	end
+	return self._firstRechargeGiftMap
+end
+
+function CacheManager:getRechargeArrayOfType()
+	if not self._rechargeArrayOfType then
+		self._rechargeArrayOfType = {}
+	end
+	return self._rechargeArrayOfType
+end
+
+function CacheManager:getRechargeArrayByShopType(shopType)
+	local rechargeMapOfType = self:getRechargeArrayOfType()
+	if not rechargeMapOfType[shopType] then
+		self._rechargeArrayOfType[shopType] = lt.RechargeDao:queryByShopType(shopType)
+	end
+	return self._rechargeArrayOfType[shopType]
+end
+
+function CacheManager:getRechargeInfoById(Id)
+	if not self._rechargeMap then
+		self._rechargeMap = self:getRechargeMap()
+	end
+	if self._rechargeMap[Id] then
+		return self._rechargeMap[Id]
+	end
+end
+
+--[[  
+	属性提示筛选表查询
+]]
+	
+function CacheManager:getMessageFilterMap()
+	if not self._messageFilterMap then
+		self._messageFilterMap = lt.MessageFilterDao:queryAll()
+	end
+	return self._messageFilterMap
+end
+
+function CacheManager:getMessageFilterMapById(idxId)
+	local messageFilterMap = self:getMessageFilterMap()
+	return messageFilterMap[idxId]
+end
+
+function CacheManager:getPowerColorSet(level)
+	local defaultColorSet = CacheManager:getVariableById(Constant.Variable.DefaultEqiupColorSet)
+	if not self._powerColorSet then
+		local powerStr = CacheManager:getVariableById(Constant.Variable.PowerColorSetRatio)
+		self._powerColorSet = string.split(powerStr, "|")
+	end
+	local colorSet = self._powerColorSet[level] or defaultColorSet
+	return colorSet
+end
+ 
+--[[  
+	地牢类型传送特效
+]]
+	
+function CacheManager:getDungeonTransferEffectMap()
+	if not self._dungeonTransferEffectMap then
+		self._dungeonTransferEffectMap = lt.DungeonTransferEffectDao:queryAll()
+	end
+	return self._dungeonTransferEffectMap
+end
+
+function CacheManager:getDungeonTransferEffectMapById(Id)
+	local dungeonTransferEffectMap = self:getDungeonTransferEffectMap()
+	return dungeonTransferEffectMap[Id]
+end
+
+-- 狂暴技能数据缓存
+function CacheManager:getBerserkerPairList(frameID)
+	if not self._berserkerNumPairsIDList then
+		self._berserkerNumPairsIDList = {}
+		for pf = 0, 120 - 1, 6 do
+			local current = BERSERKER_PAIRS_FRAMES[pf + 1]
+			local p1 = BERSERKER_PAIRS_FRAMES[pf + 2]
+			local p2 = BERSERKER_PAIRS_FRAMES[pf + 3]
+			local p3 = BERSERKER_PAIRS_FRAMES[pf + 4]
+			local p4 = BERSERKER_PAIRS_FRAMES[pf + 5]
+			local p5 = BERSERKER_PAIRS_FRAMES[pf + 6]
+			self._berserkerNumPairsIDList[current] = {}
+			table.insert(self._berserkerNumPairsIDList[current], p1)
+			table.insert(self._berserkerNumPairsIDList[current], p2)
+			table.insert(self._berserkerNumPairsIDList[current], p3)
+			table.insert(self._berserkerNumPairsIDList[current], p4)
+			table.insert(self._berserkerNumPairsIDList[current], p5)
+		end
+	end
+	if self._berserkerNumPairsIDList[frameID] then
+		return self._berserkerNumPairsIDList[frameID]
+	else
+		yflog:Info("CacheManager:getBerserkerPairList not found data :%s",frameID)
+	end
+end
+
+-- 黑暗复仇者技能数据缓存
+function CacheManager:getExtremePairList(frameID)
+	if not self._extremeNumPairsIDList then
+		self._extremeNumPairsIDList = {}
+		for pf = 0, 48 - 1, 4 do
+			local current = EXTREME_PAIRS_FRAMES[pf + 1]
+			local p2 = EXTREME_PAIRS_FRAMES[pf + 3]
+			self._extremeNumPairsIDList[current] = {}
+			table.insert(self._extremeNumPairsIDList[current], current)
+			table.insert(self._extremeNumPairsIDList[current], p2)
+		end
+	end
+	if self._extremeNumPairsIDList[frameID] then
+		return self._extremeNumPairsIDList[frameID]
+	else
+		yflog:Info("CacheManager:_extremeNumPairsIDList not found data :%s",frameID)
+	end
+end
+
+-- 音效数据缓存
+function CacheManager:getSoundMap()
+	if not self._soundMap then
+		self._soundMap = lt.SoundDao:queryAll()
+	end
+	return self._soundMap
+end
+
+function CacheManager:getSoundNameByID(ID)
+	if not self._soundMap then
+		self:getSoundMap()
+	end
+	local soundMeta = self._soundMap[ID]
+	if soundMeta then
+		return soundMeta:getSoundName()
+	end
+end
+
+-- 根据技能Id 获取对应的音效名称
+function CacheManager:getSoundNameBySkillId(skillId)
+	local startActionMap = self:getSkillStartActionMap()
+	local meta = startActionMap[skillId]
+	if meta then
+		local soundId = meta:getSoundId()
+		return self:getSoundNameByID(soundId)
+	else
+		return nil
+	end
+end
+
+function CacheManager:getSoundActionMap()
+	if not self._soundActionMap then
+		self._soundActionMap = lt.SoundActionDao:queryAll()
+	end
+	return self._soundActionMap
+end
+
+
+-- 根据actionId 获取对应音效名称
+function CacheManager:getSoundNameByActionInfo(combId, actionId)
+	local startActionMap = self:getSoundActionMap()
+	local metas = startActionMap[combId]
+	
+	if metas and #metas > 0 then
+		local meta = metas[actionId]
+		if meta then
+			local soundId = meta:getSoundId()
+			return self:getSoundNameByID(soundId)
+		end
+	else
+		return nil
+	end
+end
+
+-- 自动售卖 
+function CacheManager:getRecycleSettingsMap()
+	if not self._recycleSettingsMap then
+		self._recycleSettingsMap = lt.AutoRecycleSettingsDao:queryAll()
+	end
+	return self._recycleSettingsMap
+end
+
+function CacheManager:getRecycleSettingsList()
+	if not self._recycleSettingsList then
+		self._recycleSettingsList = {}
+	end
+	return self._recycleSettingsList
+end
+
+function CacheManager:getRecycleSettingsByIdx(Idx)
+	if not Idx or Idx == 0 then
+		return nil
+	end
+	local tb = self:getRecycleSettingsList()
+	if not tb[Idx] then
+		tb[Idx] = lt.AutoRecycleSettingsDao:queryByIdx(Idx)
+	end
+	return tb[Idx]
+end
+--[[  
+	我要变强表查询
+]]
+function CacheManager:getStrongMap()
+	if not self._strongeMap then
+		self._strongeMap = lt.StrongDao:queryAll()
+	end
+	return self._strongeMap
+end
+
+function CacheManager:getStrongMapByRace(myRace)
+	local mapTable = {}
+	local strongMap = self:getStrongMap()
+    for i = 1, #strongMap do
+		local meta = strongMap[i]
+        local race = meta:getOccupation()
+        if race == 0 or myRace == race then
+            local type = meta:getType()
+            if not mapTable[type] then
+				local tabs = {}
+				tabs.idx = type
+				tabs.name = meta:getTypeName()
+				tabs.metas = {}
+                mapTable[type] = tabs
+            end
+			table.insert(mapTable[type].metas, meta)
+        end
+    end
+    return mapTable
+end
+
+
+function CacheManager:getSevenDayMissionMap()
+	if not self._sevenDayMap then
+		self._sevenDayMap = lt.SevenDayMissionDao:queryAll()
+	end
+	return self._sevenDayMap
+end
+
+function CacheManager:getActivityGiftMap()
+	if not self._activityGiftMap then
+		self._activityGiftMap = lt.ActivityGiftDao:queryAll()
+	end
+	return self._activityGiftMap
+end
+
+function CacheManager:getSevenDayMissionList()
+	if not self._sevenDayList then
+		self._sevenDayList = {}
+	end
+	return self._sevenDayList
+end
+
+function CacheManager:getSevenDayMissionMeta(missionId)
+	local missionMap = self:getSevenDayMissionList()
+	if not missionMap[missionId] then
+		self._sevenDayList[missionId] = lt.SevenDayMissionDao:query(missionId)
+	end
+	return self._sevenDayList[missionId]
+end
+
+function CacheManager:getSevenDayGiftList()
+	if not self._sevenDayGiftList then
+		self._sevenDayGiftList = {}
+	end
+	return self._sevenDayGiftList
+end
+
+function CacheManager:getSevenDayGiftMeta(giftId)
+	local giftMap = self:getSevenDayGiftList()
+	if not giftMap[giftId] then
+		self._sevenDayGiftList[giftId] = lt.ActivityGiftDao:query(giftId)
+	end
+	return self._sevenDayGiftList[giftId]
+end
+
+function CacheManager:getEquipSuitTable()
+	if not self._equipSuitTable then
+		self._equipSuitTable = {}
+	end
+	return self._equipSuitTable
+end
+
+function CacheManager:getEquipSuitMeta(suitId)
+	local mapTable = self:getEquipSuitTable()
+	if not mapTable[suitId] then
+		mapTable[suitId] = lt.EquipSuitDao:query(suitId)
+	end
+	return mapTable[suitId]
+end
+
+-- 功能开启表 
+function CacheManager:getFunctionToggleMap()
+	if not self._functionToggleMap then
+		self._functionToggleMap = lt.FunctionToggleDao:queryAll()
+	end
+	return self._functionToggleMap
+end
+--单个功能开启表
+function CacheManager:getFunctionToggleMeta(funId)
+	if not self._functionToggleMap then
+		self._functionToggleMap = lt.FunctionToggleDao:queryAll()
+	end
+	return self._functionToggleMap[funId]
+end
+
+-- 副本表 
+function CacheManager:getDungeonMap()
+	if not self._dungeonMap then
+		self._dungeonMap = lt.DungeonDao:queryAll()
+	end
+	return self._dungeonMap
+end
+
+-- 月卡地图 
+function CacheManager:getMonthCardMap()
+	if not self._monthCardMap then
+		self._monthCardMap = lt.MonthCardDao:queryAll()
+	end
+	return self._monthCardMap
+end
+
+--月卡立即获得道具
+function CacheManager:getMonthCardActiveAwards()
+	if not self._monthCardActiveAwards then
+		local value = self:getVariableById(Constant.Variable.MonthCardActiveAwards)
+		self._monthCardActiveAwards = json.decode(value)
+	end
+	return self._monthCardActiveAwards
+end
+
+--月卡每日领取道具
+function CacheManager:getMonthCardDailyAwards()
+	if not self._monthCardDailyAwards then
+		local value = self:getVariableById(Constant.Variable.MonthCardDailyAwards)
+		self._monthCardDailyAwards = json.decode(value)
+	end
+	return self._monthCardDailyAwards
+end
+
+--精力系统
+function CacheManager:getVitalityMap()
+	if not self._vitalityMap then
+		self._vitalityMap = lt.VitalityDao:queryAll()
+	end
+	return self._vitalityMap
+end
+
+function CacheManager:getVitalityListMap()
+	if not self._vitalityListMap then
+		self._vitalityListMap = lt.VitalityListDao:queryAll()
+	end
+	return self._vitalityListMap
+end
+
+function CacheManager:getMountMap()
+	if not self._mountMap then
+		self._mountMap = lt.MountDao:queryAll()
+	end
+	return self._mountMap
+end
+
+function CacheManager:getHaloMap()
+	if not self._haloMap then
+		self._haloMap = lt.HaloDao:queryAll()
+	end
+	return self._haloMap
+end
+
+function CacheManager:getSignGiftMap()
+	if not self._signGiftMap then
+		self._signGiftMap = lt.SignGiftDao:queryAll()
+	end
+	return self._signGiftMap
+end
+
+function CacheManager:getLevelGiftMap()
+	if not self._levelGiftMap then
+		self._levelGiftMap = lt.LevelGiftDao:queryAll()
+	end
+	return self._levelGiftMap
+end
+
+--检测攻击不同步备用接口
+function CacheManager:checkMonsterDataInfo()
+	local monstertable = lt.MonsterInfoDao:queryAll()
+	for _,data in pairs(monstertable) do
+		local modelId = data:getModelId()
+		local meta = CacheManager:getModelMeta(modelId)
+		if meta then
+			if data:getAttackInterval()*1000 ~= meta:getAttackTime() then
+				print(string.format("Monster attack intervals are inconsistent. Monster ID:%d, model id:%d, [%s]",data:getId(),modelId,data:getName()))
+			end
+		end
+	end
+end
+
+--精英BOSS
+function CacheManager:getWorldBossMap()
+	if not self._worldBossMap then
+		self._worldBossMap = lt.WorldBossDao:queryAll()
+	end
+	return self._worldBossMap
+end
+
+function CacheManager:getTransferByConfigMap()
+	if not self._transferByConfigMap then
+		self._transferByConfigMap = {}
+	end
+
+	return self._transferByConfigMap
+end
+
+--地图传送配置
+function CacheManager:getTransferByConfig(configId)
+	local transferByConfigMap = self:getTransferByConfigMap()
+	if not transferByConfigMap[configId] then
+		self._transferByConfigMap[configId] = lt.TransferByConfigDao:query(configId)
+	end
+
+	return self._transferByConfigMap[configId]
+end
+
+-- 触发礼包
+function CacheManager:getTriggerGiftTable()
+	if not self._triggerGiftTable then
+		self._triggerGiftTable = lt.TriggerGiftDao:queryAll()
+	end
+	return self._triggerGiftTable
+end
+
+----------------------------------------------------------------------------------------
+-- 天天充值 start
+function CacheManager:getDailyRechargeCycleMap()
+	if not self._dailyRechargeCycleMap then
+		self._dailyRechargeCycleMap = {}
+	end
+	return self._dailyRechargeCycleMap
+end
+
+function CacheManager:getDailyRechargeCycleByCycleId(cycleId)
+	local dailyRechargeMap = self:getDailyRechargeCycleMap()
+	if not dailyRechargeMap[cycleId] then
+		self._dailyRechargeCycleMap[cycleId] = lt.DailyRechargeCycleDao:queryById(cycleId)
+	end
+	return self._dailyRechargeCycleMap[cycleId]
+end
+
+function CacheManager:getDailyRechargeArrayMap()
+	if not self._dailyRechargeArrayMap then
+		self._dailyRechargeArrayMap = {}
+	end
+	return self._dailyRechargeArrayMap
+end
+
+function CacheManager:getDailyRechargeById(rewardStoreId)
+	local dailyRechargeArrayMap = self:getDailyRechargeArrayMap()
+	if not dailyRechargeArrayMap[rewardStoreId] then
+		self._dailyRechargeArrayMap[rewardStoreId] = lt.DailyRechargeDao:queryById(rewardStoreId)
+	end
+	return self._dailyRechargeArrayMap[rewardStoreId]
+end
+
+-- 天天充值 end
+----------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------
+-- 攻速 start
+function CacheManager:getSpeedArray()
+	if not self._speedArray then
+		self._speedArray = lt.SpeedDao:queryAll()
+	end
+	return self._speedArray
+end
+-- 攻速 end
+----------------------------------------------------------------------------------------
+
+return CacheManager

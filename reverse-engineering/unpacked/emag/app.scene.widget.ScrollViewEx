@@ -1,0 +1,141 @@
+local ScrollViewEx = class("ScrollViewEx", function()
+    return ccui.ScrollView:create()
+end)
+--nodeW, nodeH 显示区域大小。   scrollWidth, scrollHeight内容区域大小
+function ScrollViewEx:ctor(param)
+    self:setTouchEnabled(true)
+    self:setBounceEnabled(true)
+    self:setDirection(ccui.ScrollViewDir.vertical)
+    if param and param.nodeW and param.nodeH then
+        self:setContentSize(cc.size(param.nodeW, param.nodeH))
+        self._height = param.nodeH
+    end
+
+    if param and param.scrollWidth and param.scrollHeight then
+        self:resizeInner(cc.size(param.scrollWidth, param.scrollHeight))
+    end
+
+    if param and param.slider and param.sliderCapInsets and param.sliderblock then
+        self._slider = param.slider
+        self._sliderCapInsets = param.sliderCapInsets
+        self._sliderBlock = param.sliderblock
+    else
+        self._slider = "ui/common/Common_Btn_slider_01.png"
+        self._sliderCapInsets = cc.rect(18, 22, 0, 2)
+        self._sliderBlock = "ui/common/Common_Btn_slider_02.png"
+    end
+
+    if param and param.scrollGap then
+        self._scrollGap = param.scrollGap
+    else
+        self._scrollGap = 18
+    end
+
+    self._scrollBarPos = param.scrollBarPos or cc.p(0, 0)
+
+    self:setScrollBarEnabled(false)
+    self:onEvent(handler(self, self.onScroll))
+end
+
+function ScrollViewEx:setEnableScrollBar(bool)
+    self._enableScrollBar = bool
+    self:initScrollBar()
+end
+
+function ScrollViewEx:setVisibleScrollBar(bool)
+    self._isVisbleScrollBar = bool or false
+    if self._scrollBar then
+        self._scrollBar:setVisible(self._isVisbleScrollBar)
+    end
+    if self._scrollBarBg then
+        self._scrollBarBg:setVisible(self._isVisbleScrollBar)
+    end
+end
+
+function ScrollViewEx:onScroll(event)
+    if event.name == "SCROLLING" then
+    elseif event.name == "CONTAINER_MOVED" then
+        self:scrollBarFadeIn(self:getInnerContainerPosition().y)
+    elseif event.name == "BOUNCE_TOP" then
+    elseif event.name == "BOUNCE_BOTTOM" then
+    end
+end
+
+function ScrollViewEx:initScrollBar()
+    local parentNode = cc.Node:create()
+    local scrollBarBg,scrollBar
+    self._gapH = self._curHeight - self._height
+
+    scrollBarBg = ccui.Scale9Sprite:create(self._sliderCapInsets, self._slider)
+    scrollBar = cc.Sprite:create(self._sliderBlock)
+
+    scrollBarBg:setContentSize(cc.size(scrollBarBg:getContentSize().width, self._height))
+    scrollBarBg:setAnchorPoint(0.5,0)
+
+    scrollBar:setAnchorPoint(0.5,1)
+    scrollBar:setPositionY(self._height - self._scrollGap)
+
+    parentNode:addChild(scrollBarBg)
+    parentNode:addChild(scrollBar)
+
+    parentNode:setPosition(self._scrollBarPos)
+    -- parentNode:setCascadeOpacityEnabled(true)
+
+    self:getParent():addChild(parentNode, 10)
+
+    self._scrollBar = scrollBar
+    self._scrollBarBg = scrollBarBg
+    self._scrollBarParentNode = parentNode
+
+    local rt = self._scrollBar:getBoundingBox()
+    self._scrollBarHeight = rt.height
+    self._scrollBarBaseScaleY = self._scrollBar:getScaleY()
+end
+
+function ScrollViewEx:scrollBarFadeIn(dragY)
+    if not self._enableScrollBar then return end
+
+    dragY = dragY + self._gapH
+    if dragY < 0 then
+        self._scrollBar:setPositionY(self._height - self._scrollGap)
+        self._scrollBar:setScaleY((1 - math.abs(dragY/self._height)) * self._scrollBarBaseScaleY)
+    elseif dragY > (self._curHeight - self._height) then
+        local scaleY = 1 - math.abs((dragY - self._curHeight + self._height)/self._height)
+        self._scrollBar:setScaleY(scaleY * self._scrollBarBaseScaleY)
+        self._scrollBar:setPositionY(self._scrollBarHeight * scaleY + self._scrollGap) 
+    else  
+        local h = self._height - 2*self._scrollGap - self._scrollBarHeight
+        local offset = (self._curHeight - self._height) == 0 and 0 or h * (1 - dragY/(self._curHeight - self._height))
+        local posY = self._scrollGap + self._scrollBarHeight + offset
+        self._scrollBar:setPositionY(posY)
+    end
+end
+
+function ScrollViewEx:createScrollViewEx(param)
+    return ScrollViewEx.new(param)
+end
+
+function ScrollViewEx:onClear()
+    self._scrollBar = nil
+    if self._scrollBarParentNode then
+        self._scrollBarParentNode:removeAllChildren()
+        self._scrollBarParentNode:removeFromParent()
+        self._scrollBarParentNode = nil
+    end
+    self:removeAllChildren()
+    self:removeFromParent()
+end
+
+function ScrollViewEx:resizeInner(size)
+    self:setInnerContainerSize(size)
+    self._curHeight = size.height
+    
+    if self._enableScrollBar then
+        self._gapH = self._curHeight - self._height    
+        self._scrollBar:setScaleY(1)
+        self._scrollBar:setPositionY(self._height - self._scrollGap)
+    end
+    self:jumpToTop()
+end
+
+return ScrollViewEx

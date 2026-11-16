@@ -1,0 +1,22 @@
+-- 光环
+local HaloDao = {}
+
+function HaloDao:queryAll()
+    local mapTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM Halo") do
+        local meta = lt.HaloMeta.new(row)
+        mapTable[#mapTable + 1] = meta
+    end
+    return mapTable
+end
+
+function HaloDao:query(Id)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM Halo WHERE Id=%d;", tonumber(Id))) do
+        local meta = lt.HaloMeta.new(row)
+        return meta
+    end
+end
+
+return HaloDao

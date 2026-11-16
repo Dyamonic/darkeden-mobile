@@ -1,0 +1,24 @@
+
+local VariableMeta = class("VariableMeta")
+
+
+
+function VariableMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function VariableMeta:initWithRow(row)
+    self._idxId = row.IdxId
+    self._name = row.Name
+    self._value = row.Value
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function VariableMeta:getIdxId() return self._idxId end
+function VariableMeta:getName() return self._name end
+function VariableMeta:getValue() return self._value end
+
+-- AUTO GENERATED GETTERS END
+return VariableMeta

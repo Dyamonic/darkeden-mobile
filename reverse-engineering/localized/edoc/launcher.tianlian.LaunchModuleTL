@@ -1,0 +1,216 @@
+---@class LaunchModuleTL 获取数据（区服信息,登录信息）
+local LaunchModuleTL = class("LaunchModuleTL")
+
+LaunchModuleTL.server = nil
+LaunchModuleTL.zoneId = nil
+LaunchModuleTL.serverId = nil
+LaunchModuleTL.zoneList = {}
+LaunchModuleTL.defaultServer = nil
+
+LaunchModuleTL.accout = ""
+LaunchModuleTL.pwd = ""
+
+local Save_LaunchModuleTL_ZONE = "Save_LaunchModuleTL_ZONE_SERVER"
+local Save_LaunchModuleTL_DEAULF_ZONE = "Save_LaunchModuleTL_DEAULF_ZONE"
+
+local Save_LaunchModuleTL_ACC = "Save_LaunchModuleTL_ACC"
+local NEW_SERVER_DAY = 3
+
+LaunchModuleTL.roleInfo = nil
+
+local RACE_TYPE = {
+    [1] = "Terran",
+    [2] = "Vampires",
+    [3] = "Ousters"
+}
+
+function LaunchModuleTL:init()
+    self._zoneList = {}
+    self._zoneFormatList = {}
+    self._defaultServer = nil
+    self._server = nil
+    self._accout = nil
+    self._pwd = nil
+end
+
+function LaunchModuleTL:response(severList)
+    local severList = json.decode(severList)
+    if severList then
+        self._server = severList.data
+        self:formatZoneList()
+    end
+end
+
+function LaunchModuleTL:clear()
+    self._zoneList = nil
+    self._defaultServer = nil
+    self._zoneFormatList = nil
+    self._server = nil
+    self._accout = nil
+    self._pwd = nil
+end
+
+function LaunchModuleTL:formatZoneList()
+    self._zoneList = {}
+    for _, server in ipairs(self._server) do
+        local zoneId = server.zoneId
+        if not self._zoneList[zoneId] then
+            self._zoneList[zoneId] = {serverList = {}}
+        end
+
+        server.roleNum = server.roleCount or 0
+        local difference = os.time() - server.openTimestamp
+        local days = math.floor(difference / (24 * 3600))
+        server.isNewServer = days <= NEW_SERVER_DAY
+
+        table.insert(self._zoneList[zoneId].serverList, server)
+        self._zoneList[zoneId].zoneId = zoneId
+        self._zoneList[zoneId].zoneName = server.zoneName
+    end
+
+    for zoneId, zoneList in pairs(self._zoneList) do
+        local roleNum = 0
+        for _, server in pairs(zoneList.serverList) do
+            local roleCount = server.roleCount
+                roleNum = roleNum + roleCount
+        end
+        self._zoneList[zoneId].roleNum = roleNum
+    end
+
+    self._zoneFormatList = {}
+    -- 转化：
+    for _, zoneList in pairs(self._zoneList) do
+        table.insert(self._zoneFormatList, zoneList)
+    end
+end
+
+
+function LaunchModuleTL:getZoneRoleList(zoneId)
+    local roleList = {}
+    local curZone = self:getZoneList()[zoneId]
+    for _,server in pairs(curZone.serverList) do
+        for _,roleInfo in ipairs(server.roleList) do
+            table.insert(roleList, {roleName=roleInfo.roleName, serverName = server.serverName})
+        end
+    end
+    return roleList
+end
+
+function LaunchModuleTL:getServerRoleList(zoneId, serverId)
+    local roleList = {}
+    local curZone = self:getZoneList()[zoneId].serverList
+    local serverRoleList = { roleList = {}}
+    for k, server in pairs(curZone) do
+        if server.serverId == serverId then
+            serverRoleList = server
+        end
+    end
+    
+    for _,roleInfo in ipairs(serverRoleList.roleList) do
+        if roleInfo.extData then
+            local raceType = json.decode(roleInfo.extData).raceType
+            table.insert(roleList, {roleName=roleInfo.roleName, raceType = RACE_TYPE[raceType]})
+        end
+    end
+    return roleList
+end
+
+function LaunchModuleTL:getZoneList()
+    return self._zoneList
+end
+
+function LaunchModuleTL:getZoneFormatList()
+    return self._zoneFormatList
+end
+
+function LaunchModuleTL:setEnterGameZoneInfo(zoneId, serverId)
+    self._enterGameZoneInfo = {zoneId = zoneId, serverId = serverId}
+end
+
+function LaunchModuleTL:getEnterGameZoneInfo()
+    if not self._enterGameZoneInfo then
+        self._enterGameZoneInfo = self._defaultServer
+    end
+    local zoneId = self._enterGameZoneInfo.zoneId
+    local serverId = self._enterGameZoneInfo.serverId
+    local serverList = self._zoneList[zoneId].serverList
+    for _, server in pairs(serverList) do
+        if server.serverId == serverId then
+            return server
+        end
+    end
+
+end
+
+function LaunchModuleTL:getServerListByZoneId(zoneId)
+    if not self._zoneList[zoneId] then
+        print("not found zoneId", zoneId)
+    end
+    return self._zoneList[zoneId].serverList
+end
+
+---pc
+function LaunchModuleTL:setAccoutInfo(acc, pwd)
+    local dataString = json.encode({acc = acc, pwd = pwd})
+    cc.UserDefault:getInstance():setStringForKey(Save_LaunchModuleTL_ACC, dataString)
+    cc.UserDefault:getInstance():flush()
+end
+function LaunchModuleTL:getAccoutInfo()
+    local saveZoneInfo = cc.UserDefault:getInstance():getStringForKey(Save_LaunchModuleTL_ACC, "")
+    if saveZoneInfo~= "" then
+        local data = json.decode(saveZoneInfo)
+        self._accout = data.acc
+        self._pwd = data.pwd
+    else
+        self._accout = ""
+        self._pwd = ""
+    end
+    return self._accout, self._pwd
+end
+
+
+--------------------- 请求默认服务器相关数据 ------------------------------
+function LaunchModuleTL:setDefaultServer(defaultServer)
+    self._defaultServer = defaultServer
+    print("api ret setDefaultServer", self._defaultServer.serverName, self._defaultServer.zoneId, self._defaultServer.serverId)
+    local zoneId = self._defaultServer.zoneId
+    local serverId = self._defaultServer.serverId
+    local serverName = self._defaultServer.serverName
+    if zoneId and serverId then
+        self:saveDefaultServer(zoneId, serverId,  serverName)
+        self:setEnterGameZoneInfo(zoneId, serverId)
+    else
+        self._defaultServer = self:getSaveDefaultSever()
+    end
+end
+function LaunchModuleTL:getDefaultZoneInfo()
+    self._defaultServer = self:getSaveDefaultSever()
+    return self._defaultServer
+end
+
+function LaunchModuleTL:saveDefaultServer(zoneId, serverId, serverName)
+    local dataString = json.encode({zoneId = zoneId, serverId = serverId, serverName = serverName})
+    cc.UserDefault:getInstance():setStringForKey(Save_LaunchModuleTL_DEAULF_ZONE, dataString)
+    cc.UserDefault:getInstance():flush()
+end
+
+function LaunchModuleTL:getSaveDefaultSever()
+    local saveZoneInfo = cc.UserDefault:getInstance():getStringForKey(Save_LaunchModuleTL_DEAULF_ZONE, "")
+    if saveZoneInfo~= "" then
+        local data = json.decode(saveZoneInfo)
+        return data
+    end 
+end
+function LaunchModuleTL:getDefaultState()
+    local zoneId = self._defaultServer.zoneId
+    local serverId = self._defaultServer.serverId
+    local serverList = self._zoneList[zoneId].serverList
+    for _, server in pairs(serverList) do
+        if server.serverId == serverId then
+            return server.state
+        end
+    end
+    return 1
+end
+
+return LaunchModuleTL

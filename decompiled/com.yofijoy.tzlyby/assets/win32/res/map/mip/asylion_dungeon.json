@@ -1,0 +1,239 @@
+{
+    "Height": 128,
+    "MPortals": [
+
+        {
+            "Bottom": 15,
+            "Left": 51,
+            "M_Type": 0,
+            "M_ZoneID": [
+                61
+            ],
+            "Right": 51,
+            "Top": 15
+        },
+                {
+            "Bottom": 16,
+            "Left": 50,
+            "M_Type": 0,
+            "M_ZoneID": [
+                61
+            ],
+            "Right": 52,
+            "Top": 16
+        },
+        {
+            "Bottom": 17,
+            "Left": 49,
+            "M_Type": 0,
+            "M_ZoneID": [
+                61
+            ],
+            "Right": 52,
+            "Top": 17
+        },
+        {
+            "Bottom": 18,
+            "Left": 49,
+            "M_Type": 0,
+            "M_ZoneID": [
+                61
+            ],
+            "Right": 53,
+            "Top": 18
+        },        
+        {
+            "Bottom": 19,
+            "Left": 50,
+            "M_Type": 0,
+            "M_ZoneID": [
+                61
+            ],
+            "Right": 54,
+            "Top": 19
+        },
+        {
+            "Bottom": 20,
+            "Left": 53,
+            "M_Type": 0,
+            "M_ZoneID": [
+                61
+            ],
+            "Right": 54,
+            "Top": 20
+        },
+        {
+            "Bottom": 106,
+            "Left": 9,
+            "M_Type": 0,
+            "M_ZoneID": [
+                64
+            ],
+            "Right": 9,
+            "Top": 106
+        },
+        {
+            "Bottom": 107,
+            "Left": 7,
+            "M_Type": 0,
+            "M_ZoneID": [
+                64
+            ],
+            "Right": 9,
+            "Top": 107
+        },
+        {
+            "Bottom": 108,
+            "Left": 6,
+            "M_Type": 0,
+            "M_ZoneID": [
+                64
+            ],
+            "Right": 9,
+            "Top": 108
+        },
+        {
+            "Bottom": 109,
+            "Left": 6,
+            "M_Type": 0,
+            "M_ZoneID": [
+               64
+            ],
+            "Right": 9,
+            "Top": 109
+        },
+        {
+            "Bottom": 110,
+            "Left": 6,
+            "M_Type": 0,
+            "M_ZoneID": [
+                64
+            ],
+            "Right": 9,
+            "Top": 110
+        },
+        {
+            "Bottom": 111,
+            "Left": 6,
+            "M_Type": 0,
+            "M_ZoneID": [
+                64
+            ],
+            "Right": 9,
+            "Top": 111
+        },
+        {
+            "Bottom": 112,
+            "Left": 6,
+            "M_Type": 0,
+            "M_ZoneID": [
+                64
+            ],
+            "Right": 9,
+            "Top": 112
+        },
+        {
+            "Bottom": 113,
+            "Left": 6,
+            "M_Type": 0,
+            "M_ZoneID": [
+                64
+            ],
+            "Right": 10,
+            "Top": 113
+        },
+        {
+            "Bottom": 114,
+            "Left": 6,
+            "M_Type": 0,
+            "M_ZoneID": [
+                64
+            ],
+            "Right": 10,
+            "Top": 114
+        },
+         {
+            "Bottom": 115,
+            "Left": 6,
+            "M_Type": 0,
+            "M_ZoneID": [
+                64
+            ],
+            "Right": 10,
+            "Top": 115
+        },
+        {
+            "Bottom": 100,
+            "Left": 117,
+            "M_Type": 0,
+            "M_ZoneID": [
+                63
+            ],
+            "Right": 121,
+            "Top": 100
+        },
+        {
+            "Bottom": 101,
+            "Left": 117,
+            "M_Type": 0,
+            "M_ZoneID": [
+                63
+            ],
+            "Right": 121,
+            "Top": 101
+        },
+        {
+            "Bottom": 102,
+            "Left": 117,
+            "M_Type": 0,
+            "M_ZoneID": [
+                63
+            ],
+            "Right": 121,
+            "Top": 102
+        },
+        {
+            "Bottom": 103,
+            "Left": 117,
+            "M_Type": 0,
+            "M_ZoneID": [
+                63
+            ],
+            "Right": 121,
+            "Top": 103
+        },
+        {
+            "Bottom": 104,
+            "Left": 118,
+            "M_Type": 0,
+            "M_ZoneID": [
+                63
+            ],
+            "Right": 121,
+            "Top": 104
+        },
+        {
+            "Bottom": 105,
+            "Left": 119,
+            "M_Type": 0,
+            "M_ZoneID": [
+                63
+            ],
+            "Right": 121,
+            "Top": 105
+        },
+        {
+            "Bottom": 106,
+            "Left": 120,
+            "M_Type": 0,
+            "M_ZoneID": [
+                63
+            ],
+            "Right": 121,
+            "Top": 106
+        }
+
+    ],
+    "SafeRects": null,
+    "Width": 128
+}

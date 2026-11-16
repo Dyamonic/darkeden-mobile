@@ -1,0 +1,285 @@
+
+local InitLayerAccount = class("InitLayerAccount", lt.BaseLayer)
+
+local Constant = lt.Constant
+
+InitLayerAccount._initScene = nil
+
+InitLayerAccount._editAccount = nil
+
+function InitLayerAccount:ctor(initScene)
+    InitLayerAccount.super.ctor(self)
+
+    self._initScene = initScene
+
+    self:initUI()
+    self:setInfo()
+end
+
+function InitLayerAccount:onClear()
+    lt.LogUtil:debug("InitLayerAccount:onClear")
+
+    self._initScene   = nil
+    self._editAccount = nil
+end
+
+function InitLayerAccount:onEnter()
+    lt.LogUtil:debug("InitLayerAccount:onEnter")
+end
+
+function InitLayerAccount:onExit()
+    lt.LogUtil:debug("InitLayerAccount:onExit")
+end
+
+function InitLayerAccount:initUI()
+    -- 背景
+	local bgSprite = display.newSprite("ui/init/bg_account.jpg")
+	bgSprite:setPosition(display.cx, display.cy)
+    self:addChild(bgSprite)
+
+    -- local labelTitle = display.newTTFLabel({text="登录界面"})
+    -- labelTitle:setAnchorPoint(0.5, 0.5)
+    -- labelTitle:setPosition(display.cx, display.height - 50)
+    -- self:addChild(labelTitle)
+
+    self._editAccount= ccui.EditBox:create(cc.size(250,50), "ui/init/bg_select_server.png")
+    self._editAccount:setAnchorPoint(0.5,0.5)
+    self._editAccount:setPosition(display.cx,display.cy+30)
+    self._editAccount:setPlaceHolder("请输入账号")
+    self._editAccount:setMaxLength(30)
+    self._editAccount:setFontName(lt.Constant.FONT_2)
+    self._editAccount:setFontSize(32)
+    self._editAccount:setFontColor(cc.c4b(124,92,63,255))
+    self._editAccount:setTextHorizontalAlignment(cc.TEXT_ALIGNMENT_CENTER)
+    self._editAccount:setReturnType(cc.KEYBOARD_RETURNTYPE_GO)
+    self._editAccount:setInputMode(cc.EDITBOX_INPUT_MODE_SINGLELINE)
+    -- kKeyboardReturnTypeGo
+    self:addChild(self._editAccount)
+
+    self._editCode= ccui.EditBox:create(cc.size(250,50), "ui/init/bg_select_server.png")
+    self._editCode:setAnchorPoint(0.5,0.5)
+    self._editCode:setPosition(display.cx,display.cy-30)
+    self._editCode:setPlaceHolder("请输入密码")
+    self._editCode:setMaxLength(30)
+    self._editCode:setFontName(lt.Constant.FONT_2)
+    self._editCode:setFontSize(32)
+    self._editCode:setFontColor(cc.c4b(124,92,63,255))
+    self._editCode:setTextHorizontalAlignment(cc.TEXT_ALIGNMENT_CENTER)
+    self._editCode:setReturnType(cc.KEYBOARD_RETURNTYPE_GO)
+    self._editCode:setInputMode(cc.EDITBOX_INPUT_MODE_SINGLELINE)
+    -- kKeyboardReturnTypeGo
+    self:addChild(self._editCode)
+
+    local btnStartGame = ccui.Button:create("ui/init/btn_start_game.png")
+    btnStartGame:setAnchorPoint(0.5, 0.5)
+    btnStartGame:setPosition(display.cx, 220)
+    btnStartGame:addClickEventListener(handler(self, self.onClickStartGame))
+    self:addChild(btnStartGame)
+
+    local textCopyright = ccui.Text:create()
+    textCopyright:setString(lt.StringManager:getString(lt.StringManager.KEY_COPYRIGHT))
+    textCopyright:setPosition(display.cx, 45)
+    textCopyright:setFontName(lt.Constant.FONT_2)
+    textCopyright:setFontSize(16)
+    textCopyright:setColor(Constant.COLOR_COPYRIGHT)
+    textCopyright:setTextHorizontalAlignment(cc.TEXT_ALIGNMENT_CENTER)
+    textCopyright:enableOutline(Constant.COLOR_OUTLINE, 2)
+    textCopyright:setLineSpacing(3)
+    self:addChild(textCopyright)
+
+    --[[
+    -- local maskSp = display.newSprite("ui/common/img_black.png")
+    -- local size = maskSp:getTexture():getContentSizeInPixels()
+
+    local size = bgSprite:getTexture():getContentSizeInPixels()
+    local resolution = cc.p(size.width, size.height)
+    local circleCenter = cc.p(size.width/2, size.height/2)
+    -- circleCenter = cc.p(size.width/4, size.height/4)
+    -- circleCenter = cc.p(1000, 200)
+    resolution = cc.p(1000, 1000)
+
+    -- circular cut
+    local vshPath = cc.FileUtils:getInstance():fullPathForFilename("shader/circular_cut.vsh")
+    local fshPath = cc.FileUtils:getInstance():fullPathForFilename("shader/circular_cut.fsh")
+    local glProgram = cc.GLProgram:createWithFilenames(vshPath, fshPath)
+    local programState = cc.GLProgramState:getOrCreateWithGLProgram(glProgram)
+    programState:setUniformVec2("resolution", resolution)
+    programState:setUniformVec2("circleCenter", circleCenter);
+    programState:setUniformFloat("radius", math.min(size.width, size.height) / 4);
+
+    bgSprite:setGLProgramState(programState);
+    ]]
+
+--[[
+    local maskSp = display.newSprite("game/common/obj_mask.png")
+    local vshPath = cc.FileUtils:getInstance():fullPathForFilename("shader/mb.vsh")
+    local fshPath = cc.FileUtils:getInstance():fullPathForFilename("shader/mb.fsh")
+    local glProgram = cc.GLProgram:createWithFilenames(vshPath, fshPath)
+    -- 获取glProgramState
+    local glProgramState = cc.GLProgramState:getOrCreateWithGLProgram(glProgram)  
+
+    -- 设置蒙版
+    -- glProgramState:setUniformTexture("u_mask_texture", maskSp:getTexture())
+
+    local size = maskSp:getContentSize()
+    local spSize = bgSprite:getTexture():getContentSizeInPixels()
+
+    local sp_size = cc.p(spSize.width, spSize.height)
+    local mask_size = cc.p(size.width, size.height)
+    local offset = cc.p(250, 0)
+
+    glProgramState:setUniformTexture("u_mask_texture", maskSp:getTexture())
+    glProgramState:setUniformVec2("sp_size", sp_size)
+    glProgramState:setUniformVec2("mask_size", mask_size)
+    glProgramState:setUniformVec2("v_offset", offset)
+
+    bgSprite:setGLProgram(glProgram)
+    bgSprite:setGLProgramState(glProgramState) 
+    -- 设置混合模式
+    bgSprite:setBlendFunc({src=ccb.BlendFactor.SRC_ALPHA, dst=ccb.BlendFactor.ONE_MINUS_SRC_ALPHA})
+    ]]
+    -- local ss = display.newSprite("ui/init/btn_select_server.png")
+    -- ss:setPosition(300, 300)
+    -- self:addChild(ss)
+
+    -- local maskSp = display.newSprite("game/common/obj_mask.png")
+    -- local maskGLProgramState = lt.ShaderBackendUtil:makeNodeTextureMask(ss, maskSp)
+    -- maskGLProgramState:updateOffset(cc.p(0, -20))
+
+    -- local ss = display.newSprite("ui/init/model_test.png")
+    -- ss:setPosition(300, 300)
+    -- self:addChild(ss)
+
+    -- lt.ShaderBackendUtil:makeMulModelEffect(ss,{targetColor2=Constant.DEFALUT_CLOTH_COLOR})
+
+    -- local frame = cc.SpriteFrameCache:getInstance():getSpriteFrame("ui/init/model_test2.png")
+    -- yflog:Info("················111")
+    -- if frame then
+    --     yflog:Info("...............")
+    --     ss:setSpriteFrame(frame)
+    -- end
+    --
+    -- local idx = 0
+    -- for i = 1, 3 do
+    --     local dataFilename = string.format("map/spk_plist/map_obj_%s_%d.plist", "1002", i)
+    --     local imageFilename = string.format("map/spk_plist/map_obj_%s_%d.pvr.ccz", "1002", i)
+
+    --     display.loadSpriteFrames(dataFilename, imageFilename, function()
+    --         idx = idx + 1
+    --         if idx < 3 then
+    --             return
+    --         end
+    --         local tt = os.clock()
+    --         for index = 1, 1 do
+                
+            
+
+    --         yflog:Info("················222")
+    --         local frame = cc.SpriteFrameCache:getInstance():getSpriteFrame("map_obj_1002_239.png")
+    --         frame:retain()
+
+
+    --         -- yflog:Info("rect.left:%s rect.right:%s", sprite:getTextureRect().x, sprite:getTextureRect().y)
+    --         -- yflog:Info("rect.width:%s rect.height:%s", sprite:getTextureRect().width, sprite:getTextureRect().height)
+
+    --         -- local textureWidth  = sprite:getTexture():getPixelsWide()
+    --         -- local textureHeight  = sprite:getTexture():getPixelsHigh()
+    --         -- textureWidth = sprite:getTexture():getContentSize().width
+    --         -- textureHeight = sprite:getTexture():getContentSize().height
+    --         -- yflog:Info("textureWidth:%s", textureWidth)
+    --         -- yflog:Info("textureHeight:%s", textureHeight)
+            
+
+    --         -- local rect = sprite:getTextureRect()
+    --         local rect = frame:getRect()
+
+    --         -- yflog:Info("rect.left:%s rect.right:%s", rect.x, rect.y)
+    --         -- yflog:Info("rect.width:%s rect.height:%s", rect.width, rect.height)
+    --         -- local ss = display.newSprite(frame)
+    --         -- ss:setPosition(300, 300)
+    --         -- self:addChild(ss)
+
+    --         -- local ss = cc.Sprite:createWithSpriteFrame(frame)
+    --         local ss = display.newSprite(frame)
+    --         ss:setAnchorPoint(cc.p(0, 0))
+
+    --         local renderTex = cc.RenderTexture:create(rect.width, rect.height)
+    --         -- renderTex:begin()
+    --         renderTex:beginWithClear(0,0,0,0)
+    --         ss:visit()
+    --         renderTex:endToLua()
+    --         -- renderTex:getSprite():getTexture():setFlippedY(true)
+
+    --         local smallTexture = renderTex:getSprite():getTexture()
+
+    --         local sprite = display.newSprite()
+    --         sprite:initWithTexture(smallTexture)
+    --         sprite:setFlippedY(true)
+    --         sprite:setPosition(300, 300)
+    --         self:addChild(sprite)
+
+
+    --         -- renderTex:saveToFile("debug.png", cc.IMAGE_FORMAT_PNG)
+    --         -- local filePath = "res/screen.png"
+    --         -- cc.Director:getInstance():getTextureCache():removeTextureForKey(filePath)
+    --         -- renderTex:saveToFile(filePath, cc.IMAGE_FORMAT_PNG)
+
+    --         -- local smallTexture = renderTex:getSprite():getTexture()
+    --         -- smallTexture:retain()
+    --         end
+    --         yflog:Info("interval:%f", os.clock() - tt)
+    --     end)
+    -- end
+end
+
+
+function InitLayerAccount:setInfo()
+    local account = lt.PrefManager:getValueByKey(lt.PrefManager.LOGIN_NAME)
+    local code = lt.PrefManager:getValueByKey(lt.PrefManager.LOGIN_NAME..account)
+    if account and account ~= "" then
+        self._editAccount:setText(account)
+    end
+    if code and code ~= "" then
+        self._editCode:setText(code)
+    end
+end
+
+function InitLayerAccount:show()
+    self:setVisible(true)
+end
+
+function InitLayerAccount:hide()
+    self:setVisible(false)
+end
+
+function InitLayerAccount:onClickStartGame()
+    local account = self._editAccount:getText()
+    if #account == 0 then
+        lt.LogUtil:debug("请输入账号...")
+        return
+    end
+
+    local code = lt.PrefManager:getValueByKey(lt.PrefManager.LOGIN_NAME..account)
+    local editcode = self._editCode:getText()
+    if device.platform ~= "windows" then
+        if not editcode and editcode == "" then
+            lt.LogUtil:debug("请输入密码...")
+            return
+        end
+        if code and code ~= "" then
+            if editcode ~= code then
+                lt.LogUtil:debug("密码错误...")
+                return
+            end
+        end
+    end
+
+    if editcode and editcode ~= "" then
+        lt.PrefManager:setValueByKey(lt.PrefManager.LOGIN_NAME..account, account)
+    end
+    lt.PrefManager:setValueByKey(lt.PrefManager.LOGIN_NAME, account)
+    self._initScene:setAccount(account)
+    self._initScene:showInitLayerServer()
+end
+
+return InitLayerAccount

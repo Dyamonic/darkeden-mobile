@@ -1,0 +1,10 @@
+local TransferByConfigDao = {}
+
+function TransferByConfigDao:query(configId)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM TransferByConfig WHERE TransferCode=%d;", tonumber(configId))) do
+    	local meta = lt.TransferByConfigMeta.new(row)
+        return meta
+    end
+end
+return TransferByConfigDao

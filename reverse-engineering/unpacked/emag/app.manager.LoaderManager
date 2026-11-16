@@ -1,0 +1,56 @@
+
+local LoaderManager = {}
+
+local cachedPlists = {
+    {"ui/skill/skill.plist"},
+}
+
+function LoaderManager:init()
+end
+
+function LoaderManager:clear()
+end
+
+function LoaderManager:startLoading()
+    self:loadingForCacheCCB()
+end
+
+function LoaderManager:loadingForCacheCCB()
+
+     self._cacheHandler = function(percent)
+         if percent == 1  then
+            self:finish()
+         end
+     end
+
+    self._currentIndex = 1
+    self._totalCount = #cachedPlists
+    if self._totalCount == 0 then
+         self._cacheHandler(1)
+    else
+        lt.ScheduleUtil:performWithDelayGlobal(handler(self, self._loadCache), 0)
+    end
+end
+
+function LoaderManager:_loadCache()
+    if self._currentIndex > self._totalCount then
+        if self._cacheHandler ~= nil then
+            self._cacheHandler(1)
+        end
+        return
+    end
+
+    local plistName = cachedPlists[self._currentIndex][1]
+
+    cc.SpriteFrameCache:getInstance():addSpriteFrames(plistName)
+
+    self._cacheHandler((self._currentIndex - 1) / self._totalCount)
+    self._currentIndex = self._currentIndex + 1
+    lt.ScheduleUtil:performWithDelayGlobal(handler(self, self._loadCache), 0)
+end
+
+function LoaderManager:finish()
+    -- load complete
+end
+
+return LoaderManager

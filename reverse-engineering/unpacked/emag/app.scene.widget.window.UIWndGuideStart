@@ -1,0 +1,64 @@
+--- 新人弹窗
+---@class UIWndGuideStart:UIWindowBase
+local UIWndGuideStart = class("UIWndGuideStart", lt.UIWindowBase)
+
+local NtfManager = lt.NtfManager
+local GameModule = lt.GameModule
+local GuideModule = lt.GuideModule
+local Constant = lt.Constant
+
+UIWndGuideStart.ChangeSkinConf = {
+    ["Guide"] = {
+        ["bg"] = "bg_xstc_diban",
+        ["bg_up"] = "bg_xstc_diban02",
+        ["bg_down"] = "bg_xstc_diban03",
+    },
+    ["CommonTL"] = {
+        ["btn_sure"] = {
+            ["bg"] = "sort",
+        },
+    }
+}
+
+function UIWndGuideStart:ctor(param)
+    UIWndGuideStart.super.ctor(self, param)
+    self._list = nil
+    self._contentLabel = nil
+    self._sureBtn = nil
+end
+
+function UIWndGuideStart:onInit()
+    UIWndGuideStart.super.onInit(self, "ui://Guide/GuideStartPanel")
+    self:initUI()
+end
+
+function UIWndGuideStart:onShown()
+    self._sureBtn:addClickListener(handler(self, self.btnSureClick))
+end
+
+function UIWndGuideStart:onHide()
+    self._sureBtn:removeClickListener()
+    UIWndGuideStart.super.onHide(self)
+end
+
+function UIWndGuideStart:onClear()
+    self._list = nil
+    self._contentLabel = nil
+    self._sureBtn = nil
+    UIWndGuideStart.super.onClear(self)
+end
+
+function UIWndGuideStart:initUI()
+    self._list = self:getChild("list")
+    self._contentLabel = self._list:getChildAt(0):getChild("label_text")
+    local race = GameModule:getHeroData():getRace()
+    self._contentLabel:setText(GReadText["KEY_GUIDE_NEW_"..race])
+    self._sureBtn = self:getChild("btn_sure")
+end
+
+function UIWndGuideStart:btnSureClick()
+    GuideModule:directEndGuide({Constant.GUIDE_ID.FIRST_GUIDE})
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndGuideStart", close = true})
+end
+
+return UIWndGuideStart

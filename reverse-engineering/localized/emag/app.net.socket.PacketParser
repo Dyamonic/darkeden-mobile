@@ -1,0 +1,585 @@
+-- require "app.net.socket.protocol.netcmd_pb"
+
+local PacketParser = {}
+
+
+local cliggproto = lt.CliGgProto
+local socketApi = lt.SocketApi
+local netcmd_pb = lt.netcmd_pb
+local CommonModule = lt.CommonModule
+local Queue = lt.Queue
+
+PacketParser._netdata = lt.NetData.new()
+PacketParser._callback = {}
+
+-- 消息解析处理队列
+PacketParser._msgParserQueue = {}
+
+local serverCmdDef = lt.ServerCmdDef
+
+--这里进行protocol消息和结构映射
+function PacketParser:init()
+    self._callback[serverCmdDef.S_SINGLE_SKILL] = netcmd_pb.PerSkillData()
+    self._callback[serverCmdDef.S_SKILL_LIST] = netcmd_pb.AllSkillData()
+    self._callback[serverCmdDef.S_LEARN_SKILL] = netcmd_pb.LearnSkill()
+    self._callback[serverCmdDef.S_SKILL_DELETE] = netcmd_pb.DeleteSkill()
+    self._callback[serverCmdDef.S_PASSIVE_SKILL_LIST] = netcmd_pb.AllPassiveSkillInfo()
+    self._callback[serverCmdDef.S_UPGRADE_SKILL] = netcmd_pb.UpgradeSkillResp()
+    self._callback[serverCmdDef.S_RETURN_SKIL] = netcmd_pb.ReturnSkillResp()
+    self._callback[serverCmdDef.S_CROSS_COUNTER_NOTIFY] = netcmd_pb.CS_CrossCounterAttackNotify()
+
+    self._callback[serverCmdDef.S_CleanClassSkill] = netcmd_pb.CS_CleanClassSkillResp()
+
+    self._callback[serverCmdDef.S_AssignAttributePoint]  =  netcmd_pb.AssignAttributePoint()
+
+    self._callback[serverCmdDef.S_BELT_ITEM] = netcmd_pb.MultiObjProperty()
+    self._callback[serverCmdDef.S_BELT_ITEM_OPERATE] = netcmd_pb.CS_BeltItemOpResp()
+
+    --------------------------------------------------------------------------------------
+    -- old
+    self._callback[serverCmdDef.BILLBOARD]  =  netcmd_pb.Billboard()
+    self._callback[serverCmdDef.HERO_DATA_INFO]  =  netcmd_pb.ObjProperty()
+    self._callback[serverCmdDef.ENTER_GS_NOTIFY]  =  netcmd_pb.EnterGsNotify()
+    self._callback[serverCmdDef.APPEAR_MAP_PROPERTY]  =  netcmd_pb.AppearMapProperty()
+    self._callback[serverCmdDef.OBJ_APPEAR]  =  netcmd_pb.ObjAppear()
+    self._callback[serverCmdDef.OBJ_DISAPPEAR]  =  netcmd_pb.ObjDisappear()
+    self._callback[serverCmdDef.OBJ_MOVE]  =  netcmd_pb.ObjMove()
+    self._callback[serverCmdDef.OBJ_ATTACK]  =  netcmd_pb.ObjAttack()
+    self._callback[serverCmdDef.S_WARNING_EFFECT]  =  netcmd_pb.ObjWarning()
+    self._callback[serverCmdDef.OBJ_DIE]  =  netcmd_pb.ObjDie()
+    self._callback[serverCmdDef.OBJ_APPEARANCE_CHANGE]  =  netcmd_pb.ObjProperty()
+    self._callback[serverCmdDef.HERO_PROPERTY_CHANGE]  =  netcmd_pb.ObjProperty()
+    self._callback[serverCmdDef.HP_MP_CHANGE]  =  netcmd_pb.ObjHpMp()
+    self._callback[serverCmdDef.MOVE_ACK]  =  netcmd_pb.MoveAck()
+    self._callback[serverCmdDef.ATTACK_ACK]  =  netcmd_pb.UseSkillAck()
+    self._callback[serverCmdDef.PACKAGEITEM]  =  netcmd_pb.PakageItem()
+    self._callback[serverCmdDef.EQUIPMENT]  =  netcmd_pb.EquipItem()
+    self._callback[serverCmdDef.STORAGEITEM]  =  netcmd_pb.StorageItem()
+    self._callback[serverCmdDef.ITEM_EQUIP_ACK]  =  netcmd_pb.Equip()
+    self._callback[serverCmdDef.ITEM_UNEQUIP_ACK] = netcmd_pb.UnEquip()
+    self._callback[serverCmdDef.ITEM_STORED_ACK] = netcmd_pb.StoreItem()
+    self._callback[serverCmdDef.ITEM_INTO_PACKAGE] = netcmd_pb.ItemIntoPackage()
+    self._callback[serverCmdDef.S_USEITEM_ACK] = netcmd_pb.CS_UseItemResp()
+    self._callback[serverCmdDef.TAKEBACK_ITEM] = netcmd_pb.DeductItem()
+    self._callback[serverCmdDef.ITEM_TAKEN_ACK] = netcmd_pb.CS_TakeoutStorageItemResp()
+    self._callback[serverCmdDef.ITEM_PROPERTY_CHANGE] = netcmd_pb.ItemProperChange()
+    self._callback[serverCmdDef.CHAT_MSG] = netcmd_pb.ChatInfo()
+    self._callback[serverCmdDef.PECK_ITEM_ACK] = netcmd_pb.Peck()
+    self._callback[serverCmdDef.ALL_BODY_STATUS] = netcmd_pb.AllBuffOrStatus()
+    self._callback[serverCmdDef.BODY_STATUS] = netcmd_pb.BuffOrStatus()
+    self._callback[serverCmdDef.OBJ_JUMP] = netcmd_pb.ObjJump()
+    self._callback[serverCmdDef.ATTACK_MODE] = netcmd_pb.SetAttackMode()
+    self._callback[serverCmdDef.NAME_COLOR] = netcmd_pb.ObjNameColor()
+
+    self._callback[serverCmdDef.PICKUP_ERROR] = netcmd_pb.PickError()
+
+    self._callback[serverCmdDef.COUNT_DOWN] = netcmd_pb.CountDown()
+
+    self._callback[serverCmdDef.RED_DOT_NOTICE] = netcmd_pb.RedDotNotice()
+
+    self._callback[serverCmdDef.SERVER_PHASE] = netcmd_pb.CurrentServerPhase()
+
+    self._callback[serverCmdDef.ACTIVITY_UPDATE_ACK] = netcmd_pb.ActivityUpdate()
+    self._callback[serverCmdDef.CHANGE_OF_NAME_RES] = netcmd_pb.CS_ChangePlayerNameResp()
+
+
+    self._callback[serverCmdDef.S_Daily_Task] = netcmd_pb.S2C_DailyTask()
+    self._callback[serverCmdDef.S_DigCorpse] = netcmd_pb.CS_DigCorpseResp()
+
+    self._callback[serverCmdDef.ITEM_AUTOTIDY] = netcmd_pb.AutotidyItem()
+    self._callback[serverCmdDef.EXPAND_BAG] = netcmd_pb.ExpansionPackageOperate()
+    self._callback[serverCmdDef.EXPAND_BAG_LIST] = netcmd_pb.ExpansionPackageItem()
+
+    self._callback[serverCmdDef.EQUIP_LEVELUP_OPERATE] = netcmd_pb.CS_CommonResp()
+    self._callback[serverCmdDef.EQUIP_STRENGTHEN_OPERATE] = netcmd_pb.CS_EquipEnhanceAffixResp()
+    self._callback[serverCmdDef.EQUIP_BLESSING_OPERATE] = netcmd_pb.CS_EquipAttatchAffixResp()
+    self._callback[serverCmdDef.EQUIP_COMPOSE_OPERATE] = netcmd_pb.CS_EquipComposeAffixResp()
+    self._callback[serverCmdDef.EQUIP_INHERIT_OPERATE] = netcmd_pb.CS_CommonResp()
+    self._callback[serverCmdDef.EQUIP_RECASTING_OPERATE] = netcmd_pb.CS_CommonResp()
+    self._callback[serverCmdDef.EQUIP_PURIFY_OPERATE] = netcmd_pb.CS_CommonResp()
+    self._callback[serverCmdDef.NpcOperation_JumpMap] = netcmd_pb.CS_CommonResp()
+    self._callback[serverCmdDef.NpcOperation_Recover] = netcmd_pb.CS_CommonResp()
+    self._callback[serverCmdDef.NpcOperation_ExchangeItem] = netcmd_pb.CS_CommonResp()
+    self._callback[serverCmdDef.NpcOperation_BuyStorge] = netcmd_pb.CS_CommonResp()
+    self._callback[serverCmdDef.NpcOperation_FindMotorcycle] = netcmd_pb.CS_CommonResp()
+
+    --npc功能
+    self._callback[serverCmdDef.OPEN_SHOP_OPERATE] = netcmd_pb.CS_OpenShopResp()
+    self._callback[serverCmdDef.EQUIP_REPAIR_OPERATE] = netcmd_pb.CS_RepairResp()
+    self._callback[serverCmdDef.EQUIP_SELL_OPERATE] = netcmd_pb.CS_SellNpcResp()
+    self._callback[serverCmdDef.S_CLEANAttributePoint] = netcmd_pb.CS_RecoverAttributePointResp()
+
+    --组队功能
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_HALL_INFO_RESP)] = netcmd_pb.CS_HallInfoResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_APPLY_IN_TEAM_RESP)] = netcmd_pb.CS_ApplyInTeamResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_ONE_KEY_APPLY_IN_TEAM_RESP)] = netcmd_pb.CS_OneKeyApplyInTeamResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_MY_TEAM_INFO_RESP)] = netcmd_pb.CS_MyTeamInfoResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_SIGN_ALLOW_RESP)] = netcmd_pb.CS_SignAllowResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_CREATE_TEAM_RESP)] = netcmd_pb.CS_CreateTeamResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_FAST_JOIN_IN_TEAM_RESP)] = netcmd_pb.CS_FastJoinInTeamResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_APPLY_TEAM_LIST_RESP)] = netcmd_pb.CS_ApplyTeamListResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_AGREE_IN_TEAM_RESP)] = netcmd_pb.CS_AgreeInTeamResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_REJECT_IN_TEAM_RESP)] = netcmd_pb.CS_RejectInTeamResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_CLEAR_APPLY_TEAM_LIST_RESP)] = netcmd_pb.CS_ClearApplyTeamListResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_KICK_TEAM_RESP)] = netcmd_pb.CS_KickTeamResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_SET_TEAM_BASE_INFO_RESP)] = netcmd_pb.CS_SetTeamBaseInfoResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_INVITE_TEAM_RESP)] = netcmd_pb.CS_InviteTeamResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_AGREE_TO_TEAM_RESP)] = netcmd_pb.CS_AgreeToTeamResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_REJECT_TO_TEAM_RESP)] = netcmd_pb.CS_RejectToTeamResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_EXIT_TEAM_RESP)] = netcmd_pb.CS_ExitTeamResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_TRANSFER_CAPTAIN_RESP)] = netcmd_pb.CS_TransferCaptainResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_IN_TEAM_NTF)] = netcmd_pb.CS_InTeamNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_APPLY_TEAM_LIST_NTF)] = netcmd_pb.CS_CommonResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_KICK_OF_TEAM_NTF)] = netcmd_pb.CS_CommonResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_INVITE_TEAM_NTF)] = netcmd_pb.CS_InviteTeamNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_REJECT_INVITED_NTF)] = netcmd_pb.CS_CommonResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_REJECTED_NTF)] = netcmd_pb.CS_RejectedNtf()
+
+    -- 聊天
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_CHAT_RESP)] = netcmd_pb.CS_ChatResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_CHAT_INFO_NTF)] = netcmd_pb.CS_ChatNTF()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_CHAT_NUM_RESP)] = netcmd_pb.CS_ChatNumResp()
+    --邮件功能
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GET_MAIL_LIST_RESP)] = netcmd_pb.GetEmailList()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GET_MAIL_INFO_RESP)] = netcmd_pb.MeailInfo()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_DELETE_MAIL_RESP)] = netcmd_pb.DeleteMailRes()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_EMAIL_ONE_CLICK_READ_RESP)] = netcmd_pb.OneClickRead()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_MAIL_UPDATE_NTF)] = netcmd_pb.ReceiveMailItem()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_NEW_MEAIL_NTF)] = netcmd_pb.SingleEmail()
+
+    -- 传送地图点
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_JUMP_TO_TRANSFER_POINT_RESP)] = netcmd_pb.CS_Jump2TransferPointResp()
+    --地图变更通知其他人(如：队友)
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_MAP_CHANGED_NTF)] = netcmd_pb.CS_MapChangedNotify()
+    --查询队友位置返回
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_QUERY_TEAMMATE_POS_RESP)] = netcmd_pb.CS_QueryTeamMatePosResp()
+    --捐献返回
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_RECOVER_TENDENCIES_RESP)] = netcmd_pb.CS_RecoverTendenciesResp()
+    
+    --技能取消变身
+    self._callback[serverCmdDef.CANCEL_TRANSFORM] = netcmd_pb.CS_CancelTransformResp()
+
+    --血之漩涡传送
+    self._callback[serverCmdDef.S_VampireTunnel] = netcmd_pb.CS_VampireTunnelResp()
+
+    -- 地图跳转 & 安全区
+    self._callback[serverCmdDef.CS_TRANSFER_RESP] = netcmd_pb.CS_TransferResp()
+    -- 取消buff
+    self._callback[serverCmdDef.CS_CANCEL_BLOODDRAIN_BUFF_RESP] = netcmd_pb.CS_CancelBloodDrainBufferResp()
+
+    -- 好友
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_FRIEND_LLIST_RESP)] = netcmd_pb.CS_FriendListResp() 
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_FRIEND_APPLY_LIST_RESP)] = netcmd_pb.CS_FriendApplyListResp() 
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_FRIEND_APPLY_RESP)] = netcmd_pb.CS_FriendApplyResp() 
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_FRIEND_ACCEPT_RESP)] = netcmd_pb.CS_FriendAcceptResp() 
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_NTF_NEW_FRIEND)] = netcmd_pb.CS_NtfNewFriend()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_FRIEND_DELETE_RESP)] = netcmd_pb.CS_FriendDeleteResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_FRIEND_ALLOW_ADD_SIGN_RESP)] = netcmd_pb.CS_FriendSetAllowSignResp()
+    -- 天气
+    self._callback[serverCmdDef.CS_WEATHER_NTF] = netcmd_pb.CS_WeatherNtf()
+    -- 光照
+    self._callback[serverCmdDef.CS_DARK_LIGHT_NTF] = netcmd_pb.CS_DarkLightNtf()
+    -- 闪电
+    self._callback[serverCmdDef.CS_LIGHTNING_NTF] = netcmd_pb.CS_LightningNtf()
+    -- 灵魂锁链
+    self._callback[serverCmdDef.CS_SOUL_CHAIN_RESP] = netcmd_pb.CS_SoulChainResp()
+    self._callback[serverCmdDef.CS_SET_DENY_TRACE_RESP] = netcmd_pb.CS_SetDenyTraceResp()
+
+    -- 公会
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_CREATE_GUILD_RESP)] = netcmd_pb.CS_CreateGuildResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_LIST_RESP)] = netcmd_pb.CS_GuildListResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_DETAIL_RESP)] = netcmd_pb.CS_GuildDetailResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_APPLY_RESP)] = netcmd_pb.CS_GuildApplyResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_APPLY_LIST_RESP)] = netcmd_pb.CS_GuildApplyListResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_APPLY_OPT_RESP)] = netcmd_pb.CS_GuildApplyOptResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_INVITE_SEND_RESP)] = netcmd_pb.CS_GuildInviteSendResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_INVITE_OPT_RESP)] = netcmd_pb.CS_GuildInviteOptResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_LEAVE_RESP)] = netcmd_pb.CS_GuildLeaveResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_KICK_RESP)] = netcmd_pb.CS_GuildKickResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_DELETE_RESP)] = netcmd_pb.CS_GuildDeleteResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_SET_DUTY_RESP)] = netcmd_pb.CS_GuildSetDutyResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_MEMBER_JOIN_NTF)] = netcmd_pb.CS_GuildMemberJoinNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_MEMBER_LEAVE_NTF)] = netcmd_pb.CS_GuildMemberLeaveNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_MEMBER_UPDATE_NTF)] = netcmd_pb.CS_GuildMemberUpdateNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_UPDATE_NTF)] = netcmd_pb.CS_GuildUpdateNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_INVITE_NTF)] = netcmd_pb.CS_GuildInviteNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_SET_NOTICE_RESP)] = netcmd_pb.CS_GuildSetNoticeResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILDPLAYERAPPLYLISTNTF)] = netcmd_pb.CS_GuildPlayerApplyListNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUILD_HAS_APPLY_NTF)] = netcmd_pb.CS_GuildHasApplyNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_CANCEL_GUILD_APPLY_RESP)] = netcmd_pb.CS_CancelGuildApplyResp()
+    -- 任务
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_TASK_LIST_RESP)] = netcmd_pb.CS_TaskListResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_TASK_LEADING_RESP)] = netcmd_pb.CS_TaskLeadingResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_TASK_COMMIT_RESP)] = netcmd_pb.CS_TaskCommitResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_TASK_RECEIVE_REWARD_RESP)] = netcmd_pb.CS_ReceiveTaskRewardResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_TASK_GIVE_UP_RESP)] = netcmd_pb.CS_TaskGiveUpResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_TASK_JUMP_UP_RESP)] = netcmd_pb.CS_TaskJumpMapResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_RECEIVE_TASK_BOX_REWARD_RESP)] = netcmd_pb.CS_ReceiveTaskBoxRewardResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_RECEIVE_ALL_TASK_REWARD_RESP)] = netcmd_pb.CS_ReceiveAllTaskRewardResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_TALK_NPC_RESP)] = netcmd_pb.CS_CommonResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_TASK_INFO_NTF)] = netcmd_pb.CS_TaskInfoNtf()
+    --商城
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_SHOPPING_MALL_LIST_RESP)] = netcmd_pb.CS_ShoppingMallListResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_SHOPPING_MALL_BUY_RESP)] = netcmd_pb.CS_ShoppingMallBuyResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_SPECIAL_TIME_NTF)] = netcmd_pb.CS_SpecialTimeNtf()
+
+    --复活
+    self._callback[serverCmdDef.RELIVE_ACK] = netcmd_pb.CS_ReliveResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_SET_RELIVE_POINT_RESP)] = netcmd_pb.CS_SetRelivePointResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_NPC_SIGN_CONTRACT_RESP)] = netcmd_pb.CS_NPCSignContractResp()
+
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_HOLYBOOK_LIST_RESP)] = netcmd_pb.CS_HolyBook_ListResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_HOLYBOOK_BORROW_RESP)] = netcmd_pb.CS_HolyBook_BorrowResp()
+
+    --宠物
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_LIST_RESP)] = netcmd_pb.CS_Pet_ListResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_DETAIL_RESP)] = netcmd_pb.CS_Pet_DetailResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_CAPTURE_RESP)] = netcmd_pb.CS_Pet_CaptureResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_UPDATE_NTF)] = netcmd_pb.CS_Pet_UpdateNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_CAPTURE_NTF)] = netcmd_pb.CS_Pet_CaptureNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_FIGHT_RESP)] = netcmd_pb.CS_Pet_FightResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_TAKEOUT_RESP)] = netcmd_pb.CS_Pet_TakeOutResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_OPENDIG_RESP)] = netcmd_pb.CS_Pet_OpenDigResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_SIGN_RESP)] = netcmd_pb.CS_Pet_SignResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_RAISE_RESP)] = netcmd_pb.CS_Pet_RaiseResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_FEED_RESP)] = netcmd_pb.CS_Pet_FeedResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_RELIVE_RESP)] = netcmd_pb.CS_Pet_ReliveResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_CAPSULE_RESP)] = netcmd_pb.CS_Pet_CapsuleResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_COMPOSE_RESP)] = netcmd_pb.CS_Pet_ComposeResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_STORE_LIST_RESP)] = netcmd_pb.CS_Pet_StoreListResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_MAXSTORAGE_NTF)] = netcmd_pb.CS_Pet_MaxStorageNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_STOREITEM_RESP)] = netcmd_pb.CS_Pet_StoreItemResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_TAKEOUT_STOREITEM_RESP)] = netcmd_pb.CS_Pet_TakeOut_StoreItemResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_SKIN_LVUPRESP)] = netcmd_pb.CS_Pet_Skin_LvUpResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_SKINNTF)]       = netcmd_pb.CS_Pet_SkinNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_SKIN_WEAR_RESP)]       = netcmd_pb.CS_Pet_Skin_WearResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PET_SKIN_UNWEAR_RESP)]     = netcmd_pb.CS_Pet_Skin_UnWearResp()
+
+    -- 副本
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_NPC_VAMPIRE_LAIR_INFO_NTF)] = netcmd_pb.NpcVampireLairInfoNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_NPC_VAMPIRE_LAIR_INFO_RESP)] = netcmd_pb.CS_NpcVampireLairInfoResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GATE_OF_ALTAR_NTF)] = netcmd_pb.CS_GateOfAltarNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_ALTAR_OF_BLOOD_COMMIT_RESP)] = netcmd_pb.CS_AltarOfBloodCommitResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_ALTAR_OF_BLOOD_NTF)] = netcmd_pb.CS_AltarOfBloodNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_MIRROR_OF_ABYSS_NTF)] = netcmd_pb.CS_MirrorOfAbyssNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_ADVANCE_NTF)] = netcmd_pb.CS_AdvanceNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_TRANSFER_BY_CONFIG_RESP)] = netcmd_pb.CS_TransferByConfigResp()
+
+    -- Vip
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_VIP_RESP)] = netcmd_pb.CS_VipResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_BUY_VIP_RESP)] = netcmd_pb.CS_BuyVipResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_RECEIVE_VIP_REWARD_RESP)] = netcmd_pb.CS_ReceiveVipRewardResp()
+    -- --交易行
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_TRANSACTION_LIST_RESP)] = netcmd_pb.CS_TransactionListResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_TRANSACTION_SIMPLE_LIST_RESP)] = netcmd_pb.CS_TransactionSimpleListResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_PUT_ON_SALE_RESP)] = netcmd_pb.CS_PutOnSaleResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_TAKE_DOWN_THE_SALE_RESP)] = netcmd_pb.CS_TakeDownTheSaleResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_ONCE_AGAIN_PUT_ON_SALE_RESP)] = netcmd_pb.CS_OnceAgainPutOnSaleResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_MARK_RESP)] = netcmd_pb.CS_MarkResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_BUY_TRANSACTION_RESP)] = netcmd_pb.CS_BuyTransactionResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_TRADING_LOG_RESP)] = netcmd_pb.CS_TradingLogResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_BIDDING_RESP)] = netcmd_pb.CS_BiddingResp()
+
+    --引导
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GUIDE_STR_RESP)] = netcmd_pb.CS_GuideStrResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_SET_GUIDE_STR_RESP)] = netcmd_pb.CS_SetGuideStrResp()
+
+    -- 排行榜
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_RANK_LIST_RESP)] = netcmd_pb.CS_RankListResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_QUERY_PLAYER_RESP)] = netcmd_pb.CS_QueryPlayerResp()
+
+    -- 成就
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_ACHIEVE_LIST_RESP)] = netcmd_pb.CS_AchieveListResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_ACHIEVE_REWARD_RESP)] = netcmd_pb.CS_AchieveRewardResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_ACHIEVE_UPDATE_NTF)] = netcmd_pb.CS_AchieveUpdateNtf()
+
+    --交换转职装备
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_TRANSFORM_EQUIP_RESP)] = netcmd_pb.CS_EquipTransformResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_ADVANCE_EQUIP_TRANSFORM_INFO_RESP)] = netcmd_pb.CS_AdvanceEquipTransformInfoResp()
+    
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_ACHIEVE_JUMP_MAP_RESP)] = netcmd_pb.CS_AchieveJumpMapResp()
+
+    --充值订单
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_CREATE_RECHARGE_ORDER_RESP)] = netcmd_pb.CS_CreateRechargeOrderResp()
+
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_VIP_AUTO_SELL_RESP)] = netcmd_pb.CS_VipAutoSellResp()
+
+
+    -- 七日活动
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_QUERY_SEVEN_DAY_RESP)] = netcmd_pb.CS_QuerySevenDayResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_SEVEN_DAY_INFO_NTF)] = netcmd_pb.CS_SevenDayInfoNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GET_SEVEN_DAY_REWARD_RESP)] = netcmd_pb.CS_GetSevenDayRewardResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GET_SEVEN_DAY_ALREWARD_RESP)] = netcmd_pb.CS_GetSevenDayAlrewardResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_SEVEN_DAY_TASK_JUMP_MAP_RESP)] = netcmd_pb.CS_SevenDayTaskJumpMapResp()
+    --礼包码兑换
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_GIFT_CODE_RESP)] = netcmd_pb.CS_GiftCodeResp()
+
+    --首充礼包
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_QUERY_FIRST_RECHARGER_RESP)] = netcmd_pb.CS_QueryFirstRechargeResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_FIRST_RECHARGE_NTF_RESP)] = netcmd_pb.CS_QueryFirstRechargeResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_FIRST_RECHARGE_GET_REWARD_RESP)] = netcmd_pb.CS_FirstRechargeGetRewardResp()
+
+    --每日特惠
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_DAY_GIFT_RESP)] = netcmd_pb.CS_DayGiftResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_DAY_GIFT_REWARD_RESP)] = netcmd_pb.CS_DayGiftRewardResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_DAY_GIFT_NTF)] = netcmd_pb.CS_DayGiftNtf()
+
+    -- 坐骑
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_QUERY_MOUNT_RESP)] = netcmd_pb.CS_QueryMountResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_USE_MOUNT_RESP)] = netcmd_pb.CS_UseMountResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_UPGRADE_MOUNT_RESP)] = netcmd_pb.CS_UpgradeMountResp()
+    -- 光环
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_QUERY_HALO_RESP)] = netcmd_pb.CS_QueryHaloResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_USE_HALO_RESP)] = netcmd_pb.CS_UseHaloResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_UPGRADE_HALO_RESP)] = netcmd_pb.CS_UpgradeHaloResp()
+    --首饰套养成
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_EQUIP_MOTIVATE_RESP)] = netcmd_pb.CS_EquipMotivateResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_EQUIP_UPGRADE_RESP)] = netcmd_pb.CS_EquipUpgradeResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_EQUIP_UPRANK_RESP)] = netcmd_pb.CS_EquipUpRankResp()
+    --服务器版本
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_VERSION_RESP)] = netcmd_pb.CS_VersionResp()
+
+    --搜索怪物
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_SEARCH_MONSTER_RESP)] = netcmd_pb.CS_SearchMonsterResp()
+
+    --获取加点属性
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_GET_CLEARABLE_ATTRIBUTE_POINT_RESP)] = netcmd_pb.CS_GetClearableAttributePointResp()
+
+    --月卡
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_MONTHCARD_REWARD_RESP)] = netcmd_pb.CS_MonthCard_RewardResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_MONTHCARD_INIT_RESP)] = netcmd_pb.CS_MonthCard_InitResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_MONTHCARD_UPDATE_NTF)] = netcmd_pb.CS_MonthCard_UpdateNtf()
+    
+    --精力系统
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_ENERGY_NTF)] = netcmd_pb.CS_EnergyNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_GET_ENERGY_ITEMS_RESP)] = netcmd_pb.CS_GetEnergyItemsResp()
+
+    --使用道具
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_USE_ITEM_BY_INDEX_RESP)] = netcmd_pb.CS_UseItemByIndexResp()
+    
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_CONSUME_VOUCHER_RESP)] = netcmd_pb.CS_ConsumeVoucherResp()
+
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_REWARD_NTF)] = netcmd_pb.CS_RewardNtf()
+
+    --世界boss
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_WORLD_BOSS_LIST_RESP)] = netcmd_pb.CS_WorldBossListResp()
+    
+    -- 触发礼包
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_TRIGGER_GIFT_RESP)] = netcmd_pb.CS_TriggerGiftResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_TRIGGER_GIFT_NTF)] = netcmd_pb.CS_TriggerGiftNtf()
+
+    --天天充值
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_DAILYRECHARGENTF)] = netcmd_pb.CS_DailyRechargeNtf()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.S_GETDAILYRECHARGEREWARDRESP)] = netcmd_pb.CS_GetDailyRechargeRewardResp()
+
+    -- 七日签到
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_GET_SEVEN_DAY_SIGN_REWARD_RESP)] = netcmd_pb.CS_GetSevenDaySignRewardResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_SEVEN_DAY_SIGN_NTF)] = netcmd_pb.CS_SevenDaySignNtf()
+    --等级礼包
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_LEVELGIFT_REWARD_RESP)] = netcmd_pb.CS_LevelGift_RewardResp()
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_LEVELGIFT_INIT_RESP)] = netcmd_pb.CS_LevelGift_InitResp()
+
+    --获取服务器热更功能表内容
+    self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_FUNCTIONTOGGLENTF_NTF)] = netcmd_pb.CS_FunctionToggleNtf()
+    --功能开启表服务器错误反馈
+    -- self._callback[CommonModule:GetNetCmdEnum(serverCmdDef.CS_FUNCTION_CLOSED_RESP)] = netcmd_pb.CS_FunctionClosedResp()
+    ---------------------------------------------------------------------------------------
+
+    --[[--使用测试-----------
+    local perProp = netcmd_pb.PerProperty()
+    perProp.properCode = 1
+    perProp.valueType = 2
+    perProp.value = 55555
+    perProp.strValue = "666666"
+
+    local data = perProp:SerializeToString()
+    ------------
+    local msg = netcmd_pb.PerProperty()
+
+    pcall(msg.ParseFromString,msg,data)
+    --msg:ParseFromString(data)
+    print(msg)
+
+    ---------------------------
+    local objProperty = netcmd_pb.ObjProperty()
+
+    local perProp2 = objProperty.objprops:add()
+    perProp2.properCode = 2
+    perProp2.valueType = 3
+    perProp2.value = 7777
+    perProp2.strValue = "8888888"
+
+    local perProp3 = objProperty.objprops:add()
+    perProp3.properCode = 1
+    perProp3.valueType = 4
+    perProp3.value = 33333
+    perProp3.strValue = "444444"
+
+    data = objProperty:SerializeToString()
+    ---------------------------------------
+    local objProperty2 = netcmd_pb.ObjProperty()
+    objProperty2:ParseFromString(data)
+    print(objProperty2)
+
+    -----------------
+    ]]
+
+end
+
+-- 解析二进制数据流
+function PacketParser:parseBytesPacket(msg, data)
+    if msg ~= nil and not pcall(msg.ParseFromString,msg,data) then
+        lt.LogUtil:debug("parseBytesPacket msg pcall false msgID, len ", msgID, bodyMsgLen)
+        return nil
+    end
+    return msg
+end
+
+-- 添加并检查消息队列是否继续解析
+function PacketParser:checkAddMsgParserQueue(msgID, data, wMsgType, bodyMsgLen)
+    if self._msgParserQueue[msgID] == nil then
+        self._msgParserQueue[msgID] = Queue.new()
+    end
+
+    self._msgParserQueue[msgID]:push({msgID = msgID, data = data, wMsgType = wMsgType, bodyMsgLen = bodyMsgLen})
+
+    if self._msgParserQueue[msgID]:getSize() > 1 then
+        return true
+    end
+
+    return false
+end
+
+-- 逐条清除消息解析队列
+function PacketParser:clearMsgParserQueue(msgID)
+    if self._msgParserQueue[msgID] == nil or self._msgParserQueue[msgID]:getSize() == 0 then 
+        return
+    end
+
+    -- 清除第一条
+    self._msgParserQueue[msgID]:pop()
+    if self._msgParserQueue[msgID]:getSize() == 0 then
+        self._msgParserQueue[msgID] = nil
+        return
+    end
+
+    self:executeMsgParserQueue(msgID)
+end
+
+function PacketParser:executeMsgParserQueue(msgID)
+    if self._msgParserQueue[msgID] == nil then
+        return
+    end
+
+    local msg = self._msgParserQueue[msgID]:get()
+    self:executeProcessPacketGS(msg.msgID, msg.data, msg.wMsgType, msg.bodyMsgLen)
+end
+
+-- 处理函数入口-- 约定：c++传过来的数据是  消息类型，body数据，body长度
+function PacketParser:processPacket(msgID, bodyMsg, bodyMsgLen)
+    -- 流量统计 bodyMsgLen 为字节长度
+    self:statisticsBytes(bodyMsgLen)
+
+    msgID = tonumber(msgID)
+    if msgID == cliggproto.MessageID.GS_GG_CLI_MSG then
+
+        local netdata = lt.NetData.new()
+        netdata:prepare(bodyMsg, bodyMsgLen)
+        local wMsgType = netdata:readByte()
+        msgID = netdata:readWord()
+        local msgLen = netdata:readWord()
+        --  yflog:Info("gs msg:%s len:%s", msgID, msgLen)
+        if msgLen+5 ~= bodyMsgLen then
+            yflog:Info("gs msgLen:%s ~= bodyMsgLen:%s", msgLen+5, bodyMsgLen)
+            return
+        end
+
+        local data = netdata:readBufs()
+
+
+        -- 添加消息队列处理相同消息
+        if self:checkAddMsgParserQueue(msgID, data, wMsgType, bodyMsgLen) then
+            return
+        end
+
+        self:executeMsgParserQueue(msgID)
+    else
+        self:executeProcessPacketNormal(msgID, bodyMsg, bodyMsgLen)
+    end
+end
+
+function PacketParser:executeProcessPacketGS(msgID, data, wMsgType, bodyMsgLen)
+    --处理消息
+    --如果是GS来的消息，是这样的头
+    --UINT8   wMsgType;
+	--UINT16  wMsgID;
+    --UINT16  wMsgLen;
+    local msg = nil
+    if data ~= nil then
+        if wMsgType == 0 then --默认采用protocol buffer
+            if self._callback[msgID] then
+                msg = self:parseBytesPacket(self._callback[msgID], data)
+                if not msg then
+                    yflog:Error("gs msg pcall false msgID:%s, len:%s ", msgID, bodyMsgLen)
+
+                    -- 网络解包异常
+                    local function bin2hex(s)
+                        s=string.gsub(s,"(.)",function (x) return string.format("%02X ",string.byte(x)) end)
+                        return s
+                    end
+
+                    local notice = (msgID or "nil") .. "_" .. (bodyMsgLen or "nil")
+
+                    -- lt.SocketManager:disconnect()
+                    -- lt.SocketManager:brokenNtf(notice)
+
+                    lt.SocketManager:setBreakInfo(true, notice)
+
+                    print("Network unpacking exception", notice, bin2hex(data))
+
+                    self:clearMsgParserQueue(msgID)
+                    return
+                end
+            end
+        else
+            --自己按字节流解析
+            yflog:Info("parses msgID by byte stream by itself:%s", msgID)
+        end
+    end
+
+    self:dispatchProto(msgID, msg)
+end
+
+function PacketParser:executeProcessPacketNormal(msgID, bodyMsg, bodyMsgLen)
+    -- yflog:Info("msgID msg:%s len:%s", msgID, bodyMsgLen)
+    local msg = nil
+    msg = cliggproto:decode(msgID, bodyMsg, bodyMsgLen)
+    if msg == nil then
+        self:clearMsgParserQueue(msgID)
+        return
+    end
+
+    self:dispatchProto(msgID, msg)
+end
+
+function PacketParser:dispatchProto(msgID, msg)
+    -- 通用错误码提示
+    if msg and msg.ret and msg.ret ~= 0 then
+        local isBreak = lt.SocketManager:errorCodeAlertTips(msg, msgID)
+        if isBreak then
+            self:clearMsgParserQueue(msgID)
+            return
+        end
+    end
+
+    -- yflog:Info("dispatchProto %s",tostring(msgID))
+    socketApi:dispatchProto(tostring(msgID), msg)
+    self:clearMsgParserQueue(msgID)
+end
+
+-- 流量统计
+function PacketParser:statisticsBytes(bytes)
+    socketApi:statisticByte(bytes)
+end
+
+return PacketParser

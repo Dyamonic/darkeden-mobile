@@ -1,0 +1,37 @@
+
+local AttributeMeta = class("AttributeMeta")
+
+function AttributeMeta:ctor(row)
+    self:initWithRow(row)
+end
+
+function AttributeMeta:initWithRow(row)
+    self._optionId          = row.OptionId
+    self._type              = row.Type
+    self._name              = row.Name
+    self._grade             = row.Grade
+    self._priceMultiplier   = row.PriceMultiplier
+    if row.ReqAbility == "" then
+        self._reqAbility = nil
+    else
+        self._reqAbility = json.decode(row.ReqAbility)
+    end
+    self._plusPoint         = row.PlusPoint
+end
+
+function AttributeMeta:getReqAbility()
+    return self._reqAbility
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function AttributeMeta:getOptionId() return self._optionId end
+function AttributeMeta:getType() return self._type end
+function AttributeMeta:getName() return self._name end
+function AttributeMeta:getGrade() return self._grade end
+function AttributeMeta:getPriceMultiplier() return self._priceMultiplier end
+function AttributeMeta:getPlusPoint() return self._plusPoint end
+
+-- AUTO GENERATED GETTERS END
+return AttributeMeta

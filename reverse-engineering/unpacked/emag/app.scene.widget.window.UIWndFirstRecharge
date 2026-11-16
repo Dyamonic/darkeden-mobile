@@ -1,0 +1,354 @@
+--- 菜单界面
+---@class UIWndExit:UIWindowBase
+local UIWndFirstRecharge          = class("UIWndFirstRecharge", lt.UIWindowBase)
+local CacheManager = lt.CacheManager
+local Constant = lt.Constant
+local GameModule = lt.GameModule
+local ItemModule = lt.ItemModule
+local NtfManager = lt.NtfManager
+local RechargeModule = lt.RechargeModule
+
+local PRICETAB = {
+    [0] = "6"..GReadText.KEY_ACTIVITY_RMB_TIP,
+    [1] = "30"..GReadText.KEY_ACTIVITY_RMB_TIP,
+    [2] = "68"..GReadText.KEY_ACTIVITY_RMB_TIP
+}
+
+local DAYIDX = {
+    FirstDay = 0,
+    SecondDay = 1,
+    ThirdDay = 2
+}
+
+local NPCBGNAME ={
+    [0] = "bg_sc_bg1",
+    [1] = "bg_sc_bg2",
+    [2] = "bg_sc_bg3"
+}
+
+function UIWndFirstRecharge:ctor(param)
+    UIWndFirstRecharge.super.ctor(self, param)
+end
+
+function UIWndFirstRecharge:onClear()
+    self._btnsControl = nil
+    self._daysControl  = nil
+    self._btnshowControl  = nil
+    self._listItem  = nil
+    self._btnJunior = nil
+    self._btnAdvanced = nil
+    self._btnLuxury = nil
+    self._btnBuyGift = nil
+    self._btnGetGift = nil
+    self._dayBtns = nil
+    self._textPrice = nil
+    self._textBtnDes = nil
+    self._getGiftBtnControl = nil
+    self._redGetGift = nil
+    self._titleGetGift = nil
+    self._redBtnDay1 = nil
+    self._redBtnDay2 = nil
+    self._redBtnDay3 = nil
+    self._redBtnJunior = nil
+    self._redBtnAdvanced = nil
+    self._redBtnLuxury = nil
+    self._bgNPC1 = nil
+    self._bgNPC2 = nil
+    self._oldNPCBgURL = nil
+    self._tBgFadeChange = nil
+    self._tBgFadeIn = nil
+    UIWndFirstRecharge.super.onClear(self)
+end
+
+function UIWndFirstRecharge:onInit()
+    UIWndFirstRecharge.super.onInit(self, _GURL.UIWndFirstRecharge)
+    self._btnsControl = self:getController("btns")
+    self._daysControl  = self:getController("days")
+    self._btnshowControl  = self:getController("btnshow")
+    self._listItem  = self:getChild("list_item")
+    self._btnJunior = self:getChild("btn6")
+    self._btnAdvanced = self:getChild("btn30")
+    self._btnLuxury = self:getChild("btn68")
+    self._btnBuyGift = self:getChild("btnbuygift")
+    self._btnGetGift = self:getChild("btnreward")
+    self._dayBtns = {}
+    for fiterType = 1,3 do
+        local obj = self:getChild("btnday"..fiterType)
+        obj.fiterType = fiterType
+        self._dayBtns[fiterType] = obj
+    end
+    self._textPrice = self:getChild("price")
+    self._textBtnDes = self:getChild("des")
+    self._btnBuyGift:getChild("red"):setVisible(false)
+
+    self._getGiftBtnControl = self._btnGetGift:getController("button")
+    self._redGetGift = self._btnGetGift:getChild("red")
+    self._titleGetGift = self._btnGetGift:getChild("title")
+    
+    self._redBtnDay1 = self._dayBtns[1]:getChild("red")
+    self._redBtnDay2 = self._dayBtns[2]:getChild("red")
+    self._redBtnDay3 = self._dayBtns[3]:getChild("red")
+    self._redBtnJunior = self._btnJunior:getChild("red")
+    self._redBtnAdvanced = self._btnAdvanced:getChild("red")
+    self._redBtnLuxury = self._btnLuxury:getChild("red")
+    self._bgNPC1 = self:getChild("npcbg1")
+    self._bgNPC2 = self:getChild("npcbg2")
+    self._tBgFadeIn = self:getTransition("fadein")
+    self._tBgFadeOut = self:getTransition("fadeout")
+    self._btnJunior.fiterType = 0
+    self._btnAdvanced.fiterType = 1
+    self._btnLuxury.fiterType = 2
+    self._listItem:setItemRenderer(handler(self, self.onItemRender))
+end
+
+function UIWndFirstRecharge:onShown()
+    UIWndFirstRecharge.super.onShown(self)
+    self._btnBuyGift:addClickListener(handler(self, self.onBuyMallIdClick))
+    self._btnGetGift:addClickListener(handler(self, self.onGetRewardClick))
+    self._btnJunior:addClickListener(handler(self, self.onChangeClickPackItem))
+    self._btnAdvanced:addClickListener(handler(self, self.onChangeClickPackItem))
+    self._btnLuxury:addClickListener(handler(self, self.onChangeClickPackItem))
+    self._listItem:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+    if self._dayBtns then
+        for _,obj in pairs(self._dayBtns) do
+            obj:addClickListener(handler(self, self.onInitRewardItem))
+        end
+    end
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CS_FIRST_RECHARGE_TIPS, handler(self, self.refreshFirstRechargeTips), "UIWndFirstRecharge:refreshFirstRechargeTips")
+    self:initUI()
+end
+
+function UIWndFirstRecharge:onHide()
+    self._btnBuyGift:removeClickListener()
+    self._btnGetGift:removeClickListener()
+    self._btnJunior:removeClickListener()
+    self._btnAdvanced:removeClickListener()
+    self._btnLuxury:removeClickListener()
+    if self._dayBtns then
+        for _,obj in pairs(self._dayBtns) do
+            obj:removeClickListener()
+        end
+    end
+    self._listItem:removeItemRenderer()
+    self._listItem:removeEventListener(fgui.UIEventType.ClickItem)
+    NtfManager:removeNtfListenerByTag("UIWndFirstRecharge:refreshFirstRechargeTips")
+    self._oldNPCBgURL = nil
+    UIWndFirstRecharge.super.onHide(self)
+end
+
+function UIWndFirstRecharge:refreshFirstRechargeTips()
+    self._btnShowStates = RechargeModule:getFirstRechargeBtnStates()
+    self._btnshowControl:setSelectedIndex(self._btnShowStates)
+    self:onInitRewardItem()
+    self:onRefreshBtnRed()
+end
+
+function UIWndFirstRecharge:initUI()
+    local reward,key,days = RechargeModule:getFirstRechargeEntryRed()
+    if reward then
+        self._selectStates = key - 1
+        self._dayStates = days - 1
+    else
+        for i = Constant.FIRSTRECHARGEGIFT.MAX,1,-1 do
+            local open = RechargeModule:getFirstRechargeInfoStates(i)
+            if open then
+                self._selectStates = i - 1
+                break
+            end
+        end
+        self._selectStates = self._selectStates or 0
+        self._dayStates = self._dayStates or 0
+    end
+    self._btnShowStates = RechargeModule:getFirstRechargeBtnStates()
+    self._btnsControl:setSelectedIndex(self._selectStates)
+    self._daysControl:setSelectedIndex(self._dayStates)
+    self._btnshowControl:setSelectedIndex(self._btnShowStates)
+    self:onChangeClickPackItem(nil,true)
+    self:onRefreshBtnRed()
+end
+
+function UIWndFirstRecharge:onBuyMallIdClick()
+    self._selectStates = self._btnsControl:getSelectedIndex()
+    -- print(string.format("点击了购买%s 商品id：%d",PRICETAB[self._selectStates],self._rechargeId));
+    -- if device.platform == "windows" then
+    --     NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = "请用android平台充值" })
+    -- elseif device.platform == "android" or device.platform == "ios" then
+    RechargeModule:sendCreateOrder(self._rechargeId)
+    -- end
+end
+
+function UIWndFirstRecharge:onGetRewardClick()
+    -- self._dayStates = self._daysControl:getSelectedIndex()
+    -- self._selectStates = self._btnsControl:getSelectedIndex()
+    -- print(string.format("点击了领取%s的第%d天 礼包id：%s",PRICETAB[self._selectStates],self._dayStates + 1,self._giftId));
+    RechargeModule:sendGetFirstGiftRewardReq(self._giftId,self._dayStates + 1)
+end
+
+function UIWndFirstRecharge:onChangeClickPackItem(context,_initshow)
+    if context then
+        local sender = context:getSender()
+        self._btnsControl:setSelectedIndex(sender.fiterType)
+    end
+    if self._selectStates ~= self._btnsControl:getSelectedIndex() or _initshow then
+        self:playBgFadeIn()
+        self:onInitRewardItem()
+    end
+end
+
+function UIWndFirstRecharge:onInitRewardItem(context)
+    if context then
+        local sender = context:getSender()
+        self._daysControl:setSelectedIndex(sender.fiterType - 1)
+    end
+    self._selectStates = self._btnsControl:getSelectedIndex()
+    self._dayStates = self._daysControl:getSelectedIndex()
+    -- print(string.format("_btnsControl :%d，_dayStates%d",self._selectStates,self._dayStates))
+    self:onRefreshDayBtnRed()
+    local heroData = GameModule:getHeroData()
+    if not heroData then
+        return
+    end
+    local list = RechargeModule:getFirstRechargeGiftByRace(heroData:getRace())
+    local curData = list[self._selectStates + 1]
+    local rewardList = {}
+    if self._dayStates == DAYIDX.FirstDay then
+        rewardList = curData:getFirstDayContent()
+    elseif self._dayStates == DAYIDX.SecondDay then
+        rewardList = curData:getSecondDayContent()
+    elseif self._dayStates == DAYIDX.ThirdDay then
+        rewardList = curData:getThirdDayContent()
+    end
+    
+    self._listItemData = rewardList
+    self._listItem:setNumItems(#rewardList)
+    local openGift = RechargeModule:getFirstRechargeInfoStates(self._selectStates + 1)
+    self._textPrice:setVisible(not openGift)
+    self._textBtnDes:setVisible(not openGift)
+    self._btnBuyGift:setVisible(not openGift)
+    self._giftId = curData:getPackID()
+    self._rechargeId = curData:getMallId()
+    self._btnGetGift:setVisible(openGift)
+    if openGift then
+        local btn_States = RechargeModule:getFirstRechargeRewardStates(self._selectStates + 1,self._dayStates)
+        self._redGetGift:setVisible(false)
+        if btn_States == Constant.GETREWARDSTATES.ERROR then
+            self._btnGetGift:setTouchable(false)
+            self._getGiftBtnControl:setSelectedIndex(1)
+        elseif btn_States == Constant.GETREWARDSTATES.GETOVER then
+            self._titleGetGift:setText(GReadText.KET_MAIL_TIPS10)--已领取
+            self._btnGetGift:setTouchable(false)
+            self._getGiftBtnControl:setSelectedIndex(1)
+        elseif btn_States == Constant.GETREWARDSTATES.CANREWARD then
+            self._redGetGift:setVisible(true)
+            self._btnGetGift:setTouchable(true)
+            self._titleGetGift:setText(GReadText.KET_MAIL_TIPS11)--领取
+            self._getGiftBtnControl:setSelectedIndex(0)
+        elseif btn_States == Constant.GETREWARDSTATES.TIMEOUT then
+            self._titleGetGift:setText(GReadText.KEY_ACTIVITY_GIFT_TIP)--KEY_Activity_CRECHARGE_TIP
+            self._getGiftBtnControl:setSelectedIndex(1)
+            self._btnGetGift:setTouchable(false)
+        end
+    else
+        self._textPrice:setText(PRICETAB[self._selectStates])--显示价格
+    end
+end
+
+function UIWndFirstRecharge:playBgFadeIn()
+    
+    self._selectStates = self._btnsControl:getSelectedIndex()
+
+    local nowbg = NPCBGNAME[self._selectStates]
+    local resUrl = string.format("ui://Activity/%s",nowbg)
+
+    if self._oldNPCBgURL == nil then
+        self._bgNPC1:setURL(resUrl)
+        self._bgNPC2:setVisible(false)
+        self._tBgFadeIn:play()
+    else
+        self._bgNPC1:setVisible(false)
+        self._bgNPC2:setIcon(self._oldNPCBgURL)
+        self._bgNPC2:setVisible(true)
+        self._tBgFadeOut:play(function()
+            self._bgNPC2:setVisible(false)
+            self._bgNPC1:setURL(resUrl)
+            self._bgNPC1:setVisible(true)
+            self._tBgFadeIn:play()
+        end)
+    end
+    self._oldNPCBgURL = resUrl
+end
+
+function UIWndFirstRecharge:onRefreshDayBtnRed()
+    local gift_States1 = RechargeModule:getFirstRechargeRewardStates(self._selectStates + 1,0)
+    local gift_States2 = RechargeModule:getFirstRechargeRewardStates(self._selectStates + 1,1)
+    local gift_States3 = RechargeModule:getFirstRechargeRewardStates(self._selectStates + 1,2)
+    self._redBtnDay1:setVisible(gift_States1 == Constant.GETREWARDSTATES.CANREWARD)
+    self._redBtnDay2:setVisible(gift_States2 == Constant.GETREWARDSTATES.CANREWARD)
+    self._redBtnDay3:setVisible(gift_States3 == Constant.GETREWARDSTATES.CANREWARD)
+end
+
+-- 奖励道具渲染
+function UIWndFirstRecharge:onItemRender(index, obj)
+    local itemData = self._listItemData[index + 1]
+    local itemType = tonumber(itemData[1])
+    local itemMeta = ""
+    local iconPath = ""
+    if obj.sprite then
+        obj.sprite:removeFromParent()
+        obj.sprite = nil
+    end
+    local icon = obj:getChild("icon")
+    if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+        iconPath = "prop"
+        itemMeta = CacheManager:getItemMeta(tonumber(itemData[2]))
+        local resUrl = string.format("ui://Item/%s_%s", iconPath, itemMeta:getIconId())
+        icon:setURL(resUrl)
+        icon:setVisible(true)
+    elseif itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+        iconPath = "equip"
+        itemMeta = CacheManager:queryEquipMeta(tonumber(itemData[2]))
+
+        local iconId = itemMeta:getIconId()
+        if iconId then
+            local sprite = lt.CommonFunc.createEquipById(iconId,0,0)
+            obj:displayObject():addChild(sprite)
+            local pos = icon:getPosition()
+            sprite:setPosition(pos.x,pos.y)
+            obj.sprite = sprite
+        end
+        icon:setVisible(false)
+    end
+    obj:getChild("lbl_count"):setText(itemData[3])
+    obj.itemData = itemData
+end
+
+function UIWndFirstRecharge:onClickItem(context)
+    local data     = context:getData()
+    local itemData = data.itemData
+    if tonumber(itemData[1]) == Constant.ItemType.ITEM_TYPE_PROP then
+        local itemMeta = CacheManager:getItemMeta(tonumber(itemData[2]))
+        local itemInfo = ItemModule:getItemDataByConfig(itemMeta, nil, tonumber(itemData[3]))
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,
+            { itemInfo = itemInfo, tipsType = Constant.PROPTIPS_FORM.Display })
+    elseif tonumber(itemData[1]) == Constant.ItemType.ITEM_TYPE_EQUIP then
+        local itemMeta = CacheManager:queryEquipMeta(tonumber(itemData[2]))
+        local itemInfo = ItemModule:getItemDataByConfig(itemMeta, nil, tonumber(itemData[3]))
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,
+            { itemInfo = itemInfo, tipsType = Constant.EquipShowTipsType.Display })
+    end
+end
+
+function UIWndFirstRecharge:onRefreshBtnRed()
+    local red1 = RechargeModule:getFirstRechargeRewardStatesBtn(Constant.FIRSTRECHARGEGIFT.JUNIOR+1)
+    local red2 = RechargeModule:getFirstRechargeRewardStatesBtn(Constant.FIRSTRECHARGEGIFT.ADVANCED+1)
+    local red3 = RechargeModule:getFirstRechargeRewardStatesBtn(Constant.FIRSTRECHARGEGIFT.LUXURY+1)
+    self._redBtnJunior:setVisible(red1)
+    self._redBtnAdvanced:setVisible(red2)
+    self._redBtnLuxury:setVisible(red3)
+end
+
+function UIWndFirstRecharge:getRechargeData(packID)
+
+end
+
+return UIWndFirstRecharge

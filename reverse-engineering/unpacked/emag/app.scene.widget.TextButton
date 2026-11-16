@@ -1,0 +1,189 @@
+-- @Date    : 2020-07-01 11:31:17
+-- @Author  : ZhaoCi
+-- @Desc    :
+local ResManager        = lt.ResManager
+local TimeCounter       = lt.TimeCounter
+local ScheduleUtil      = lt.ScheduleUtil
+local Constant          = lt.Constant
+local NtfManager        = lt.NtfManager
+local StringManager     = lt.StringManager
+local LabelEx           = lt.LabelEx
+
+local TextButton = class("TextButton", function()
+    return ccui.Button:create()
+end)
+
+function TextButton:ctor()
+end
+
+--[[
+
+@image              normal display image
+@text               显示在按钮上文本, 也可以是文本key值
+@params             [type table]
+    @pressImg           press   image
+    @disableImg         disable image
+    @size               设置按钮9宫格的尺寸
+    @fontOffset         按钮文本在按钮中心点上的偏移量
+    @font               文本字体
+    @fontSize           文本字体大小
+    @fontColor          文本颜色 
+    @outlineColor       描边颜色 
+    @outlineSize        描边大小
+
+    @second             类型为table, 会自动打开二次确认提示, 值为提示框需要的参数, 无须传递回调
+    @clickCb            点击回调, 二次确认提示会自动调用此回调
+    @cdTime             设置按钮点击冷却时间, 单位秒
+]]
+function TextButton:init(image, text, params)
+    self._params = params or {}
+
+    local normalImg     = image or "_szBtn02"
+    local pressImg      = self._params.pressImg
+    local disableImg    = self._params.disableImg or "_szBtn04"
+
+    local fileName, resType = ResManager:realResPath(normalImg)
+    self:loadTextureNormal(fileName, resType)
+
+    if disableImg then
+        fileName, resType = ResManager:realResPath(disableImg)
+        self:loadTextureDisabled(fileName, resType)
+    end
+
+    if pressImg then
+        fileName, resType = ResManager:realResPath(pressImg)
+        self:loadTexturePressed(fileName, resType)
+    end
+
+    local size = self._params.size
+    if size then
+        self:setScale9Enabled(true)
+        self:setContentSize(size)
+    end
+
+    if text then
+        local offset = self._params.fontOffset or cc.p(0, 0)
+        local content = StringManager:getString(text)
+        text = type(content) == "string" and content ~= "" and content or text
+        self._szText = LabelEx.new(text, {
+            font = self._params.font or Constant.FONT_2, 
+            size = self._params.fontSize or 18, 
+            color= self._params.fontColor,
+            outlineColor = self._params.outlineColor, 
+            outlineSize  = self._params.outlineSize,
+            outline = self._params.outlineColor or self._params.outlineSize
+        })
+        self:setTitleLabel(self._szText)
+        self._szText:setPosition(cc.p(self:getContentSize().width/2+offset.x, self:getContentSize().height/2+offset.y))
+    end
+
+    local second    = self._params.second           -- 开启二次确认
+    if self._params.clickCb then
+        self:addClickEventListener(function (...)
+            local param = { ... }
+            if second then
+                if second.content and type(second.content) == "function" then
+                    second.content = second.content()
+                end
+                
+                second.callback = function (state)
+                    if state == Constant.COMMON_TIP_BTN.BTN_CONFIM then
+                        self:clickCallBack(unpack(param))
+                    end
+                end
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_ALERT_TIP, second)
+            else
+                self:clickCallBack(...)
+            end
+        end)
+    end
+end
+
+function TextButton:clickCallBack(...)
+    if self._params.cdTime then
+        self:coolDown()
+    end
+
+    if not self._inCoolDown then
+        self._params.clickCb(...)
+    end
+end
+
+-- 按钮进入冷却
+function TextButton:coolDown()
+    local tm = lt.TimeCounter:serverTime()
+    if self._preTime and tm - self._preTime <= self._params.cdTime then
+        return 
+    end
+
+    self._preTime = tm
+    self._inCoolDown = true
+    self:setEnabled(false)
+
+    ScheduleUtil:performWithDelayGlobal(function ()
+        self:setEnabled(true)
+        self._inCoolDown = false
+    end, self._params.cdTime)
+end
+
+function TextButton:isCoolDown()
+    return self._inCoolDown
+end
+
+function TextButton:getTextWidget()
+    return self._szText
+end
+
+function TextButton:setLabelText(text)
+    if self._szText then
+        self._szText:setString(text)
+    end
+end
+
+function TextButton:onListViewTouchBegan(evt)
+    self._beginPos = cc.p(evt.x, evt.y)
+    self._hasMove = false
+
+    if not self._disableListViewTouchScale then
+        self._2Normal = true
+        self:setScale(1.1)
+    end
+end
+
+function TextButton:onListViewTouchMoved(evt)
+    if self._beginPos then
+        if not self._hasMove then
+            self._hasMove = math.abs(evt.x-self._beginPos.x) > 10 or math.abs(evt.y-self._beginPos.y) > 10
+        end
+
+        if not self._disableListViewTouchScale and self._hasMove and self._2Normal then
+            self:setScale(1)
+            self._2Normal = false
+        end
+    end
+end
+
+function TextButton:onListViewTouchEnded(evt)
+    if self._beginPos then
+        if cc.rectContainsPoint(self:getBoundingBox(), self:getParent():convertToNodeSpace(cc.p(evt.x, evt.y))) and not self._hasMove and self._callback then
+            self._callback(self)
+        end
+
+        if not self._disableListViewTouchScale and self._2Normal then
+            self:setScale(1)
+            self._2Normal = false
+        end
+
+        self._beginPos = nil
+    end
+end
+
+function TextButton:setListViewTouchCallback(callback)
+    self._callback = callback
+end
+
+function TextButton:disableListViewTouchScale(b)
+    self._disableListViewTouchScale = b
+end
+
+return TextButton

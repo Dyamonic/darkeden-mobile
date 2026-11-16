@@ -1,0 +1,96 @@
+---@class UICompTSkillItem
+---
+local UICompTSkillItem = class("UICompTSkillItem",lt.UICompBase)
+
+UICompTSkillItem.ChangeSkinConf = {
+--    ["RoleInfo"] = {
+--         ["frame1"] = "bg_jineng_zhuanzhi_01",
+--         ["frame2"] = "bg_jineng_zhuanzhi_da01",
+--    } 
+}
+
+local Constant = lt.Constant
+-- local SkillModule = lt.SkillModule
+
+function UICompTSkillItem:ctor()
+    UICompTSkillItem.super.ctor(self)
+    self._skillCfg = nil
+    self._spriteId = nil
+    self._passiveSkill = nil
+    self._skillId = nil
+    self._curState = nil
+end
+
+function UICompTSkillItem:onClear()
+    UICompTSkillItem.super.onClear(self)
+    self._skillCfg = nil
+    self._spriteId = nil
+    self._passiveSkill = nil
+    self._skillId = nil
+    self._curState = nil
+end
+
+function UICompTSkillItem:onConstruct()
+    self:startSkin()
+end
+
+function UICompTSkillItem:getSkillCfg()
+    return self._skillCfg
+end
+
+function UICompTSkillItem:getCurState()
+    return self._curState
+end
+
+function UICompTSkillItem:initItem(data, curState)
+    if not data then
+        return
+    end
+
+    local skillId = data:getSkillId()
+    local spriteId = data:getSpriteID()
+    -- local skillLevel = SkillModule:getSkillLevel(skillId)
+    local needLevel = data:getNeedLevel()
+    self._skillCfg = data
+    self._spriteId = spriteId
+    self._passiveSkill = data:getPassiveSkill()
+    self._skillId = skillId
+    self._curState = curState
+
+    local name = self:getChild("name")
+    name:setText(data:getName())
+
+    local value = self:getChild("value")
+    value:setText(needLevel)
+
+    local skillItem = self:getChild("skillItem")
+    local spriteId = data:getSpriteID()
+    skillItem:setSpriteId(spriteId)
+    -- skillItem:refreshItemEx(curState)
+
+    self:setState(curState)
+end
+
+function UICompTSkillItem:setState(curState)
+    local skillItem = self:getChild("skillItem")
+    local name = self:getChild("name")
+    local value = self:getChild("value")
+    
+    if curState == Constant.SkillState.NotLearnable then
+        skillItem:refreshItemEx(curState)
+        name:setColor(cc.c3b(198,198,198))
+        value:setColor(cc.c3b(198,198,198))
+    elseif curState == Constant.SkillState.Learnable then
+        skillItem:refreshItemEx(curState)
+        local green = cc.c3b(66, 255, 66)
+        name:setColor(green)
+        value:setColor(green)
+    elseif curState == Constant.SkillState.Learned then
+        skillItem:refreshItemEx(curState)
+        local white2 = cc.c3b(255,254,254)
+        name:setColor(white2)
+        value:setColor(white2)
+    end
+end
+
+return UICompTSkillItem

@@ -1,0 +1,350 @@
+--- 副本界面
+---@class UIWndDungeon:UIWindowBase
+local UIWndDungeon          = class("UIWndDungeon", lt.UIWindowBase)
+
+local NtfManager            = lt.NtfManager
+local GameModule            = lt.GameModule
+local CacheManager          = lt.CacheManager
+local Constant              = lt.Constant
+local MapModule             = lt.MapModule
+local RaceSkinRes           = Constant.RaceSkinRes
+local ItemModule            = lt.ItemModule
+local ScheduleUtil          = lt.ScheduleUtil
+local TimeCounter           = lt.TimeCounter
+local CommonFunc            = lt.CommonFunc
+
+local FITER_TYPES           = {
+    VampireLair = 1, --巴托里和特普兹行宫
+}
+
+UIWndDungeon.ChangeSkinConf = {
+    ["Dungeon"] = {
+        ["bg"] = "bg_youjian_tanchuangdi",
+        ["bg_di"] = "bg_fuben_dikuang",
+        ["bg_biaoti"] = "bg_fuben_biaoti",
+        ["bg_jl"] = "bg_fuben_fbjl",
+        ["bt_tupian"] = "bg_fuben_tupian",
+    },
+    ["CommonTL"] = {
+        ["frame"] = {
+            closeButton = { bg = "bg_beibao_anniu01", bgup = "bg_beibao_anniu02" },
+        },
+        ["btn_enter"] = { bg = "btn_lunpan_liang" },
+        ["btn_team"] = { bg = "btn_lunpan_liang" },
+    }
+}
+
+function UIWndDungeon:ctor(param)
+    UIWndDungeon.super.ctor(self, param)
+
+
+    self._dungeonInfoMap    = CacheManager:getDungeonMap()[FITER_TYPES.VampireLair]
+    self._npcVampireLairMap = CacheManager:getNpcVampireLairTable()
+    self._curTimeStamp      = 0
+    self._item              = nil
+    self._itemMeta          = nil
+    self._itemInfo          = nil
+    self._rewardList        = nil
+    self._getSyncingTime    = nil
+    self._timer = 0
+end
+
+function UIWndDungeon:onInit()
+    UIWndDungeon.super.onInit(self, _GURL.DungeonPanel)
+
+    self._listTitle     = self:getChild("list_title")
+    self._listReward    = self:getChild("list_reward")
+    self._lblTitle      = self:getChild("lbl_title")
+    self._lblDesc       = self:getChild("lbl_desc")
+    self._lblTjLv       = self:getChild("lbl_tjLv")
+    self._lblEnterLv    = self:getChild("lbl_enterLv")
+    self._lblEnterCount = self:getChild("lbl_enterCount")
+    self._lblState      = self:getChild("lbl_state")
+    self._lblPk         = self:getChild("lbl_pk")
+    self._lblAim        = self:getChild("lbl_aim")
+    self._btnEnter      = self:getChild("btn_enter")
+    self._btnTeam       = self:getChild("btn_team")
+    self._img_bg        = self:getChild("img_bg")
+    self._txtTimeDesc   = self:getChild("n18")
+
+    self._listTitle:setItemRenderer(handler(self, self.onRenderTitle))
+    self._listReward:setItemRenderer(handler(self, self.onRenderItem))
+end
+
+function UIWndDungeon:onShown()
+    self:enableUpdateEvent(true)
+
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_DUNGEON_LIST_CHANGE, handler(self, self.onRefreshList),
+        "UIWndDungeon:onRefreshList")
+
+    self._listTitle:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickTitle))
+
+    self._listReward:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickItem))
+    self._btnEnter:addClickListener(handler(self, self.onBtnEnterClick))
+    self._btnTeam:addClickListener(handler(self, self.onBtnTeamClick))
+
+    self._curTimeStamp = 0
+end
+
+function UIWndDungeon:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndDungeon:onRefreshList")
+    self._listTitle:removeEventListener(fgui.UIEventType.ClickItem)
+    self._listReward:removeEventListener(fgui.UIEventType.ClickItem)
+    self._btnEnter:removeClickListener()
+    self._btnTeam:removeClickListener()
+    self:clearTick()
+    UIWndDungeon.super.onHide(self)
+end
+
+function UIWndDungeon:doShowAnimation()
+    MapModule:onNpcVampireLairInfoReq()
+end
+
+function UIWndDungeon:onClear()    
+    self._listTitle         = nil
+    self._listReward        = nil
+    self._lblTitle          = nil
+    self._lblDesc           = nil
+    self._lblTjLv           = nil
+    self._lblEnterLv        = nil
+    self._lblEnterCount     = nil
+    self._lblState          = nil
+    self._lblAim            = nil
+    self._btnEnter          = nil
+    self._btnTeam           = nil
+    self._dungeonInfoMap    = nil
+    self._npcVampireLairMap = nil
+    self._item              = nil
+    self._itemMeta          = nil
+    self._itemInfo          = nil
+    self._rewardList        = nil
+    self._img_bg            = nil
+    self._getSyncingTime    = nil
+    UIWndDungeon.super.onClear(self)
+end
+
+function UIWndDungeon:initUI()
+
+end
+
+function UIWndDungeon:onRefreshList()
+    self._listTitle:setNumItems(#self._dungeonInfoMap)
+    self._index = self._index or 1
+    self._listTitle:setSelectedIndex(self._index - 1)
+    self:onRefreshUI()
+
+    self._refreshDungeon = true
+end
+
+function UIWndDungeon:onRenderTitle(index, obj)
+    local index = index + 1
+    local meta = self._dungeonInfoMap[index]
+    if meta then
+        local mapCode = meta:getMapCode()
+        local targetMapMeta = CacheManager:getMapMeta(mapCode)
+        if targetMapMeta then
+            obj:getChild("lbl_tilte"):setText(targetMapMeta:getMapName())
+        end
+        obj:getChild("lbl_lv"):setText("Lv." .. meta:getMinLv())
+        local selfRace = GameModule:getHeroData():getRace()
+        obj:getChild("bg"):setURL(string.format(_GURL.GetDungeonTitle, RaceSkinRes[selfRace]))
+        obj.index = index
+    end
+end
+
+function UIWndDungeon:onClickTitle(context)
+    local obj = context:getData()
+    self._index = obj.index
+    self:onRefreshUI()
+end
+
+function UIWndDungeon:onGetDungeonByMapCode(mapcode)
+    local dungeonInfo = MapModule:getDungeonInfo()
+    for i, v in ipairs(dungeonInfo or {}) do
+        if v.mapCode == mapcode then
+            return v
+        end
+    end
+    return nil
+end
+
+function UIWndDungeon:clearTick()
+
+end
+
+function UIWndDungeon:onUpdate(dt)
+    if not self._refreshDungeon then
+        return
+    end
+
+    self._timer = self._timer + dt
+    if self._timer < 1 then
+        return
+    end
+
+    self._timer = 0
+
+    self:refreshDungeonTimer()
+end
+
+function UIWndDungeon:refreshDungeonTimer()
+    local time = self._curTimeStamp
+    if time <= 0 then
+        --初始化没取数据前
+        return
+    end
+    local serverTime = TimeCounter:serverTime()
+    local lastTime = time - serverTime
+    if lastTime <= 0 then
+        --【5秒请求一次避免跟服务器不同步】
+        if not self._getSyncingTime then
+            self._getSyncingTime = 5
+            MapModule:onNpcVampireLairInfoReq()
+        else
+            --处理请求间隔
+            self._getSyncingTime = self._getSyncingTime - 1
+            if self._getSyncingTime <= 0 then
+                self._getSyncingTime = nil
+            end
+        end
+        self._lblState:setText("")--等服务器状态回调【不要显示关闭】
+        return
+    end
+    local curtime = CommonFunc:secondsToTime2(lastTime)
+    self._lblState:setText(curtime)
+end
+
+function UIWndDungeon:onRefreshUI()
+    local meta = self._dungeonInfoMap[self._index]
+    if meta then
+        self._meta = meta
+        self._lblDesc:setText(self._meta:getDungeonDescribe())
+        self._lblTjLv:setText(self._meta:getRecommendLevel())
+        local minLv = self._meta:getMinLv()
+        self._lblEnterLv:setText(minLv)
+        local heroData = GameModule:getHeroData()
+        local advState = heroData:getAdvanceState()
+        local level = 0
+        if advState == Constant.AdvState.NotAdv then
+            level = heroData:getLevel()
+        else
+            local curAdvLvl = heroData:getAdvanceLevel()
+            level = curAdvLvl + Constant.TransferLevel
+        end
+        local lvColor = level < tonumber(minLv) and Constant.COLOR_TEXT_RED or Constant.COLOR_GREEN
+        self._lblEnterLv:setColor(lvColor)
+        local mapCode = meta:getMapCode()
+        local targetMapMeta = CacheManager:getMapMeta(mapCode)
+        local metaNpc = self._npcVampireLairMap[self._meta:getMapCode()]
+        local mapInfo = self:onGetDungeonByMapCode(mapCode)
+        self._curTimeStamp = mapInfo.timeStamp
+        local _intervalTick = 6--服务器需要6秒做副本的释放【确保数据的同步】
+        self._lblEnterCount:setText(mapInfo.curPlayerNum .. "/" .. self._meta:getMaxEnterNum() .. "人")
+        if mapInfo and mapInfo.vampireState == lt.CommonModule:GetNetCmdEnum("NPCVAMPIRELAIRSTATE_NPCVAMPIRELAIRSTATE_PREPARATION_ENUM") then
+            self._txtTimeDesc:setText(GReadText.KEY_DUNGEON_ENTERTIME_TIPS)
+            self._lblState:setColor(Constant.COLOR_GREEN_H)
+            if self._curTimeStamp - TimeCounter:serverTime() < 0 then
+                --刷新时间走完就是副本的准备时间
+                self._curTimeStamp = mapInfo.timeStamp + metaNpc:getStartDelay()
+            else
+                --防止时间差导致服务器状态未及时更新
+                self._txtTimeDesc:setText(GReadText.KEY_DUNGEON_REFRESHTIME_TIPS)
+                self._lblState:setColor(Constant.COLOR_TEXT_WHITE_PURE)
+                self._curTimeStamp = mapInfo.timeStamp + _intervalTick
+            end
+        else
+            self._txtTimeDesc:setText(GReadText.KEY_DUNGEON_REFRESHTIME_TIPS)
+            self._lblState:setColor(Constant.COLOR_TEXT_WHITE_PURE)
+            self._curTimeStamp = mapInfo.timeStamp + _intervalTick
+        end
+        self:refreshDungeonTimer()
+        self._lblPk:setText(self._meta:getPKType())
+        self._lblAim:setText(self._meta:getDungeonTarget())
+        local url = string.format(_GURL.GetDungeonImg, self._meta:getDungeonEnvironment())
+        self._img_bg:setURL(url)
+        if targetMapMeta then
+            self._lblTitle:setText(targetMapMeta:getMapName())
+        end
+        if metaNpc and metaNpc:getReward() then
+            local reward = metaNpc:getReward()
+            self._rewardList = reward
+            self._listReward:setNumItems(#reward)
+        end
+    end
+end
+
+function UIWndDungeon:onRenderItem(index, obj)
+    local index = index + 1
+    local meta = self._rewardList[index]
+    if meta then
+        local selfRace = GameModule:getHeroData():getRace()
+        obj:getChild("bg"):setURL(string.format(_GURL.GetDungeonItem, RaceSkinRes[selfRace]))
+        local num = lt.StringManager:convert4BitNumber(meta[3])
+        obj:getChild("lbl_count"):setText(num)
+
+        local resUrl = ""
+        local itemMeta = ""
+        local iconPath = ""
+        if meta[1] == Constant.ItemType.ITEM_TYPE_PROP then
+            iconPath = "prop"
+            itemMeta = CacheManager:getItemMeta(meta[2])
+        elseif meta[1] == Constant.ItemType.ITEM_TYPE_EQUIP then
+            iconPath = "equip"
+            itemMeta = CacheManager:queryEquipMeta(meta[2])
+        end
+        resUrl = string.format("ui://Item/%s_%s", iconPath, itemMeta:getIconId())
+        obj:getChild("bg_prop"):setURL(resUrl)
+
+        obj.meta = itemMeta
+        obj.itemInfo = meta
+    end
+end
+
+function UIWndDungeon:onClickItem(context)
+    local obj = context:getData()
+    self._itemMeta = obj.meta
+    self._itemInfo = obj.itemInfo
+    self._item = obj
+    self:showTips()
+end
+
+function UIWndDungeon:showTips()
+    local itemType = self._itemMeta:getItemType()
+    if itemType == Constant.ItemType.ITEM_TYPE_PROP then
+        self:showPropTips()
+    elseif itemType == Constant.ItemType.ITEM_TYPE_EQUIP then
+        self:showEquipTips()
+    end
+end
+
+function UIWndDungeon:showPropTips()
+    local itemInfo = ItemModule:getItemDataByConfig(self._itemMeta, nil, self._itemInfo[3])
+    local point = self._item:localToGlobal({ x = self._item:getSize().width, y = 0 })
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_ITEM_TIPS,
+        { itemInfo = itemInfo, pt = point, pivot = cc.p(0, 0.5), tipsType = Constant.PROPTIPS_FORM.Display })
+end
+
+function UIWndDungeon:showEquipTips()
+    local itemInfo = ItemModule:getItemDataByConfig(self._itemMeta, nil, self._itemInfo[3])
+    local point = self._item:localToGlobal({ x = self._item:getSize().width, y = 0 })
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_SHOW_EQUIP_TIPS,
+        { itemInfo = itemInfo, pt = point, tipsType = Constant.EquipShowTipsType.Display })
+end
+
+function UIWndDungeon:onBtnEnterClick(target)
+    local meta = self._dungeonInfoMap[self._index]
+    if meta then
+        local transferByConfigId = meta:getTransferByConfigId()
+        MapModule:onTransferByConfigReq(transferByConfigId)
+    end
+end
+
+function UIWndDungeon:onBtnTeamClick(target)
+    local meta = self._dungeonInfoMap[self._index]
+    if meta then
+        local mapCode = meta:getMapCode()
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndTeam", param = { mapCode = mapCode } })
+    end
+end
+
+return UIWndDungeon

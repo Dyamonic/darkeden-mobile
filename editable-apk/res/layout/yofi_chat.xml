@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:orientation="vertical" android:background="#eeeeee" android:layout_width="match_parent" android:layout_height="match_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <RelativeLayout android:orientation="horizontal" android:background="@drawable/bg_title" android:layout_width="match_parent" android:layout_height="90.0dp">
+        <Button android:id="@id/btn_back" android:background="@drawable/btn_back" android:layout_width="35.0dp" android:layout_height="35.0dp" android:layout_marginLeft="10.0dp" android:layout_marginTop="40.0dp" />
+        <TextView android:textSize="18.0sp" android:textColor="#010101" android:gravity="center" android:id="@id/tv_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="45.0dp" android:text="@string/title_chat" android:layout_centerHorizontal="true" />
+        <ProgressBar android:id="@id/loading" android:layout_width="25.0dp" android:layout_height="25.0dp" android:layout_marginLeft="15.0dp" android:layout_marginTop="45.0dp" android:layout_toRightOf="@id/tv_title" />
+    </RelativeLayout>
+    <LinearLayout android:orientation="vertical" android:layout_width="match_parent" android:layout_height="match_parent">
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout android:id="@id/chat_swipe_refresh_layout" android:layout_width="match_parent" android:layout_height="0.0dp" android:layout_weight="10.0">
+            <ListView android:id="@id/lv_chat" android:fadingEdge="none" android:fadingEdgeLength="0.0dp" android:layout_width="match_parent" android:layout_height="match_parent" android:listSelector="#00000000" android:cacheColorHint="#00000000" android:divider="@null" />
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+        <RelativeLayout android:layout_width="match_parent" android:layout_height="0.0dp" android:layout_weight="1.7">
+            <RelativeLayout android:orientation="horizontal" android:id="@id/layout_send" android:background="@drawable/bg_input" android:layout_width="match_parent" android:layout_height="40.0dp" android:layout_marginLeft="20.0dp" android:layout_marginRight="20.0dp" android:layout_centerHorizontal="true">
+                <Button android:id="@id/btn_select" android:background="@drawable/btn_select" android:layout_width="30.0dp" android:layout_height="30.0dp" android:layout_marginLeft="5.0dp" android:minWidth="0.0dp" android:minHeight="0.0dp" android:layout_centerVertical="true" />
+                <EditText android:textSize="18.0sp" android:textColor="#010101" android:textColorHint="#7b7a7a" android:layout_gravity="center_horizontal" android:id="@id/edit_content" android:background="@null" android:layout_width="255.0dp" android:layout_height="35.0dp" android:layout_marginTop="5.0dp" android:singleLine="true" android:maxLength="255" android:layout_centerInParent="true" android:imeOptions="actionNext" />
+                <Button android:gravity="center" android:id="@id/btn_send" android:background="@drawable/btn_chat_send" android:layout_width="30.0dp" android:layout_height="30.0dp" android:layout_marginRight="5.0dp" android:minWidth="0.0dp" android:minHeight="0.0dp" android:layout_alignParentRight="true" android:layout_centerVertical="true" />
+            </RelativeLayout>
+        </RelativeLayout>
+    </LinearLayout>
+</LinearLayout>

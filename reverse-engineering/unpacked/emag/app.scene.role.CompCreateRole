@@ -1,0 +1,800 @@
+---@class CompCreateRole 创角
+local CompCreateRole = class("CompCreateRole", lt.UIGButtonBase)
+local RoleModule = lt.RoleModule
+local Constant = lt.Constant
+local StringManager = lt.StringManager
+local RoleColor = lt.RoleColor
+local NtfManager = lt.NtfManager
+local RaceType = Constant.RaceType
+local Save_RoleLayer_Attr = "Save_RoleLayer_Attr"
+local Attributes = lt.Attributes.new()
+local SocketApi = lt.SocketApi
+local CHANGE_TYPE = Constant.CHANGE_TYPE
+
+function CompCreateRole:ctor()
+    self:registerComponent("CompColorTiled")
+    CompCreateRole.super.ctor(self)
+    self._raceBtns = {}
+    self._sexBtns = {}
+    self._stateBtn = {}
+    self._colorHairTiledsXY = {}
+    self._colorSkinTiledsXY = {}
+    self._skinTag = nil
+    self._hairTag = nil
+    self._attributes = nil
+    self._raceType = 0
+    self._sexType = 0
+    self._maleHead = 1
+    self._femaleHead = 1
+    self._remainPoints = 15
+    self._spriteModel = nil
+    self._pointSave = {
+        [1] = {name = GReadText.KEY_ROLE_INFO_TIPS12, originalValue = 10, addValue = 0},
+        [2] = {name = GReadText.KEY_ROLE_INFO_TIPS13, originalValue = 10, addValue = 0},
+        [3] = {name = GReadText.KEY_ROLE_INFO_TIPS14, originalValue = 10, addValue = 0},
+    }
+end
+
+function CompCreateRole:onConstruct()
+
+    local btnSureCreate = self:getChild("btnSureCreate")
+    self._btnSureCreate = btnSureCreate
+    self._btnRandomName = self:getChild("btnRandomName")
+    self._headIcon = self:getChild("headIcon")
+    self._colorPanelHair = self:getChild("colorPanelHair")
+    self._colorPanelSkin = self:getChild("colorPanelSkin")
+    self._listTips = self:getChild("list_tips")
+    self._textTips = self._listTips:getChildAt(0):getChild("textTips")
+
+    self._btnSave = self:getChild("btnSave")
+    self._btnRandomProp = self:getChild("btnRandomProp")
+    self._btnRead = self:getChild("btnRead")
+    self._btnAddPoint = self:getChild("btnAddPoint")
+    self._btnAddPointBg = self._btnAddPoint:getChild("bg")
+
+    self:createColorTiled(CHANGE_TYPE.HAIR)
+    self:createColorTiled(CHANGE_TYPE.SKIN)
+    self._raceControl = self:getController("race")
+    self._sexControl = self:getController("sex")
+
+    for _, index in pairs(Constant.RaceType) do
+        local raceBtn = self:getChild("btnRace"..index)
+        raceBtn.raceType = index
+        self._raceBtns[index] = raceBtn
+    end
+    for _, index in pairs(Constant.SexType) do
+        local sexBtn = self:getChild("btnSex"..index)
+        sexBtn.sexType = index
+        self._sexBtns[index] = sexBtn
+    end
+    for index = 1, 6, 1 do
+        local stateBtn = self:getChild("btnSwitchState"..index)
+        stateBtn.stateType = index
+        self._stateBtn[index] = stateBtn
+    end
+end
+
+function CompCreateRole:onClear()
+    self:unregisterAllComponent()
+    if self._skinTag then
+        if self._skinTag.displayObject and self._skinTag:displayObject() then
+            self._skinTag:displayObject():stopAllActions()
+        end
+        self._skinTag = nil
+    end
+
+    if self._hairTag then
+        if self._hairTag.displayObject and self._hairTag:displayObject() then
+            self._hairTag:displayObject():stopAllActions()
+        end
+        self._hairTag = nil
+    end
+    
+    if self._touchLayer then
+        self._touchLayer:removeFromParent()
+        self._touchLayer = nil
+    end
+    if self._colorPanelHair then
+        self._colorPanelHair:removeFromParent()
+        self._colorPanelHair = nil
+    end
+    if self._colorPanelSkin then
+        self._colorPanelSkin:removeFromParent()
+        self._colorPanelSkin = nil
+    end
+    self._btnAddPointBg = nil
+    self._colorHairTiledsXY = nil
+    self._colorSkinTiledsXY = nil
+
+
+    self._hairTag = nil
+    self._attributes = nil
+    self._raceType = nil
+    self._sexType = nil
+    self._maleHead = nil
+    self._femaleHead = nil
+    self._remainPoints = nil
+    self._spriteModel = nil
+    self._pointSave = nil
+
+    self._btnSureCreate = nil
+    self._headIcon = nil
+    self._colorPanelHair = nil
+    self._colorPanelSkin = nil
+    self._listTips = nil
+    self._textTips = nil
+    self._btnAddPoint = nil
+    self._nameInput = nil
+    self._femaleHead = nil
+
+    self._btnRandomName = nil
+    self._btnSave = nil
+    self._btnRandomProp = nil
+    self._btnRead = nil
+
+    for index, raceBtn in pairs(self._raceBtns) do
+        self._raceBtns[index] = nil
+    end
+    self._raceBtns = nil
+    for index, sexBtn in pairs(self._sexBtns) do
+        self._sexBtns[index] = nil
+    end
+    self._sexBtns = nil
+    for index, stateBtn in pairs(self._stateBtn) do
+        self._stateBtn[index] = nil
+    end
+    self._stateBtn = nil
+
+    if self._roleModel then
+        self._roleModel:onClear()
+        self._roleModel = nil
+    end
+    Attributes:clear()
+    CompCreateRole.super.onClear(self)
+end
+
+function CompCreateRole:onEnter()
+    self:initParams(true)
+    --创建角色随机
+    self._raceType = math.random(1, 3)
+    self:raceBtnClick(self._raceBtns[self._raceType], true)
+    SocketApi:addProtoListener(SocketApi._Event.VerifyUserName_ACK, handler(self, self.onVerifyUserName), "CompCreateRole:VerifyUserName_ACK")
+    self:initCocosInputUI()
+    self:createTouchTipLayer()
+
+    self._btnSureCreate:addClickListener(handler(self, self.btnSureCreateClick));
+    self._btnRandomName:addClickListener(handler(self, self.btnRandomNameClick));
+
+    self._btnSave:addClickListener(handler(self, self.btnSaveClick));
+    self._btnRandomProp:addClickListener(handler(self, self.btnRandomPropClick));
+    self._btnRead:addClickListener(handler(self, self.btnReadClick));
+    self._btnAddPoint:addClickListener(handler(self, self.btnAddPointClick));
+
+    
+    for index, raceBtn in pairs(self._raceBtns) do
+        raceBtn:addClickListener(handler(self, self.raceBtnClick));
+    end
+
+    for index, sexBtn in pairs(self._sexBtns) do
+        sexBtn:addClickListener(handler(self, self.sexBtnClick));
+    end
+
+    for index, stateBtn in pairs(self._stateBtn) do
+        stateBtn:addClickListener(handler(self, self.stateBtnClick));
+    end
+end
+
+function CompCreateRole:onExit()
+    fgui.GTween:kill(self._btnAddPointBg)
+    self._btnAddPointBg:setVisible(false)
+    lt.SocketApi:removeProtoListenerByTag("CompCreateRole:VerifyUserName_ACK")
+    SocketApi:removeProtoListenerByTag("CompCreateRole:VerifyUserName_ACK")
+  
+    if self._touchLayerEvt then
+        cc.Director:getInstance():getEventDispatcher():removeEventListener(self._touchLayerEvt)
+        self._touchLayerEvt = nil
+    end
+
+    self._btnSureCreate:removeClickListener();
+    self._btnRandomName:removeClickListener();
+
+    self._btnSave:removeClickListener();
+    self._btnRandomProp:removeClickListener();
+    self._btnRead:removeClickListener();
+    self._btnAddPoint:removeClickListener();
+
+    
+    for index, raceBtn in pairs(self._raceBtns) do
+        raceBtn:removeClickListener();
+    end
+
+    for index, sexBtn in pairs(self._sexBtns) do
+        sexBtn:removeClickListener();
+    end
+
+    for index, stateBtn in pairs(self._stateBtn) do
+        stateBtn:removeClickListener();
+    end
+end
+
+function CompCreateRole:createColorTiled(type)
+    for index = 1, 24, 1 do
+        local tiledX, tiledY = self:getXY(index)
+        local tiled = fgui.UIPackage:createObject("CreateRole", "colorTiled")
+        tiled:insertObjectToFactory(self)
+        local color = nil
+        if type == CHANGE_TYPE.HAIR then
+            self._colorPanelHair:addChild(tiled)
+            color = RoleColor:getHairColorById(index)
+            table.insert(self._colorHairTiledsXY,cc.p(tiledX, tiledY))
+        elseif type == CHANGE_TYPE.SKIN then
+            color = RoleColor:getSkinColorById(index)
+            self._colorPanelSkin:addChild(tiled)
+            table.insert(self._colorSkinTiledsXY,cc.p(tiledX, tiledY))
+        end
+        local colorInfo = {index = index, type = type, color = color}
+        tiled:setColorTiledInfo(colorInfo)
+        tiled:setFromWnd(self)
+        tiled:setPosition(tiledX, tiledY)
+    end
+
+    if type == CHANGE_TYPE.HAIR then
+        self._hairTag = fgui.UIPackage:createObjectFromURL(_GURL.ImageColorItem)
+        self._colorPanelHair:addChild(self._hairTag)
+        self._hairTag:setPosition(0, 0)
+        self:createBlinkingAnimation(self._hairTag:displayObject())
+    elseif type == CHANGE_TYPE.SKIN then
+        self._skinTag = fgui.UIPackage:createObjectFromURL(_GURL.ImageColorItem)
+        self._colorPanelSkin:addChild(self._skinTag)
+        self._skinTag:setPosition(0, 0)
+        self:createBlinkingAnimation(self._skinTag:displayObject())
+    end
+end
+
+function CompCreateRole:changeHairOrSkinColor(type, index)
+    if type == CHANGE_TYPE.HAIR then
+        self._selectHair = index
+        self:changeHairColor()
+    elseif type == CHANGE_TYPE.SKIN then
+        self._selectSkin = index
+        self:changeSkinColor()
+    end
+end
+
+function CompCreateRole:createBlinkingAnimation(target)
+    local function blink()
+        local currentColor = target:getColor()
+        if currentColor.r == 255 and currentColor.g == 255 and currentColor.b == 255 then
+            target:setColor(cc.c3b(0, 0, 255)) -- 设置为蓝色
+        else
+            target:setColor(cc.c3b(255, 255, 255)) -- 设置为白色
+        end
+    end
+
+    -- 每隔0.5秒调用一次 blink 函数
+    local blinkAction = cc.RepeatForever:create(cc.Sequence:create(
+        cc.CallFunc:create(blink),
+        cc.DelayTime:create(0.2) -- 闪烁间隔
+    ))
+
+    target:runAction(blinkAction)
+end
+
+--创建角色随机
+function CompCreateRole:randomParams()
+    self._sexType = self._raceType == RaceType.Ousters and Constant.SexType.MALE or math.random(0, 1)
+    self._selectHead = self._raceType ~= RaceType.Slayer and 1 or math.random(1, 3)
+    self._selectHair = self._raceType == RaceType.Vampire and 1 or math.random(1, 24)
+    self._selectSkin = self._raceType == RaceType.Ousters and 1 or math.random(1, 24)
+end
+
+
+function CompCreateRole:createTouchTipLayer()
+    if not self._touchLayer then
+        local size = self:getSize()
+        self._touchLayer = display.newLayer(cc.c4b(0, 0, 0, 255), size)
+        self._touchLayer:setOpacity(0)
+        self._touchLayer:setColor(cc.c3b(Constant.COLOR_TEXT_RED))
+        self._touchLayer:setAnchorPoint(cc.p(0.5, 0.5))
+        self:displayObject():addChild(self._touchLayer)
+        self._touchLayer:setTouchMode(cc.EVENT_TOUCH_ONE_BY_ONE)
+    end
+    if not self._touchLayerEvt then
+        self._touchLayerEvt = cc.EventListenerTouchOneByOne:create()
+        self._touchLayerEvt:setSwallowTouches(false)
+        self._touchLayerEvt:registerScriptHandler(function(touch, event)
+            return true
+        end, cc.Handler.EVENT_TOUCH_BEGAN)
+        self._touchLayerEvt:registerScriptHandler(function (touch, event)
+            self:onLayerClick(touch, event)
+        end, cc.Handler.EVENT_TOUCH_ENDED)
+        cc.Director:getInstance():getEventDispatcher():addEventListenerWithSceneGraphPriority(self._touchLayerEvt, self._touchLayer)
+    end
+end
+
+function CompCreateRole:onLayerClick(touch, event)
+    local curPosition = touch:getLocation()
+    local pos = self:displayObject():convertToNodeSpace(curPosition)
+    local fguiY = self:getSize().height - pos.y
+
+    for index = 2, 21 do
+        local node = self:getChild("n"..index)
+        local size = node:getSize()
+        local nodeXY = node:getPosition()
+        local rect = {width = size.width, height = size.height, x = nodeXY.x, y = nodeXY.y}
+        if cc.rectContainsPoint(rect, cc.p(pos.x, fguiY)) then
+            local text = lt.ReadTextManager:getClientTextByKey("CREATE_ROLE_"..index)
+            local normalText = string.gsub(text, "\\n", "\n")
+            local isNotSlayer = self._raceType == RaceType.Ousters or self._raceType == RaceType.Vampire
+            if isNotSlayer and (index == 10 or index == 11 or index == 12) then
+                -- 不给点
+            else
+                self._textTips:setText(normalText)
+            end
+        end
+    end
+end
+
+function CompCreateRole:initCocosInputUI()
+    if not self._nameInput then
+        local sureBtnXY = cc.p(self._btnSureCreate:displayObject():getPosition())
+        local size = self:getSize()
+        local cocosY = sureBtnXY.y + size.height + 3
+
+        self._nameInput = ccui.EditBox:create(cc.size(141, 29),"", ccui.TextureResType.localType)
+        self._nameInput:setAnchorPoint(cc.p(0, 0))
+        self._nameInput:setFontName(lt.Constant.FONT_4)
+        self._nameInput:setPosition(sureBtnXY.x - 145, cocosY)
+        self._nameInput:setFontSize(20)
+        self._nameInput:setReturnType(cc.KEYBOARD_RETURNTYPE_SEND)
+        self._nameInput:setInputMode(cc.EDITBOX_INPUT_MODE_SINGLELINE)
+        self._nameInput:registerScriptEditBoxHandler(handler(self, self.editBoxEvent))
+        self:displayObject():addChild(self._nameInput)
+    end
+    if self._nameInput and self._nameInput:getText() == "" then
+        self:btnRandomNameClick()
+    end
+end
+
+function CompCreateRole:editBoxEvent(eventType,sender)
+    if eventType == "began" then
+    elseif eventType == "ended" then
+    elseif eventType == "changed" then
+        local str = sender:getText()
+        str = string.gsub(str," ","")--过滤掉空格
+        str = lt.CommonUtil:rmSpecChars(str)
+        local count = string.len(str)
+        local reCount = 0
+        local beginIndex = -1
+        local reString = ""
+        for i = 1, count do
+            local s = string.sub(str, i, i)
+            local t = string.byte(s)
+            if t < 128 then
+                reCount = reCount + 1--1字节文字，长度加1
+            elseif t >= 192 then
+                reCount = reCount + 2--1字节以上文字，长度加2
+            end
+            if reCount > 10 then
+                beginIndex = i - 1
+                break
+            end
+            beginIndex = i
+        end
+        reString = string.sub(str, 1, beginIndex)
+        sender:setText("")
+        self._nameInput:setText(reString)
+    elseif eventType == "return" then
+    end
+end
+
+
+function CompCreateRole:onVerifyUserName(event)
+    local data = event.param
+    local content = ""
+    if data and data._byResult == lt.CliGgProto.PROTO_SUCCESS then
+        content = GReadText.KEY_CREATE_ROLE_TIPS3
+    else
+        content = GReadText.KEY_CREATE_ROLE_TIPS4
+    end
+    self._vertifyState = content
+    self._curName = self._nameInput:getText()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {content = content})
+end
+
+function CompCreateRole:initParams(isInit)
+    if not isInit then
+        self._selectHead = 1
+        self._selectHair = 1
+        self._selectSkin = 1
+        self._hairDestColor = nil
+        self._skinDestColor = nil
+    end
+    self._btnAddPoint:setVisible(true)
+    fgui.GTween:kill(self._btnAddPointBg)
+    self._btnAddPointBg:setVisible(false)
+    self._curName = nil
+    self._vertifyState = ""
+    self._pointSave = {
+        [1] = {name = GReadText.KEY_ROLE_INFO_TIPS12, originalValue = 10, addValue = 0},
+        [2] = {name = GReadText.KEY_ROLE_INFO_TIPS13, originalValue = 10, addValue = 0},
+        [3] = {name = GReadText.KEY_ROLE_INFO_TIPS14, originalValue = 10, addValue = 0},
+    }
+    self._remainPoints = 15
+    Attributes:clear()
+end
+
+function CompCreateRole:distributeAttr(attr)
+    if not attr then
+        Attributes:refreshAttr(self._raceType)
+        self._attributes = Attributes:getAttr()
+    else
+        self._attributes = attr
+    end
+    for key, value in pairs(self._attributes) do
+        local node = self:getChild(key)
+        if node then
+            local valueName = node:getChild("value")
+            valueName:setText(value)
+        end
+    end
+end
+
+
+function CompCreateRole:btnSureCreateClick()
+    local name = self._nameInput:getText()
+    if name == "" then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {content = GReadText.KEY_CREATE_ROLE_TIPS5})
+        return
+    end
+
+    if lt.MaskWordUtil:isFind(name) then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {content = StringManager:getString(StringManager.KEY_TIP_MASK_NAME)})
+        return
+    end
+    
+    local byteLen = lt.CommonUtil:GetUTFWidth(name)
+    if byteLen < 4 or byteLen > 10 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {content = GReadText.KEY_CREATE_ROLE_TIPS15})
+        return
+    end
+    if name == self._curName then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {content = self._vertifyState})
+        return 
+    end
+    local pid = RoleModule:getPID()
+    lt.LoginCmd:repeatRoleName(name, pid)
+end
+
+function CompCreateRole:createRoleCheck()
+    local name = self._nameInput:getText()
+    if name == "" then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {content = GReadText.KEY_CREATE_ROLE_TIPS5})
+        return
+    end
+   
+    if lt.MaskWordUtil:isFind(name) then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {content = StringManager:getString(StringManager.KEY_TIP_MASK_NAME)})
+        return
+    end
+
+    if self._raceType == RaceType.Ousters then
+        if self._remainPoints ~= 0 then
+            local function func()
+                fgui.GTween:to(1, 0, 1.5)
+                :setTarget(self._btnAddPointBg, fgui.TweenPropType.Alpha)
+                :setEase(Constant.EaseType.Linear)
+                :onComplete(function()
+                    fgui.GTween:to(0, 1, 1.5)
+                    :setTarget(self._btnAddPointBg, fgui.TweenPropType.Alpha)
+                    :setEase(Constant.EaseType.Linear)
+                    :onComplete(function()
+                        func()
+                    end)
+                end)
+            end
+
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {
+                content = GReadText.KEY_CREATE_ROLE_TIPS7,
+                confirmCallback = function()
+                    self._btnAddPointBg:setVisible(true)
+                    if not fgui.GTween:isTweening(self._btnAddPointBg,fgui.TweenPropType.Alpha) then
+                        func()
+                    end
+                end,
+            })
+            return
+        end
+    end
+
+
+    if lt.CommonModule:needNameTip(name) then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_MESSAGEBOX_SMALL, {content = GReadText.KEY_CREATE_ROLE_TIPS15})
+    else
+        local headId = self:getHeadId()
+        
+        local param = {
+            szRoleName = name,
+            byPos = RoleModule:getCurrentPos(),
+            byRace = self._raceType,
+            bySex = self._sexType,
+            byFaceShape = headId,
+            byHairColor = self._selectHair,
+            bySkinColor = self._selectSkin,
+        
+            wSTR = self._attributes.strength,
+            wDEX = self._attributes.agility,
+            wINT = self._attributes.knowledge,
+            szInvite = lt.RoleModule:getInviteCode(),
+        }
+        -- dump(param)
+        RoleModule:createRoleReq(param)
+    end
+end
+
+function CompCreateRole:raceBtnClick(context, isInit)
+    local raceType
+    if isInit then
+        raceType = context.raceType
+    else
+        self._sexType = Constant.SexType.MALE
+        raceType = context:getSender().raceType
+        self:initParams()
+    end
+
+    self._raceControl:setSelectedIndex(raceType - 1)
+    self._raceType = raceType
+
+    --随机
+    self:randomParams()
+    if self._roleModel then
+        self._roleModel:onClear()
+        self._roleModel = nil
+    end
+    
+    local heroData = RoleModule:createHeroData(0, {
+        race      = self._raceType,
+        gender    = self._sexType,
+        hair      = self._selectHair,
+        skin      = self._selectSkin,
+        faceShape = self:getHeadId(),
+    })
+    
+    self._roleModel = lt.UIHeroActor.new(heroData, Constant.DIRECTION_DOWN, true)
+    self._roleModel:setScale(RoleModule:getScaleRole())
+    -- self._roleModel:playActionUI(Constant.ROLE_ACTION_IDLE)
+    self:playAction()
+    self._roleModel:setPosition(cc.p(-190, 130))
+    self:displayObject():addChild(self._roleModel)
+
+    self:changeUIByRace()
+    self:distributeAttr()
+end
+
+function CompCreateRole:changeUIByRace()
+    local isOutersEnabled = self._raceType ~= RaceType.Ousters
+    self._sexControl:setSelectedIndex(isOutersEnabled == false and 2 or self._sexType)
+    self:changeHeadRes()
+    if self._raceType == RaceType.Vampire or self._raceType == RaceType.Slayer then
+        self:changeSkinColor()
+    end
+    if self._raceType == RaceType.Ousters or self._raceType == RaceType.Slayer then
+        self:changeHairColor()
+    end
+    self:changeModelColor()
+end
+
+
+function CompCreateRole:sexBtnClick(context, isInit)
+    local isOutersEnabled = self._raceType ~= RaceType.Ousters
+    if not isOutersEnabled then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = "魔族无法选择性别"})
+        self._sexControl:setSelectedIndex(2)
+        return
+    end
+    local sexType = context:getSender().sexType
+    self._sexControl:setSelectedIndex(sexType)
+    self._sexType = sexType
+    --性别头像读取
+    self._selectHead = self._sexType == Constant.SexType.MALE and self._maleHead or self._femaleHead
+    self:changeHeadRes()
+    if self._raceType == RaceType.Vampire or self._raceType == RaceType.Slayer then
+        self:changeSkinColor()
+    end
+    if self._raceType == RaceType.Ousters or self._raceType == RaceType.Slayer then
+        self:changeHairColor()
+    end
+    self:changeSex()
+    self:changeModelColor()
+end
+
+function CompCreateRole:btnSaveClick()
+    local dataString = json.encode(self._attributes)
+    cc.UserDefault:getInstance():setStringForKey(Save_RoleLayer_Attr, dataString)
+    cc.UserDefault:getInstance():flush()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_CREATE_ROLE_TIPS8})
+end
+
+function CompCreateRole:btnReadClick()
+    local dataString = cc.UserDefault:getInstance():getStringForKey(Save_RoleLayer_Attr, "{}")
+    if dataString == "{}" then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_CREATE_ROLE_TIPS14})
+        return
+    end
+    local data = json.decode(dataString)
+    self:distributeAttr(data)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_CREATE_ROLE_TIPS13})
+end
+
+function CompCreateRole:btnRandomPropClick()
+    self:distributeAttr()
+end
+
+function CompCreateRole:btnAddPointClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {
+        class = "UIWndUsePointsCreate",
+        confirmCallback = function(attPointTable,remainPoint)
+            for index, value in pairs(attPointTable) do
+                self._pointSave[index].addValue = value
+            end
+
+            local attPointArr = {
+                attPointTable = attPointTable,
+                remainPoint = remainPoint
+            }
+            self._remainPoints = remainPoint
+
+            Attributes:refreshAttr(self._raceType, attPointArr)
+            local attributes = Attributes:getAttr()
+            self:distributeAttr(attributes)
+        end,
+        param = {
+            totalPoints = 15,
+            needUseComplete = false,
+            attrList = self._pointSave,
+            needHideAddPointBtn = true,
+        }
+    })
+end
+
+function CompCreateRole:btnRandomNameClick()
+    local name1 = lt.CacheManager:getRandNameFirst()
+    local name2 = lt.CacheManager:getRandNameLast(self._sexType + 1)
+    self._nameInput:setText(name1 .. name2)
+end
+
+function CompCreateRole:stateBtnClick(context)
+    
+    local stateType = context:getSender().stateType
+    if stateType == 1 then
+        self._selectHair = self._selectHair - 1 
+        if self._selectHair == 0 then
+            self._selectHair = 24
+        end
+    elseif stateType == 2 then
+        self._selectHair = self._selectHair + 1 
+        if self._selectHair == 25 then
+            self._selectHair = 1
+        end
+    elseif stateType == 3 then
+        self._selectSkin = self._selectSkin - 1 
+        if self._selectSkin == 0 then
+            self._selectSkin = 24
+        end
+    elseif stateType == 4 then
+        self._selectSkin = self._selectSkin + 1 
+        if self._selectSkin == 25 then
+            self._selectSkin = 1
+        end
+    elseif stateType == 5 then
+        self._selectHead = self._selectHead - 1
+        if self._selectHead == 0 then
+            self._selectHead = 3 
+        end
+        --保存男女头像
+        if self._sexType == Constant.SexType.MALE then
+            self._maleHead = self._selectHead
+        else
+            self._femaleHead = self._selectHead
+        end
+    elseif stateType == 6 then
+        self._selectHead = self._selectHead + 1
+        if self._selectHead == 4 then
+            self._selectHead = 1 
+        end
+        --保存男女头像
+        if self._sexType == Constant.SexType.MALE then
+            self._maleHead = self._selectHead
+        else
+            self._femaleHead = self._selectHead
+        end
+    else 
+        print('btn error')
+    end
+    if stateType == 1 or stateType == 2 then
+        self:changeHairColor()
+    elseif stateType == 3 or stateType == 4 then
+        self:changeSkinColor()
+    elseif stateType == 5 or stateType == 6 then
+        self:changeHeadRes()
+        self:changeModelColor()
+    end
+end
+
+local gridWidth = 20
+local gridHeight = 17
+function CompCreateRole:getXY(index)
+    local row = math.floor((index - 1) / 8)
+    local col = (index - 1) % 8       
+    local x = col * gridWidth
+    local y = row * gridHeight
+    return x, y
+end
+
+function CompCreateRole:changeHairColor()
+    -- 发色选中
+    local hairXY = self._colorHairTiledsXY[self._selectHair]
+    self._hairTag:setPosition(hairXY.x, hairXY.y)
+    
+    -- 设置模型发色并更新
+    self._roleModel._roleData:setHairColor(self._selectHair)
+    self._roleModel:changeHairColor(self._selectHair)
+end
+
+function CompCreateRole:changeSkinColor()
+    -- 皮肤选中
+    local skinXY = self._colorSkinTiledsXY[self._selectSkin]
+    self._skinTag:setPosition(skinXY.x, skinXY.y)
+
+    -- 设置皮肤发色并更新
+    self._roleModel._roleData:setSkinColor(self._selectSkin)
+    self._roleModel:changeSkinColor(self._selectSkin)
+end
+
+function CompCreateRole:changeHeadRes()
+    local urlPath = ""
+    if self._raceType == RaceType.Ousters then
+        urlPath = _GURL.ImageOuterHead
+    elseif self._raceType == RaceType.Vampire then
+        urlPath = string.format(_GURL.GetImageVarHead, self._sexType)
+    elseif self._raceType == RaceType.Slayer then
+        urlPath = string.format(_GURL.GetImageSlayerHead, self._raceType, self._sexType, self._selectHead)
+    end
+    self._headIcon:setURL(urlPath)
+
+    self:changeFaceShape()
+end
+
+-- 改变角色模型数据
+function CompCreateRole:changeModelColor()
+    self._roleModel:refreshHelmetBodyPants()
+    self._roleModel:playActionUI(Constant.ROLE_ACTION_IDLE)
+    self:playAction()
+end
+
+-- 改变性别
+function CompCreateRole:changeSex()
+    self._roleModel._roleData:setSex(self._sexType)
+end
+
+-- 改变faceshape，人族相关
+function CompCreateRole:changeFaceShape()
+    local headId = self:getHeadId()
+    self._roleModel._roleData:setFaceShape(headId)
+end
+
+function CompCreateRole:getHeadId()
+    return tonumber(self._raceType..self._sexType..self._selectHead)
+end
+
+function CompCreateRole:playAction()
+    local actionId = Constant.ROLE_ACTION_IDLE
+    if self._raceType == RaceType.Ousters then
+        actionId = Constant.ACTION_OUSTERS_STAND
+    end
+    if self._roleModel then
+        self._roleModel:playActionUI(actionId)
+    end
+end
+
+return CompCreateRole

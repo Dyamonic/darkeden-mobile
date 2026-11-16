@@ -1,0 +1,25 @@
+---邮件详细界面文字
+---@class UICompMailContent:fgui.GComponent
+
+local UICompMailContent = class("UICompMailContent", lt.UIGButtonBase)
+
+function UICompMailContent:ctor()
+    UICompMailContent.super.ctor(self)
+    --UI
+    self._content = nil
+end
+
+function UICompMailContent:onClear()
+    --UI
+    self._content = nil
+end
+
+function UICompMailContent:onConstruct()
+    self._content = self:getChild("content")
+end
+
+function UICompMailContent:setContent(text)
+    self._content:setText(text)
+end
+
+return UICompMailContent

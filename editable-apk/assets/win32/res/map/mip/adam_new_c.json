@@ -1,0 +1,241 @@
+{
+    "Height": 256,
+    "MPortals": [
+        {
+            "Bottom": 255,
+            "Left": 0,
+            "M_Type": 0,
+            "M_ZoneID": [
+                73
+            ],
+            "Right": 0,
+            "Top": 0
+        },
+        {
+            "Bottom": 4,
+            "Left": 1,
+            "M_Type": 0,
+            "M_ZoneID": [
+                74
+            ],
+            "Right": 126,
+            "Top": 0
+        },
+        {
+            "Bottom": 255,
+            "Left": 127,
+            "M_Type": 0,
+            "M_ZoneID": [
+                71
+            ],
+            "Right": 127,
+            "Top": 0
+        },
+        {
+            "Bottom": 109,
+            "Left": 66,
+            "M_Type": 0,
+            "M_ZoneID": [
+                4001
+            ],
+            "Right": 66,
+            "Top": 109
+        },
+        
+        {
+            "Bottom": 110,
+            "Left": 65,
+            "M_Type": 0,
+            "M_ZoneID": [
+                4001
+            ],
+            "Right": 67,
+            "Top": 110
+        },
+                {
+            "Bottom": 111,
+            "Left": 64,
+            "M_Type": 0,
+            "M_ZoneID": [
+                4001
+            ],
+            "Right": 68,
+            "Top": 111
+        },
+                {
+            "Bottom": 112,
+            "Left": 65,
+            "M_Type": 0,
+            "M_ZoneID": [
+                4001
+            ],
+            "Right": 67,
+            "Top": 112
+        },
+        {
+            "Bottom": 113,
+            "Left": 66,
+            "M_Type": 0,
+            "M_ZoneID": [
+                4001
+            ],
+            "Right": 66,
+            "Top": 113
+        },
+        {
+            "Bottom": 113,
+            "Left": 93,
+            "M_Type": 0,
+            "M_ZoneID": [
+                1206
+            ],
+            "Right": 95,
+            "Top": 110
+        },
+        {
+            "Bottom": 142,
+            "Left": 33,
+            "M_Type": 0,
+            "M_ZoneID": [
+                1205
+            ],
+            "Right": 35,
+            "Top": 139
+        },
+        {
+            "Bottom": 173,
+            "Left": 65,
+            "M_Type": 7,
+            "M_ZoneID": [
+                53
+            ],
+            "Right": 68,
+            "Top": 170
+        },
+        {
+            "Bottom": 255,
+            "Left": 1,
+            "M_Type": 0,
+            "M_ZoneID": [
+                75
+            ],
+            "Right": 126,
+            "Top": 250
+        }
+    ],
+    "SafeRects": [
+        {
+            "Bottom": 161,
+            "Flag": 16,
+            "Left": 66,
+            "Right": 68,
+            "Top": 161
+        },
+        {
+            "Bottom": 162,
+            "Flag": 16,
+            "Left": 65,
+            "Right": 69,
+            "Top": 162
+        },
+        {
+            "Bottom": 163,
+            "Flag": 16,
+            "Left": 64,
+            "Right": 70,
+            "Top": 163
+        },
+        {
+            "Bottom": 164,
+            "Flag": 16,
+            "Left": 63,
+            "Right": 71,
+            "Top": 164
+        },
+        {
+            "Bottom": 165,
+            "Flag": 16,
+            "Left": 62,
+            "Right": 72,
+            "Top": 165
+        },
+        {
+            "Bottom": 166,
+            "Flag": 16,
+            "Left": 61,
+            "Right": 72,
+            "Top": 166
+        },
+        {
+            "Bottom": 168,
+            "Flag": 16,
+            "Left": 60,
+            "Right": 73,
+            "Top": 167
+        },
+        {
+            "Bottom": 172,
+            "Flag": 16,
+            "Left": 59,
+            "Right": 74,
+            "Top": 169
+        },
+        {
+            "Bottom": 174,
+            "Flag": 16,
+            "Left": 60,
+            "Right": 74,
+            "Top": 173
+        },
+        {
+            "Bottom": 175,
+            "Flag": 16,
+            "Left": 61,
+            "Right": 73,
+            "Top": 175
+        },
+        {
+            "Bottom": 176,
+            "Flag": 16,
+            "Left": 62,
+            "Right": 72,
+            "Top": 176
+        },
+        {
+            "Bottom": 177,
+            "Flag": 16,
+            "Left": 62,
+            "Right": 70,
+            "Top": 177
+        },
+        {
+            "Bottom": 178,
+            "Flag": 16,
+            "Left": 63,
+            "Right": 70,
+            "Top": 178
+        },
+        {
+            "Bottom": 179,
+            "Flag": 16,
+            "Left": 64,
+            "Right": 70,
+            "Top": 179
+        },
+        {
+            "Bottom": 180,
+            "Flag": 16,
+            "Left": 65,
+            "Right": 69,
+            "Top": 180
+        },
+        {
+            "Bottom": 181,
+            "Flag": 16,
+            "Left": 66,
+            "Right": 68,
+            "Top": 181
+        }
+    ],
+    "Width": 128
+}

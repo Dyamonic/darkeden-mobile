@@ -1,0 +1,171 @@
+---@class UICompGmCmdCell
+---
+local UICompGmCmdCell = class("UICompGmCmdCell", lt.UIGButtonBase)
+local Constant = lt.Constant
+
+function UICompGmCmdCell:ctor()
+    UICompGmCmdCell.super.ctor(self)
+    self._curListMeta = nil
+end
+
+function UICompGmCmdCell:onClear()
+    self._curListMeta = nil
+    self._lblFunName  = nil
+    self._lblName     = nil
+    self._btnChu      = nil
+    self._btnJian     = nil
+    self._btnJia      = nil
+    self._btnCheng    = nil
+    self._btnApply    = nil
+    UICompGmCmdCell.super.onClear(self)
+end
+
+function UICompGmCmdCell:onEnter()
+    UICompGmCmdCell.super.onEnter(self)
+    self._btnChu:addClickListener(handler(self, self.onClickChuBtn))
+    self._btnJian:addClickListener(handler(self, self.onClickJianBtn))
+    self._btnJia:addClickListener(handler(self, self.onClickJiaBtn))
+    self._btnCheng:addClickListener(handler(self, self.onClickChengBtn))
+    self._btnApply:addClickListener(handler(self, self.onClickSendGmMsgBtn))
+end
+
+function UICompGmCmdCell:onExit()
+    self._btnChu:removeClickListener()
+    self._btnJian:removeClickListener()
+    self._btnJia:removeClickListener()
+    self._btnCheng:removeClickListener()
+    self._btnApply:removeClickListener()
+    UICompGmCmdCell.super.onExit(self)
+end
+
+function UICompGmCmdCell:onConstruct()
+    self._lblFunName = self:getChild("lbl_funname")
+    self._lblName    = self:getChild("lbl_num")
+    self._btnChu     = self:getChild("btn_chu")
+    self._btnJian    = self:getChild("btn_jian")
+    self._btnJia     = self:getChild("btn_jia")
+    self._btnCheng   = self:getChild("btn_cheng")
+    self._btnApply   = self:getChild("btn_apply")
+end
+
+function UICompGmCmdCell:setInfo(curListMeta, curClassMeta, typeindex)
+    if curListMeta then
+        self._lblFunName:setText(curListMeta:getName())
+        if typeindex == 1 then
+            self._lblName:setText(curListMeta:getDefult())
+        else
+            self._lblName:setText(curClassMeta:getDefult())
+        end
+        self._curListMeta = curListMeta
+        self._typeindex = typeindex
+    end
+end
+
+--除以
+function UICompGmCmdCell:onClickChuBtn(obj)
+    local num = tonumber(self._lblName:getText()) or 1
+    num = num / 10
+    num = math.floor(num)
+    local listMeta = self._curListMeta
+    local isFushu = false
+    if self._typeindex == 1 then           -- 任务属性
+        if listMeta:getIdxId() == 108 then --倾向值
+            isFushu = true
+        end
+    end
+    if num < 1 and not isFushu then
+        num = 1
+    elseif num > Constant.COIN_LIMITE then
+        num = Constant.COIN_LIMITE
+    end
+    self._lblName:setText(num)
+end
+
+--减
+function UICompGmCmdCell:onClickJianBtn(obj)
+    local num = tonumber(self._lblName:getText()) or 1
+    num = math.floor(num)
+    num = num - 1
+    local listMeta = self._curListMeta
+    local isFushu = false
+    if self._typeindex == 1 then           -- 任务属性
+        if listMeta:getIdxId() == 108 then --倾向值
+            isFushu = true
+        end
+    end
+    if num < 1 and not isFushu then
+        num = 1
+    elseif num > Constant.COIN_LIMITE then
+        num = Constant.COIN_LIMITE
+    end
+    self._lblName:setText(num)
+end
+
+--加
+function UICompGmCmdCell:onClickJiaBtn(obj)
+    local num = tonumber(self._lblName:getText()) or 1
+    num = math.floor(num)
+    num = num + 1
+    if num < 1 then
+        num = 1
+    elseif num > Constant.COIN_LIMITE then
+        num = Constant.COIN_LIMITE
+    end
+    self._lblName:setText(num)
+end
+
+--乘
+function UICompGmCmdCell:onClickChengBtn(obj)
+    local num = tonumber(self._lblName:getText()) or 1
+    num = math.floor(num)
+    num = num * 10
+    if num < 1 then
+        num = 1
+    elseif num > Constant.COIN_LIMITE then
+        num = Constant.COIN_LIMITE
+    end
+    self._lblName:setText(num)
+end
+
+-- 发送gm命令
+function UICompGmCmdCell:onClickSendGmMsgBtn(obj)
+    local num = tonumber(self._lblName:getText()) or 1
+    num = math.floor(num)
+    self._lblName:setText(num)
+    local listMeta = self._curListMeta
+    local msg = nil
+    if self._typeindex == 1 then -- 任务属性
+        if listMeta:getIdxId() == 103 then
+            local msgFisst = "@test setprop 232 1"
+            self:sendMsg(msgFisst)
+        end
+        msg = "@test setprop " .. listMeta:getValue() .. " " .. num
+        if listMeta:getIdxId() == 110 then -- 魔族技能点
+            msg = "@skillpoint " .. num
+        end
+        --@test setprop 212 100
+    elseif self._typeindex == 2 then -- 道具列表
+        msg = "@make 1 " .. listMeta:getItemId() .. " " .. num
+    elseif self._typeindex == 3 then -- 装备
+        msg = "@make 2 " .. listMeta:getItemId() .. " " .. num
+    elseif self._typeindex == 4 then -- 怪物
+        -- @mon id 2
+        msg = "@mon " .. listMeta:getId() .. " " .. num
+    end
+    self:sendMsg(msg)
+end
+
+function UICompGmCmdCell:sendMsg(msg)
+    local gm = string.sub(msg, 1, 1)
+    if gm ~= "@" then
+        return
+    end
+    yflog:Info("------msg-" .. msg)
+    if msg ~= "" then
+        --  for gm
+        local sendman = lt.GameModule:getHeroData():getName()
+        lt.ChatModule:sendGMChat(msg, 2, sendman, "")
+    end
+end
+
+return UICompGmCmdCell

@@ -1,0 +1,325 @@
+
+local EleStateMove = class("EleStateMove", lt.HeroStateBase)
+local Constant = lt.Constant
+local NtfManager = lt.NtfManager
+local MapUtil = lt.MapUtil
+
+EleStateMove._targetAgentId = nil
+EleStateMove._targetAgentM = nil
+EleStateMove._targetAgentN = nil
+
+EleStateMove._moveTypeCur = nil
+EleStateMove._mTarget = nil
+EleStateMove._nTarget = nil
+EleStateMove._xTarget = nil
+EleStateMove._yTarget = nil
+
+EleStateMove._route = nil
+local MAX_RANGE = 1  --4格范围可以点击到npc
+
+--[[__fmt
+    召唤物火元素move
+]]
+
+function EleStateMove:ctor(heroAgent, targetAgentId)
+    EleStateMove.super.ctor(self, heroAgent)
+
+    self._targetAgentId = targetAgentId
+
+    local targetAgent = lt.AgentManager:getAgent(self._targetAgentId)
+    if targetAgent then
+        self._targetAgentM, self._targetAgentN = targetAgent:getMNExactly() --self:igoreTargetMN(targetAgent:getMNExactly())
+    end
+
+    -- 脚步身间隔
+    self._audioInterval = 0.4
+    self._audioElapse = self._audioInterval
+end
+
+function EleStateMove:igoreTargetMN(tM, tN)
+    local mHero,nHero = self._heroAgent:getMNExactly()
+    local direction = MapUtil:getDirectionToPosition(tM, tN, mHero, nHero)
+    return MapUtil:getPositionToDirection(tM, tN, direction)
+end
+
+function EleStateMove:onClear()
+    EleStateMove.super.onClear(self)
+
+end
+
+function EleStateMove:onEnter()
+    if not self._targetAgentM or not self._targetAgentN then
+        self._heroAgent:setTargetAgentId(nil)
+        self._heroAgent:changeState(lt.EleStateIdle.new(self._heroAgent))
+        return
+    end
+
+    -- 是否进入NPC范围
+    if self:isArriveNpcRect() then
+        self._heroAgent:setTargetAgentId(nil)
+        self._heroAgent:changeState(lt.EleStateIdle.new(self._heroAgent))
+        local targetAgent = lt.AgentManager:getAgent(self._targetAgentId)
+        local npcId = targetAgent:getObjId()
+        self:onClickNpc(npcId)
+        return
+    end
+
+    if not self:route() then
+        return
+    end
+
+    self:initMove()
+end
+
+function EleStateMove:onExit()
+    if self._route then
+        lt.CommonUtil:safeRelease(self._route)
+        self._route = nil
+    end
+end
+
+function EleStateMove:onUpdate()
+    if not self._xTarget or not self._yTarget then
+        self._heroAgent:setTargetAgentId(nil)
+        self._heroAgent:changeState(lt.EleStateIdle.new(self._heroAgent))
+        return
+    end
+
+    if self._waitTime and self._waitTime > 0 then
+        self._waitTime = self._waitTime - lt.GameBoard:getDeltaTime()
+
+        if self._waitTime <= 0 then
+            self._waitTime = nil
+
+            if not self:route() then
+                self._heroAgent:setTargetAgentId(nil)
+                self._heroAgent:changeState(lt.EleStateIdle.new(self._heroAgent))
+                return
+            end
+            self:initMove()
+        end
+        return
+    end
+
+    -- 移动
+    local xHero, yHero = self._heroAgent:getPosition()
+    local directionV = cc.pSub(cc.p(self._xTarget, self._yTarget), cc.p(xHero, yHero))
+    local length = cc.pGetLength(directionV)
+    local step = self._heroAgent:getMoveSpeed(self._moveTypeCur) * lt.GameBoard:getDeltaTime()
+    if length < step or length > 300 then
+        -- 到达
+        self._heroAgent:setPosition(self._xTarget, self._yTarget)
+
+      
+        -- 判断是否继续移动
+        if not self:checkMoveOn() then
+            return
+        end
+    else
+        -- 未到
+        directionV = cc.pMul(cc.pNormalize(directionV), step)
+
+        local curX, curY = xHero + directionV.x, yHero + directionV.y
+        self._heroAgent:setPosition(curX, curY)
+        local mHero, nHero = MapUtil:calcMN(curX, curY)
+        local centerX, centerY = MapUtil:calcMid(curX, curY)
+        local offset = math.max(math.abs(centerX - curX), math.abs(centerY - curY))
+        if offset < 5 and math.max(math.abs(self._targetAgentM - mHero), math.abs(self._targetAgentN - nHero)) <= MAX_RANGE then
+            self._needStop = true
+            self._heroAgent:changeState(lt.EleStateIdle.new(self._heroAgent))
+            return 
+        end
+
+        if self._fixDirection then
+            self._fixDirection = false
+            
+            self._heroAgent:setDirection(lt.MapUtil:calcDirectionXY(directionV.x, directionV.y))
+        end
+    end
+
+    self._moveType      = nil
+    self._moveDirection = nil
+    self._mNext         = nil
+    self._nNext         = nil
+
+    -- 脚步声
+    -- self._audioElapse = self._audioElapse + lt.GameBoard:getDeltaTime()
+    -- if self._audioElapse > self._audioInterval then
+    --     self._audioElapse = self._audioElapse - self._audioInterval
+    --     self._heroAgent:mapTileAudio(self._moveTypeCur)
+    -- end
+end
+
+function EleStateMove:onMessage(msg)
+    if msg.msgId == Constant.MSG_ROUTE then
+        self._needStop = true
+
+        self._heroAgent:setSkillId(nil)
+        self._heroAgent:setTargetAgentId(nil)
+
+        self._routeMsg = msg
+
+    end
+end
+
+function EleStateMove:isArriveNpcRect()
+    local mHero, nHero = self._heroAgent:getMNExactly()
+    if math.max(math.abs(self._targetAgentM - mHero), math.abs(self._targetAgentN - nHero)) <= MAX_RANGE then
+        return true
+    else
+        return false
+    end
+end
+
+function EleStateMove:getStateId()
+    return Constant.HERO_STATE_MOVE_NPC
+end
+
+function EleStateMove:getStateName()
+    return "EleStateMove"
+end
+
+function EleStateMove:setWait(waitTime)
+    self._waitTime = waitTime or 0.1
+
+    self._heroAgent:playAction(Constant.ROLE_ACTION_IDLE)
+end
+
+-- 判断是否继续移动
+function EleStateMove:checkMoveOn()
+    if self._needStop then
+        if self._routeMsg then
+            self._routeMsg = nil
+        else
+            self._heroAgent:changeState(lt.EleStateIdle.new(self._heroAgent))
+        end
+        return false
+    end
+
+    local targetAgent = lt.AgentManager:getAgent(self._targetAgentId)
+    if not targetAgent or targetAgent:getIsOutOfGame() then
+        self._heroAgent:setTargetAgentId(nil)
+        self._heroAgent:changeState(lt.EleStateIdle.new(self._heroAgent))
+        return false
+    end
+
+    
+    -- 是否进入NPC范围
+    if self:isArriveNpcRect() then
+        self._heroAgent:setTargetAgentId(nil)
+        self._heroAgent:changeState(lt.EleStateIdle.new(self._heroAgent))
+        self._needStop = true
+        return
+    else
+        -- 继续追击
+        -- local mTarget, nTarget = self:igoreTargetMN(targetAgent:getMNExactly())
+
+
+        -- if mTarget ~= self._targetAgentM or nTarget ~= self._targetAgentN then
+        --     self._targetAgentM = mTarget
+        --     self._targetAgentN = nTarget
+
+        --     if not self:route() then
+        --         return false
+        --     end
+        -- end
+    end
+
+
+    self:initMove()
+    return true
+end
+
+function EleStateMove:initMove()
+    local mHero, nHero = self._heroAgent:getMNExactly()
+    local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+
+    -- 判断移动
+    self._moveTypeCur = nil
+    if self._route:getMNCount() == 1 then
+        local m, n = self._route:getNextMN()
+        -- if mapAgent:isBlocked(m, n) then
+        --     -- 这个点废弃
+        --     self:checkMoveOn()
+        --     return
+        -- end
+        self._moveTypeCur = Constant.MOVE_RUN
+        self._mTarget = m
+        self._nTarget = n
+
+    else
+        local mn0 = lt.MN.new(mHero, nHero)
+        local mn1 = lt.MN.new(self._route:getNextMN())
+        local mn2 = lt.MN.new(self._route:queryNextMN())
+
+        if lt.MapUtil:isMNInLine(mn0, mn1, mn2) then
+            self._route:getNextMN()
+
+            self._moveTypeCur = Constant.MOVE_RUN
+            self._mTarget = mn2.m
+            self._nTarget = mn2.n
+        else
+            self._moveTypeCur = Constant.MOVE_RUN
+            self._mTarget = mn1.m
+            self._nTarget = mn1.n
+        end
+    end
+
+    if not self._mTarget or not self._nTarget then
+        return
+    end
+
+    self._xTarget, self._yTarget = lt.MapUtil:calcMNMid(self._mTarget, self._nTarget)
+
+    -- 设置方向
+    local x1, y1 = lt.MapUtil:calcMNMid(mHero, nHero)
+    local x2, y2 = lt.MapUtil:calcMNMid(self._mTarget, self._nTarget)
+    local direction = lt.MapUtil:calcDirectionXY(x2 - x1, y2 - y1)
+    self._heroAgent:setDirection(direction)
+
+    local distance = math.max(math.abs(mHero - self._mTarget), math.abs(nHero - self._nTarget))
+    if distance >= 6 then
+        self._needStop = true
+        return 
+    end
+
+    -- 修改MapAgent的AgentSystem
+    mapAgent:changeAgentMN(self._heroAgent, self._mTarget, self._nTarget)
+
+
+    local x, y = lt.MapUtil:calcMNMid(self._mTarget, self._nTarget)
+
+    --lt.LogUtil:debug("m,n:%d,%d, x,y:%f,%f", m, n, x, y)
+
+    -- local sprite = display.newSprite("debug/route.png")
+    -- sprite:setPosition(x, y)
+    -- mapAgent:getMapActor()._routeNode:addChild(sprite)
+
+end
+
+function EleStateMove:playMoveAction()
+    -- self._heroAgent:playMoveAction(self._moveTypeCur)
+end
+
+function EleStateMove:route()
+    local mHero, nHero = self._heroAgent:getMNExactly()
+    local distance = lt.MapUtil:getMNDistance(mHero, nHero, self._targetAgentM, self._targetAgentN)
+    if distance <= 1 then
+        return false
+    end
+
+    local route = lt.MapUtil:route(mHero, nHero, self._targetAgentM, self._targetAgentN, true)
+    if route then
+        lt.CommonUtil:safeRelease(self._route)
+        self._route = route
+        lt.CommonUtil:safeRetain(self._route)
+        return true
+    else
+        yflog:Info("EleStateMove cannot find path")
+        self._heroAgent:changeState(lt.EleStateIdle.new(self._heroAgent))
+        return false
+    end
+end
+
+
+return EleStateMove

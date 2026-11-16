@@ -1,0 +1,20 @@
+---@适龄提示
+---@class AgeAppropriate:fgui.GComponent
+local AgeAppropriate = class("AgeAppropriate", fgui.GComponent)
+
+function AgeAppropriate:ctor()
+    self._view = fgui.UIPackage:createObject("Login", "AgeAppropriate")
+    self:addChild(self._view)
+    self._view:setPivot(0.5, 0.5, true)
+    self._view:setPosition(display.cx, display.cy)
+    self.cancelBtn = self._view:getChild("btnClose")
+    self.cancelBtn:addClickListener(handler(self, self.onCancelBtnClick))
+    self._img = self._view:getChild("img")
+    self._img:addClickListener(handler(self, self.onCancelBtnClick))
+end
+
+function AgeAppropriate:onCancelBtnClick()
+    self:removeFromParent()
+end
+
+return AgeAppropriate

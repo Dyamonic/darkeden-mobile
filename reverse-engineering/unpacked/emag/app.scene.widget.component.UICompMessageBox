@@ -1,0 +1,100 @@
+---@通用提示框
+---@class UICompMessageBox
+local UICompMessageBox = class("UICompMessageBox", lt.UICompBase)
+
+UICompMessageBox.ChangeSkinConf = {
+    ["MessageBox"] = {
+        ["bg"] = "bg_tytanchuang_02",
+    },
+    ["CommonTL"] = {
+        closeButton = {bg  = "sort"},
+        confirm = {bg  = "sort"},
+    } 
+}
+
+function UICompMessageBox:ctor()
+    UICompMessageBox.super.ctor(self)
+    self._data = nil
+end
+
+function UICompMessageBox:onClear()
+    self._data = nil
+    if self._confirmButton then
+        self._confirmButton:removeClickListener()
+        self._confirmButton = nil
+    end
+    if self._closeButton then
+        self._closeButton:removeClickListener()
+        self._closeButton = nil
+    end
+    self._titleLabel = nil
+    self._descLabel = nil
+    UICompMessageBox.super.onClear(self)
+end
+
+function UICompMessageBox:onConstruct()
+    self:startSkin()
+    self._confirmButton = self:getChild("confirm")
+    self._closeButton = self:getChild("closeButton")
+    self._titleLabel = self:getChild("title")
+    self._descLabel = self:getChild("desc")
+end
+
+function UICompMessageBox:onEnter()
+    UICompMessageBox.super.onEnter(self)
+    self._confirmButton:addClickListener(handler(self, self.onBtnClick))
+    self._closeButton:addClickListener(handler(self, self.onCloseBtnClick))
+
+end
+function UICompMessageBox:onExit()
+    self._confirmButton:removeClickListener()
+    self._closeButton:removeClickListener()
+    UICompMessageBox.super.onExit(self)
+end
+
+function UICompMessageBox:initUI()
+    
+end
+
+function UICompMessageBox:onCloseBtnClick()
+    local cancelCallback = self._data.cancelCallback
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_CLOSE_MESSAGEBOX)
+    if cancelCallback then
+        cancelCallback()
+    end
+end
+
+function UICompMessageBox:onBtnClick()
+    local closeLimitFunc = self._data.closeLimitFunc
+    if closeLimitFunc then
+        if closeLimitFunc() then  -- closeLimitFunc  返回true return
+            return
+        end
+    end
+
+    local confirmCallback = self._data.confirmCallback
+    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_CLOSE_MESSAGEBOX)
+    if confirmCallback then
+        confirmCallback()
+    end
+end
+
+function UICompMessageBox:refreshDesc(data)
+    self._data = data or {}
+    self._titleLabel:setVisible(data.title and true or false)
+    if data.title then
+        self._titleLabel:setText(data.title)
+    end
+    local content = data.content or ""
+    self._descLabel:setText(content)
+    local posY = data.title and 304 or 291
+    self._descLabel:setPosition(568, posY)
+    --按钮
+    local boxType = self._data.type or 2
+    self._confirmButton:setX(boxType == 2 and 666 or 567)
+    self._confirmButton:setText(data.confirmStr or GReadText.KEY_TEAM_HALL_TIPS35)
+    self._closeButton:setVisible(boxType == 2)
+    self._closeButton:setText(data.cancelStr or GReadText.KEY_TEAM_HALL_TIPS36)
+end
+
+return UICompMessageBox

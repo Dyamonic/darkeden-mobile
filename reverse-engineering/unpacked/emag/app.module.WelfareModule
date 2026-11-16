@@ -1,0 +1,326 @@
+local WelfareModule = {}
+
+local SocketApi = lt.SocketApi
+local Constant = lt.Constant
+local ServerCmdDef = lt.ServerCmdDef
+local NtfManager = lt.NtfManager
+local ClientCmdDef = lt.ClientCmdDef
+local netcmd_pb = lt.netcmd_pb
+local GameModule = lt.GameModule
+local CacheManager = lt.CacheManager
+local CommonModule = lt.CommonModule
+local FunctionToggleModule = lt.FunctionToggleModule
+
+WelfareModule.ButtonTag = {
+    Sign = {Type =1,openKey = FunctionToggleModule.FunctionHelpId.WelfareSign}, --7日签到
+    HeroLevel   = {Type =2,openKey = FunctionToggleModule.FunctionHelpId.WelfareLevel}, --等级礼包
+}
+
+function WelfareModule:init()
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.CS_GET_SEVEN_DAY_SIGN_REWARD_RESP), handler(self, self.onGetSevenDaySignReward), "WelfareModule:onGetSevenDaySignReward")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.CS_SEVEN_DAY_SIGN_NTF), handler(self, self.onSevenDaySignNtf), "WelfareModule:onSevenDaySignNtf")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.CS_LEVELGIFT_REWARD_RESP), handler(self, self.onGetLevelGiftReward), "WelfareModule:onGetLevelGiftReward")
+    SocketApi:addProtoListener(CommonModule:GetNetCmdEnum(ServerCmdDef.CS_LEVELGIFT_INIT_RESP), handler(self, self.onLevelGiftInit), "WelfareModule:onLevelGiftInit")
+    self._signTab = {}
+    self._levelTab = {}
+end
+
+function WelfareModule:clear()
+    SocketApi:removeProtoListenerByTag("WelfareModule:onGetSevenDaySignReward")
+    SocketApi:removeProtoListenerByTag("WelfareModule:onSevenDaySignNtf")
+    SocketApi:removeProtoListenerByTag("WelfareModule:onGetLevelGiftReward")
+    SocketApi:removeProtoListenerByTag("WelfareModule:onLevelGiftInit")
+    self._signTab = nil
+    self._levelTab = nil
+end
+
+function WelfareModule:onLoginEnterData()
+    self:reqSevenDaySignInfo()
+    self:reqLevelGiftInit()
+end
+
+function WelfareModule:getGiftMapByRace(type)
+    local heroData = GameModule:getHeroData()
+    if not heroData then
+        return {}
+    end
+    local race = heroData:getRace()
+    local tab = {}
+    -- 优先按是否完成排序（未完成的排在前面）
+    if type == WelfareModule.ButtonTag.Sign.Type then
+        tab = CacheManager:getSignGiftMap()
+        table.sort(tab, function(a, b)
+            if a and b then
+                local stateA = WelfareModule:checkRewardStates(type,a)
+                local stateB = WelfareModule:checkRewardStates(type,b)
+                if stateA ~= stateB then
+                    if stateA == Constant.WELFARESTATE.CANREWARD then
+                        return true
+                    elseif stateA == Constant.WELFARESTATE.GETOVER then
+                        return false
+                    elseif stateB == Constant.WELFARESTATE.GETOVER then
+                        return true
+                    else
+                        return tonumber(a:getNeedDay()) < tonumber(b:getNeedDay())
+                    end
+                else
+                    return tonumber(a:getNeedDay()) < tonumber(b:getNeedDay())
+                end
+                return true
+            end
+            return false
+        end)
+    elseif type == WelfareModule.ButtonTag.HeroLevel.Type then
+        tab = CacheManager:getLevelGiftMap()
+        table.sort(tab, function(a, b)
+            if a and b then
+                local stateA = WelfareModule:checkRewardStates(type,a)
+                local stateB = WelfareModule:checkRewardStates(type,b)
+                if stateA ~= stateB then
+                    if stateA == Constant.WELFARESTATE.CANREWARD then
+                        return true
+                    elseif stateA == Constant.WELFARESTATE.GETOVER then
+                        return false
+                    elseif stateB == Constant.WELFARESTATE.GETOVER then
+                        return true
+                    else
+                        return tonumber(a:getLevel()) < tonumber(b:getLevel())
+                    end
+                else
+                    return tonumber(a:getLevel()) < tonumber(b:getLevel())
+                end
+                return true
+            end
+            return false
+        end)
+    end
+    
+    for k, v in pairs(tab) do
+        tab[k].Reward = v:getRewardItem(race)
+    end
+    return tab
+end
+
+function WelfareModule:checkRewardStates(_type,data)
+    local nowLevel = GameModule:getHeroLevel()
+    if _type == WelfareModule.ButtonTag.Sign.Type then
+        local day = tonumber(data:getNeedDay())
+        if self._signTab[day] then
+            return self._signTab[day]
+        end
+        return Constant.WELFARESTATE.TIMEOUT
+    else
+        local level = tonumber(data:getLevel())
+        if self._levelTab[level] then
+            return self._levelTab[level]
+        elseif nowLevel >= level then
+            return Constant.WELFARESTATE.CANREWARD
+        end
+        return Constant.WELFARESTATE.TIMEOUT
+    end
+end
+
+function WelfareModule:getGiftReward(type,data)
+    if type == WelfareModule.ButtonTag.Sign.Type then
+        local day = tonumber(data:getNeedDay())
+        self:reqSevenDaySign(day)
+    elseif type == WelfareModule.ButtonTag.HeroLevel.Type then
+        local level = tonumber(data:getLevel())
+        self:reqLevelGiftReward(level)
+    end
+end
+
+function WelfareModule:onSevenDaySignNtf(event)
+    local param = event.param
+    local signList = param.sign_list or {}
+    self._signTab = self._signTab or {}
+    if signList then
+        for k, v in pairs(signList) do
+            local day = v.day or 0
+            local state = v.state or 0
+            if day > 0 then
+                self._signTab[day] = state
+            end
+        end
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_WELFARE_CHANGE_EVENT,{type = WelfareModule.ButtonTag.Sign.Type})
+end
+
+--签到奖励回调
+function WelfareModule:onGetSevenDaySignReward(event)
+    local param = event.param
+    local recvCode = param.ret or 0 
+    local recvDay = param.day or ""
+    if recvCode == 0 then
+        if self._signTab and recvDay > 0 then
+            self._signTab[recvDay] = Constant.WELFARESTATE.GETOVER
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_WELFARE_CHANGE_EVENT,{type = WelfareModule.ButtonTag.Sign.Type})
+    end
+end
+
+--领取签到奖励
+function WelfareModule:reqSevenDaySign(day)
+    local req = netcmd_pb.CS_GetSevenDaySignRewardReq()
+    req.day  = day or 0
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.CS_GET_SEVEN_DAY_SIGN_REWARD_REQ), req)
+end
+
+--查询签到数据
+function WelfareModule:reqSevenDaySignInfo()
+    local msg = netcmd_pb.CS_CommonReq()
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.CS_QUERY_SEVEN_DAY_SIGN_REQ),msg)
+end
+
+--查询等级礼包数据
+function WelfareModule:reqLevelGiftInit()
+    local msg = netcmd_pb.CS_CommonReq()
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.CS_LEVELGIFT_INIT_REQ),msg)
+end
+--等级礼包接收数据
+function WelfareModule:onLevelGiftInit(event)
+    local param = event.param
+    local levelList = param.rewardLevel or {}
+    if levelList then
+        for k, v in ipairs(levelList) do
+            local level = tonumber(v) or 0
+            if level > 0 then
+                self._levelTab[level] = Constant.WELFARESTATE.GETOVER
+            end
+        end
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_WELFARE_CHANGE_EVENT,{type = WelfareModule.ButtonTag.HeroLevel.Type})
+end
+
+--领取等级奖励
+function WelfareModule:reqLevelGiftReward(level)
+    local req = netcmd_pb.CS_LevelGift_RewardReq()
+    req.level  = level or 0
+    SocketApi:sendToGs(CommonModule:GetNetCmdEnum(ClientCmdDef.CS_LEVELGIFT_REWARD_REQ), req)
+end
+--等级奖励下行
+function WelfareModule:onGetLevelGiftReward(event)
+    local param = event.param
+    local recvCode = param.ret or 0
+    local level = param.level or 0
+    self._levelTab = self._levelTab or {}
+    if recvCode == 0 then
+        if self._levelTab and level > 0 then
+            self._levelTab[level] = Constant.WELFARESTATE.GETOVER
+        end
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_UPDATE_WELFARE_CHANGE_EVENT,{type = WelfareModule.ButtonTag.HeroLevel.Type})
+    end
+end
+
+--单个福利的开启条件
+function WelfareModule:getWelfareOpenByKey(data)
+    if not FunctionToggleModule:checkEnterVisible(data.openKey) then
+        return false
+    end
+    local map = self:getGiftMapByRace(data.Type)
+    if map then
+        for k, v in pairs(map) do
+            local state = self:checkRewardStates(data.Type,v)
+            if state ~= Constant.WELFARESTATE.GETOVER then
+                return true--未全部领取
+            end
+        end
+    end
+    return false--已全部领取
+end
+
+--开启条件
+function WelfareModule:getGiftRewardOpen()
+    if not FunctionToggleModule:checkEnterVisible(FunctionToggleModule.FunctionHelpId.Welfare) then
+        return false
+    end
+    for k,v in pairs(WelfareModule.ButtonTag) do
+        if self:getWelfareOpenByKey(v) then
+            return true
+        end
+    end
+    return false
+end
+
+--过滤显示列表
+function WelfareModule:checkOpenList(arr)
+    local tab = {}
+    for i = 1,#arr do
+        local data = WelfareModule.ButtonTag[arr[i].Key]
+        if data then
+            if self:getWelfareOpenByKey(data) then
+                table.insert(tab,arr[i])
+            end
+        end
+    end
+    return tab
+end
+
+--获取首次展示默认页签
+function WelfareModule:getFirstShowTitle(list)
+    if list and #list > 0 then
+        for i = 1,#list do
+            if list[i].Id == WelfareModule.ButtonTag.Sign.Type then
+                if self:getSignInRed() then
+                    return i
+                end
+            elseif list[i].Id == WelfareModule.ButtonTag.HeroLevel.Type then
+                if self:getLevelRed() then
+                    return i
+                end
+            end
+        end
+    end
+
+    return 1
+end
+
+
+--签到系统红点
+function WelfareModule:getSignInRed()
+    local map = WelfareModule:getGiftMapByRace(WelfareModule.ButtonTag.Sign.Type)
+    if map then
+        for k, v in pairs(map) do
+            local state = self:checkRewardStates(WelfareModule.ButtonTag.Sign.Type,v)
+            if state == Constant.WELFARESTATE.CANREWARD then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+--等级礼包红点
+function WelfareModule:getLevelRed()
+    local map = WelfareModule:getGiftMapByRace(WelfareModule.ButtonTag.HeroLevel.Type)
+    if map then
+        for k, v in pairs(map) do
+            local state = self:checkRewardStates(WelfareModule.ButtonTag.HeroLevel.Type,v)
+            if state == Constant.WELFARESTATE.CANREWARD then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+--检查是否有未领取的奖励
+function WelfareModule:checkRedPoint(type)
+    if type == WelfareModule.ButtonTag.Sign.Type then
+        return self:getSignInRed()
+    elseif type == WelfareModule.ButtonTag.HeroLevel.Type then
+        return self:getLevelRed()
+    end
+    return false
+end
+
+
+--按钮红点[总量]
+function WelfareModule:getBtnGiftRed()
+    if self:getSignInRed() or self:getLevelRed() then
+        return true
+    end
+    return false
+end
+
+return WelfareModule

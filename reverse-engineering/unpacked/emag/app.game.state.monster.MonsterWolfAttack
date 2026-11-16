@@ -1,0 +1,240 @@
+
+local MonsterWolfAttack = class("MonsterWolfAttack", lt.MonsterStateBase)
+
+local Constant = lt.Constant
+local MapUtil = lt.MapUtil
+local WOLFAM = Constant.WILD_WOLF_ATTACK_MODE
+local TimeTrigger = lt.TimeTrigger
+
+MonsterWolfAttack._moveType = nil
+MonsterWolfAttack._mTarget = nil
+MonsterWolfAttack._nTarget = nil
+MonsterWolfAttack._xTarget = nil
+MonsterWolfAttack._yTarget = nil
+MonsterWolfAttack._speedRate     = 16
+
+
+--野狼特殊攻击
+function MonsterWolfAttack:ctor(monsterAgent)
+    MonsterWolfAttack.super.ctor(self, monsterAgent)
+	self._patrolCount = math.random(1, 5)
+	self._wildWolfMode = 0;
+	self._traceFlag = false;
+    self._traceID = self._monsterAgent:getMonsterData():getTargetId()
+    self._isEatCorps = self:isEatCorps()
+	self._destX = 0xFFFF;
+	self._destY = 0xFFFF;
+    self._tlTrigger = TimeTrigger.new(1 / 16)
+    -- self._timeTrigger = TimeTrigger.new(5 * lt.GameBoard:getDeltaTime()) --5帧间隔才可以进行下一阶段
+end
+
+function MonsterWolfAttack:onClear()
+end
+
+function MonsterWolfAttack:onEnter()
+    
+end
+
+function MonsterWolfAttack:onExit()
+end
+
+function MonsterWolfAttack:onUpdate()
+    if self._wildWolfMode == WOLFAM.WILD_WOLF_MODE_REMOVE then
+        self._monsterAgent:getActor():setStop()
+    end
+    if self:isFakeEnd() then
+        self._monsterAgent:getActor():clearMonsterShadows()
+        local objId = self._monsterAgent:getObjId()
+        local worldAgent = lt.AgentManager:getWorldAgent()
+        worldAgent:deleteAgent(objId)
+        return 
+    end
+    if self._tlTrigger:tick() then
+        self:keepWildWolfAttack()
+        self:onUpdateMove()
+    end
+end
+
+function MonsterWolfAttack:onMessage(msg)
+end
+
+function MonsterWolfAttack:getStateId()
+    return Constant.MONSTER_STATE_WILDWOLF
+end
+
+function MonsterWolfAttack:getStateName()
+    return "MonsterWolfAttack"
+end
+
+function MonsterWolfAttack:isEatCorps()
+    local targetAgentId = self._monsterAgent:getMonsterData():getTargetId()
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    local pCreature = worldAgent:getAgent(self._traceID)
+
+    if not worldAgent then
+        return 
+    end
+    if not pCreature then
+        return 
+    end
+    return pCreature:isDead()
+end
+
+function MonsterWolfAttack:keepWildWolfAttack()
+    local worldAgent = lt.AgentManager:getWorldAgent()
+    if not worldAgent then
+        return 
+    end
+    self._patrolCount = self._patrolCount + 1
+    self._action = self._monsterAgent:getActionId()
+    if self._patrolCount < 4 then return end
+    if self._isEatCorps then
+        if (self:getX() == self._destX and self:getY() == self._destY) or self._wildWolfMode == 0 then
+            if self._wildWolfMode == WOLFAM.WILD_WOLF_MODE_ATTACK_1ST or 
+               self._wildWolfMode == WOLFAM.WILD_WOLF_MODE_ATTACK_2ND or 
+               self._wildWolfMode == WOLFAM.WILD_WOLF_MODE_ATTACK_3RD then
+                
+                local tempDir = MapUtil:getDirectionToPosition(self:getX(), self:getY(), self._destX, self._destY)
+                local targetPoint = MapUtil:getNextTileByDirection(self._destX, self._destY, tempDir)
+                self._traceFlag = true
+                self._monsterAgent:setDirection(tempDir)
+                self:setFakeCreatureFastMoveAction(targetPoint.x, targetPoint.y, nil, nil)
+                self._destX = targetPoint.x
+                self._destY = targetPoint.y
+                self._wildWolfMode = self._wildWolfMode + 1
+                self._directionMove = tempDir
+                if self._action ~= Constant.ACTION_MOVE then
+                    self:setAction(Constant.ACTION_MOVE)
+                end
+                self._patrolCount = 0
+                
+            elseif self._wildWolfMode == WOLFAM.WILD_WOLF_MODE_MOVE_1ST or 
+                   self._wildWolfMode == WOLFAM.WILD_WOLF_MODE_MOVE_2ND then
+                
+                local tempDir = (self:getDirection() + 4) % 8
+                self._monsterAgent:setDirection(tempDir)
+                self:setAction(Constant.ACTION_VAMPIRE_DRAIN)
+                self._patrolCount = 0
+                self._wildWolfMode = WOLFAM.WILD_WOLF_MODE_REMOVE
+            end
+        end
+    else
+        local pCreature = worldAgent:getAgent(self._traceID)
+        if pCreature ~= nil then
+            local pCreatureX, pCreatureY = pCreature:getMNExactly()
+            if (self:getX() == self._destX and self:getY() == self._destY) or self._wildWolfMode == 0 then
+                if self._wildWolfMode == WOLFAM.WILD_WOLF_MODE_ATTACK_1ST or 
+                   self._wildWolfMode == WOLFAM.WILD_WOLF_MODE_ATTACK_2ND or 
+                   self._wildWolfMode == WOLFAM.WILD_WOLF_MODE_ATTACK_3RD then
+                    local tempDir = MapUtil:getDirectionToPosition(self:getX(), self:getY(), pCreatureX, pCreatureY)
+                    local targetPoint = MapUtil:getNextTileByDirection(pCreatureX, pCreatureY, tempDir)
+                    self._traceFlag = true
+                    self._monsterAgent:setDirection(tempDir)
+                    self:setFakeCreatureFastMoveAction(targetPoint.x, targetPoint.y, nil, self._traceID)
+                    self._wildWolfMode = self._wildWolfMode + 1
+
+                    self._destX = targetPoint.x
+                    self._destY = targetPoint.y
+                    self._directionMove = tempDir
+                    if self._action ~= Constant.ACTION_MOVE then
+                        self:setAction(Constant.ACTION_MOVE)
+                    end
+                    self._patrolCount = 0
+                    
+                elseif self._wildWolfMode == WOLFAM.WILD_WOLF_MODE_MOVE_1ST or 
+                       self._wildWolfMode == WOLFAM.WILD_WOLF_MODE_MOVE_2ST then
+                    local tempDir = MapUtil:getDirectionToPosition(self:getX(), self:getY(), pCreatureX, pCreatureY)
+                    tempDir = (tempDir + 7) % 8
+                    local targetPoint = MapUtil:getNextTileByDirection(self:getX(), self:getY(), tempDir)
+                    self._traceFlag = true
+                    self._monsterAgent:setDirection(tempDir)
+                    self:setFakeCreatureFastMoveAction(targetPoint.x, targetPoint.y, nil, self._traceID)
+                    self._wildWolfMode = self._wildWolfMode + 1
+                    self._destX = targetPoint.x
+                    self._destY = targetPoint.y
+                    self._directionMove = tempDir
+                    if self._action ~= Constant.ACTION_MOVE then
+                        self:setAction(Constant.ACTION_MOVE)
+                    end
+                    self._patrolCount = 0
+                end
+            end
+        else
+            self._wildWolfMode = WOLFAM.WILD_WOLF_MODE_REMOVE
+        end
+    end
+    -- self._xTarget, self._yTarget = MapUtil:MapToPixel(self._destX, self._destY)
+    self._xTarget, self._yTarget = MapUtil:calcMNMid(self._destX, self._destY)
+    -- print("keepWild",self._destX, self._destY, self._patrolCount)
+
+    -- local pixelX, pixelY = MapUtil:MapToPixel(self._destX, self._destY)
+    -- self._monsterAgent:setPosition(pixelX, pixelY)
+    -- local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+    -- mapAgent:changeAgentMN(self._monsterAgent, self._destX, self._destY)
+
+end
+
+
+function MonsterWolfAttack:setFakeCreatureFastMoveAction(sX, sY, skillID, targetID)
+    yflog:Info("setFakeCreatureFastMoveAction:%s- %s",sX, sY)
+    local mHero, nHero = self._monsterAgent:getMNExactly()
+    self._monsterAgent:getActor():fastMovePosition(sX, sY, {moveTimesDiv = 2, mHero = mHero, nHero = nHero})
+    
+    self._basicActionInfo = skillID
+    self._specialActionInfo = skillID
+    self._traceID = targetID
+end
+
+
+function MonsterWolfAttack:setAction(actionId)
+    self._monsterAgent:playAction(actionId)
+end
+
+function MonsterWolfAttack:getDirection()
+    return self._monsterAgent:getDirection()
+end
+
+function MonsterWolfAttack:isFakeEnd()
+    if (WOLFAM.WILD_WOLF_MODE_REMOVE == self._wildWolfMode and self._patrolCount > 30) then
+        return true;
+    end
+end
+
+function MonsterWolfAttack:getY()
+    local x,y = self._monsterAgent:getMNExactly()
+    return y
+end
+
+function MonsterWolfAttack:getX()
+    local x,y = self._monsterAgent:getMNExactly()
+    return x
+end
+
+function MonsterWolfAttack:onUpdateMove()
+    if not self._xTarget then
+        return 
+    end
+    local xHero, yHero = self._monsterAgent:getPosition()
+    -- local mHero, nHero = self._monsterAgent:getMNExactly()
+    -- local xHero, yHero = MapUtil:MapToPixel(mHero, nHero)
+    local directionV = cc.pSub(cc.p(self._xTarget, self._yTarget), cc.p(xHero, yHero))
+    local length = cc.pGetLength(directionV)
+    local step = self._monsterAgent:getMoveSpeed(Constant.MOVE_RUN) * lt.GameBoard:getDeltaTime() * self._speedRate
+
+    if length < step then
+        -- 到达
+        self._monsterAgent:setPosition(self._xTarget, self._yTarget)
+        self:setAction(Constant.ACTION_IDLE)
+        
+        -- lt.ScheduleUtil:performWithDelayGlobal(function()
+            local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+            mapAgent:changeAgentMN(self._monsterAgent, self._destX, self._destY)
+        -- end,  5 * lt.GameBoard:getDeltaTime())
+    else
+        -- 未到
+        directionV = cc.pMul(cc.pNormalize(directionV), step)
+        self._monsterAgent:setPosition(xHero + directionV.x, yHero + directionV.y)
+    end
+end
+
+return MonsterWolfAttack

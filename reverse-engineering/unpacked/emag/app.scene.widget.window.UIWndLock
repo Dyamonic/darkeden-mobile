@@ -1,0 +1,82 @@
+---@通用锁定界面
+---@class UIWndLock:UIWindowBase
+local UIWndLock = class("UIWndLock", lt.UIWindowBase)
+
+local NtfManager = lt.NtfManager
+local WndLockManager = lt.WndLockManager
+local Constant = lt.Constant
+local GameModule = lt.GameModule
+
+function UIWndLock:ctor(param)
+    UIWndLock.super.ctor(self, param)
+end
+
+function UIWndLock:onInit()
+    UIWndLock.super.onInit(self, "ui://WareHouse/WareHousePanel")
+    self:setBringToFrontOnClick(false)
+    self:makeFullScreen()
+    self:initUI()
+end
+
+function UIWndLock:initUI()
+end
+
+function UIWndLock:doShowAnimation()
+    local param = self:getParam()
+    if param and type(param.param) == "table"  then
+        local wndLockType = param.param.WndLockType
+        WndLockManager:setWndLockType(wndLockType)
+        if wndLockType ~= Constant.WndLockType.Belt and wndLockType ~= Constant.WndLockType.SkillTips 
+            and wndLockType ~= Constant.WndLockType.Trade and wndLockType ~= Constant.WndLockType.AutoRecycle then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_CLOSE_ALL)
+        end
+        self:onShown()
+        local isAdd = false
+        for k,v in pairs(param.param) do
+            if type(v) == "table" and type(v.class) == "string" and v.class ~= "" then
+                WndLockManager:setSubWndClass(v.class)
+                if not isAdd then
+                    isAdd = true
+                    v.fromNpc = param.fromNpc
+                end
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, v)
+            end
+        end
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndLock", close = true})
+    end
+end
+
+function UIWndLock:onShown()
+    UIWndLock.super.onShown(self)
+end
+
+function UIWndLock:onHide()
+    local subWndClass = WndLockManager:getSubWndClass()
+    local closeIgnore = WndLockManager:getCloseIgnore() or {}
+    for _,v in pairs(subWndClass) do
+        if not closeIgnore[v] then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = v, close = true})
+        end
+    end
+    WndLockManager:clear()
+    
+    UIWndLock.super.onHide(self)
+end
+
+function UIWndLock:checkUnlock()
+    local param = self:getParam()
+    local lockType = param.param.WndLockType
+    if lockType == Constant.WndLockType.WareHouse then
+        --仓库
+        local heroData = GameModule:getHeroData()
+        local getMaxDepotPos = heroData:getMaxDepot()
+        if getMaxDepotPos <= 0 then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_WAREHOUSE_TIPS9})
+            return false
+        end
+    end
+    return true
+end
+
+return UIWndLock

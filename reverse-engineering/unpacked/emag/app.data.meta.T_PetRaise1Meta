@@ -1,0 +1,24 @@
+
+local PetRaise1Meta = class("PetRaise1Meta")
+
+
+
+function PetRaise1Meta:ctor(row)
+	self:initWithRow(row)
+end
+
+function PetRaise1Meta:initWithRow(row)
+    self._attributeId   = row.AttributeId
+    self._probability2  = row.Probability2
+    self._type          = row.Type
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function PetRaise1Meta:getAttributeId() return self._attributeId end
+function PetRaise1Meta:getProbability2() return self._probability2 end
+function PetRaise1Meta:getType() return self._type end
+
+-- AUTO GENERATED GETTERS END
+return PetRaise1Meta

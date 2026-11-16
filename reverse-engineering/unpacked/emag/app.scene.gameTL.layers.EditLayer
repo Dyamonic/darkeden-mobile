@@ -1,0 +1,67 @@
+---@class EditLayer 界面编辑层
+local EditLayer = class("EditLayer", lt.UICompBase)
+local NtfManager = lt.NtfManager
+
+function EditLayer:ctor()
+    EditLayer.super.ctor(self)
+    self:registerComponent("CompSkillEdit","CompSkillOperate")
+    self._view = fgui.UIPackage:createObject("Main", "EditLayer")
+    self._view:makeFullScreen()
+    self._view:center()
+    self:addChild(self._view)
+end
+
+function EditLayer:onEnter()
+    -- 技能编辑
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_OPEN_SKILL_EDIT, handler(self, self.skillEdit), "EditLayer:NTF_OPEN_SKILL_EDIT")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CLOSE_SKILL_EDIT, handler(self, self.skillEditClose), "EditLayer:NTF_CLOSE_SKILL_EDIT")
+end
+
+function EditLayer:onExit()
+    NtfManager:removeNtfListenerByTag("EditLayer:NTF_OPEN_SKILL_EDIT")
+    NtfManager:removeNtfListenerByTag("EditLayer:NTF_CLOSE_SKILL_EDIT")
+end
+
+function EditLayer:onClear()
+    self:unregisterAllComponent()
+    self._view = nil
+    if self._skillEditCom then
+        self._skillEditCom:removeFromParent()
+        self._skillEditCom = nil
+    end
+
+    EditLayer.super.onClear(self)
+end
+
+function EditLayer:onUpdate(dt)
+    if self._skillEditCom then
+        self._skillEditCom:onUpdate(dt)
+    end
+end 
+
+function EditLayer:skillEdit(event)
+    if not self._skillEditCom then 
+        self._skillEditCom = fgui.UIPackage:createObject("Edit", "EditSkill");
+        self._skillEditCom:makeFullScreen()
+        self._view:addChild(self._skillEditCom)
+    end
+end
+
+function EditLayer:skillEditClose(event)
+    local param = event.param or {}
+    local isClose = param.close
+    if self._skillEditCom then 
+        self._skillEditCom:removeFromParent()
+        self._skillEditCom = nil
+    end
+    if not isClose  then
+        local layerManager = display.getRunningScene():getLayerManager()
+        layerManager:getMainUILayer():switchBattle()
+    end
+end
+
+function EditLayer:isEdit()
+    return self._skillEditCom ~= nil
+end
+
+return EditLayer

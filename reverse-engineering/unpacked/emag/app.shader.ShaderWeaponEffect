@@ -1,0 +1,106 @@
+
+-- 武器颜色调整shader
+---@class ShaderWeaponEffect
+local ShaderWeaponEffect = class("ShaderWeaponEffect", lt.ShaderBaseEffect)
+local Constant = lt.Constant
+
+local ccEngine = cc
+
+function ShaderWeaponEffect:ctor(node, program)
+    ShaderWeaponEffect.super.ctor(self, node, program)
+end
+
+--- ShaderWeaponEffect
+---@param node cc.Node 需要修改的纹理节点
+---@param targetColor cc.vec3 目标颜色值（头发、皮肤） 
+function ShaderWeaponEffect:render(param)
+    self._targetColor = param.targetColor
+    self._isStriking = param.isStriking
+    self._isRediance = param.isRediance
+    self._powerB = param.powerB
+    self._pixelSize = param.pixelSize
+    self._skillColor = param.skillColor
+    self._selectColor = param.selectColor
+
+    if param.black then
+        self:setFadeOutFactor(param.black)
+    end
+    
+    self:setNodeShader()
+end
+
+function ShaderWeaponEffect:setUniform(glState, time, node)
+  
+
+    glState:setUniform("u_darkFactor", ccEngine.bytearray.from_float(self.darkBit or 1.0))
+    glState:setUniform("visible_count", ccEngine.bytearray.from_float(1.0))
+ 
+   if self._selectColor then
+        glState:setUniform("select_color", ccEngine.bytearray.from_vec4(self._selectColor))
+        if self._pixelSize then
+            glState:setUniform("pixelSize", ccEngine.bytearray.from_vec2(self._pixelSize))
+        end
+    end
+    if self._skillColor then
+        local isWhite = self._skillColor.x == 1.0 and self._skillColor.y == 1.0 and self._skillColor.z == 1.0
+        if not isWhite then
+            self._targetColor = Constant.COLOR_GL_WHITE
+            self._powerB = Constant.BaseColorRatio
+        end
+        glState:setUniform("skill_color", ccEngine.bytearray.from_vec4(self._skillColor))
+    end
+
+    if self._targetColor then
+        glState:setUniform("dest_color_b", ccEngine.bytearray.from_vec3(self._targetColor))
+    end
+
+    if self._powerB then
+        glState:setUniform("power_b", ccEngine.bytearray.from_float(self._powerB))
+    end
+    self.darkBit = nil
+end
+
+
+function ShaderWeaponEffect:setFadeOutFactor(black)
+    self.darkBit = black
+end
+
+function ShaderWeaponEffect:resetUniform(glState, time)
+    -- self._changeFlag = not self._changeFlag
+    -- local originColor = cc.vec4(1.0,1.0,1.0,1.0)
+    -- local targetColor = self._targetColor
+    -- local powerB = self._powerB
+    -- if originColor and self._changeFlag and self._isStriking then
+    --     originColor = cc.vec4(255/255,165/255,55/255,1.0)
+    --     targetColor = cc.vec4(1.0,1.0,1.0,1.0)
+    --     powerB = 1.45
+    -- end
+    -- if originColor and self._changeFlag and self._isRediance then
+    --     originColor = cc.vec4(16/255,127/255,235/255,1.0)
+    --     targetColor = cc.vec4(1.0,1.0,1.0,1.0)
+    --     powerB = 1.45
+    -- end
+
+    -- glState:setUniform("origin_color", ccEngine.bytearray.from_vec4(originColor))
+    -- if targetColor then
+    --     glState:setUniform("dest_color_b", ccEngine.bytearray.from_vec3(targetColor))
+    -- end
+
+    -- glState:setUniform("power_b", ccEngine.bytearray.from_float(powerB))
+
+end
+
+function ShaderWeaponEffect:needRefresh()
+    return false
+end
+
+function ShaderWeaponEffect:getTime()
+    return 0.5
+end
+
+function ShaderWeaponEffect:resetTime(time)
+    return time + 0.5
+end
+
+return ShaderWeaponEffect
+

@@ -1,0 +1,922 @@
+
+local MapUtil = {}
+
+local Constant = lt.Constant
+local RouteManagerInstance = cpp.RouteManager:getInstance()
+
+
+--[[
+    因lua逻辑与计算相对复杂,现根据计算所得值,直接得到答案
+    目前只到 7
+	mbb.Property:0, All:false, Underground:false, Ground:false, Flying:false
+	mbb.Property:1, All:true, Underground:true, Ground:false, Flying:false
+	mbb.Property:2, All:true, Underground:false, Ground:true, Flying:false
+	mbb.Property:3, All:true, Underground:true, Ground:true, Flying:false
+	mbb.Property:4, All:true, Underground:false, Ground:false, Flying:true
+	mbb.Property:5, All:true, Underground:true, Ground:false, Flying:true
+	mbb.Property:6, All:true, Underground:false, Ground:true, Flying:true
+	mbb.Property:7, All:true, Underground:true, Ground:true, Flying:true
+]]
+MapUtil.AllMap = {
+    -- [1]=true,
+    -- [2]=true,
+    -- [3]=true,
+    -- [4]=true,
+    -- [5]=true,
+    -- [6]=true,
+    [7]=true,
+}
+
+MapUtil.UnderGroundMap = {
+    [1]=true,
+    [3]=true,
+    [5]=true,
+    [7]=true,
+}
+
+MapUtil.GroundMap = {
+    [2]=true,
+    [3]=true,
+    [6]=true,
+    [7]=true,
+}
+
+MapUtil.FlyingMap = {
+    [4]=true,
+    [5]=true,
+    [6]=true,
+    [7]=true,
+}
+
+MapUtil._tileMap = {
+    [7] = 1,
+    [12] = 1,
+    [13] = 1,
+    [18] = 1,
+    [22] = 1,
+    [23] = 1,
+    [24] = 1,
+    [27] = 1,
+    [29] = 1,
+    [30] = 1,
+    [31] = 1,
+    [33] = 1,
+    [34] = 1,
+    [35] = 1,
+    [36] = 1,
+    [39] = 1,
+    [41] = 1,
+    [44] = 1,
+    [47] = 1,
+
+    [53] = 2,
+    [54] = 2,
+    [56] = 2,
+    [59] = 2,
+    [65] = 2,
+    [66] = 2,
+    [67] = 2,
+    [69] = 2,
+    [72] = 2,
+    [74] = 2,
+    [75] = 2,
+    [76] = 2,
+
+    [77] = 3,
+    [79] = 3,
+    [80] = 3,
+    [81] = 3,
+    [82] = 3,
+    [85] = 3,
+    [86] = 3,
+    [87] = 3,
+    [89] = 3,
+    [90] = 3,
+    [91] = 3,
+    [94] = 3,
+    [95] = 3,
+    [96] = 3,
+    [97] = 3,
+    [98] = 3,
+    [100] = 3,
+    [101] = 3,
+
+    [106] = 4,
+    [107] = 4,
+    [110] = 4,
+    [117] = 4,
+    [118] = 4,
+    [119] = 4,
+    
+    [122] = 5,
+    [123] = 5,
+    
+    [128] = 6,
+    [130] = 6,
+    [131] = 6,
+    
+    [132] = 7,
+    [133] = 7,
+    [134] = 7,
+    [135] = 7,
+    [136] = 7,
+    
+    [137] = 8,
+    [138] = 8,
+    [139] = 8,
+    [140] = 8,
+    
+    [141] = 9,
+    [142] = 9,
+    [143] = 9,
+    [145] = 9,
+    
+    [148] = 10,
+    [149] = 10,
+    
+    [150] = 11,
+    [151] = 11,
+    [152] = 11,
+    
+    [153] = 12,
+    [154] = 12,
+    [155] = 12,
+    [156] = 12,
+    [157] = 12,
+    
+    [158] = 13,
+    [159] = 13,
+    [160] = 13,
+    
+    [161] = 14,
+    [162] = 14,
+    [163] = 14,
+    
+    [164] = 15,
+    [165] = 15,
+    
+    [166] = 16,
+    [167] = 16,
+
+    [168] = 17,
+    [169] = 17,
+
+    [170] = 18,
+    [171] = 18,
+    [172] = 18,
+    
+    [173] = 19,
+    [174] = 19,
+    [175] = 19,
+    
+    [176] = 20,
+    [177] = 20,
+    
+    [178] = 21,
+    [179] = 21,
+    
+    [180] = 22,
+    [181] = 22,
+    
+    [182] = 23,
+    [183] = 23,
+    
+    [184] = 24,
+    [185] = 24,
+    
+    [186] = 25,
+    [187] = 25,
+    [188] = 25,
+    
+    [189] = 26,
+    [190] = 26,
+    
+    [192] = 27,
+    [193] = 27,
+    
+    [194] = 28,
+    [195] = 28,
+    
+    [196] = 29,
+    [197] = 29,
+    
+    [198] = 30,
+    [199] = 30,
+    
+    [200] = 31,
+    [201] = 31,
+    
+    [202] = 32,
+    [203] = 32,
+    
+    [204] = 33,
+    [205] = 33,
+    
+    [206] = 34,
+    [207] = 34,
+    
+    [208] = 35,
+    [209] = 35,
+    
+    [210] = 36,
+    [211] = 36,
+    
+    [212] = 37,
+    [218] = 37,
+    [219] = 37,
+    
+    [220] = 38,
+    [221] = 38,
+    [222] = 38,
+    
+    [223] = 39,
+    [224] = 39,
+    
+    [225] = 40,
+    [226] = 40,
+    
+    [227] = 41,
+    [228] = 41,
+    
+    [229] = 42,
+    [230] = 42,
+    [231] = 42,
+    [232] = 42,
+    
+    [233] = 43,
+    [234] = 43,
+    [235] = 43,
+    [236] = 43,
+    
+    [237] = 44,
+    [238] = 44,
+    [239] = 44,
+    
+    [240] = 45,
+}
+
+function MapUtil:getTileDir(index)
+    return self._tileMap[index]
+end
+
+-- m,n 转换成一个唯一数值
+function MapUtil:calcMNIndex(m, n)
+    return m + 10000 * n
+end
+
+function MapUtil:calcMNByIndex(index)
+    return math.floor(index % 10000), math.floor(index / 10000)
+end
+
+-- Tile相关 根据全局坐标计算当前加载的图片(256*256)
+function MapUtil:calcTileMN(x, y)
+    return math.floor(x / Constant.MAP_TILE_SIZE), math.floor(-y / Constant.MAP_TILE_SIZE)
+end
+
+-- Block相关 根据全局坐标计算当前格子
+function MapUtil:calcMN(x, y)
+    return math.floor(x / Constant.MAP_BLOCK_WIDTH), math.floor(-y / Constant.MAP_BLOCK_HEIGHT)
+end
+
+-- 计算m,n格子的中心点 转换地图坐标
+function MapUtil:calcMNMid(m, n)
+    -- 中心点 m * 48 + 48/2  -- n * 32 + 32/2
+    local x = m * Constant.MAP_BLOCK_WIDTH + Constant.MAP_BLOCK_WIDTH/2;
+    local y = -(n * Constant.MAP_BLOCK_HEIGHT + Constant.MAP_BLOCK_HEIGHT/2);
+    return x, y
+end
+
+function MapUtil:MapToPixel(m, n)
+    -- 中心点 m * 48 + 48/2  -- n * 32 + 32/2
+    local x = m * Constant.MAP_BLOCK_WIDTH 
+    local y = -(n * Constant.MAP_BLOCK_HEIGHT)
+    return x, y
+end
+function MapUtil:MapToPixelX(m)
+    -- 中心点 m * 48 + 48/2  -- n * 32 + 32/2
+    return m * Constant.MAP_BLOCK_WIDTH 
+end
+function MapUtil:MapToPixelY(n)
+    return -(n * Constant.MAP_BLOCK_HEIGHT)
+end
+function MapUtil:PixelToMap(x, y)
+    -- 中心点 m * 48 + 48/2  -- n * 32 + 32/2
+    return math.floor(x / Constant.MAP_BLOCK_WIDTH), math.floor(-y / Constant.MAP_BLOCK_HEIGHT)
+end
+
+function MapUtil:PixelToMapX(x)
+    -- 中心点 m * 48 + 48/2  -- n * 32 + 32/2
+    return math.floor(x / Constant.MAP_BLOCK_WIDTH)
+end
+
+function MapUtil:PixelToMapY(y)
+    -- 中心点 m * 48 + 48/2  -- n * 32 + 32/2
+    return math.floor(-y / Constant.MAP_BLOCK_HEIGHT)
+end
+
+-- 计算x,y所在格子的中心点
+function MapUtil:calcMid(x, y)
+    local m, n = self:calcMN(x, y)
+    return self:calcMNMid(m, n)
+end
+
+-- 计算m,n效果所属层级
+function MapUtil:calcMNZorder(m, n, offset)
+    return (n * 10000 + m + 9999) * 10 + (offset or 0)
+end
+
+-- 计算方向
+function MapUtil:calcDirectionXY(x, y)
+    local degree = math.deg(math.atan2(x, y))
+    if degree <= -157.5 then
+        return Constant.DIRECTION_DOWN
+    elseif degree <= -112.5 then
+        return Constant.DIRECTION_LEFT_DOWN
+    elseif degree <= -67.5 then
+        return Constant.DIRECTION_LEFT
+    elseif degree <= -22.5 then
+        return Constant.DIRECTION_LEFT_UP
+    elseif degree <= 22.5 then
+        return Constant.DIRECTION_UP
+    elseif degree <= 67.5 then
+        return Constant.DIRECTION_RIGHT_UP
+    elseif degree <= 112.5 then
+        return Constant.DIRECTION_RIGHT
+    elseif degree <= 157.5 then
+        return Constant.DIRECTION_RIGHT_DOWN
+    else
+        return Constant.DIRECTION_DOWN
+    end
+end
+
+-- 计算方向
+function MapUtil:calcDirectionMN(mFrom, nFrom, mTo, nTo)
+    local x1, y1 = lt.MapUtil:calcMNMid(mFrom, nFrom)
+    local x2, y2 = lt.MapUtil:calcMNMid(mTo, nTo)
+    return lt.MapUtil:calcDirectionXY(x2 - x1, y2 - y1)
+end
+
+-- 16方向（某些飞行物会用到）
+function MapUtil:calcDirectionXY16(x, y)
+    local degree = math.deg(math.atan2(x, y))
+    if degree <= -168.75 then
+        return 8
+    elseif degree <= -146.25 then
+        return 9
+    elseif degree <= -123.75 then
+        return 10
+    elseif degree <= -101.25 then
+        return 11
+    elseif degree <= -78.75 then
+        return 12
+    elseif degree <= -56.25 then
+        return 13
+    elseif degree <= -33.75 then
+        return 14
+    elseif degree <= -11.25 then
+        return 15
+    elseif degree <= 11.25 then
+        return 0
+    elseif degree <= 33.75 then
+        return 1
+    elseif degree <= 56.25 then
+        return 2
+    elseif degree <= 78.75 then
+        return 3
+    elseif degree <= 101.25 then
+        return 4
+    elseif degree <= 123.75 then
+        return 5
+    elseif degree <= 146.25 then
+        return 6
+    elseif degree <= 168.75 then
+        return 7
+    else
+        return 8
+    end
+
+
+    local degree = math.deg(math.atan2(x, y))
+    if degree <= -157.5 then
+        return Constant.DIRECTION_DOWN
+    elseif degree <= -112.5 then
+        return Constant.DIRECTION_LEFT_DOWN
+    elseif degree <= -67.5 then
+        return Constant.DIRECTION_LEFT
+    elseif degree <= -22.5 then
+        return Constant.DIRECTION_LEFT_UP
+    elseif degree <= 22.5 then
+        return Constant.DIRECTION_UP
+    elseif degree <= 67.5 then
+        return Constant.DIRECTION_RIGHT_UP
+    elseif degree <= 112.5 then
+        return Constant.DIRECTION_RIGHT
+    elseif degree <= 157.5 then
+        return Constant.DIRECTION_RIGHT_DOWN
+    else
+        return Constant.DIRECTION_DOWN
+    end
+end
+
+-- 计算direction方向上的两个格子
+function MapUtil:calcNext2MN(m, n, direction)
+    if direction == Constant.DIRECTION_UP then
+        return m, n - 1, m, n - 2
+    elseif direction == Constant.DIRECTION_RIGHT_UP then
+        return m + 1, n - 1, m + 2, n - 2
+    elseif direction == Constant.DIRECTION_RIGHT then
+        return m + 1, n, m + 2, n
+    elseif direction == Constant.DIRECTION_RIGHT_DOWN then
+        return m + 1, n + 1, m + 2, n + 2
+    elseif direction == Constant.DIRECTION_DOWN then
+        return m, n + 1, m, n + 2
+    elseif direction == Constant.DIRECTION_LEFT_DOWN then
+        return m - 1, n + 1, m - 2, n + 2
+    elseif direction == Constant.DIRECTION_LEFT then
+        return m - 1, n, m - 2, n
+    elseif direction == Constant.DIRECTION_LEFT_UP then
+        return m - 1, n - 1, m - 2, n - 2
+    else
+        return m, n
+    end
+end
+
+-- 计算direction方向上的三个格子
+function MapUtil:calcNext3MN(m, n, direction)
+    if direction == Constant.DIRECTION_UP then
+        return m, n - 1, m, n - 2, m, n - 3
+    elseif direction == Constant.DIRECTION_RIGHT_UP then
+        return m + 1, n - 1, m + 2, n - 2, m + 3, n - 3
+    elseif direction == Constant.DIRECTION_RIGHT then
+        return m + 1, n, m + 2, n, m + 3, n
+    elseif direction == Constant.DIRECTION_RIGHT_DOWN then
+        return m + 1, n + 1, m + 2, n + 2, m + 3, n + 3
+    elseif direction == Constant.DIRECTION_DOWN then
+        return m, n + 1, m, n + 2, m, n + 3
+    elseif direction == Constant.DIRECTION_LEFT_DOWN then
+        return m - 1, n + 1, m - 2, n + 2, m - 3, n + 3
+    elseif direction == Constant.DIRECTION_LEFT then
+        return m - 1, n, m - 2, n, m - 3, n
+    elseif direction == Constant.DIRECTION_LEFT_UP then
+        return m - 1, n - 1, m - 2, n - 2, m - 3, n - 3
+    else
+        return m, n
+    end
+end
+
+-- 判断三个MN是否在一条直线上
+function MapUtil:isMNInLine(mn0, mn1, mn2)
+    if (mn1.m - mn0.m == mn2.m - mn1.m) and (mn1.n - mn0.n == mn2.n - mn1.n) then
+        return true
+    else
+        return false
+    end
+end
+
+-- 判断两个MN是否相邻
+function MapUtil:isMNNeighbor(m0, n0, m1, n1)
+    if math.max(math.abs(m1 - m0), math.abs(n1 - n0)) == 1 then
+        return true
+    else
+        return false
+    end
+end
+
+-- 获取一个方向的相邻的两个方向
+function MapUtil:getNeighborDirection(direction)
+    if direction == Constant.DIRECTION_UP then
+        return Constant.DIRECTION_LEFT_UP, Constant.DIRECTION_RIGHT_UP
+    elseif direction == Constant.DIRECTION_RIGHT_UP then
+        return Constant.DIRECTION_UP, Constant.DIRECTION_RIGHT
+    elseif direction == Constant.DIRECTION_RIGHT then
+        return Constant.DIRECTION_RIGHT_UP, Constant.DIRECTION_RIGHT_DOWN
+    elseif direction == Constant.DIRECTION_RIGHT_DOWN then
+        return Constant.DIRECTION_RIGHT, Constant.DIRECTION_DOWN
+    elseif direction == Constant.DIRECTION_DOWN then
+        return Constant.DIRECTION_RIGHT_DOWN, Constant.DIRECTION_LEFT_DOWN
+    elseif direction == Constant.DIRECTION_LEFT_DOWN then
+        return Constant.DIRECTION_DOWN, Constant.DIRECTION_LEFT
+    elseif direction == Constant.DIRECTION_LEFT then
+        return Constant.DIRECTION_LEFT_DOWN, Constant.DIRECTION_LEFT_UP
+    elseif direction == Constant.DIRECTION_LEFT_UP then
+        return Constant.DIRECTION_LEFT, Constant.DIRECTION_UP
+    else
+        return nil
+    end
+end
+
+function MapUtil:getOppositeDirection(direction)
+    if direction == Constant.DIRECTION_UP then
+        return Constant.DIRECTION_DOWN
+    elseif direction == Constant.DIRECTION_RIGHT_UP then
+        return Constant.DIRECTION_LEFT_DOWN
+    elseif direction == Constant.DIRECTION_RIGHT then
+        return Constant.DIRECTION_LEFT
+    elseif direction == Constant.DIRECTION_RIGHT_DOWN then
+        return Constant.DIRECTION_LEFT_UP
+    elseif direction == Constant.DIRECTION_DOWN then
+        return Constant.DIRECTION_UP
+    elseif direction == Constant.DIRECTION_LEFT_DOWN then
+        return Constant.DIRECTION_RIGHT_UP
+    elseif direction == Constant.DIRECTION_LEFT then
+        return Constant.DIRECTION_RIGHT
+    elseif direction == Constant.DIRECTION_LEFT_UP then
+        return Constant.DIRECTION_RIGHT_DOWN
+    else
+        return Constant.DIRECTION_UNKNOW
+    end
+end
+
+-- 根据方向返回方向向量以及旋转角度
+function MapUtil:calcOffsetAndRotation(direction, normalize)
+    local ratio = math.sqrt(2) / 2
+    if normalize then
+        ratio = 1
+    end
+
+    if direction == lt.Constant.DIRECTION_UP then
+        return cc.p(0, 1), 0
+
+    elseif direction == lt.Constant.DIRECTION_RIGHT_UP then
+        return cc.p(ratio, ratio), 45
+
+    elseif direction == lt.Constant.DIRECTION_RIGHT then
+        return cc.p(1, 0), 90
+
+    elseif direction == lt.Constant.DIRECTION_RIGHT_DOWN then
+        return cc.p(ratio, -ratio), 135
+
+    elseif direction == lt.Constant.DIRECTION_DOWN then
+        return cc.p(0, -1), 180
+
+    elseif direction == lt.Constant.DIRECTION_LEFT_DOWN then
+        return cc.p(-ratio, -ratio), 225
+
+    elseif direction == lt.Constant.DIRECTION_LEFT then
+        return cc.p(-1, 0), 270
+
+    elseif direction == lt.Constant.DIRECTION_LEFT_UP then
+        return cc.p(-ratio, ratio), 315
+
+    else
+        return nil
+    end
+end
+
+--[[
+    是否处于一个菱形中
+        p1
+    p2      p4
+        p3
+    ]]
+function MapUtil:inRhombus(m, n, p1, p2, p3, p4)
+    return self:_calRhombusLine(m, n, p1, p2) > 0 and self:_calRhombusLine2(m, n, p2, p3) < 0 and self:_calRhombusLine(m, n, p3, p4) < 0 and self:_calRhombusLine2(m, n, p4, p1) > 0
+end
+
+function MapUtil:_calRhombusLine(m, n, p1, p2)
+    local a = (p1.y - p2.y) / (p1.x - p2.x)
+    local b = p1.y - a * p1.x
+    local calN = a * m + b
+
+    if calN < n then
+        return 1
+    elseif calN > n then
+        return -1
+    else
+        return 0
+    end
+end
+
+function MapUtil:_calRhombusLine2(m, n, p1, p2)
+    local a = (p1.y - p2.y) / (p1.x - p2.x)
+    local b = p1.y - a * p1.x
+    local calM = (n - b) / a
+
+    if calM > m then
+        return 1
+    elseif calM < m then
+        return - 1
+    else
+        return 0
+    end
+end
+
+MapUtil.SOUND_MAP = {
+    -- [Constant.ACTION_WALK] = {
+    --     [0] = 800611,
+    --     [1] = 800601,
+    --     [2] = 800611,
+    --     [3] = 800621,
+    --     [4] = 800631,
+    --     [5] = 800641,
+    --     [6] = 800651,
+    --     [7] = 800661,
+    --     [8] = 800671,
+    --     [9] = 800681,
+    --     [10] = 9000054,
+    -- },
+    [Constant.ROLE_ACTION_MOVE] = {
+        [0] = 800711,
+        [1] = 800701,
+        [2] = 800711,
+        [3] = 800721,
+        [4] = 800731,
+        [5] = 800741,
+        [6] = 800751,
+        [7] = 800761,
+        [8] = 800771,
+        [9] = 800781,
+        [10] = 9000053,
+    }
+}
+function MapUtil:getTileSoundId(actionId, ttype)
+    if not actionId or not ttype or not self.SOUND_MAP[actionId] then
+        return nil
+    end
+
+    return self.SOUND_MAP[actionId][ttype]
+end
+
+--[[
+    寻路
+    routeex: 忽略block & 忽略传送点(用于挂机)
+    route2:  末尾两个bool参数可变
+    
+    beginM, beginN, endM, endN, bool ignoreTarBlock, bool isHangup
+    ignoreTarBlock: true 忽略目标点block
+    isHangup: true       传送点阻挡(用于挂机)
+
+    route:   无视忽略任何情况
+
+    isBlockTarget: 无视目标点阻挡 false则终点是阻挡点不可寻路
+    isTransTarget: 无视传送点阻挡 false则传送点是阻挡点
+]]
+function MapUtil:route(mHero, nHero, tarM, tarN, isBlockTarget, isTransTarget)
+    local route = nil
+
+    -- 挂机状态时寻路
+    if lt.AutoFightManager:isAuto() or not isTransTarget then
+        --  传送点阻挡 
+        route = RouteManagerInstance:routeex(mHero, nHero, tarM, tarN)
+    else
+        if isBlockTarget then
+            route = RouteManagerInstance:route2(mHero, nHero, tarM, tarN, true)
+        else
+            -- 目标点阻挡，不能寻路
+            route = RouteManagerInstance:route(mHero, nHero, tarM, tarN)
+        end
+    end
+
+    if not route then
+        lt.AgentManager:getWorldAgent():getMapAgent():clearClickMark()
+    end
+
+    return route
+end
+
+function MapUtil:getMNDistance(m1, n1, m2, n2)
+    return math.max(math.abs(m1 - m2), math.abs(n1 - n2))
+end
+
+function MapUtil:getPonitDistance(m1, n1, m2, n2)
+    return math.pow(math.abs(m1 - m2), 2) + math.pow(math.abs(n1 - n2), 2)
+end
+
+MapUtil.FLAG_BLOCK_UNDERGROUND = 0x01
+MapUtil.FLAG_BLOCK_GROUND      = 0x02
+MapUtil.FLAG_BLOCK_FLYING      = 0x04
+MapUtil.FLAG_BLOCK_ALL         = 0x07
+
+-- 无阻挡点
+function MapUtil:IsEmpty(block) 
+    return block == 0
+end
+
+-- 全阻挡
+function MapUtil:IsBlockAll(block)
+    local b = MapUtil.AllMap[block]
+    if not b then
+        b = false
+    end
+    -- local b = self:IsBlockUnderground(block) and self:IsBlockGround(block) and self:IsBlockFlying(block)
+    return b
+end
+
+-- 地下阻挡
+function MapUtil:IsBlockUnderground(block)
+    local b = MapUtil.UnderGroundMap[block]
+    if not b then
+        b = false
+    end
+    return b
+end
+
+-- 地面阻挡
+function MapUtil:IsBlockGround(block) 
+    local b = MapUtil.GroundMap[block]
+    if not b then
+        b = false
+    end
+    return b
+end
+
+-- 飞行阻挡
+function MapUtil:IsBlockFlying(block) 
+    local b = MapUtil.FlyingMap[block]
+    if not b then
+        b = false
+    end
+    return b
+end
+
+-- byte 按位与
+function MapUtil:bitwiseAnd(a, b)
+    local result = 0
+    for i = 0, 8 do
+        if (a % 2 == 1) and (b % 2 == 1) then
+            result = result + 2 ^ i
+        end
+        a = math.floor(a / 2)
+        b = math.floor(b / 2)
+    end
+    return result
+end
+
+function MapUtil:getPositionToDirection(x, y, direction)
+	if direction == Constant.DIRECTION_LEFT_DOWN then
+		x = x - 1
+		y = y + 1
+	elseif direction == Constant.DIRECTION_RIGHT_UP then
+		x = x + 1
+		y = y - 1
+	elseif direction == Constant.DIRECTION_LEFT_UP then
+		x = x - 1
+		y = y - 1
+	elseif direction == Constant.DIRECTION_RIGHT_DOWN then
+		x = x + 1
+		y = y + 1
+	elseif direction == Constant.DIRECTION_LEFT then
+		x = x - 1
+	elseif direction == Constant.DIRECTION_DOWN then
+		y = y + 1
+	elseif direction == Constant.DIRECTION_UP then
+		y = y - 1
+	elseif direction == Constant.DIRECTION_RIGHT then
+		x = x + 1
+	end
+	return x, y
+end
+
+function MapUtil:getPositionToDirectionFGUI(x, y, direction)
+	if direction == Constant.DIRECTION_LEFT_DOWN then
+		x = x - 1
+		y = y - 1
+	elseif direction == Constant.DIRECTION_RIGHT_UP then
+		x = x + 1
+		y = y + 1
+	elseif direction == Constant.DIRECTION_LEFT_UP then
+		x = x - 1
+		y = y + 1
+	elseif direction == Constant.DIRECTION_RIGHT_DOWN then
+		x = x + 1
+		y = y - 1
+	elseif direction == Constant.DIRECTION_LEFT then
+		x = x - 1
+	elseif direction == Constant.DIRECTION_DOWN then
+		y = y - 1
+	elseif direction == Constant.DIRECTION_UP then
+		y = y + 1
+	elseif direction == Constant.DIRECTION_RIGHT then
+		x = x + 1
+	end
+	return x, y
+end
+
+function MapUtil:getDirectionToPosition(originX, originY, destX, destY)
+    local stepX = destX - originX
+    local stepY = destY - originY
+
+    -- 计算斜率
+    local k = (stepX == 0) and 0 or (stepY / stepX)
+
+    -- 确定方向
+    if stepY == 0 then
+        -- X轴方向
+        if stepX == 0 then
+            return Constant.DIRECTION_DOWN
+        elseif stepX > 0 then
+            return Constant.DIRECTION_RIGHT
+        else
+            return Constant.DIRECTION_LEFT
+        end
+    elseif stepY < 0 then  -- 向上
+        if stepX == 0 then
+            return Constant.DIRECTION_UP
+        elseif stepX > 0 then  -- 第一象限
+            if k < -Constant.BASIS_DIRECTION_HIGH then
+                return Constant.DIRECTION_UP
+            elseif k <= -Constant.BASIS_DIRECTION_LOW then
+                return Constant.DIRECTION_RIGHT_UP
+            else
+                return Constant.DIRECTION_RIGHT
+            end
+        else  -- 第二象限
+            if k > Constant.BASIS_DIRECTION_HIGH then
+                return Constant.DIRECTION_UP
+            elseif k >= Constant.BASIS_DIRECTION_LOW then
+                return Constant.DIRECTION_LEFT_UP
+            else
+                return Constant.DIRECTION_LEFT
+            end
+        end
+    else  -- 向下
+        if stepX == 0 then
+            return Constant.DIRECTION_DOWN
+        elseif stepX > 0 then  -- 第四象限
+            if k > Constant.BASIS_DIRECTION_HIGH then
+                return Constant.DIRECTION_DOWN
+            elseif k >= Constant.BASIS_DIRECTION_LOW then
+                return Constant.DIRECTION_RIGHT_DOWN
+            else
+                return Constant.DIRECTION_RIGHT
+            end
+        else  -- 第三象限
+            if k < -Constant.BASIS_DIRECTION_HIGH then
+                return Constant.DIRECTION_DOWN
+            elseif k <= -Constant.BASIS_DIRECTION_LOW then
+                return Constant.DIRECTION_LEFT_DOWN
+            else
+                return Constant.DIRECTION_LEFT
+            end
+        end
+    end
+end
+
+function MapUtil:getWidth()
+    local mapData = lt.AgentManager:getWorldAgent():getMapAgent():getMapData()
+    return mapData:getMCount()
+end
+
+function MapUtil:getHeight()
+    local mapData = lt.AgentManager:getWorldAgent():getMapAgent():getMapData()
+    return mapData:getNCount()
+end
+function MapUtil:getNextTileByDirection(tileX, tileY, dir)
+    local finalTile = { x = tileX, y = tileY }
+
+    if dir == Constant.DIRECTION_LEFT_DOWN then
+        finalTile.x = finalTile.x - 1
+        finalTile.y = finalTile.y + 1
+    elseif dir == Constant.DIRECTION_RIGHT_UP then
+        finalTile.x = finalTile.x + 1
+        finalTile.y = finalTile.y - 1
+    elseif dir == Constant.DIRECTION_LEFT_UP then
+        finalTile.x = finalTile.x - 1
+        finalTile.y = finalTile.y - 1
+    elseif dir == Constant.DIRECTION_RIGHT_DOWN then
+        finalTile.x = finalTile.x + 1
+        finalTile.y = finalTile.y + 1
+    elseif dir == Constant.DIRECTION_LEFT then
+        finalTile.x = finalTile.x - 1
+    elseif dir == Constant.DIRECTION_DOWN then
+        finalTile.y = finalTile.y + 1
+    elseif dir == Constant.DIRECTION_UP then
+        finalTile.y = finalTile.y - 1
+    elseif dir == Constant.DIRECTION_RIGHT then
+        finalTile.x = finalTile.x + 1
+    end
+
+    return finalTile
+end
+
+function MapUtil:getChangeValueToDirection(direction)
+    local x, y = 0, 0 
+	if direction == Constant.DIRECTION_LEFT_DOWN then
+		x = x - 1
+		y = 1
+	elseif direction == Constant.DIRECTION_RIGHT_UP then
+		x = 1
+		y = y - 1
+	elseif direction == Constant.DIRECTION_LEFT_UP then
+		x = x - 1
+		y = y - 1
+	elseif direction == Constant.DIRECTION_RIGHT_DOWN then
+		x = 1
+		y = 1
+	elseif direction == Constant.DIRECTION_LEFT then
+		x = x - 1
+	elseif direction == Constant.DIRECTION_DOWN then
+		y = 1
+	elseif direction == Constant.DIRECTION_UP then
+		y = y - 1
+	elseif direction == Constant.DIRECTION_RIGHT then
+		x = 1
+	end
+	return cc.p(x, y)
+end
+
+function MapUtil:isInRange(start, target, range)
+    return math.max(math.abs(target.x - start.x), math.abs(target.y - start.y)) <= range
+end
+
+return MapUtil

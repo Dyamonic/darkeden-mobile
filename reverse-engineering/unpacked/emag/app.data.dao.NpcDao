@@ -1,0 +1,32 @@
+
+local NpcDao = {}
+
+function NpcDao:queryByMapId(mapCode)
+    local db = lt.DbManager:getDb()
+    local curMapNpcList = {}
+    for row in db:nrows(string.format("SELECT * FROM NpcList WHERE MapResId=%d ;", mapCode)) do
+    	local npcMeta = lt.NpcMeta.new(row)
+        curMapNpcList[#curMapNpcList+1] = npcMeta
+    end
+    return curMapNpcList
+end
+
+function NpcDao:queryByNpcId(npcId)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM NpcList WHERE NpcIndex=%d ;", npcId)) do
+    	local npcMeta = lt.NpcMeta.new(row)
+        return npcMeta
+    end
+end
+
+function NpcDao:queryAll()
+    local mapTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM NpcList") do
+        local npcMeta = lt.NpcMeta.new(row)
+        mapTable[#mapTable+1] = npcMeta
+    end
+    return mapTable
+end
+
+return NpcDao

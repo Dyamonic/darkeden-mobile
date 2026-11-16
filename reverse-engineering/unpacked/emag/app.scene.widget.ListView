@@ -1,0 +1,2914 @@
+--[[
+说明
+    实现原理：
+        通过 回调函数 renderItemCallBack 获取 listview 的 item 信息(大小 标记（用于多种widget支持）)
+        回收超过边界的node节点 通过getItemFromCache 函数 获取已回收的节点重复利用（注意 重复利用是 item里面的一些状态需要重置）
+
+    local cfg = {
+        renderItemCallBack = function( list, index, info )
+            local isCacheNode = true
+            local item = list:getItemFromCache()
+            if not item then
+                item = UIWgt.new()
+                isCacheNode = false
+            end
+            -- 渲染代码
+            item:setInfo()
+            --回传的参数
+            info.item = item
+            info.size = item:getContentSize()
+            --注册controll btn 事件  index 索引 _onTriggerTouch 点击回调函数 也可以用 function end
+            list:registerBtnHandler(index,"btnChooseServer", "_onTriggerTouch" )
+            --或者可以自定义回调函数  list:registerClickHandler
+            return isCacheNode
+        end,
+        multiItems = 2,
+        spaceY = 3,
+        spaceX = 4,
+        totalNumber = #self._loginHistory,
+    }
+    -- self.historyListParent --layer
+    self._loginHistoryList = ListView.new(self.historyListParent,cfg)
+    
+    --其他 常用 可选参数
+    headIndex  3  listview 最顶上 指定到相对应的index item 
+    tailIndex  10 以index = 10 在 listview 底部
+    isVertical true 垂直滑动 false 水平滑动
+    enableShadow 控制阴影（topShadow bottomShadow leftShadow rightShadow 自定义阴影） 
+    ignoreCanDrag 当items的整体高度小于widgets高度 可以滑动
+    scrollEndCallBack 滑动到底部 回调函数
+    scrollBeginCallBack 滑动到头部 回调函数
+    curOffset 滑动区域 底部留空 
+    curOriginOffset 滑动区域 头部留空
+    spaceY y方向间距
+    spaceX x方向间距
+    autoCenter 当不能滑动时 并且ignoreCanDrag = false时 自动居中 水平模式下生效
+    scrollDelegate 滚动代理 
+    -- 常用函数
+    function ListView:getCurTouchIndex(  ) --获取当前触摸到得index
+    function ListView:getItemByIndex( index )  --获取指定索引的 item
+    function ListView:reload( param )   --reload数据 
+    function ListView:refreshData( )  -- 刷新数据 必须保证 数据的值 不会影响 item 大小  没变 否则 可能已发 bug
+    function ListView:refreshAddData( ) -- 刷新数据 可增加大小 用于完成下拉刷新机制
+    function ListView:startScrollToIndex( index, isTail,speed, callback) -- 滚动到指定索引  index 指定的索引   isTail index结尾 还是开头   speed 滚动速度 默认 20
+    function ListView:startScrollToPosScheduler(distance,time,isRollBack, callback, isCanNotTouchStop)  --滚动一段距离 distance 滚动距离  time 滚动时间  isRollBack 是否是回滚 callback 回调 isCanNotTouchStop 是否可以触摸中断
+]]
+
+local ListView = class("ListView",function(layer)
+    -- body
+    return layer
+end)
+
+local QVerticalListViewImp = {}
+local QHorizontalListViewImp = {}
+
+ListView.GESTURE_V = 0
+ListView.GESTURE_H = 1
+
+-- 
+function ListView:findFather(node)
+    if not node then return nil end
+
+    if node._param then
+        return node._param.layerName
+    end
+
+    local father 
+    father = node:getParent()
+
+    if not father then return nil end
+
+    if father._param then
+        return father.__cname
+    else
+        return self:findFather(father)
+    end
+end
+
+function ListView:setParentLayerName(name)
+    self._layerName = name or "null"
+end
+
+function ListView:ctor( layer,option )
+    self:setParentLayerName(self:findFather(layer))
+    print("<<<<<<<<<<<<<<<<<<<<<create ListView>>>>>>>>>>>>>>>>>>>>>>>>>> ",self._layerName)
+
+    if not option then
+        option = {}
+        -- return
+    end
+    local isSwallow = option.isSwallow 
+    self._renderItemCallBack = option.renderItemCallBack
+    self._isVertical = option.isVertical 
+    self._cacheCond = option.cacheCond or 0.5
+    self._headIndex = option.headIndex          --当前视口的起始索引
+    self._tailIndex = option.tailIndex         --当前视口的结束索引
+    self._maxItemNum = option.maxItemNum
+    self._multiItems = option.multiItems or 1   -- 一行有2个或者多个
+    self._totalNumber = option.totalNumber or 0
+    -- self._scrollToIndexCallBack = option.scrollToIndexCallBack
+    self._enableShadow = option.enableShadow
+    self._topShadow = option.topShadow
+    self._bottomShadow = option.bottomShadow 
+    self._leftShadow = option.leftShadow
+    self._rightShadow = option.rightShadow
+    self._spaceY = option.spaceY or 0
+    self._spaceX = option.spaceX or 0
+    self._curOffset =  option.curOffset or 0
+    self._curOriginOffset = option.curOriginOffset or 0
+    self._enableScrollBar = option.enableScrollBar 
+    self._scrollBarParentNode = option.scrollBarParentNode 
+    self._scrollBar = option.scrollBar
+    self._scrollBarPos =  option.scrollBarPos or cc.p(0,0)
+    self._ignoreCanDrag = option.ignoreCanDrag
+    self._autoCenter = option.autoCenter
+    self._autoCenterOffset = option.autoCenterOffset
+    self._scrollDelegate = option.scrollDelegate
+    self._endRate = option.endRate or 0.2
+    self._headIndexPosOffset = option.headIndexPosOffset or 0  --只支持 垂直 水平的暂时没有添加该功能
+    self._relatedLayer = layer
+
+
+    self._scrollEndCallBack = option.scrollEndCallBack
+    self._scrollBeginCallBack = option.scrollBeginCallBack
+
+   
+    if self._isVertical == nil then
+        self._isVertical = true
+    end
+
+    if self._enableShadow == nil then
+        self._enableShadow = true
+    end
+
+    if self._enableScrollBar == nil then
+        self._enableScrollBar = false
+    end
+
+    if isSwallow == nil then
+        isSwallow = true
+    end
+    --当要设置 起始index 或者 结束index 时 cacheCond >1 否则当 index 等于最后一个的时候  可能导致不能滑动
+    if (self._headIndex or self._tailIndex) and self._cacheCond < 1 then
+        self._cacheCond = 1
+    end
+
+    if self._maxItemNum and self._totalNumber and self._maxItemNum < self._totalNumber then
+        self._totalNumber = self._maxItemNum
+    end
+    self._baseStartIndex =  option.baseStartIndex or 1
+    self._baseEndIndex = self._baseStartIndex + self._totalNumber -1
+    if self._multiItems ~=1 and self._baseStartIndex % self._multiItems ~= 1 then
+        self._baseStartIndex = self._baseStartIndex - (self._baseStartIndex -1)%self._multiItems + self._multiItem
+        -- return
+    end
+
+    -- self._startIndex = nil       --当前视口 加上 缓存高度或则宽度的索引  
+    -- self._endIndex = nil
+    self._cacheNodes = {}
+    self._itemsInfo = {}
+    self._touchInfos = {}
+    self._touchHandlers = {}
+    self._touchEvent = nil
+    self._unTouchRegionNode = nil
+    self._unTouchRegionNodeArr = {}
+    self._touchPriority = {}
+    self._startIndex = 1
+    self._endIndex = 1
+
+    if self._isVertical then
+        self._curOffset = self._curOffset - self._spaceY
+        self._listViewImp = QVerticalListViewImp
+    else
+        self._curOffset = self._curOffset - self._spaceX
+        self._listViewImp = QHorizontalListViewImp
+    end
+
+    -- body
+    local size = self:getContentSize()
+    self._width = size.width
+    self._height = size.height
+    local pos 
+    if tolua.cast(self,"cc.Layer") then
+       pos = self:convertToWorldSpace(cc.p(0,0))
+    else
+       pos = self:convertToWorldSpaceAR(cc.p(0,0))
+    end
+
+    self._rect = cc.rect(0,0,self._width,self._height)
+    self._touchBoundingBox = cc.rect(pos.x,pos.y,self._width * self:_getTouchScaleX(),self._height * self:_getTouchScaleY())
+
+  
+    --创建剪裁节点
+    self._stencilLayer = cc.LayerColor:create(cc.c4b(0, 0, 0, 150), self._width, self._height)
+    local ccclippingNode = cc.ClippingNode:create(self._stencilLayer)
+    self:addChild(ccclippingNode)
+    -- ccclippingNode:setStencil(stencilLayer)
+    self._baseRootNode = cc.Node:create()
+    ccclippingNode:addChild(self._baseRootNode)
+    self._content = cc.Node:create()
+    -- self._content:setTouchCaptureEnabled(false)
+    -- self._content:setTouchEnabled(false)
+    self._baseRootNode:addChild(self._content)
+
+    self._touchLayer = cc.Layer:create()
+    self:addChild(self._touchLayer)
+    -- self._touchLayer:setCascadeBoundingBox(self._touchBoundingBox)
+    self._touchLayer:setTouchEnabled(true)
+    self._touchLayer:setTouchMode(cc.EVENT_TOUCH_ONE_BY_ONE)
+    -- self._touchLayer:setSwallowTouches(isSwallow)
+    self._listener = cc.EventListenerTouchOneByOne:create()
+    self._listener:setEnabled(true)
+    self._listener:setSwallowTouches(true)
+    self._listener:registerScriptHandler(handler(self, self.onTouchBegan), cc.Handler.EVENT_TOUCH_BEGAN)
+    self._listener:registerScriptHandler(handler(self, self.onTouchMoved), cc.Handler.EVENT_TOUCH_MOVED)
+    self._listener:registerScriptHandler(handler(self, self.onTouchEnded), cc.Handler.EVENT_TOUCH_ENDED)
+    cc.Director:getInstance():getEventDispatcher():addEventListenerWithSceneGraphPriority(self._listener, self._touchLayer)
+    -- self._touchLayer:addEventListener(cc.Handler.EVENT_TOUCH_ENDED, handler(self, ListView.onTouch))
+    --
+    -- self:addEventListener(cc.NODE_ENTER_FRAME_EVENT, handler(self, ListView.onFrame))
+    -- self._onFrameHandler = self:scheduleUpdateWithPriorityLua(handler(self, ListView.onFrame), 0)
+
+    self:scheduleUpdate(handler(self, ListView.onFrame),0)
+
+    self._listViewImp.initListView(self)
+end
+
+local function _scaleX(node)
+    return node and (node:getScaleX() * _scaleX(node:getParent())) or 1
+end
+function ListView:_getTouchScaleX()
+    if self._relatedLayer then
+        return _scaleX(self._relatedLayer)
+    else
+        return 1.0
+    end
+end
+
+local function _scaleY(node)
+    return node and (node:getScaleX() * _scaleY(node:getParent())) or 1
+end
+function ListView:_getTouchScaleY()
+    if self._relatedLayer then
+        return _scaleY(self._relatedLayer)
+    else
+        return 1.0
+    end
+end
+
+--[[
+    对外接口
+
+]]
+
+function ListView:resetTouchRect()
+    local size = self:getContentSize()
+    self._width = size.width
+    self._height = size.height
+
+    self._rect = cc.rect(0,0,self._width,self._height)
+    local pos 
+    if tolua.cast(self,"CCLayer") then
+       pos = self:convertToWorldSpace(cc.p(0,0))
+    else
+       pos = self:convertToWorldSpaceAR(cc.p(0,0))
+    end
+    self._touchBoundingBox = cc.rect(pos.x,pos.y,self._width * self:_getTouchScaleX(),self._height * self:_getTouchScaleY())
+    -- self._touchLayer:setCascadeBoundingBox(self._touchBoundingBox)
+    self._stencilLayer:setContentSize(size)
+
+    if self._isInitShadow then
+        if self._isVertical then
+            if self._topShadow ~= nil then
+                self._topShadow:setPosition(0, self._height - 25)
+                self._topShadow:setContentSize(cc.size(self._width, 25))
+            end
+            if self._bottomShadow then
+                self._bottomShadow:setPosition(0, 0)
+                self._bottomShadow:setContentSize(cc.size(self._width, 25))
+            end
+        else
+            if self._leftShadow ~= nil then
+                self._leftShadow:setPosition(0, 0)
+                self._leftShadow:setContentSize(cc.size(25, self._height))
+            end
+            if self._rightShadow then
+                self._rightShadow:setPosition(self._width - 25, 0)
+                self._rightShadow:setContentSize(cc.size(25, self._height))
+            end
+        end
+    end
+end
+--清空所有items
+function ListView:clear( isCleanUp )
+    -- body
+    self._listViewImp.clearAllItems(self,isCleanUp)
+end
+
+-- 移动的距离
+function ListView:getDistanceY()
+    return self._dragY
+end
+
+function ListView:getDistanceX()
+    return self._dragX
+end
+
+function ListView:getCurHeight()
+    return self._curHeight
+end
+
+function ListView:getHeight()
+    return self._height
+end
+
+function ListView:getCanDistanceY()
+    return self._curHeight - self._height
+end
+
+function ListView:setScollDelegate( callback )
+    -- body
+    self._scrollDelegate = callback
+end
+
+--reload数据
+function ListView:reload( param )
+    -- body
+    self:clear(param.isCleanUp)
+    
+    self._headIndex = param.headIndex or self._headIndex        --当前视口的起始索引
+    self._tailIndex = param.tailIndex or self._tailIndex        --当前视口的结束索引
+    self._totalNumber = param.totalNumber or self._totalNumber
+    self._isVertical = param.isVertical == nil and self._isVertical or param.isVertical
+    self._maxItemNum = param.maxItemNum or self._maxItemNum
+    self._renderItemCallBack = param.renderItemCallBack or self._renderItemCallBack
+    self._multiItems = param.multiItems or self._multiItems    -- 一行有2个或者多个
+    self._curOffset = param.curOffset or self._curOffset
+    self._curOriginOffset = param.curOriginOffset or self._curOriginOffset
+    self._spaceY = param.spaceY or self._spaceY
+    self._spaceX = param.spaceX or self._spaceX
+    self._headIndexPosOffset = param.headIndexPosOffset or self._headIndexPosOffset
+    self._relatedLayer = param.node
+   
+    if self._maxItemNum and self._totalNumber and self._maxItemNum < self._totalNumber then
+        self._totalNumber = self._maxItemNum
+    end
+
+    self._baseStartIndex =  param.baseStartIndex or 1
+    self._baseEndIndex = self._baseStartIndex + self._totalNumber -1
+    if self._multiItems ~=1 and self._baseStartIndex % self._multiItems ~= 1 then
+        self._baseStartIndex = self._baseStartIndex - (self._baseStartIndex -1)%self._multiItems + self._multiItem
+    end
+
+    if self._isVertical then
+        if param._curOffset then
+            self._curOffset = self._curOffset - self._spaceY
+        end
+        self._listViewImp = QVerticalListViewImp
+    else
+        if param._curOffset then
+            self._curOffset = self._curOffset - self._spaceX
+        end
+        
+        self._listViewImp = QHorizontalListViewImp
+    end
+    self._content:setPosition(0,0)
+
+    self._listViewImp.initListView(self)
+end
+
+-- 刷新数据  --必须保证 数据的值 不会影响 item 大小  没变 否则 可能已发 bug
+function ListView:refreshData( )
+    self._listViewImp.stopSpeedScheduler(self)
+    self:stopLongPressScheduler()
+    self:stopScrollToPosScheduler()
+    self:stopScrollToIndex()
+
+    self:clearAllClickHandler()
+    self:clearAllTouchHandler()
+    self._curTouchIndex = nil
+    self._curTouchNodeName = nil
+    self._startScrollToIndex = nil
+    for i = self._startIndex,self._endIndex do
+        self:refreshItem(i)
+    end
+    self._listViewImp.onScroll(self)
+end
+
+
+function ListView:refreshAddData(param)
+    self._listViewImp.stopSpeedScheduler(self)
+    self:stopLongPressScheduler()
+    self:stopScrollToPosScheduler()
+    self:stopScrollToIndex()
+    self:clearAllClickHandler()
+    self:clearAllTouchHandler()
+    self._curTouchIndex = nil
+    self._curTouchNodeName = nil
+    self._startScrollToIndex = nil
+
+    -- self:setBaseNodePosY(self._dragY)
+
+    self._totalNumber = param.totalNumber or self._totalNumber
+    self._renderItemCallBack = param.renderItemCallBack or self._renderItemCallBack
+    self._baseEndIndex = self._baseStartIndex + self._totalNumber -1
+    for i = self._startIndex,self._endIndex do
+        self:refreshItem(i)
+    end
+    self._listViewImp.onScroll(self)
+end
+
+-- renderItemCallBack 回调函数中使用  从缓存中 获取node
+function ListView:getItemFromCache( tag )
+    -- body
+    tag = tag or "default"
+    if self._cacheNodes[tag] and #self._cacheNodes[tag] > 0 then
+        local item = self._cacheNodes[tag][1]
+        table.remove(self._cacheNodes[tag],1)
+        return item
+    end
+end
+--滚动到指定索引  index 指定的索引   isTail index结尾 还是开头   speed 滚动速度 默认 20
+function ListView:startScrollToIndex( index, isTail,speed, callback)
+    -- body
+    if index > self._baseEndIndex or index < self._baseStartIndex then
+        print("error index  must <= self._baseEndIndex and must >= self._baseStartIndex index ",index, "  self._baseEndIndex ",self._baseEndIndex," self._baseStartIndex ",self._baseStartIndex)
+        return
+    end
+    self._scrollToIndexTargetIndex = index - (index -1)%self._multiItems
+    self._scrollToIndexIsTail = isTail or true
+    self._scrollToIndexSpeed = speed or 20
+    self._scrollToIndexTargetPos = nil
+    self._startScrollToIndex = true
+    self._scrollToIndexCallBack = callback
+end
+
+function ListView:stopScrollToIndex( )
+    -- body
+    self._scrollToIndexTargetIndex = nil
+    self._scrollToIndexIsTail = nil
+    self._scrollToIndexSpeed = nil
+    self._scrollToIndexTargetPos = nil
+    self._startScrollToIndex = nil
+    if self._scrollToIndexCallBack then
+        self._scrollToIndexCallBack()
+        self._scrollToIndexCallBack = nil
+    end
+end
+
+--获取指定索引的 item
+function ListView:getItemByIndex( index )
+    if index >= self._startIndex and index <= self._endIndex then
+        return self._itemsInfo[index].item
+    end
+end
+
+--获取item的数量
+function ListView:getItemCount()
+    return #self._itemsInfo
+end
+
+-- 预先增加 高度  一般不要直接修改
+function ListView:getRect( )
+    -- body
+    return self._rect
+end
+
+--屏蔽触摸事件
+function ListView:setShieldTouch( trueOrFalse )
+    -- body
+    self._shieldTouch = trueOrFalse
+end
+
+--设置是否可以 触摸移动
+function ListView:setCanNotTouchMove( trueOrFalse )
+    -- body
+    self._canNotTouchMove = trueOrFalse
+end
+
+function ListView:getCanDrag()
+    if self._isVertical then
+        return self._canDragY
+    else
+        return self._canDragX
+    end
+end
+
+function ListView:getItemPosToTopDistance( index )
+    -- body
+    local itemInfo = self._itemsInfo[index]
+    if itemInfo then
+        if self._isVertical then    
+            return math.abs(itemInfo.pos.y - self._baseRootY) - self._dragY
+        end 
+    end
+    return 0
+end
+
+--[[
+    内部函数 
+]]
+-- function ListView:onTouch(event)
+--     if event.name == "began" then
+--         self._touchBeganRet = self._listViewImp.onTouchBegin(self, event.x, event.y)
+--         return self._touchBeganRet
+--     elseif event.name == "moved" then
+--         self._listViewImp.onTouchMove(self, event.x, event.y)
+--     elseif event.name == "ended" then
+--         self._listViewImp.onTouchEnd(self, event.x, event.y)
+--         self._touchBeganRet = nil
+--     end
+-- end
+
+function ListView:onTouchBegan(touch, event)
+
+    local p = self:convertToNodeSpace(touch:getLocation())
+    self._touchBeganRet = self._listViewImp.onTouchBegin(self, touch:getLocation().x, touch:getLocation().y)
+    if self._touchBeganRet then
+        print("ListView:onTouchBegan Occupy from layer ", self._layerName)
+    end
+
+    return self._touchBeganRet
+end
+
+function ListView:onTouchMoved(touch, event)
+    local p = self:convertToNodeSpace(touch:getLocation())
+
+    self._listViewImp.onTouchMove(self, touch:getLocation().x, touch:getLocation().y)
+end
+
+function ListView:onTouchEnded(touch, event)
+    local p = self:convertToNodeSpace(touch:getLocation())
+    self._listViewImp.onTouchEnd(self, touch:getLocation().x, touch:getLocation().y)
+    self._touchBeganRet = nil
+end
+
+function ListView:onFrame( dt )
+    self._listViewImp.scrollToIndexOnFrame(self,dt)
+    self._listViewImp.getSpeedOnFrame(self, dt)
+    self._listViewImp.scrollToPosOnFrame(self, dt)
+    self:longPressOnFrame(dt)
+end
+
+function ListView:setBaseNodePosX( dragx )
+    -- body
+    self._baseRootNode:setPositionX(dragx)
+    if self._scrollDelegate then
+        self._scrollDelegate(dragx, 0)  
+    end
+end
+
+function ListView:setBaseNodePosY( dragy )
+    -- body
+    self._baseRootNode:setPositionY(dragy)
+    if self._scrollDelegate then
+        self._scrollDelegate(0, dragy)  
+    end
+end
+
+function ListView:addItemToCache( index, info )
+    -- body
+    local item = info.item
+    local tag = info.tag or "default"
+    if not self._cacheNodes[tag] then
+        self._cacheNodes[tag] = {}
+    end
+    item:setVisible(false)
+    self:unRegisterTouchHandler(index)
+    self:unregisterUnClickRegionHandlers(index)
+    self:unRegisterClickHandler(index)
+    table.insert(self._cacheNodes[tag],item)
+end
+
+function ListView:renderItem( index, info )
+    -- body
+    local isCacheNode = self._renderItemCallBack(self,index,info)
+
+    if not info.item  or not info.size then
+        print("error  info is empty")
+        return 
+    end
+    local item = info.item
+    if not isCacheNode then
+        item:setVisible(false)
+        self._content:addChild(item)
+    end
+    info.size.height = info.size.height + self._spaceY
+    info.size.width = info.size.width + self._spaceX
+    
+    return item
+end
+
+
+function ListView:refreshItem( index )
+    -- body
+    local info = self._itemsInfo[index]
+    if not info then
+        return
+    end
+    self:addItemToCache(index, info)
+    self:renderItem(index,info)
+    info.item:setPosition(info.pos)
+end
+
+function ListView:addItem( isAutoScroll )
+    -- body
+    self._listViewImp.addItem(self,isAutoScroll)
+end
+
+
+function ListView:getCurGesture(  )
+    -- body
+    return self._curGesture
+end
+
+------------------------触摸点击逻辑---------------
+function ListView.isTouchInside( node, x, y)
+    -- body
+    local  parent = node:getParent()
+    if parent then
+        local point = parent:convertToNodeSpace(cc.p(x,y))
+        local rt = node:getBoundingBox()
+
+        return cc.rectContainsPoint(rt, point)
+    else
+        print("error can not find parent")
+    end
+    return false
+end
+
+function ListView.isTouchNodeVisible( node )
+    -- body
+    if node:isVisible() then
+        local parent = node:getParent()
+        if parent then
+            return ListView.isTouchNodeVisible(parent)
+        else
+            return true
+        end
+    end
+end
+---
+function ListView.doBtnPressIn( x, y, touchNodeNode, list)
+    local ret = false
+    if touchNodeNode:isEnabled() and ListView.isTouchNodeVisible(touchNodeNode) and  ListView.isTouchInside(touchNodeNode, x, y) then
+        touchNodeNode:setHighlighted(true)
+        -- item:setScale(0.95)
+        ret = true
+    end
+    return ret
+end
+
+function ListView.doBtnCancelPressIn( x , y, touchNodeNode, list)
+    -- body
+    -- item:setScale(1)
+    touchNodeNode:setHighlighted(false)
+end
+
+
+
+function ListView.doItemBoxPressIn( x, y, touchNodeNode, list )
+    -- body
+    local ret = false
+    if touchNodeNode and touchNodeNode and touchNodeNode.sprite_back then
+        local node = tolua.cast(touchNodeNode.sprite_back, "cc.Sprite")
+        if node then
+            if ListView.isTouchInside(node, x, y) then
+                ret = true
+            end
+        end
+    end
+    
+    return ret
+end
+
+function ListView.doItemBoxClickIn( x, y, touchNodeNode, list )
+    -- body
+    if touchNodeNode then
+        app.tip:itemTip(touchNodeNode._itemType, touchNodeNode._itemID)
+    end
+end
+
+
+function ListView:startLongPressScheduler(  )
+    -- body
+    self._longPressTime = 0
+end
+
+
+function ListView:stopLongPressScheduler(  )
+    -- body
+    self._longPressTime = nil
+end
+
+function ListView:longPressOnFrame(dt)
+    -- body
+    if self._longPressTime then
+        self._longPressTime = self._longPressTime + dt
+        if self._longPressTime > 0.4 then
+            if self._lastPressX and self._lastPressY then
+                self:doLongPressIn(self._lastPressX, self._lastPressY)
+                self:stopLongPressScheduler()
+            end
+        end
+    end
+end
+
+
+function ListView:calculateTouchIndex( x, y )
+    -- body
+    local pos = self._content:convertToNodeSpace(cc.p(x,y))
+    if not pos then
+        lt.LogUtil:debugError("pos is nil")
+    end
+    for i = self._startIndex,self._endIndex do
+        local info = self._itemsInfo[i]
+        --判断点击index
+        if pos.x > info.pos.x and pos.x <= info.pos.x + info.size.width and pos.y < info.pos.y and pos.y >= info.pos.y - info.size.height then
+            self._curTouchIndex = i
+            break;
+        end
+    end
+end
+
+function ListView:resetTouchIndex()
+   self._curTouchIndex = nil
+end
+
+--[[
+ListView._touchHandlers中
+1. 可以注册cc.Node节点, 会自动调用节点的回调方法[onListViewTouchBegan, onListViewTouchMoved, onListViewTouchEnded]
+   节点会检测是否在节点的显示区域, 调用成功目前会吞噬事件
+2. 可以注册回调函数
+3. 可以注册方法名, 会调用cell对应的方法名
+4. 可以注册table, table可以由以上三种类型进行组合.
+
+使用这里事件可以对于ListView 滑动事件不向下传递的一些处理.
+]]
+function ListView:doTouchBegin( x,y )
+    if not self._curTouchIndex  then
+        if self._touchEvent then
+            if type(self._touchEvent) == "function" then
+                self._touchEvent({name = "began", x = x, y = y})
+            end
+        end
+        return 
+    end
+
+    local touchHandler = self._touchHandlers[self._curTouchIndex]
+    local _process = function (obj)
+        if iskindof(obj, "cc.Node") then
+            if obj:isVisible() and cc.rectContainsPoint(obj:getBoundingBox(), obj:getParent():convertToNodeSpace(cc.p(x,y))) then 
+                if obj["onListViewTouchBegan"] then
+                    obj["onListViewTouchBegan"](obj, {name = "began", x = x, y = y})
+                    return true
+                end
+            end
+        elseif type(obj) == "function" then
+            touchHandler({name = "began", x = x, y = y})
+        elseif type(obj) == "string" then
+            local item  = self._itemsInfo[self._curTouchIndex].item
+            if item then
+                item[obj](item, {name = "began", x = x, y = y})
+            end
+        end
+    end
+
+    if type(touchHandler) == "table" then
+        for _,v in pairs(touchHandler) do
+            if _process(v) then
+                break
+            end
+        end
+    else
+        _process(touchHandler)   
+    end
+end
+
+
+function ListView:doTouchMove( x, y )
+    if not self._curTouchIndex then
+        if self._touchEvent then
+            if type(self._touchEvent) == "function" then
+                self._touchEvent({name = "moved", x = x, y = y})
+            end
+        end
+        return 
+    end
+
+    local touchHandler = self._touchHandlers[self._curTouchIndex]
+    local _process = function (obj)
+        if iskindof(obj, "cc.Node") then
+            if obj:isVisible() and obj["onListViewTouchMoved"] then
+                obj["onListViewTouchMoved"](obj, {name = "moved", x = x, y = y})
+            end
+        elseif type(obj) == "function" then
+            touchHandler({name = "moved", x = x, y = y})
+        elseif type(obj) == "string" then
+            local item  = self._itemsInfo[self._curTouchIndex].item
+            if item then
+                item[obj](item, {name = "moved", x = x, y = y})
+            end
+        end
+    end
+
+    if type(touchHandler) == "table" then
+        for _,v in pairs(touchHandler) do
+            _process(v)
+        end
+    else
+        _process(touchHandler)   
+    end
+
+    -- local touchHandler = self._touchHandlers[self._curTouchIndex]
+    -- if type(touchHandler) == "function" then
+    --     touchHandler({name = "moved", x = x, y = y})
+    -- elseif type(touchHandler) == "string" then
+    --     local item  = self._itemsInfo[self._curTouchIndex].item
+    --     if item then
+    --         item[touchHandler](item, {name = "moved", x = x, y = y})
+    --     end
+    -- end
+end
+
+function ListView:doTouchEnd( x, y )  
+    if not self._curTouchIndex then
+        if self._touchEvent then
+            if type(self._touchEvent) == "function" then
+                self._touchEvent({name = "ended", x = x, y = y})
+            end
+        end
+        return 
+    end
+
+    local touchHandler = self._touchHandlers[self._curTouchIndex]
+    local _process = function (obj)
+        if iskindof(obj, "cc.Node") then
+            if obj:isVisible() and obj["onListViewTouchEnded"] then
+                obj["onListViewTouchEnded"](obj, {name = "ended", x = x, y = y})
+            end
+        elseif type(obj) == "function" then
+            touchHandler({name = "ended", x = x, y = y})
+        elseif type(obj) == "string" then
+            local item  = self._itemsInfo[self._curTouchIndex].item
+            if item then
+                item[obj](item, {name = "ended", x = x, y = y})
+            end
+        end
+    end
+
+    if type(touchHandler) == "table" then
+        for _,v in pairs(touchHandler) do
+            _process(v)
+        end
+    else
+        _process(touchHandler)   
+    end
+
+    -- if type(touchHandler) == "function" then
+    --     touchHandler({name = "ended", x = x, y = y})
+    -- elseif type(touchHandler) == "string" then
+    --     local item  = self._itemsInfo[self._curTouchIndex].item
+    --     if item then
+    --         item[touchHandler](item, {name = "ended", x = x, y = y})
+    --     end
+    -- end
+end
+
+function ListView:doPressIn(x,y)
+    -- body
+    if not self._curTouchIndex then
+        return 
+    end
+
+    local touchInfo = self._touchInfos[self._curTouchIndex]
+    if not touchInfo then 
+        return 
+    end
+
+    local ret = false
+    for k, event in pairs(self._touchPriority) do
+        local v = touchInfo[event.eventName]
+        if v then
+            local touchHandler = v.doPressIn
+            if type(touchHandler) == "function" then
+                ret = touchHandler(x, y, v.touchNodeNode, self)
+            elseif type(touchHandler) == "string" then
+                local item  = self._itemsInfo[self._curTouchIndex].item
+                ret = item[touchHandler](item,x, y, v.touchNodeNode, self)
+            end
+            if ret then
+
+                self._curTouchNodeName = v.touchNodeName
+                return ret
+            end
+        end
+    end
+    return ret
+end
+
+function ListView:doLongPressIn(x,y)
+    -- body
+    if not self._curTouchIndex then
+        return 
+    end
+    local touchInfo = self._touchInfos[self._curTouchIndex]
+    if not touchInfo then 
+        return 
+    end
+    local ret = false
+    for k, event in pairs(self._touchPriority) do
+        local v = touchInfo[event.eventName]
+        if v then
+            local touchHandler = v.doLongPressIn
+            if type(touchHandler) == "function" then
+                ret = touchHandler(x, y, v.touchNodeNode, self)
+            elseif type(touchHandler) == "string" then
+                local item  = self._itemsInfo[self._curTouchIndex].item
+                ret = item[touchHandler](item,x, y, v.touchNodeNode, self)
+            end
+            if ret then
+
+                self._curTouchNodeName = v.touchNodeName
+                return ret
+            end
+        end
+    end
+    return ret
+end
+
+function ListView:doClickIn(x,y)
+    -- body
+    if self._curTouchIndex ~= nil and self._curTouchNodeName ~= nil then
+
+        local touchInfo = self._touchInfos[self._curTouchIndex][self._curTouchNodeName]
+        local item  = self._itemsInfo[self._curTouchIndex].item
+        if not touchInfo then
+            return
+        end
+        local touchHandler = touchInfo.doClickIn
+        if type(touchHandler) == "function" then
+            if touchHandler then
+                touchHandler(x, y, touchInfo.touchNodeNode, self)
+            end
+        elseif type(touchHandler) == "string" then
+            item[touchHandler](item,x, y, touchInfo.touchNodeNode, self)
+        end
+    end
+    self._curTouchNodeName = nil
+end
+
+
+function ListView:doCancelPressIn(x,y)
+    if self._curTouchIndex ~= nil and self._curTouchNodeName ~= nil  then
+        local touchInfo = self._touchInfos[self._curTouchIndex][self._curTouchNodeName]
+        local item  = self._itemsInfo[self._curTouchIndex].item
+        if not touchInfo then
+            return
+        end
+        local touchHandler = touchInfo.doCancelPressIn
+        if type(touchHandler) == "function" then
+            if touchHandler then
+                touchHandler(x, y, touchInfo.touchNodeNode, self)
+            end
+        elseif type(touchHandler) == "string" then
+            item[touchHandler](item,x, y, touchInfo.touchNodeNode, self)
+        end
+    end
+
+end
+
+function ListView:insertClickEvent( eventName, priority )
+    -- body
+    local index = 1
+    for k, v in pairs(self._touchPriority) do
+        if v.eventPriority > priority then
+            break
+        end
+        index = index + 1
+    end
+    table.insert(self._touchPriority, index, {eventPriority = priority, eventName = eventName})
+end
+
+function ListView:removeClickEvent( eventName, priority )
+    -- body
+    for k, v in pairs(self._touchPriority) do
+        if v.eventName == eventName then
+            table.remove(self._touchPriority, k)
+            break
+        end
+    end
+end
+
+
+function ListView:registerItemBoxPrompt( index, itemBoxIndex,itemBox,priority, customHander, isLongPress)
+    -- body
+    local clickInHander = customHander or ListView.doItemBoxClickIn
+    if isLongPress then
+        self:registerClickHandler(index, "ItemBoxPrompt"..itemBoxIndex, ListView.doItemBoxPressIn, nil, nil, clickInHander, priority, itemBox)
+    else
+        self:registerClickHandler(index, "ItemBoxPrompt"..itemBoxIndex, ListView.doItemBoxPressIn, nil, clickInHander, nil, priority, itemBox)
+    end
+end
+
+----注册 触摸事件 注意 这个注册触摸事件需要放到info 赋值之后
+function ListView:registerBtnHandler(index, touchNodeName, clickHandler,priority)
+   
+    local item = self._itemsInfo[index].item
+    local touchInfo = {}
+
+    touchInfo.touchNodeName = touchNodeName
+
+    if item or touchNodeName ~= "self" then
+        touchInfo.touchNodeNode = item[touchNodeName]
+    end
+
+    if not touchInfo.touchNodeNode then
+         touchInfo.touchNodeNode = item
+    end
+    
+    touchInfo.doPressIn = ListView.doBtnPressIn;
+    touchInfo.doCancelPressIn = ListView.doBtnCancelPressIn;
+    touchInfo.doClickIn = clickHandler
+
+    if not self._touchInfos[index] then
+        self._touchInfos[index] = {}
+    end
+    self._touchInfos[index][touchNodeName] = touchInfo
+    self:insertClickEvent(touchNodeName, priority or 0)
+end
+--注册 触摸事件
+function ListView:registerClickHandler( index, touchNodeName, doPressInHandler, doCancelPressInHandler, doClickInHandler, doLongPressInHandler,priority,touchNode)
+    -- body
+    local item = self._itemsInfo[index].item
+    local touchInfo = {}
+    touchInfo.touchNodeName = touchNodeName
+
+    if touchNode then
+        touchInfo.touchNodeNode = touchNode
+    elseif item or touchNodeName ~= "self" then
+        touchInfo.touchNodeNode = item[touchNodeName]
+    end
+
+    if not touchInfo.touchNodeNode then
+         touchInfo.touchNodeNode = item
+    end
+
+    touchInfo.doPressIn = doPressInHandler;
+    touchInfo.doCancelPressIn = doCancelPressInHandler;
+    touchInfo.doClickIn = doClickInHandler
+    touchInfo.doLongPressIn = doLongPressInHandler
+
+    if not self._touchInfos[index] then
+        self._touchInfos[index] = {}
+    end
+    self._touchInfos[index][touchNodeName] = touchInfo
+    self:insertClickEvent(touchNodeName, priority or 0)
+end
+
+-- function ListView:registerUnClickRegionHandler(index, touchNodeName)
+--     local item = self._itemsInfo[index].item
+--     if item or touchNodeName ~= "self" then
+--         self._unTouchRegionNode = item[touchNodeName]
+--     end
+-- end
+
+function ListView:unregisterUnClickRegionHandlers(index)
+    self._unTouchRegionNodeArr[index] = nil
+end
+
+function ListView:registerUnClickRegionHandlers(index, touchNodeName)
+    local item = self._itemsInfo[index].item
+    if item or touchNodeName ~= "self" then
+        if not self._unTouchRegionNodeArr[index] then
+            self._unTouchRegionNodeArr[index] = {}
+        end
+        self._unTouchRegionNodeArr[index][touchNodeName] = item[touchNodeName]
+    end
+end
+
+function ListView:registerTouchHandler( index, touchHandler )
+    -- body
+    self._touchHandlers[index] = touchHandler
+end
+
+function ListView:unRegisterTouchHandler( index)
+    -- body
+    self._touchHandlers[index] = nil
+end
+
+function ListView:registerTouchBlankHandler(touchHandler)
+    self._touchEvent = touchHandler
+end
+
+function ListView:unregisterTouchBlankHandler(touchHandler)
+    self._touchEvent = nil
+end
+
+function ListView:unRegisterClickHandler( index, touchNodeName)
+    -- body
+    if not touchNodeName then
+        self._touchInfos[index] = nil
+        return 
+    end
+
+    if self._touchInfos[index] and self._touchInfos[index][touchNodeName] then
+        self._touchInfos[index][touchNodeName] = nil
+    end
+
+    self:removeClickEvent(touchNodeName)
+end
+
+function ListView:clearAllClickHandler( index )
+    -- body
+    self._touchInfos = {}
+    self._touchPriority = {}
+end
+
+function ListView:clearAllTouchHandler( ... )
+    -- body
+    self._touchHandlers = {}
+    -- self._touchEvent = nil
+end
+
+function ListView:getCurTouchIndex(  )
+    -- body
+    return self._curTouchIndex
+end
+
+--滚动一段距离 distance 滚动距离  time 滚动时间  isRollBack 是否是回滚 callback 回调 isCanNotTouchStop 是否可以触摸中断
+function ListView:startScrollToPosScheduler(distance,time,isRollBack, callback, isCanNotTouchStop)
+    self._targetDistance = distance
+    self._isRollBack = isRollBack
+    self._scrollTime = 0
+    self._startScrollToPos = true
+    self._lastPercent = 0
+    self._scrollToPosTotalTime = time
+    self._scrollToPosCallback = callback
+    self._scrollToPosCanNotTouchStop = isCanNotTouchStop
+end
+
+function ListView:stopScrollToPosScheduler(notRunCallback)
+    -- body
+    self._targetDistance = nil
+    self._isRollBack = nil
+    self._scrollTime = nil
+    self._startScrollToPos = nil
+    self._lastPercent = nil
+    self._scrollToPosTotalTime = nil
+    self._scrollToPosCanNotTouchStop = nil
+    self._listViewImp.scrollBarFadeOut(self)
+    
+    if not notRunCallback and self._scrollToPosCallback then
+        self._scrollToPosCallback()
+    end
+    self._scrollToPosCallback = nil
+end
+
+
+
+--[[
+    垂直滚动
+]]
+
+
+function QVerticalListViewImp:initListView(  )
+    -- body
+    self._dragY = 0
+    self._lastDragY = 0
+    -- self._dChangeBaseRootY = 0
+    self._curHeight = 0
+    self._canDragY = false
+    self._baseRootY = 0
+    self._cacheLimit = self._height * self._cacheCond
+    local upHeight = 0
+    local downHeight = 0
+    
+    local limit1,limit2
+    local index
+    local tailIndex = self._tailIndex 
+
+    if tailIndex then
+
+        if tailIndex > self._baseEndIndex then
+            tailIndex = self._baseEndIndex
+        end
+
+        limit1 = self._height + self._cacheLimit 
+        limit2 = self._cacheLimit
+        index = tailIndex + self._multiItems
+
+    else
+        limit1 = self._cacheLimit + self._headIndexPosOffset
+        limit2 = self._height + self._cacheLimit + self._headIndexPosOffset
+        index = self._headIndex
+
+        if not index or index < self._baseStartIndex then
+            index = self._baseStartIndex
+        end
+
+        if index > self._baseEndIndex then
+            index = self._baseStartIndex
+        end
+    end
+
+    if self._multiItems ~= 1 then
+        index = index - (index -1)%self._multiItems
+    end
+
+    if self._totalNumber ~= 0 then
+        for i = index - self._multiItems, self._baseStartIndex, -self._multiItems  do
+            local tempHeight = 0
+            local width = 0
+            for k = 0,self._multiItems -1,1 do
+                local tempIndex = i+k
+              
+                local info = {}
+                self._itemsInfo[tempIndex] = info
+
+                local item = self:renderItem(tempIndex,info)
+                local posx = width
+                local posy = upHeight + info.size.height
+
+                tempHeight = math.max(info.size.height,tempHeight)
+                width = width + info.size.width
+                info.pos = cc.p(posx,posy)
+                item:setPosition(info.pos)
+            end
+            limit1 = limit1 - tempHeight
+            upHeight = upHeight + tempHeight        
+            if limit1 <= 0 then
+                self._startIndex = i
+                break;
+            end
+        end
+    end
+
+    if limit1 > 0 then
+        self._startIndex = self._baseStartIndex
+    end
+
+    for i = index,self._baseEndIndex, self._multiItems do
+        local tempHeight = 0
+        local width = 0
+        for k = 0,self._multiItems -1,1 do
+            local tempIndex = i+k
+            if tempIndex > self._baseEndIndex then
+                break
+            end
+
+            local info = {}
+            self._itemsInfo[tempIndex] = info
+
+            local item = self:renderItem(tempIndex,info)
+            local posx = width
+            local posy = -downHeight
+
+            tempHeight = math.max(info.size.height,tempHeight)
+            width = width + info.size.width
+            info.pos = cc.p(posx,posy)
+            item:setPosition(info.pos)
+        end
+        limit2 = limit2 - tempHeight
+        downHeight = downHeight + tempHeight
+        if limit2 <= 0 then
+            self._endIndex = i + self._multiItems - 1
+            if self._endIndex > self._baseEndIndex then
+                self._endIndex = self._baseEndIndex
+            end
+            break;
+        end
+    end
+    if limit2 > 0 then
+        self._endIndex = self._baseEndIndex
+    end
+ 
+    if self._startIndex == self._baseStartIndex then
+        upHeight = upHeight + self._curOriginOffset
+    end
+
+    if self._endIndex == self._baseEndIndex then
+        downHeight = downHeight + self._curOffset
+    end
+
+    self._baseRootY = upHeight
+    self._curHeight = upHeight + downHeight
+
+    if not tailIndex then
+        if upHeight >= self._headIndexPosOffset then
+            upHeight = upHeight - self._headIndexPosOffset
+            downHeight = downHeight + self._headIndexPosOffset
+        else
+            upHeight = self._headIndexPosOffset
+            downHeight = downHeight + upHeight - self._headIndexPosOffset
+        end
+    end
+
+    if tailIndex then
+        if upHeight > self._height then
+            self._dragY = upHeight - self._height
+        end
+    else
+        if downHeight < self._height  then
+            if self._height - downHeight < upHeight  then
+                -- and self._startIndex ~= self._baseStartIndex
+                self._dragY = self._curHeight - self._height
+            end
+        else
+            if self._startIndex == self._baseStartIndex then
+                self._dragY = upHeight - self._curOriginOffset
+            else
+                self._dragY = upHeight
+            end
+        end
+    end
+
+    if self._curHeight >= self._height or self._ignoreCanDrag then
+        self._canDragY = true
+    end
+    
+    self:setBaseNodePosY(self._dragY)
+    self._content:setPositionY(self._height - self._baseRootY)
+
+    if self._enableShadow and not self._topShadow and not self._bottomShadow then
+        self._isInitShadow = true
+        self._listViewImp.initShadow(self)
+    end
+    self._listViewImp.showShadow(self)
+
+    if self._enableScrollBar then
+        self._listViewImp.initScrollBar(self)
+    end
+    self._listViewImp.setItemVisible(self)
+    self._listViewImp.onScroll(self)
+end
+
+function QVerticalListViewImp:initShadow(  )
+    self._topShadow = cc.LayerGradient:create(cc.c4b(58, 22, 0, 255), cc.c4b(0, 0, 0, 0), cc.p(0, -1))
+
+    self._topShadow:setPosition(cc.p(0, self._height - 25))
+    self._topShadow:setContentSize(cc.size(self._width, 25))
+
+    self._bottomShadow = cc.LayerGradient:create(cc.c4b(58, 22, 0, 255), cc.c4b(0, 0, 0, 0), cc.p(0, 1))
+    self._bottomShadow:setPosition(0, 0)
+    self._bottomShadow:setContentSize(cc.size(self._width, 25))
+
+    self:addChild(self._topShadow)
+    self:addChild(self._bottomShadow)
+end
+function QVerticalListViewImp:showShadow(  )
+    -- body
+    if self._enableShadow then
+        if self._canDragY then
+            if self._dragY > 0 then
+                if not self._isRollBack then
+                    self._topShadow:setVisible(true)
+                end
+            else
+                self._topShadow:setVisible(false)
+            end
+
+            if self._dragY < self._curHeight - self._height then
+                if not self._isRollBack then
+                    self._bottomShadow:setVisible(true)
+                end
+            else
+                self._bottomShadow:setVisible(false)
+            end
+        else
+            self._topShadow:setVisible(false)
+            self._bottomShadow:setVisible(false)
+        end
+    end
+    if self._topShadow then
+        self._topShadow:setVisible(false)
+    end
+    if self._bottomShadow then
+        self._bottomShadow:setVisible(false)
+    end
+end
+
+--滑动条  --注意 self._scrollBarBg  是 self._scrollBar 的父节点
+function QVerticalListViewImp:initScrollBar(  )
+    self._scrollBarIsFadeIn = false
+    self._scrollBarIsFadeOut = false
+    if not self._scrollBarParentNode and not self._scrollBar then
+        local parentNode = cc.Node:create()
+        local scrollBarBg,scrollBar
+    
+        scrollBarBg = ccui.Scale9Sprite:create("ui/common/xialatiao_hei.png",cc.rect(0, 0, 18, 46), cc.rect(18, 22, 0, 2)) 
+        scrollBar = ccui.Scale9Sprite:create("ui/common/xialatiao_gundong.png")
+
+        -- scrollBar:setPositionX(10)
+
+        scrollBarBg:setContentSize(cc.size(18,self._height))
+        scrollBarBg:setAnchorPoint(0.5,0)
+
+        parentNode:addChild(scrollBarBg)
+        parentNode:addChild(scrollBar)
+
+        scrollBar:setAnchorPoint(0.5,1)
+
+        parentNode:setPosition(self._scrollBarPos)
+        parentNode:setCascadeOpacityEnabled(true)
+        self:addChild(parentNode)
+
+        self._scrollGap = 20
+
+        self._scrollBarBg = scrollBarBg
+        self._scrollBar = scrollBar
+        self._scrollBarParentNode = parentNode
+    end
+
+    local rt = self._scrollBar:getBoundingBox()
+    self._scrollBarHeight = rt.height
+    self._scrollBarBaseScaleY = self._scrollBar:getScaleY()
+    if angle == 90 or angle == 270 then
+        self._scrollBarScaleReverse = true
+    end
+    self._scrollBarParentNode:setOpacity(0)
+end
+
+function QVerticalListViewImp:scrollBarFadeIn(  )
+    -- body
+    if self._enableScrollBar and self._canDragY then
+        if self._scrollBarParentNode:getOpacity() ~= 255 and self._scrollBarIsFadeIn == false then
+            self._scrollBar:setScaleY(1)
+            if self._scrollBarIsFadeOut then
+                self._scrollBarParentNode:stopAllActions()
+                self._scrollBarIsFadeOut = false
+            end
+            self._scrollBarIsFadeIn = true
+            local fade = cc.FadeIn:create(0.5)
+            local func = cc.CallFunc:create(function()
+                self._scrollBarIsFadeIn = false
+            end)
+            local s1 = cc.Sequence:create(fade, func)
+            self._scrollBarParentNode:runAction(s1)
+        end
+
+        if self._dragY < 0 then
+            self._scrollBar:setPositionY(self._height - self._scrollGap)
+            if self._scrollBarScaleReverse then
+                self._scrollBar:setScaleX((1 - math.abs(self._dragY/self._height)) * self._scrollBarBaseScaleY)
+            else
+                self._scrollBar:setScaleY((1 - math.abs(self._dragY/self._height)) * self._scrollBarBaseScaleY)
+            end
+        elseif self._dragY > self._curHeight - self._height then
+            local scaleY = 1 - math.abs((self._dragY - self._curHeight + self._height)/self._height)
+            if self._scrollBarScaleReverse then
+                self._scrollBar:setScaleX(scaleY * self._scrollBarBaseScaleY)
+            else
+                self._scrollBar:setScaleY(scaleY * self._scrollBarBaseScaleY)
+            end
+            self._scrollBar:setPositionY(self._scrollBarHeight * scaleY + self._scrollGap) 
+        else
+            local h = self._height - self._scrollGap
+            local ch = self._curHeight
+            self._scrollBar:setPosition(0, h - (h - self._scrollBarHeight - self._scrollGap/2) * (math.abs(self._dragY/(ch - h))))
+        end
+    end
+end
+
+
+function QVerticalListViewImp:scrollBarFadeOut(  )
+    if self._enableScrollBar and self._scrollBarIsFadeOut == false then
+        if self._scrollBarIsFadeIn then
+            self._scrollBarParentNode:stopAllActions()
+            self._scrollBarIsFadeIn = false
+        end
+        self._scrollBarIsFadeOut = true
+        local fade = cc.FadeOut:create(0.5)
+        local func = cc.CallFunc:create(function()
+            self._scrollBarIsFadeOut = false
+        end)
+        local s1 = cc.Sequence:create(fade, func)
+        self._scrollBarParentNode:runAction(s1)
+    end
+end
+
+
+function QVerticalListViewImp:startSpeedScheduler(  )
+    -- body
+    self._speedScheduler = true
+    self._speedY = 0
+    self._speedCountY = 0
+    self._lastDragY = self._dragY
+end
+
+function QVerticalListViewImp:stopSpeedScheduler(  )
+    -- body
+    self._speedScheduler = nil
+    self._lastDragY = nil
+    self._speedCountY = nil
+ 
+end
+
+function QVerticalListViewImp:getSpeedOnFrame( dt )
+    -- body
+    if self._speedScheduler then
+        local dy = self._dragY - self._lastDragY 
+        if self._dChangeBaseRootY then
+            dy = dy - self._dChangeBaseRootY
+            self._dChangeBaseRootY = nil
+        end
+        local speedY = dy/dt
+        if math.abs(speedY) < 1000 then
+            self._speedCountY = self._speedCountY + 1
+        else
+            self._speedCountY = 0
+        end
+        if self._speedCountY > 12 then
+            self._speedY = 0
+        else
+            self._speedY = (self._speedY + speedY)/2
+        end
+        self._lastDragY = self._dragY
+    end
+end
+
+
+function QVerticalListViewImp:scrollToPosOnFrame(dt)
+    
+    if self._startScrollToPos then
+        --CCEaseBackOut
+        local tempPercent,percent,dPercent
+        self._scrollTime = self._scrollTime + dt
+        local ft = self._scrollTime/self._scrollToPosTotalTime > 1 and 1 or self._scrollTime/self._scrollToPosTotalTime
+        if self._isRollBack then
+            local tempPercent = ft - 1
+            percent = tempPercent*tempPercent*((1.70158 + 1)*tempPercent + 1.70158) + 1
+        else
+            tempPercent = ft
+            percent = tempPercent > 1 and 1 or 1 - math.pow(2, -10 * tempPercent)
+        end
+        dPercent = percent - self._lastPercent
+        self._lastPercent = percent
+        local dy = self._targetDistance * dPercent
+
+        if dy > 0 then
+            self._isUp = true
+            if dy > self._height then
+                dy = self._height
+            end
+        else
+            self._isUp = false
+            if dy < -self._height then
+                dy = -self._height
+            end
+        end
+        self._dragY = self._dragY + dy
+        self:setBaseNodePosY(self._dragY)
+        self._listViewImp.onScroll(self)
+
+        if not self._isRollBack then
+            if self._dragY < 0   then
+                self:startScrollToPosScheduler(0 - self._dragY,0.3,true)
+            elseif self._dragY > self._curHeight - self._height  then
+                self:startScrollToPosScheduler(self._curHeight - self._height - self._dragY,0.3,true)
+               
+            elseif self._scrollTime >= self._scrollToPosTotalTime then
+                self:stopScrollToPosScheduler()
+            end
+        else
+            if self._scrollTime >= self._scrollToPosTotalTime then
+                self:stopScrollToPosScheduler()
+            end
+        end
+    end
+end
+
+function QVerticalListViewImp:setItemVisible(  )
+    local viewTop = - self._dragY
+    local viewBottom = -(self._dragY + self._height)
+
+    for i = self._startIndex, self._endIndex, self._multiItems do
+        local info = self._itemsInfo[i]
+        if info.pos.y - info.size.height - self._baseRootY > viewTop or info.pos.y - self._baseRootY < viewBottom then
+
+            for k = 0,self._multiItems - 1,1 do
+                local tempIndex = i + k
+                if tempIndex > self._endIndex then
+                    break;
+                end
+                local tempInfo = self._itemsInfo[i + k]
+                tempInfo.item:setVisible(false)
+            end
+        else
+            for k = 0,self._multiItems - 1,1 do
+                local tempIndex = i + k
+                if tempIndex > self._endIndex then
+                    break;
+                end
+                local tempInfo = self._itemsInfo[i + k]
+               tempInfo.item:setVisible(true)
+            end 
+        end
+    end
+end
+
+function QVerticalListViewImp:onScroll(  )
+    -- body
+    -- return 
+    self._listViewImp.showShadow(self)
+    self._listViewImp.scrollBarFadeIn(self)
+    
+
+    local top = - (self._dragY - self._cacheLimit)
+    local bottom = -(self._dragY + self._cacheLimit + self._height)
+   
+    --向上滑动
+    if self._isUp then
+        if self._endIndex == self._baseEndIndex then
+            self._listViewImp.setItemVisible(self)
+            return
+        end
+        for i = self._startIndex,self._endIndex,self._multiItems do
+            local info = self._itemsInfo[i]
+            if info then
+                local nextItemY = info.pos.y - info.size.height
+                  
+                --超过上边界 回收掉
+                if top < nextItemY - self._baseRootY then
+                    
+                    self:addItemToCache(i, info)
+                    for k = 1,self._multiItems -1 do
+                        local tempIndex = i + k
+                        if tempIndex > self._endIndex then
+                            break
+                        end
+                        local tempInfo = self._itemsInfo[tempIndex]
+                        self:addItemToCache(tempIndex, tempInfo)
+                    end
+                else
+                    self._startIndex = i
+                    break
+                end
+            else
+                
+                --info 为空 表示尚未有该index的信息
+            end
+        end
+        -- local endIndex = math.ceil(self._baseEndIndex / self._multiItems) * self._multiItems
+         --  渲染新的节点 
+        local endIndex = self._endIndex - (self._endIndex-1) % self._multiItems
+
+        for i = endIndex, self._baseEndIndex, self._multiItems do
+            local preInfo = self._itemsInfo[i]
+            if preInfo then
+                local nextItemY = preInfo.pos.y - preInfo.size.height 
+                if nextItemY - self._baseRootY > bottom and i < self._baseEndIndex then
+                    --渲染新的节点
+                    local tempWidth = 0
+                    for k = 0, self._multiItems-1 do
+                        local tempIndex = i + self._multiItems + k
+                        if tempIndex > self._baseEndIndex then
+                            break;
+                        end
+                        local info = self._itemsInfo[tempIndex]
+                        if not info then
+                            info = {}
+                            self._itemsInfo[tempIndex] = info
+                        end
+                      
+                        local item = self:renderItem(tempIndex,info)
+                        
+                        info.pos = cc.p(tempWidth,nextItemY)
+                        tempWidth = tempWidth + info.size.width
+                     
+                        item:setPosition(info.pos)
+                    end
+                    
+                else
+                    self._endIndex = i + self._multiItems - 1
+                    if self._endIndex > self._baseEndIndex then
+                        self._endIndex = self._baseEndIndex
+                    end
+                    
+                    --判断是否需要增加listview的高度
+                    if self._curHeight < math.abs(nextItemY - self._baseRootY) then
+                        if self._endIndex == self._baseEndIndex then
+                            self._curHeight = math.abs(nextItemY - self._baseRootY) + self._curOffset
+                        else
+                            self._curHeight = math.abs(nextItemY - self._baseRootY)
+                        end
+                       
+                        -- if self._curHeight > self._height then
+                        --     self._canDragY = true
+                        -- end
+                        -- self.draglist:initListHeight(self.curHeight,false)
+                    end
+                    break;
+                end
+            else
+                print (">>> onScroll 2 err info is nil  index ",i)
+                --info 为空 表示尚未有该index的信息
+            end
+        end
+    else
+        if self._startIndex == self._baseStartIndex then
+            self._listViewImp.setItemVisible(self)
+            return
+        end
+        local endIndex = self._endIndex - (self._endIndex-1) % self._multiItems
+        for i = endIndex , self._startIndex,-self._multiItems do
+            local info = self._itemsInfo[i]
+            if info then
+                --负数比较
+                if info.pos.y - self._baseRootY < bottom then
+                    --超过下边界 回收掉
+                    self:addItemToCache(i, info)
+                    for k = 1,self._multiItems-1 do
+                        if i + k <= self._baseEndIndex then
+                            local tempInfo = self._itemsInfo[i + k]
+                            self:addItemToCache(i + k, tempInfo)
+                        end
+                    end
+                else
+                    self._endIndex = i + self._multiItems - 1
+                    if self._endIndex > self._baseEndIndex then
+                        self._endIndex = self._baseEndIndex
+                    end
+                    break;
+                end
+            else
+                print (">>> onScroll 3 err info is nil  index ",i)
+                --info 为空 表示尚未有该index的信息
+            end
+        end
+
+        for i = self._startIndex,self._baseStartIndex,-self._multiItems do
+            local preInfo = self._itemsInfo[i]
+            if preInfo then
+                if top > preInfo.pos.y - self._baseRootY and i > self._baseStartIndex then
+                    local tempWidth = 0
+                    for k = self._multiItems,1, -1 do
+                        local tempIndex = i - k
+                        if tempIndex < self._baseStartIndex then
+                            -- print("error  tempIndex < self._baseStartIndex")
+                            break;
+                        end
+                        -- print("create 2 index ",tempIndex)
+                        local info = self._itemsInfo[tempIndex]
+                        if not info then
+                            info = {}
+                            self._itemsInfo[tempIndex] = info
+                        end
+                      
+                        local item = self:renderItem(tempIndex,info)
+                        info.pos = cc.p(tempWidth, preInfo.pos.y + info.size.height)
+                        tempWidth = tempWidth + info.size.width
+                        item:setPosition(info.pos)
+                    end
+                  
+                else
+                    self._startIndex = i
+                    if preInfo.pos.y > self._baseRootY then
+                        local dty= preInfo.pos.y - self._baseRootY
+                        if self._startIndex == self._baseStartIndex then
+                            self._baseRootY = preInfo.pos.y + self._curOriginOffset
+                            dty = dty + self._curOriginOffset
+                        else
+                            self._baseRootY = preInfo.pos.y
+                        end
+
+                        self._curHeight = self._curHeight + dty
+                        
+                        -- print("----------rrrr-------------")
+                        self._dragY = self._dragY + dty
+                        self._content:setPositionY(self._height - self._baseRootY)
+                        self:setBaseNodePosY(self._dragY)
+                        --记录一次改变 _baseRootY  避免计算速度时 错误
+                        self._dChangeBaseRootY = dty
+                    end
+                    break
+                end
+            else
+                print (">>> onScroll 4 err info is nil  index ",i)
+            end
+        end
+           
+    end
+    self._listViewImp.setItemVisible(self)
+end
+
+
+
+function QVerticalListViewImp:checkNeedScroll(  )
+    if self._canDragY then
+        if self._dragY < 0 or self._curHeight <= self._height then
+            self:startScrollToPosScheduler(0 - self._dragY,0.3,true)
+            if self._scrollBeginCallBack then
+                self._scrollBeginCallBack()
+            end
+        elseif self._dragY > self._curHeight - self._height then
+            self:startScrollToPosScheduler(self._curHeight - self._height - self._dragY,0.3,true)
+            if self._scrollEndCallBack then
+                self._scrollEndCallBack()
+            end
+        elseif self._speedY and self._speedY ~= 0 then
+            local distance = self._speedY / 4
+            self:startScrollToPosScheduler(distance,2)
+        else
+            self._listViewImp.scrollBarFadeOut(self)
+        end
+    end
+end
+
+function QVerticalListViewImp:checkCanTouch( )
+    -- body
+    if self._shieldTouch then
+        return false
+    end
+    if self._startScrollToIndex then
+        return false
+    end
+
+    if self._scrollToPosCanNotTouchStop then
+        return false
+    end
+    return true
+end
+
+function QVerticalListViewImp:onTouchBegin(x, y)
+
+    local p = self:convertToNodeSpace(cc.p(x,y))
+    if not cc.rectContainsPoint(self._rect,p) then
+        return false
+    end
+
+    self._dragMode = false
+    self._curGesture = nil 
+
+    self._canTouch = self._listViewImp.checkCanTouch(self)
+    if not self._canTouch then
+        return
+    end
+
+    self:stopScrollToPosScheduler()
+    
+    self:calculateTouchIndex(x,y)
+
+    local idx = self._curTouchIndex
+    if self._unTouchRegionNodeArr[idx] then
+        local arr = self._unTouchRegionNodeArr[idx]
+        for key, v in pairs(arr) do
+            if ListView.doBtnPressIn(x, y, v) then
+                return false
+            end
+        end
+    end
+
+    self:doTouchBegin(x, y)
+    self:doPressIn(x, y)
+    
+    self._listViewImp.startSpeedScheduler(self)
+    self._lastPressX = x
+    self._lastPressY = y
+    self._firstPressPosX = x
+    self._firstPressPosY = y
+
+    self:startLongPressScheduler()
+
+
+    return true
+end
+
+
+
+function QVerticalListViewImp:onTouchMove(x, y)
+    if not self._canTouch or not self._touchBeganRet then
+        return
+    end
+
+    local dx = x - self._lastPressX
+    local dy = y - self._lastPressY
+    -- local now = q.time()
+    -- self._lastTime = now
+
+    if not self._dragMode then
+        local x2 = (x - self._firstPressPosX) * (x - self._firstPressPosX)
+        local y2 =  (y - self._firstPressPosY) * (y - self._firstPressPosY)
+
+        local dis = math.sqrt( x2 + y2 )
+        if dis > 10 then
+            if x2 >= y2 then
+                self._curGesture = ListView.GESTURE_H
+            else
+                self._curGesture = ListView.GESTURE_V
+            end
+            self:doCancelPressIn(x,y)
+            self._curTouchNodeName = nil
+            self:stopLongPressScheduler()
+        end
+        if dis > 10 and self._canDragY and not self._dragMode then
+            self._dragMode = true
+        end
+    end
+
+    self:doTouchMove(x, y)
+
+    if self._canNotTouchMove then
+        return
+    end
+
+    if self._dragMode then
+        --阴影显示逻辑
+        local coefficient = 1
+        if self._dragY > self._curHeight - self._height then
+            coefficient = self._endRate * ( 1 - ( self._dragY - (self._curHeight - self._height) ) / self._height )
+        elseif self._dragY < 0 then
+            coefficient = self._endRate * ( 1 - (- self._dragY) / self._height )
+        end
+        dy = dy * coefficient
+        self._dragY = self._dragY + dy
+
+        self:setBaseNodePosY(self._dragY)
+        if dy > 0 then
+            self._isUp = true 
+        else
+            self._isUp = false 
+        end
+        self._listViewImp.onScroll(self)
+    end
+    self._lastPressX = x
+    self._lastPressY = y
+end
+
+function QVerticalListViewImp:onTouchEnd(x, y)
+    if not self._canTouch or not self._touchBeganRet then
+        return
+    end
+    self._canTouch = false
+    self._touchBeganRet = false
+    self:doTouchEnd(x, y)
+    self:doCancelPressIn(x,y)
+    self:doClickIn(x,y)
+    self._dragMode = false
+    self._curGesture = nil
+    self._listViewImp.stopSpeedScheduler(self)
+    self._listViewImp.checkNeedScroll(self)
+    self:stopLongPressScheduler()
+    self:resetTouchIndex()
+end
+
+function QVerticalListViewImp:clearAllItems( isCleanUp )
+    -- body
+    self._listViewImp.stopSpeedScheduler(self)
+    self:stopLongPressScheduler()
+    self:stopScrollToPosScheduler()
+    self:stopScrollToIndex()
+    
+    if isCleanUp then
+        self:removeAllChildren()
+        self._cacheNodes = {}
+        self._stencilLayer = nil
+        self._baseRootNode = nil
+        self._touchLayer = nil
+        self._leftShadow = nil
+        self._rightShadow = nil
+    else
+        for i = self._startIndex,self._endIndex do
+            local info = self._itemsInfo[i]
+            self:addItemToCache(i, info)
+        end
+        self:setBaseNodePosY(0)
+    end
+    self._canDragY = false
+    self._curHeight = 0
+    self._baseStartIndex = 1
+    self._baseEndIndex = 0
+    self._totalNumber = 0
+    self._startIndex = self._baseStartIndex
+    self._endIndex = self._baseEndIndex
+    self._dragY = 0
+    self._itemsInfo = {}
+    self:clearAllClickHandler()
+    self:clearAllTouchHandler()
+    self._curTouchIndex = nil
+    self._curTouchNodeName = nil
+    self._startScrollToIndex = nil
+    self:unregisterTouchBlankHandler()
+end
+
+function QVerticalListViewImp:scrollToIndexOnFrame( dt )
+    -- body
+    if self._startScrollToIndex then
+        -- local speed = self._scrollToIndexSpeed
+        -- self._dragY = self._baseRootNode:getPositionY()
+        local dy = self._scrollToIndexSpeed
+        local index = self._scrollToIndexTargetIndex
+        if  index >= self._startIndex and index <= self._endIndex then
+            local info = self._itemsInfo[index]
+            local y = info.pos.y - self._baseRootY 
+            if self._scrollToIndexIsTail then 
+                self._scrollToIndexTargetPos = (self._height + y - info.size.height)*-1
+                -- if y > - self._height then
+                if self._scrollToIndexTargetPos < 0 then -- 修改界面上显示三个cell的时候，第三个不会滑动到底部
+                    self._scrollToIndexTargetPos = 0
+                end
+            else
+                self._scrollToIndexTargetPos = (y)*-1
+                if y < self._height - self._curHeight then
+                    self._scrollToIndexTargetPos = self._curHeight - self._height
+                end
+            end
+
+            if self._scrollToIndexTargetPos - self._dragY > 0 then
+                self._isUp = true
+            elseif self._scrollToIndexTargetPos - self._dragY < 0 then
+                self._isUp = false
+            else
+                self:stopScrollToIndex()
+                self._listViewImp.scrollBarFadeOut(self)
+                
+                return
+            end
+        else
+            if index > self._endIndex then
+                self._isUp = true
+            else
+                self._isUp = false
+            end
+
+        end
+
+        if self._scrollToIndexTargetPos ~= nil then
+            local det = self._scrollToIndexTargetPos - self._dragY
+            if  math.abs(det) < dy  then
+                dy = math.abs(det)
+            end
+        end
+        if self._isUp then
+            self._dragY = self._dragY + dy
+        else
+            self._dragY = self._dragY - dy
+        end
+        self:setBaseNodePosY(self._dragY)
+        self._listViewImp.onScroll(self)
+    end
+end
+
+--[[
+    水平滚动
+]]
+
+function QHorizontalListViewImp:initListView(  )
+    -- body
+    self._dragX = 0
+    self._lastDragX = 0
+    -- self._dChangeBaseRootY = 0
+    self._curWidth = 0
+    self._canDragX = false
+    self._baseRootX = 0
+    self._cacheLimit = self._width * self._cacheCond
+    local leftWidth = 0
+    local rightWidth = 0
+    
+    local limit1,limit2
+    local index 
+    local tailIndex = self._tailIndex
+
+    if tailIndex then
+
+        if tailIndex > self._baseEndIndex then
+            tailIndex = self._baseEndIndex
+        end
+
+        limit1 = self._width + self._cacheLimit
+        limit2 = self._cacheLimit
+        index = tailIndex + self._multiItems
+    else
+        limit1 = self._cacheLimit
+        limit2 = self._width + self._cacheLimit
+        index = self._headIndex
+        if not index or index < self._baseStartIndex then
+            index = self._baseStartIndex
+        end
+
+        if index > self._baseEndIndex then
+            index = self._baseStartIndex
+        end
+    end
+    if self._multiItems ~= 1 then
+        index = index - (index -1)%self._multiItems
+    end
+
+  
+    if self._totalNumber ~= 0 then
+        for i = index - self._multiItems, self._baseStartIndex, -self._multiItems  do
+            local tempWidth = 0
+            local height = 0
+            for k = 0,self._multiItems -1,1 do
+                local tempIndex = i+k
+              
+                local info = {}
+                self._itemsInfo[tempIndex] = info
+
+                local item = self:renderItem(tempIndex,info)
+                local posx = -leftWidth - info.size.width
+                local posy = height
+
+                tempWidth = math.max(info.size.width,tempWidth)
+                height = height - info.size.height
+                info.pos = cc.p(posx,posy)
+                item:setPosition(info.pos)
+            end
+            limit1 = limit1 - tempWidth
+            leftWidth = leftWidth + tempWidth        
+            if limit1 <= 0 then
+                self._startIndex = i
+                break;
+            end
+        end
+    end
+
+    if limit1 > 0 then
+        self._startIndex = self._baseStartIndex
+    end
+    for i = index,self._baseEndIndex, self._multiItems do
+        local tempWidth = 0
+        local height = 0
+        for k = 0,self._multiItems -1,1 do
+            local tempIndex = i+k
+            if tempIndex > self._baseEndIndex then
+                break
+            end
+
+            local info = {}
+            self._itemsInfo[tempIndex] = info
+
+            local item = self:renderItem(tempIndex,info)
+            local posx = rightWidth
+            local posy = height
+
+            tempWidth = math.max(info.size.width,tempWidth)
+            height = height - info.size.height
+            info.pos = cc.p(posx,posy)
+
+            item:setPosition(info.pos)
+        end
+        limit2 = limit2 - tempWidth
+        rightWidth = rightWidth + tempWidth
+
+        if limit2 <= 0 then
+            self._endIndex = i + self._multiItems - 1
+            if self._endIndex > self._baseEndIndex then
+                self._endIndex = self._baseEndIndex
+            end
+            break;
+        end
+    end
+    if limit2 > 0 then
+        self._endIndex = self._baseEndIndex
+    end
+
+    if self._startIndex == self._baseStartIndex then
+        leftWidth = leftWidth + self._curOriginOffset
+    end
+
+    if self._endIndex == self._baseEndIndex then
+        rightWidth = rightWidth + self._curOffset
+    end
+    self._baseRootX = -leftWidth
+    self._curWidth = leftWidth + rightWidth
+
+    if tailIndex then
+        if leftWidth > self._width then
+            self._dragX = self._width - leftWidth
+        end
+    else
+        if rightWidth < self._width then
+            -- and self._startIndex ~= self._baseStartIndex
+            if self._width - rightWidth < leftWidth  then
+                self._dragX = self._width - self._curWidth
+            end
+        else
+            if self._startIndex == self._baseStartIndex then
+                self._dragX = -(leftWidth - self._curOriginOffset)
+            else
+                self._dragX = -leftWidth
+            end
+            
+        end
+    end
+    if self._curWidth >= self._width or self._ignoreCanDrag then
+        self._canDragX = true
+    end
+
+    if self._autoCenter and self._curWidth < self._width and not self._ignoreCanDrag then
+        local offset = self._autoCenterOffset or 0
+        self._dragX = (self._width - self._curWidth)/2 + offset
+    end
+
+    self._baseRootNode:setPosition(self._dragX,self._height)
+    self._content:setPositionX(-self._baseRootX)
+
+    if self._enableShadow and not self._leftShadow and not self._rightShadow then
+        self._listViewImp.initShadow(self)
+    end
+    self._listViewImp.showShadow(self)
+
+    if self._enableScrollBar then
+        self._listViewImp.initScrollBar(self)
+    end
+
+    self._listViewImp.setItemVisible(self)
+end
+
+function QHorizontalListViewImp:initShadow(  )
+    -- body
+
+    self._leftShadow = cc.LayerGradient:create(cc.c4b(58, 22, 0, 255), cc.c4b(0, 0, 0, 0), cc.p(1, 0))
+    self._leftShadow:setPosition(0, 0)
+    self._leftShadow:setContentSize(CCSize(25, self._height))
+
+    self._rightShadow = cc.LayerGradient:create(cc.c4b(58, 22, 0, 255), cc.c4b(0, 0, 0, 0), cc.p(-1, 0))
+    self._rightShadow:setPosition(self._width - 25, 0)
+    self._rightShadow:setContentSize(CCSize(25, self._height))
+
+    self:addChild(self._leftShadow)
+    self:addChild(self._rightShadow)
+
+end
+function QHorizontalListViewImp:showShadow(  )
+    -- body
+    if self._enableShadow then
+        if self._canDragX then
+            if self._dragX < 0 then
+                if not self._isRollBack then
+                    self._leftShadow:setVisible(true)
+                end
+            else
+                self._leftShadow:setVisible(false)
+            end
+            if self._dragX > self._width - self._curWidth then
+                if not self._isRollBack then
+                    self._rightShadow:setVisible(true)
+                end
+            else
+                self._rightShadow:setVisible(false)
+            end
+        else
+            self._leftShadow:setVisible(false)
+            self._rightShadow:setVisible(false)
+        end
+    end
+end
+
+function QHorizontalListViewImp:initScrollBar(  )
+
+    self._scrollBarIsFadeIn = false
+    self._scrollBarIsFadeOut = false
+    if not self._scrollBarParentNode and not self._scrollBar then
+        local parentNode = CCNode:create()
+        local scrollBarBg,scrollBar
+
+        scrollBarBg = ccui.Scale9Sprite:create("ui/common/xialatiao_hei.png",cc.rect(0, 0, 18, 46), cc.rect(18, 22, 0, 2))
+        scrollBar = ccui.Scale9Sprite:create("ui/common/xialatiao_gundong.png")
+        parentNode:addChild(scrollBarBg)
+        parentNode:addChild(scrollBar)
+        scrollBarBg:setRotation(90)
+        scrollBarBg:setAnchorPoint(1,0)
+        scrollBarBg:setContentSize(CCSizeMake(5,self._width))
+
+        scrollBar:setAnchorPoint(1,0)
+        scrollBar:setRotation(90)
+
+        parentNode:setPosition(self._scrollBarPos)
+        parentNode:setCascadeOpacityEnabled(true)
+        self:addChild(parentNode)
+
+        self._scrollBarBg = scrollBarBg
+        self._scrollBar = scrollBar
+        self._scrollBarParentNode = parentNode
+    end
+
+    local rt = self._scrollBar:getBoundingBox()
+    self._scrollBarWidth = rt.width
+    self._scrollBarBaseScaleX = self._scrollBar:getScaleX()
+    local angle = self._scrollBar:getRotation()
+    if angle == 90 or angle == 270 then
+        self._scrollBarScaleReverse = true
+    end
+    self._scrollBarParentNode:setOpacity(255)
+end
+
+function QHorizontalListViewImp:scrollBarFadeIn(  )
+    -- body
+    if self._enableScrollBar and self._canDragX then
+        if self._scrollBarParentNode:getOpacity() ~= 255 and self._scrollBarIsFadeIn == false then
+            self._scrollBar:setScaleY(1)
+            if self._scrollBarIsFadeOut then
+                self._scrollBarParentNode:stopAllActions()
+                self._scrollBarIsFadeOut = false
+            end
+            self._scrollBarIsFadeIn = true
+            local fade = cc.FadeIn:create(0.5)
+            local func = cc.CallFunc:create(function()
+                self._scrollBarIsFadeIn = false
+            end)
+            local s1 = cc.Sequence:create(fade, func)
+            self._scrollBarParentNode:runAction(s1)
+        end
+        if self._dragX > 0 then
+            self._scrollBar:setPositionX(0)
+            if self._scrollBarScaleReverse then
+                self._scrollBar:setScaleY((1 - math.abs(self._dragX/self._width)) * self._scrollBarBaseScaleX)
+            else
+                self._scrollBar:setScaleX((1 - math.abs(self._dragX/self._width)) * self._scrollBarBaseScaleX)
+            end
+        elseif self._dragX < self._width - self._curWidth then
+            local scaleX = 1 - math.abs((self._dragX - self._width + self._curWidth)/self._width)
+            if self._scrollBarScaleReverse then
+                self._scrollBar:setScaleY(scaleX * self._scrollBarBaseScaleX)
+            else
+                self._scrollBar:setScaleX(scaleX * self._scrollBarBaseScaleX)
+            end
+            self._scrollBar:setPositionX(self._width - self._scrollBarWidth * scaleX) 
+        else
+            self._scrollBar:setPositionX((self._width - self._scrollBarWidth) * (math.abs(self._dragX/(self._width - self._curWidth))))
+        end
+    end
+end
+
+
+function QHorizontalListViewImp:scrollBarFadeOut(  )
+    if self._enableScrollBar and self._scrollBarIsFadeOut == false then
+        if self._scrollBarIsFadeIn then
+            self._scrollBarParentNode:stopAllActions()
+            self._scrollBarIsFadeIn = false
+        end
+        self._scrollBarIsFadeOut = true
+        local fade = cc.FadeOut:create(0.5)
+        local func = cc.CallFunc:create(function()
+            self._scrollBarIsFadeOut = false
+        end)
+        local s1 = cc.Sequence:create(fade, func)
+        self._scrollBarParentNode:runAction(s1)
+    end
+end
+
+function QHorizontalListViewImp:startSpeedScheduler(  )
+    -- body
+    self._speedScheduler = true
+    self._speedX = 0
+    self._speedCountX = 0
+    self._lastDragX = self._dragX
+end
+
+function QHorizontalListViewImp:stopSpeedScheduler(  )
+    -- body
+    self._speedScheduler = nil
+    self._lastDragX = nil
+    self._speedCountX = nil
+end
+
+function QHorizontalListViewImp:getSpeedOnFrame( dt )
+    -- body
+    if self._speedScheduler then
+        local dx = self._dragX - self._lastDragX 
+        if self._dChangeBaseRootX then
+            dx = dx - self._dChangeBaseRootX
+            self._dChangeBaseRootX = nil
+        end
+        local speedX = dx/dt
+        if math.abs(speedX) < 1000 then
+            self._speedCountX = self._speedCountX + 1
+        else
+            self._speedCountX = 0
+        end
+        if self._speedCountX > 12 then
+            self._speedX = 0
+        else
+            self._speedX = (self._speedX + speedX)/2
+        end
+        self._lastDragX = self._dragX
+    end
+end
+
+
+
+function QHorizontalListViewImp:scrollToPosOnFrame(dt)
+    -- body
+    if self._startScrollToPos then
+        --CCEaseBackOut
+        local tempPercent,percent,dPercent
+        self._scrollTime = self._scrollTime + dt
+
+        local ft = self._scrollTime/self._scrollToPosTotalTime > 1 and 1 or self._scrollTime/self._scrollToPosTotalTime
+        if self._isRollBack then
+            local tempPercent = ft - 1
+            percent = tempPercent*tempPercent*((1.70158 + 1)*tempPercent + 1.70158) + 1
+
+        else
+            percent = ft >= 1 and 1 or 1 - math.pow(2, -10 * ft)
+        end
+        dPercent = percent - self._lastPercent
+        self._lastPercent = percent
+        local dx = self._targetDistance * dPercent
+       
+        if dx < 0 then
+            self._isLeft = true
+            if dx < -self._width then
+                dx = -self._width
+            end
+        else
+            self._isLeft = false
+            if dx > self._width then
+                dx = self._width
+            end
+        end
+        self._dragX = self._dragX + dx
+
+        self:setBaseNodePosX(self._dragX)
+        self._listViewImp.onScroll(self)
+        if not self._isRollBack then
+            if self._dragX > 0  then
+                self:startScrollToPosScheduler(0 - self._dragX,0.3,true)
+            elseif self._dragX < self._width - self._curWidth then
+                self:startScrollToPosScheduler(self._width - self._curWidth - self._dragX ,0.3,true)
+               
+            elseif self._scrollTime >= self._scrollToPosTotalTime then
+                self:stopScrollToPosScheduler()
+            end
+        else
+            if self._scrollTime >= self._scrollToPosTotalTime then
+                self:stopScrollToPosScheduler()
+            end
+        end
+
+    end
+end
+
+function QHorizontalListViewImp:setItemVisible(  )
+    local viewLeft = - self._dragX
+    local viewRight = -self._dragX + self._width
+    for i = self._startIndex, self._endIndex, self._multiItems do
+        local info = self._itemsInfo[i]
+        if info.pos.x + info.size.width - self._baseRootX < viewLeft or info.pos.x  - self._baseRootX > viewRight then
+            for k = 0,self._multiItems - 1,1 do
+                local tempIndex = i + k
+                if tempIndex > self._endIndex then
+                    break;
+                end
+                local tempInfo = self._itemsInfo[i + k]
+                tempInfo.item:setVisible(false)
+            end
+        else
+            for k = 0,self._multiItems - 1,1 do
+                local tempIndex = i + k
+                if tempIndex > self._endIndex then
+                    break;
+                end
+                local tempInfo = self._itemsInfo[i + k]
+               tempInfo.item:setVisible(true)
+            end 
+        end
+    end
+end
+
+
+function QHorizontalListViewImp:onScroll(  )
+    -- body
+    self._listViewImp.showShadow(self)
+    self._listViewImp.scrollBarFadeIn(self)
+
+    local left = -self._cacheLimit - self._dragX
+    local right = -self._dragX + self._cacheLimit + self._width
+    -- print("left  ",left,"right ",right, "self._isLeft  ",self._isLeft)
+    -- print("self._startIndex  ",self._startIndex,"self._endIndex ",self._endIndex,"self._dragX  ",self._dragX)
+    --向上滑动
+    if self._isLeft then
+
+        if self._endIndex == self._baseEndIndex then
+            self._listViewImp.setItemVisible(self)
+            return
+        end
+
+        for i = self._startIndex,self._endIndex,self._multiItems do
+            local info = self._itemsInfo[i]
+            if info then
+                local nextItemX = info.pos.x + info.size.width
+                  -- print("left   ",left, "nextItemX " ,nextItemX,"nextItemX - self._baseRootX ",nextItemX - self._baseRootX)
+                --超过上边界 回收掉
+                if left > nextItemX - self._baseRootX then
+                    -- print("recycle 1 index ",i)
+                    self:addItemToCache(i, info)
+                    for k = 1,self._multiItems -1 do
+                        local tempIndex = i + k
+                        if tempIndex > self._endIndex then
+                            break
+                        end
+                        local tempInfo = self._itemsInfo[tempIndex]
+                        -- print("recycle  1 index ",tempIndex)
+                        self:addItemToCache(tempIndex, tempInfo)
+                    end
+                else
+                    self._startIndex = i
+                    break
+                end
+            else
+                print (">>> onScroll 1 err info is nil  index ",i)
+                --info 为空 表示尚未有该index的信息
+            end
+        end
+        -- local endIndex = math.ceil(self._baseEndIndex / self._multiItems) * self._multiItems
+         --  渲染新的节点 
+        local endIndex = self._endIndex - (self._endIndex-1) % self._multiItems
+
+        for i = endIndex, self._baseEndIndex, self._multiItems do
+        -- print("i   ",i,"self._baseEndIndex   ",self._baseEndIndex)
+            local preInfo = self._itemsInfo[i]
+            if preInfo then
+                local nextItemX = preInfo.pos.x + preInfo.size.width 
+                if nextItemX - self._baseRootX < right and i < self._baseEndIndex then
+                    --渲染新的节点
+                    local tempHeight = 0
+                    for k = 0, self._multiItems-1 do
+                        local tempIndex = i + self._multiItems + k
+                        if tempIndex > self._baseEndIndex then
+                            break;
+                        end
+                        -- print("create 1 index ",tempIndex)
+                        local info = self._itemsInfo[tempIndex]
+                        if not info then
+                            info = {}
+                            self._itemsInfo[tempIndex] = info
+                        end
+                      
+                        local item = self:renderItem(tempIndex,info)
+                        
+                        info.pos = cc.p(nextItemX, tempHeight)
+                        tempHeight = tempHeight - info.size.height
+                     
+                        item:setPosition(info.pos)
+                    end
+                    
+                else
+                    self._endIndex = i + self._multiItems - 1
+                    if self._endIndex > self._baseEndIndex then
+                        self._endIndex = self._baseEndIndex
+                    end
+                    
+                    --判断是否需要增加listview的高度
+                    if self._curWidth < math.abs(nextItemX - self._baseRootX)then
+
+                        if self._endIndex == self._baseEndIndex then
+                            self._curWidth = math.abs(nextItemX - self._baseRootX) + self._curOffset
+                        else
+                            self._curWidth = math.abs(nextItemX - self._baseRootX)
+                        end
+                       
+                    end
+                    break;
+                end
+            else
+                print (">>> onScroll 2 err info is nil  index ",i)
+                --info 为空 表示尚未有该index的信息
+            end
+        end
+    else
+        if self._startIndex == self._baseStartIndex then
+            self._listViewImp.setItemVisible(self)
+            return
+        end
+        
+        local endIndex = self._endIndex - (self._endIndex-1) % self._multiItems
+        for i = endIndex , self._startIndex,-self._multiItems do
+            local info = self._itemsInfo[i]
+            if info then
+                --负数比较
+                if info.pos.x - self._baseRootX > right then
+                    --超过下边界 回收掉
+                    -- print("recycle 2 index ",i)
+                    self:addItemToCache(i, info)
+                    for k = 1,self._multiItems-1 do
+                        if i + k <= self._baseEndIndex then
+                            local tempInfo = self._itemsInfo[i + k]
+                            -- print("recycle 2 index ",i - k)
+                            self:addItemToCache(i + k, tempInfo)
+                        end
+                    end
+                else
+                    self._endIndex = i + self._multiItems - 1
+                    if self._endIndex > self._baseEndIndex then
+                        self._endIndex = self._baseEndIndex
+                    end
+                    break;
+                end
+            else
+                print (">>> onScroll 3 err info is nil  index ",i)
+                --info 为空 表示尚未有该index的信息
+            end
+        end
+
+        for i = self._startIndex,self._baseStartIndex,-self._multiItems do
+            local preInfo = self._itemsInfo[i]
+            if preInfo then
+                if left < preInfo.pos.x - self._baseRootX and i > self._baseStartIndex then
+                    local tempHeight = 0
+                    for k = self._multiItems,1, -1 do
+                        local tempIndex = i - k
+                        if tempIndex < self._baseStartIndex then
+                            -- print("error  tempIndex < self._baseStartIndex")
+                            break;
+                        end
+                        -- print("create 2 index ",tempIndex)
+                        local info = self._itemsInfo[tempIndex]
+                        if not info then
+                            info = {}
+                            self._itemsInfo[tempIndex] = info
+                        end
+                      
+                        local item = self:renderItem(tempIndex,info)
+                        info.pos = cc.p(preInfo.pos.x - info.size.width,tempHeight)
+                        -- print("preInfo.pos.x - info.size.width  ",preInfo.pos.x - info.size.width)
+                        tempHeight = tempHeight - info.size.height
+                        item:setPosition(info.pos)
+                    end
+                  
+                else
+                    self._startIndex = i
+                    if preInfo.pos.x < self._baseRootX then
+                        local dtx= self._baseRootX - preInfo.pos.x
+                        if self._startIndex == self._baseStartIndex then
+                            self._baseRootX = preInfo.pos.x - self._curOriginOffset
+                            dtx = dtx + self._curOriginOffset
+                        else
+                            self._baseRootX = preInfo.pos.x
+                        end
+                        self._curWidth = self._curWidth + dtx   
+                        self._dragX = self._dragX - dtx
+                        self._content:setPositionX(-self._baseRootX)
+                        self:setBaseNodePosX(self._dragX)
+                        --记录一次改变 _baseRootX  避免计算速度时 错误
+                        self._dChangeBaseRootY = -dtx
+                    end
+                    break
+                end
+            else
+                print (">>> onScroll 4 err info is nil  index ",i)
+            end
+        end
+           
+    end
+    self._listViewImp.setItemVisible(self)
+end
+
+
+
+function QHorizontalListViewImp:checkNeedScroll(  )
+   
+    if self._canDragX then
+        if self._dragX > 0 or self._width >= self._curWidth then
+            self:startScrollToPosScheduler(0 - self._dragX,0.3,true)
+            if self._scrollBeginCallBack then
+                self._scrollBeginCallBack()
+            end
+        elseif self._dragX < self._width - self._curWidth then
+            self:startScrollToPosScheduler(self._width - self._curWidth - self._dragX,0.3,true)
+            if self._scrollEndCallBack then
+                self._scrollEndCallBack()
+            end
+        elseif self._speedX and self._speedX ~= 0 then
+            local distance = self._speedX / 4
+            self:startScrollToPosScheduler(distance,2)
+        else
+            self._listViewImp.scrollBarFadeOut(self)
+        end
+    end
+end
+
+
+function QHorizontalListViewImp:checkCanTouch( )
+    -- body
+    if self._shieldTouch then
+        return false
+    end
+    if self._startScrollToIndex then
+        return false
+    end
+    if self._scrollToPosCanNotTouchStop then
+        return false
+    end
+
+    return true
+end
+
+
+function QHorizontalListViewImp:onTouchBegin(x, y)
+    if not cc.rectContainsPoint(self._rect, self:convertToNodeSpace(cc.p(x,y))) then
+        return false
+    end
+    self._dragMode = false
+    self._curGesture = nil
+    -- self._dragX = self._baseRootNode:getPositionX()
+
+    self._canTouch = self._listViewImp.checkCanTouch(self)
+    if not self._canTouch then
+        return
+    end
+      
+   
+    self:stopScrollToPosScheduler()
+
+    self:calculateTouchIndex(x,y)
+
+
+
+    self:doTouchBegin(x, y)
+    self:doPressIn(x,y)
+
+    self._listViewImp.startSpeedScheduler(self)
+    self._lastPressX = x
+    self._lastPressY = y
+    self._firstPressPosX = x
+    self._firstPressPosY = y
+    self:startLongPressScheduler()
+    
+    return true
+end
+
+
+
+function QHorizontalListViewImp:onTouchMove(x, y)
+    if not self._canTouch or not self._touchBeganRet then
+        return
+    end
+
+    local dx = x - self._lastPressX
+    local dy = y - self._lastPressY
+    -- local now = q.time()
+    -- print("dx ",dx,"dx ",dx,"dt ",now - self._lastTime)
+    -- self._lastTime = now
+    
+    if not self._dragMode then
+        local x2 = (x - self._firstPressPosX) * (x - self._firstPressPosX)
+        local y2 = (y - self._firstPressPosY) * (y - self._firstPressPosY)
+
+        local dis = math.sqrt( x2 + y2 )
+        if dis > 10 then
+            if x2 >= y2 then
+                self._curGesture = ListView.GESTURE_H
+            else
+                self._curGesture = ListView.GESTURE_V
+            end
+            self:doCancelPressIn(x,y)
+            self._curTouchNodeName = nil
+            self:stopLongPressScheduler()
+        end
+        if dis > 10 and self._canDragX and not self._dragMode then
+            self._dragMode = true
+        end
+    end
+
+    self:doTouchMove(x, y)
+    
+    if self._canNotTouchMove then
+        return
+    end
+    if self._dragMode then
+        --阴影显示逻辑
+        local coefficient = 1
+        if self._dragX < self._width - self._curWidth then
+            coefficient = self._endRate * ( 1 - ( (self._width - self._curWidth) - self._dragX ) / self._width )
+        elseif self._dragX > 0 then
+            coefficient = self._endRate * ( 1 - (self._dragX) / self._width )
+        end
+        -- print("self._dragX ",self._dragX, "coefficient ",coefficient , "self._curWidth ",self._curWidth, "self._width ",self._width)
+        dx = dx * coefficient
+        self._dragX = self._dragX + dx
+        self:setBaseNodePosX(self._dragX)
+        if dx < 0 then
+            self._isLeft = true 
+        else
+            self._isLeft = false 
+        end
+        self._listViewImp.onScroll(self)
+    end
+    self._lastPressX = x
+    self._lastPressY = y
+end
+
+function QHorizontalListViewImp:onTouchEnd(x, y)
+
+    if not self._canTouch or not self._touchBeganRet then
+        return
+    end
+    self:doTouchEnd(x, y)
+    self:doCancelPressIn(x,y)
+    self:doClickIn(x,y)
+   
+    self._dragMode = false
+    self._curGesture = nil
+    self._listViewImp.stopSpeedScheduler(self)
+    self._listViewImp.checkNeedScroll(self)
+    self:stopLongPressScheduler()
+    self:resetTouchIndex()
+end
+
+function QHorizontalListViewImp:clearAllItems( isCleanUp )
+    -- body
+    self._listViewImp.stopSpeedScheduler(self)
+    self:stopLongPressScheduler()
+    self:stopScrollToPosScheduler()
+    self:stopScrollToIndex()
+    -- print("1111------- self._startIndex ",self._startIndex,"self._endIndex ",self._endIndex)
+    if isCleanUp then
+        self:removeAllChildren()
+        self._cacheNodes = {}
+        self._stencilLayer = nil
+        self._baseRootNode = nil
+        self._touchLayer = nil
+        self._leftShadow = nil
+        self._rightShadow = nil
+    else
+        for i = self._startIndex,self._endIndex do
+            local info = self._itemsInfo[i]
+            self:addItemToCache(i, info)
+        end
+        self:setBaseNodePosX(0)
+    end
+    self._canDragX = false
+    self._curWidth = 0
+    self._baseStartIndex = 1
+    self._baseEndIndex = 0
+    self._totalNumber = 0
+    self._startIndex = self._baseStartIndex
+    self._endIndex = self._baseEndIndex
+    self._dragX = 0
+    self._itemsInfo = {}
+    self:clearAllClickHandler()
+    self:clearAllTouchHandler()
+    self._curTouchIndex = nil
+    self._curTouchNodeName = nil
+    self._startScrollToIndex = nil
+end
+
+function ListView:remove()
+    self:clear(true)
+    cc.Director:getInstance():getEventDispatcher():removeEventListener(self._listener)
+end
+
+function QHorizontalListViewImp:scrollToIndexOnFrame( dt )
+    -- body
+    if self._startScrollToIndex then
+        -- local speed = self._scrollToIndexSpeed
+        -- self._dragX = self._baseRootNode:getPositionX()
+        local dx = self._scrollToIndexSpeed
+        local index = self._scrollToIndexTargetIndex
+        if  index >= self._startIndex and index <= self._endIndex then
+            local info = self._itemsInfo[index]
+            local x = info.pos.x - self._baseRootX
+            if self._scrollToIndexIsTail then 
+                self._scrollToIndexTargetPos = (x  + info.size.width - self._width)*-1
+                if x + info.size.width < self._width then
+                    self._scrollToIndexTargetPos = 0
+                end
+            else
+                self._scrollToIndexTargetPos = -x
+                if x > self._curWidth - self._width then
+                    self._scrollToIndexTargetPos = self._width - self._curWidth 
+                end
+            end
+
+            if self._scrollToIndexTargetPos - self._dragX < 0 then
+                self._isLeft = true
+            elseif self._scrollToIndexTargetPos - self._dragX > 0 then
+                self._isLeft = false
+            else
+                self:stopScrollToIndex()
+                self._listViewImp.scrollBarFadeOut(self)
+                return
+            end
+        else
+            if index > self._endIndex then
+                self._isLeft = true
+            else
+                self._isLeft = false
+            end
+
+        end
+
+        if self._scrollToIndexTargetPos ~= nil then
+            local det = self._scrollToIndexTargetPos - self._dragX
+            if  math.abs(det) < dx  then
+                dx = math.abs(det)
+            end
+        end
+       
+        if self._isLeft then
+            self._dragX = self._dragX - dx
+        else
+            self._dragX = self._dragX + dx
+        end
+
+        self:setBaseNodePosX(self._dragX)
+        self._listViewImp.onScroll(self)
+    end
+end
+
+
+
+return ListView

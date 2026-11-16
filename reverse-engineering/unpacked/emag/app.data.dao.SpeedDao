@@ -1,0 +1,14 @@
+
+local SpeedDao = {}
+
+function SpeedDao:queryAll()
+    local speedArray = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM Speed") do
+        local speedMeta = lt.SpeedMeta.new(row)
+        table.insert(speedArray,speedMeta)
+    end
+    return speedArray
+end
+
+return SpeedDao

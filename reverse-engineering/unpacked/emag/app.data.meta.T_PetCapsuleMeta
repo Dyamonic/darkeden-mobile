@@ -1,0 +1,43 @@
+
+local PetCapsuleMeta = class("PetCapsuleMeta")
+
+
+
+function PetCapsuleMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function PetCapsuleMeta:initWithRow(row)
+    self._id        = row.Id
+    self._type      = row.Type
+    self._skillType = row.SkillType
+    self._param     = row.Param
+    self._image     = row.Image
+    self._image2    = row.Image2
+end
+
+function PetCapsuleMeta:getDesc()
+    if self._skillType == 2 then
+        return string.format(GReadText.KEY_PET_TIPS42, self._param .. "%")
+    else
+        local skillMeta = lt.CacheManager:querySkillMeta(self._param)
+        if skillMeta then
+            return skillMeta:getName()
+        end
+    end
+
+    return ""
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function PetCapsuleMeta:getId() return self._id end
+function PetCapsuleMeta:getType() return self._type end
+function PetCapsuleMeta:getSkillType() return self._skillType end
+function PetCapsuleMeta:getParam() return self._param end
+function PetCapsuleMeta:getImage() return self._image end
+function PetCapsuleMeta:getImage2() return self._image2 end
+
+-- AUTO GENERATED GETTERS END
+return PetCapsuleMeta

@@ -1,0 +1,44 @@
+
+local MapDao = {}
+
+function MapDao:query(mapCode)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM Map WHERE MapCode='%s';", mapCode)) do
+    	local mapMeta = lt.MapMeta.new(row)
+        return mapMeta
+    end
+end
+
+function MapDao:queryByMapCoord(mapCoord)
+    local db = lt.DbManager:getDb()
+    for row in db:nrows(string.format("SELECT * FROM Map WHERE MapCoord='%s';", mapCoord)) do
+    	local mapMeta = lt.MapMeta.new(row)
+        return mapMeta
+    end
+end
+
+function MapDao:queryAll()
+    local mapTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM Map") do
+        local mapMeta = lt.MapMeta.new(row)
+        mapTable[mapMeta:getMapCode()] = mapMeta
+    end
+    return mapTable
+end
+
+function MapDao:queryAllByMapArea()
+    local mapTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM Map") do
+        local mapMeta = lt.MapMeta.new(row)
+        if not mapTable[mapMeta:getMapArea()] then
+            mapTable[mapMeta:getMapArea()] = {}
+        end
+        table.insert(mapTable[mapMeta:getMapArea()], mapMeta)
+    end
+    return mapTable
+end
+
+
+return MapDao

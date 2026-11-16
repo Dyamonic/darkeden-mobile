@@ -1,0 +1,63 @@
+local ActionActor = class("ActionActor", lt.ActionBase)
+
+local CacheManager = lt.CacheManager
+
+function ActionActor:ctor(modelName, actionId, direction, loop, isShadow)
+    self._actionType = self.ACTION_TYPE.HERO
+    self._step = 0.05
+    self._modelName = modelName
+
+    local modelMap = string.split(modelName, "_")
+    local race = tonumber(modelMap[#modelMap-3])
+    if race then
+        self._race = race
+    end
+
+    ActionActor.super.ctor(self, modelName, 0, actionId, direction, loop, isShadow)
+end
+
+function ActionActor:getActionStep(actionId, attackTime)
+    local step = CacheManager:getActionStep(self._race,actionId)
+    if type(step) == "number" then
+        self._step = step / 1000
+    else
+        self._step = 0.05
+    end
+
+    -- yflog:Info("--------->>>>>step: %s--->>>%s--->>%s----->%s",self._modelName, self._race,actionId,self._step)
+    return self._step
+end
+
+-- modelName, actionId, direction
+function ActionActor:loadActionData()
+    local modelName = self._modelName
+
+    local meta = CacheManager:getRoleModelMeta(modelName)
+    if not meta then
+        yflog:Error("RoleModelMeta is nil modelName: %s", modelName)
+        return
+    end
+
+    -- 对应动作文件 .cfpk
+    local fileName = meta:getAction()
+    if self._isShadow then
+        -- 影子文件多个shadow
+        fileName = fileName .. "shadow"
+    end
+
+    -- cfpk文件中对应的modelId
+    local modelId = meta:getModelId()
+
+    self._actionData = lt.ActionManager:getActionData(fileName, modelId)
+
+    local dataFrameArr = self._actionData:getDirection(self._actionId, self._direction)
+    if not dataFrameArr then
+        yflog:Error("ActionActor dataFrameArr is nil modelName:%s", modelName)
+        return
+    end
+
+    self._dataFrameArray = dataFrameArr
+    self._frameCount = #dataFrameArr
+end
+
+return ActionActor

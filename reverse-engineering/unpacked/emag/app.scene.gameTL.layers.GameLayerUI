@@ -1,0 +1,264 @@
+
+local GameLayerUI = class("GameLayerUI", lt.BaseLayer)
+
+local Constant = lt.Constant
+local NtfManager = lt.NtfManager
+local SkillModule = lt.SkillModule
+local RechargeModule = lt.RechargeModule
+local MountModule = lt.MountModule
+
+function GameLayerUI:ctor()
+    GameLayerUI.super.ctor(self)
+
+    self._keyboardTable = nil
+
+    lt.HandlerManager:init()
+
+    -- GM 功能
+    if DEBUG > 0 then
+        if device.platform == "windows" then
+            self:addHelperKeyboardListener()
+        end
+    end
+    if device.platform == "windows" then
+        self:addMoveKeyBoard()
+    end
+end
+
+function GameLayerUI:onClear()
+    lt.LogUtil:debug("GameLayerUI:onClear")
+    self._keyboardTable = nil
+end
+
+function GameLayerUI:onEnter()
+    lt.LogUtil:debug("GameLayerUI:onEnter")
+    self:onTouch(handler(self, self.onTouchEvent), true, true)
+end
+
+function GameLayerUI:onExit()
+    lt.LogUtil:debug("GameLayerUI:onExit")
+    self:removeTouch()
+end
+
+function GameLayerUI:startGame()
+    -- 登录客户端向服务器发送的请求 <请求要在 C_CONFIRM_ON_LOGIN = 101之后>
+    lt.TeamModule:sendMyTeamInfo(true)
+    lt.TaskModule:sendTaskList()            --任务列表
+    lt.FriendModule:sendFriendApplyListReq() -- 申请列表
+    lt.FriendModule:sendFriendListReq()   -- 好友列表
+    lt.PetModule:sendPetList()            --宠物列表
+    lt.ChatModule:sendNumReq()            --聊天次数
+    lt.GuideModule:sendGuideListReq()     --引导列表
+    lt.VipModule:sendVipReq()
+    lt.AchievementModule:sendAchieveListReq()  --成就
+    RechargeModule:onLoginEnterData()    --商业化
+    RechargeModule:sendShoppingMallList()  -- 商场
+    RechargeModule:sendDayDayChargeReward() -- 天天充值
+    lt.EnergyModule:sendQueryEnergy()       --精力系统
+    lt.HolyFightModule:sendWorldBossListReq()--世界boss请求
+    lt.WelfareModule:onLoginEnterData()     --福利
+
+    --发送系统消息
+    lt.ChatModule:sendSystemMsg(GReadText.KEY_WELCOME_TIPS1)
+    local heroData = lt.GameModule:getHeroData()
+    if heroData then
+        local guildId = heroData:getGuildId()
+        local guildDuty = tonumber(heroData:getGuildDuty())
+        if (guildId ~= 0 and guildId ~= "0") and (guildDuty == Constant.GuildDuty.Master or guildDuty == Constant.GuildDuty.ViceMaster) then
+            lt.GuildModule:sendGuildApplyListReq() -- 公会请求
+        end
+    end
+    lt.SevenDayModule:onQuerySevenDayReq()
+    MountModule:onQueryMountReq()
+    MountModule:onQueryHaloReq()
+    lt.TriggerGiftModule:onTriggerGiftReq()
+    lt.RedDotModule:initRedTips()
+end
+
+function GameLayerUI:onUpdate(delta)
+
+end
+
+function GameLayerUI:getControlParam()
+    -- 摇杆
+    local controlParam = nil
+
+    local layerManager = display.getRunningScene():getLayerManager()
+    local controlLayer = layerManager:getControlLayer()
+    local param = controlLayer:getControlParam()
+    if param then
+        controlParam = param
+    end
+
+    if param and param.moveType == Constant.MOVE_RUN then
+        local worldAgent = lt.AgentManager:getWorldAgent()
+        local heroAgent = worldAgent:getHeroAgent()
+        if heroAgent then
+            local mapAgent = worldAgent:getMapAgent()
+
+            local mHero, nHero = heroAgent:getMNExactly()
+            local moveType, moveDirection, mNext, nNext = mapAgent:calcJoyStickMove(mHero, nHero, param.moveType, param.moveDirection)
+            if moveType ~= Constant.MOVE_NONE then
+                -- 清理缓存的状态
+                lt.AgentManager:getWorldAgent():clearMapLinkRouteInfo()
+                lt.AgentManager:getWorldAgent():getMapAgent():clearClickMark()
+                --停止挂机
+                lt.AutoFightManager:endAutoFight()
+                heroAgent:onMessage({msgId=Constant.MSG_MOVE_JOYSTICK, moveType=moveType, moveDirection=moveDirection, mNext=mNext, nNext=nNext})
+            end
+        end
+    end
+
+    -- 技能
+    for _, btnEx in pairs(self._touchBtnTable or {}) do
+        local skillId = Constant:calcSkillId(btnEx:getBtnId())
+        -- local skillMeta = lt.SkillDao:queryDefault(skillId)
+        local skillMeta = lt.CacheManager:querySkillMeta(skillId)
+        if skillMeta and skillMeta:getTouchType() == Constant.SkillTargetType.ONE_AREA then
+            -- 判断冷却
+            if lt.SkillCdManager:isReady(skillId) then
+                -- 清理缓存的状态
+                lt.AgentManager:getWorldAgent():clearMapLinkRouteInfo()
+
+                local worldAgent = lt.AgentManager:getWorldAgent()
+                local heroAgent = worldAgent:getHeroAgent()
+                if heroAgent then
+                    heroAgent:onMessage({msgId=Constant.MSG_SKILL, skillId=skillId})
+                end
+                break
+            end
+        end
+    end
+
+    -- 持续点击地图
+    local param = lt.HandlerManager:getControlParam()
+    if param then
+        controlParam = param
+    end
+
+    if param and param.touchMovePoint and lt.AutoManager:getTouchMove() then
+        local worldAgent = lt.AgentManager:getWorldAgent()
+        local heroAgent = worldAgent:getHeroAgent()
+        if heroAgent then
+            local mapAgent = worldAgent:getMapAgent()
+            local handler = lt.HandlerManager:getHandler()
+
+            local mTarget, nTarget = mapAgent:calcMNInMap(param.touchMovePoint)
+            if handler:isSameTarget(mTarget, nTarget) then
+                return controlParam
+            end
+
+            local mHero, nHero = heroAgent:getMNExactly()
+            local moveType, moveDirection, mNext, nNext = mapAgent:calcTouchMove(mHero, nHero, mTarget, nTarget)
+            if moveType ~= Constant.MOVE_NONE then
+                -- 清理缓存的状态
+                lt.AgentManager:getWorldAgent():clearMapLinkRouteInfo()
+
+                -- 保存当前寻路点，用判断重复查询
+                handler:setRouteTarget(mTarget, nTarget)
+
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_MINIMAP_ROUTE_POS,{posx = mTarget, posy = nTarget})
+                -- heroAgent:onMessage({msgId=Constant.MSG_MOVE_TOUCH, moveType=moveType, moveDirection=moveDirection, mNext=mNext, nNext=nNext})
+
+                return controlParam
+            end
+        end
+    end
+
+
+    return controlParam
+end
+
+-- 点击事件
+function GameLayerUI:onTouchEvent(event)
+    if event.name == "began" or event.name == "added" then
+        return self:onTouchBegan(event)
+    elseif event.name == "moved" then
+        self:onTouchMoved(event)
+    elseif event.name == "ended" or event.name == "cancelled" or event.name == "removed" then
+        self:onTouchEnded(event)
+    end
+end
+
+function GameLayerUI:onTouchBegan(event)
+    for id, point in pairs(event.points) do
+       lt.HandlerManager:onTouchBegan(id, point)
+    end
+    return true
+end
+
+function GameLayerUI:onTouchMoved(event)
+    for id, point in pairs(event.points) do
+        lt.HandlerManager:onTouchMoved(id, point)
+    end
+end
+
+function GameLayerUI:onTouchEnded(event)
+    for id, point in pairs(event.points) do
+        lt.HandlerManager:onTouchEnded(id, point)
+    end
+end
+
+-- Setter && Getter
+function GameLayerUI:setGameLayer(gameLayer)
+    self._gameLayer = gameLayer
+end
+
+
+function GameLayerUI:addHelperKeyboardListener()
+    local EventDispatcher = cc.Director:getInstance():getEventDispatcher()
+	local keyboardListener = cc.EventListenerKeyboard:create()
+
+	local function onKeyReleased(key, event)
+		if key == cc.KeyCode.KEY_2 then
+            self._dialogSystem:openView("UIWndGM", {})
+        end
+    end
+    keyboardListener:registerScriptHandler(onKeyReleased, cc.Handler.EVENT_KEYBOARD_RELEASED)
+	EventDispatcher:addEventListenerWithSceneGraphPriority(keyboardListener, self)
+end
+
+function GameLayerUI:addMoveKeyBoard()
+    if device.platform == "mac" or device.platform == "windows" then
+        local keyboardListener = cc.EventListenerKeyboard:create()
+        keyboardListener:registerScriptHandler(handler(self, self.onKeyboardPressed), cc.Handler.EVENT_KEYBOARD_PRESSED)
+        keyboardListener:registerScriptHandler(handler(self, self.onKeyboardReleased), cc.Handler.EVENT_KEYBOARD_RELEASED)
+        self:getEventDispatcher():addEventListenerWithSceneGraphPriority(keyboardListener, self)
+    end
+end
+
+
+function GameLayerUI:onKeyboardPressed(code)
+    if code == 141 then --R
+        yflog:Info("LUA VM MEMORY USED:%s", collectgarbage("count"))
+        yflog:Info("getCachedTextureInfo:%s",cc.Director:getInstance():getTextureCache():getCachedTextureInfo())
+
+    elseif code == 143 then --T
+        cc.Director:getInstance():getTextureCache():removeUnusedTextures()
+    end
+
+    if not Constant.KEY_VALUE[code] then
+        return
+    end
+    self._keyboardTable = self._keyboardTable or {}
+    self._keyboardTable[code] = true
+    SkillModule:setTouchMoving(true)
+
+    local layerManager = display.getRunningScene():getLayerManager()
+    local controlLayer = layerManager:getControlLayer()
+    controlLayer:setKeyboardTable(self._keyboardTable)
+end
+
+function GameLayerUI:onKeyboardReleased(code)
+    if self._keyboardTable then
+        self._keyboardTable[code] = nil
+    end
+
+    local layerManager = display.getRunningScene():getLayerManager()
+    local controlLayer = layerManager:getControlLayer()
+    controlLayer:setKeyboardTable(self._keyboardTable)
+    SkillModule:setTouchMoving(false)
+
+end
+
+return GameLayerUI

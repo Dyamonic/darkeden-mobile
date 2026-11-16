@@ -1,0 +1,43 @@
+
+local MapAnimationInfo = class("MapAnimationInfo")
+
+MapAnimationInfo._textures = nil
+
+function MapAnimationInfo:ctor(key, dirName, index, animationCount, dir, folder)
+	-- print(key, dirName, index, animationCount)
+	self._textures = {}
+	self._animationCount = animationCount
+
+	local texture = display.loadImage(key)
+	if texture then
+		self._textures[1] = texture
+	end
+
+    for i=1,animationCount-1 do
+        local fileName = string.format("%05d_%d.png", index, i)
+        local folderName = ""
+
+        if folder then
+            folderName = string.format("%03d/", folder)
+        end
+
+        local dirData = lt.MapbinManager:getMapbinInfoByKey(dir, folderName .. fileName)
+
+        local subPath = string.format("%s%s%s", dirName, fileName, dirData)
+        local subTexture = display.loadImage(subPath)
+        if subTexture then
+            self._textures[i+1] = subTexture
+        end
+    end
+end
+
+function MapAnimationInfo:getTexture(index)
+	return self._textures[index % self._animationCount + 1]
+end
+
+function MapAnimationInfo:clear()
+    self._textures = nil
+    self._animationCount = nil
+end
+
+return MapAnimationInfo

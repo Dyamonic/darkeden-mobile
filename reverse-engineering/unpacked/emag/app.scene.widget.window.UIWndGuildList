@@ -1,0 +1,347 @@
+-- 公会列表
+---@class UIWndGuildList:UIWindowBase
+local UIWndGuildList            = class("UIWndGuildList", lt.UIWindowBase)
+
+local NtfManager                = lt.NtfManager
+local GuildModule               = lt.GuildModule
+local GameModule                = lt.GameModule
+local Constant                  = lt.Constant
+local GuideModule               = lt.GuideModule
+local RaceType                  = Constant.RaceType
+local TimeCounter               = lt.TimeCounter
+local CommonFunc                = lt.CommonFunc
+local CacheManager              = lt.CacheManager
+
+UIWndGuildList.ChangeSkinConf   = {
+    ["Guild"] = {
+        ["bg"] = "bg_zhuangbei_beijinban",
+        ["bg_kuang"] = "bg_gonghuixt_02",
+    },
+    ["CommonTL"] = {
+        ["frame"] = {
+            closeButton = { bg = "bg_beibao_anniu01", bgup = "bg_beibao_anniu02" },
+        },
+        ["btn_onekey"] = { icon = "bg_youjian_changanniu02" },
+        ["btn_create"] = { icon = "bg_youjian_changanniu02" },
+        ["btn_apply"] = { icon = "bg_youjian_changanniu02" },
+        ["btn_search"] = { bg = "find" },
+    }
+}
+
+UIWndGuildList.ChangeSkinOffset = {
+    [RaceType.Slayer] = { -- 人
+        ["frame"] = {     -- 863 0
+            closeButton = { x = 0, y = 0 },
+        },
+    },
+    [RaceType.Vampire] = { -- 鬼
+        ["frame"] = {      -- 861 0
+            closeButton = { x = -4, y = 1 },
+        },
+    },
+    [RaceType.Ousters] = { -- 魔
+        -- ["frame"] = { -- 614 20
+        --     closeButton = { x = 5, y = 0 },
+        -- },
+    }
+}
+
+function UIWndGuildList:ctor(param)
+    self:registerComponent("UICompGuildListCell")
+    UIWndGuildList.super.ctor(self, param)
+end
+
+function UIWndGuildList:onShown()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_GUILD_LIST_SELECT, handler(self, self.onGuildListSelect),
+        "UIWndGuildList:onGuildListSelect")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_GUILD_LIST, handler(self, self.onGuildList),
+        "UIWndGuildList:onGuildList")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_GUILD_APPLY_LIST, handler(self, self.onGuildApplyList),
+        "UIWndGuildList:onGuildApplyList")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CHECK_GUIDE_EVENT, handler(self, self.checkGuide),
+        "UIWndGuildList:checkGuide")
+
+    self._btnOnekey:addClickListener(handler(self, self.onBtnFncOnekeyClick))
+    self._btnCreate:addClickListener(handler(self, self.onBtnFncCreateClick))
+    self._btnSearch:addClickListener(handler(self, self.onBtnFncSearchClick))
+    self._btnApply:addClickListener(handler(self, self.onBtnFncApplyClick))
+    self._btnChat:addClickListener(handler(self, self.onBtnFncChatClick))
+    self._btnSort:addClickListener(handler(self, self.onBtnFncSortClick))
+
+    self._btnSort:setSelected(false)
+    self:clearSelect()
+    self._selectItem = nil
+    self._inputTxt:setText("")
+end
+
+function UIWndGuildList:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndGuildList:onGuildListSelect")
+    NtfManager:removeNtfListenerByTag("UIWndGuildList:onGuildList")
+    NtfManager:removeNtfListenerByTag("UIWndGuildList:onGuildApplyList")
+    NtfManager:removeNtfListenerByTag("UIWndGuildList:checkGuide")
+
+    self._btnOnekey:removeClickListener()
+    self._btnCreate:removeClickListener()
+    self._btnSearch:removeClickListener()
+    self._btnApply:removeClickListener()
+    self._btnChat:removeClickListener()
+    self._btnSort:removeClickListener()
+
+    UIWndGuildList.super.onHide(self)
+end
+
+function UIWndGuildList:doShowAnimation()
+    GuildModule:sendGuildListReq("")
+end
+
+function UIWndGuildList:onClear()
+    self._selectItem    = nil
+    self._listGuild     = nil
+    self._lblGuildName  = nil
+    self._lblMasterName = nil
+    self._lblCount      = nil
+    self._lblNotice     = nil
+    self._btnSort       = nil
+    self._inputTxt      = nil
+    self._bgGuildIcon   = nil
+    self._ctl           = nil
+    self._btnOnekey     = nil
+    self._btnCreate     = nil
+    self._btnSearch     = nil
+    self._btnApply      = nil
+    self._btnChat       = nil
+    self:unregisterAllComponent()
+    UIWndGuildList.super.onClear(self)
+end
+
+function UIWndGuildList:onInit()
+    UIWndGuildList.super.onInit(self, _GURL.GuildListPanel)
+    self._listGuild     = self:getChild("list")
+    self._lblGuildName  = self:getChild("lbl_guildName")
+    self._lblMasterName = self:getChild("lbl_masterName")
+    self._lblCount      = self:getChild("lbl_count")
+    self._lblNotice     = self:getChild("lbl_notice")
+    self._btnSort       = self:getChild("btn_sort")
+    self._inputTxt      = self:getChild("input")
+    self._bgGuildIcon   = self:getChild("bg_guildIcon")
+    self._ctl           = self:getController("c1")
+    self._btnOnekey     = self:getChild("btn_onekey")
+    self._btnCreate     = self:getChild("btn_create")
+    self._btnSearch     = self:getChild("btn_search")
+    self._btnApply      = self:getChild("btn_apply")
+    self._btnChat       = self:getChild("btn_link")
+    self._listGuild:setItemRenderer(handler(self, self.renderListItem))
+end
+
+function UIWndGuildList:onGuildListSelect(event)
+    if self._selectItem then
+        self._selectItem:setSelected(false)
+    end
+    local param = event.param
+    self._selectItem = param.data
+    self:refreshInfo()
+end
+
+function UIWndGuildList:clearSelect()
+    if self._selectItem then
+        self._selectItem:setSelected(false)
+    end
+    self._selectItem = nil
+end
+
+function UIWndGuildList:refreshInfo()
+    local info = nil
+    if self._selectItem then
+        self._selectItem:setSelected(true)
+        info = self._selectItem._playerInfo
+    end
+    if not info then
+        return
+    end
+    self._lblGuildName:setText(info and info.guildName or "")
+    self._lblMasterName:setText(info and info.masterName or "")
+    self._lblCount:setText(info and info.curMemberSize or "")
+    local noticeText = info and info.noticeText or ""
+    local notice = noticeText == "" and GuildModule.initNotice or noticeText
+    if lt.ChatModule:isValidString(notice) then
+        notice = lt.ChatModule:wrapText(notice, 244, 20)
+    end
+    self._lblNotice:setText(notice)
+    self._bgGuildIcon:setURL(string.format(_GURL.GetGuildIcon, info and info.icon or ""))
+
+    local appliedGuilds = GuildModule:getMyApplyGuildHash() or {}
+    if info and appliedGuilds[info.guildId] then
+        self._btnApply:setTitle("取消申请")
+    else
+        self._btnApply:setTitle("申请加入")
+    end
+end
+
+function UIWndGuildList:onGuildList()
+    local guildlist = GuildModule:getGuildList()
+    self._listGuild:setNumItems(#guildlist)
+    local index = #guildlist > 0 and 0 or 1
+    self._ctl:setSelectedIndex(index)
+    self._btnSort:setSelected(false)
+    self:clearSelect()
+    self._selectItem = nil
+    if #guildlist > 0 then
+        self._listGuild:scrollToView(0)
+        self._selectItem = self._listGuild:getChildAt(0)
+    end
+    self:refreshInfo()
+end
+
+function UIWndGuildList:onGuildApplyList()
+    self:onGuildList()
+end
+
+function UIWndGuildList:renderListItem(index, obj)
+    local listGuild = GuildModule:getGuildList()
+    local info = listGuild[index + 1]
+    obj:setInfo(info, index + 1)
+end
+
+-- 一键申请
+function UIWndGuildList:onBtnFncOnekeyClick(obj)
+    local heroData = GameModule:getHeroData()
+    local guildTime = heroData:getQuitGuildTime() or 0 --TimeCounter:serverTime() - 60*60*1-1 --
+    guildTime = guildTime + CacheManager:getValueById(Constant.Variable.GuildQuitAndApplyCD)
+    local serverTime = TimeCounter:serverTime() or 0
+    if guildTime > serverTime then
+        timeStr = CommonFunc:getRemainTime(guildTime - serverTime)
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,
+            { content = string.format(GReadText.KEY_GUILD_TIPS33, timeStr) })
+        return
+    end
+
+    local guildList = GuildModule:getGuildList() or {}
+    local count = 0
+    local appliedGuilds = GuildModule:getMyApplyGuildHash() or {}
+
+    for k, v in ipairs(guildList) do
+        if not appliedGuilds[v.guildId] then
+            GuildModule:sendGuildApplyReq(v.guildId)
+            count = count + 1
+            if count == 5 then
+                return
+            end
+        end
+    end
+
+    if count == 0 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_GUILD_TIPS9 })
+        return
+    end
+end
+
+-- 创建公会
+function UIWndGuildList:onBtnFncCreateClick(obj)
+    local myGuildId = GameModule:getHeroData():getGuildId()
+    if myGuildId ~= 0 and myGuildId ~= "0" then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_GUILD_TIPS13 })
+        return
+    end
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndGuildCreate" })
+end
+
+-- 查找公会
+function UIWndGuildList:onBtnFncSearchClick(obj)
+    local guildname = self._inputTxt:getText()
+    if guildname == "" then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_GUILD_TIPS10 })
+        return
+    end
+    local guildList = GuildModule:getGuildList()
+    local key = -1
+    for k, v in ipairs(guildList) do
+        if v.guildName == guildname then
+            key = k
+            break
+        end
+    end
+
+    if key == -1 then
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_GUILD_TIPS11 })
+        return
+    end
+
+    self._listGuild:scrollToView(key - 1)
+    self:clearSelect()
+    self._selectItem = self._listGuild:getChildAt(key - 1)
+    self:refreshInfo()
+end
+
+--申请公会
+function UIWndGuildList:onBtnFncApplyClick(obj)
+    local heroData = GameModule:getHeroData()
+    local guildTime = heroData:getQuitGuildTime() or 0 --TimeCounter:serverTime() - 60*60*1-1 --
+    guildTime = guildTime + CacheManager:getValueById(Constant.Variable.GuildQuitAndApplyCD)
+    local serverTime = TimeCounter:serverTime() or 0
+    if guildTime > serverTime then
+        timeStr = CommonFunc:getRemainTime(guildTime - serverTime)
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,
+            { content = string.format(GReadText.KEY_GUILD_TIPS33, timeStr) })
+        return
+    end
+
+    if self._selectItem then
+        local info = self._selectItem._playerInfo
+        local appliedGuilds = GuildModule:getMyApplyGuildHash() or {}
+        if appliedGuilds[info.guildId] then
+            GuildModule:sendCancelGuildApplyReq(info.guildId)
+        else
+            GuildModule:sendGuildApplyReq(info.guildId)
+        end
+    else
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_GUILD_TIPS17 })
+    end
+end
+
+-- 联系会长
+function UIWndGuildList:onBtnFncChatClick(obj)
+    if self._selectItem then
+        local info = self._selectItem._playerInfo
+        local playerName = info.masterName
+        local myName = GameModule:getHeroData():getName()
+        if playerName == myName then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = GReadText.KEY_GUILD_TIPS16 })
+            return
+        end
+        lt.ChatModule:openChatUI(playerName)
+    end
+end
+
+function UIWndGuildList:onBtnFncSortClick(obj)
+    local isSelected = self._btnSort:isSelected()
+    local type = isSelected and 2 or 1
+
+    GuildModule:sortGuildList(type)
+    local guildlist = GuildModule:getGuildList()
+    self._listGuild:setNumItems(#guildlist)
+    self:clearSelect()
+    if #guildlist > 0 then
+        self._listGuild:scrollToView(0)
+        self._selectItem = self._listGuild:getChildAt(0)
+    end
+    self:refreshInfo()
+end
+
+function UIWndGuildList:onCloseTips()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndGuildList", close = true })
+end
+
+--检查引导
+function UIWndGuildList:checkGuide()
+    --了解公会引导
+    if GuideModule:checkCanGuide(Constant.GUIDE_ID.GUILD4) then
+        local pos = self:displayObject():convertToWorldSpace(self._btnOnekey:getPosition())
+        pos = cc.p(pos.x, pos.y)
+        GuideModule:triggerGuide(Constant.GUIDE_ID.GUILD4, self._btnOnekey, pos, function()
+            self:onBtnFncOnekeyClick()
+        end)
+        return
+    end
+end
+
+return UIWndGuildList

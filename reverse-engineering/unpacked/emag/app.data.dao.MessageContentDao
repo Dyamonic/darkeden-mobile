@@ -1,0 +1,13 @@
+local MessageContentDao = {}
+
+function MessageContentDao:queryAll()
+    local msgContTable = {}
+    local db = lt.DbManager:getDb()
+    for row in db:nrows("SELECT * FROM MessageContent") do
+        local meta = lt.MessageContentMeta.new(row)
+        msgContTable[meta:getId()] = meta
+    end
+    return msgContTable
+end
+
+return MessageContentDao

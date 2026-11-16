@@ -1,0 +1,66 @@
+
+local HeroStateDie = class("HeroStateDie", lt.HeroStateBase)
+
+local AgentManager = lt.AgentManager
+
+HeroStateDie._timeTrigger = nil
+
+function HeroStateDie:ctor(heroAgent, isDead)
+    HeroStateDie.super.ctor(self, heroAgent)
+
+    self._isDead = isDead
+    self._timeTrigger = lt.TimeTrigger.new(0.6)
+
+    self._heroActor = self._heroAgent:getActor()
+    if self._heroActor then
+        self._heroActor:showEffectByLevel(true)
+    end
+end
+
+function HeroStateDie:onClear()
+    HeroStateDie.super.onClear(self)
+end
+
+function HeroStateDie:onEnter()
+    self._heroAgent:playAction(lt.Constant.ACTION_DIE)
+    -- self._heroAgent:setIsOutOfGame(true)
+    -- self._heroAgent:hideNameNode()
+
+    if self._isDead then
+        -- 调整到最后一帧
+        self._heroAgent:lastActionStep()
+    end
+
+    -- 普通移除地图上占用的点 死亡时不占用格子 TODO在当前地复活，需要再把格子占用了
+    -- local mapAgent = lt.AgentManager:getWorldAgent():getMapAgent()
+    -- mapAgent:removeAgentMN(self._heroAgent, self._heroAgent:getMNExactly())
+   
+
+    if self._heroAgent:getIsSelf() then
+        lt.AutoFightManager:endAutoFight()
+    end
+end
+
+function HeroStateDie:onExit()
+end
+
+function HeroStateDie:onUpdate()
+    local deltaTime = lt.GameBoard:getDeltaTime()
+    if self._timeTrigger:tick(deltaTime) then
+        self._heroAgent:changeState(lt.HeroStateDead.new(self._heroAgent))
+        return
+    end
+end
+
+function HeroStateDie:onMessage(msg)
+end
+
+function HeroStateDie:getStateId()
+    return lt.Constant.HERO_STATE_DIE
+end
+
+function HeroStateDie:getStateName()
+    return "HeroStateDie"
+end
+
+return HeroStateDie

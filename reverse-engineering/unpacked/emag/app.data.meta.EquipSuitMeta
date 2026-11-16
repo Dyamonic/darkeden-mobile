@@ -1,0 +1,45 @@
+local EquipSuitMeta = class("EquipSuitMeta")
+
+local CommonFunc = lt.CommonFunc
+
+function EquipSuitMeta:ctor(row)
+	self:initWithRow(row)
+end
+
+function EquipSuitMeta:initWithRow(row)
+    self._idxId         = row.IdxId
+    self._suitName      = row.SuitName
+    self._suitType      = row.SuitType
+    self._componentId   = CommonFunc:analysisJsonToTable(row.ComponentId, true)
+    if row.ATypeSuitBonus == "" then
+        self._aTypeSuitBonus = nil
+    else
+        self._aTypeSuitBonus = json.decode(row.ATypeSuitBonus)
+    end
+    if row.BTpyeSuitBonus == "" then
+        self._bTpyeSuitBonus = nil
+    else
+        self._bTpyeSuitBonus = json.decode(row.BTpyeSuitBonus)
+    end
+end
+
+function EquipSuitMeta:getComponentId()
+    return self._componentId
+end
+
+function EquipSuitMeta:getSuitBonus()
+    local suitBonus = self._suitType == 1 and self._aTypeSuitBonus or self._bTpyeSuitBonus
+    return suitBonus
+end
+
+-- AUTO GENERATED GETTERS START
+-- 以下方法由脚本自动生成，请勿手动修改
+
+function EquipSuitMeta:getIdxId() return self._idxId end
+function EquipSuitMeta:getSuitName() return self._suitName end
+function EquipSuitMeta:getSuitType() return self._suitType end
+function EquipSuitMeta:getATypeSuitBonus() return self._aTypeSuitBonus end
+function EquipSuitMeta:getBTpyeSuitBonus() return self._bTpyeSuitBonus end
+
+-- AUTO GENERATED GETTERS END
+return EquipSuitMeta

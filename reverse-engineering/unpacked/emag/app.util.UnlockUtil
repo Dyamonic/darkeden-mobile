@@ -1,0 +1,114 @@
+
+local UnlockUtil = {}
+
+local GameModule = lt.GameModule
+local NtfManager = lt.NtfManager
+
+UnlockUtil._configTable = {}
+
+function UnlockUtil:init()
+    self._configTable = lt.UnlockDao:query()
+end
+
+function UnlockUtil:clear()
+
+    self._configTable = nil
+end
+
+function UnlockUtil:checkIntervalLevelLock(min, max)
+    if not min or not max then return true end
+    local level = GameModule:getHeroData():getLevel() or 0
+    return tonumber(min) <= level and tonumber(max) >= level
+end
+
+--检查等级
+function UnlockUtil:checkLevelUnlock(condition)
+    if condition == nil then return true end
+    return tonumber(condition) <= (GameModule:getHeroData():getLevel() or 0)
+end
+
+function UnlockUtil:checkServerPhaseUnlock(condition)
+    if condition == nil then return true end
+    -- 服务器 发送
+    local serverPhase = lt.CommonModule:getServerPrase()
+    return tonumber(condition) <= (serverPhase or 0)
+end
+
+function UnlockUtil:checkConfimNameUnLock()
+    return GameModule:getHeroData():hasVerified()
+end
+
+function UnlockUtil:getConfigByUnlockId(id)
+    if id and self._configTable[id] ~= nil then
+        return self._configTable[id]
+    end
+    return nil
+end
+
+--检查等级解锁
+function UnlockUtil:checkUnlockByLevel(oldLevel, newLevel)
+    for _,value in pairs(self._configTable) do
+        if value:getLevel() ~= nil and value:getLevel() > oldLevel and value:getLevel() <= newLevel then
+            self:unlockHandler(value)
+        end
+    end
+end
+
+--当有解锁被动发生时调用
+function UnlockUtil:unlockHandler(config)
+    if config:getKey() == "UNLOCK_UI_CONFIG" then
+        lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_UNLOCK_UICONFIG_EVENT,{config = config})
+    elseif config:getKey() == "UNLOCK_SHIELD" then
+        lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_UNLOCK_HEROINFO_EVENT)
+    end
+    
+    local content = config:getContent()
+    if content ~= "" then
+        lt.ChatModule:sendClientInfo(content,21)
+    end
+end
+
+function UnlockUtil:checkLock(id)
+    local isUnlock = true
+    local config = self:getConfigByUnlockId(id)
+
+    if config == nil then return isUnlock end
+
+    if config:getLevel() ~= nil then 
+        isUnlock = self:checkLevelUnlock(config:getLevel())
+        if isUnlock == false then return false end
+    end
+
+    if config:getServerPhase() ~= nil then
+        isUnlock = self:checkServerPhaseUnlock(config:getServerPhase())
+        if isUnlock == false then return false end
+    end
+
+    return isUnlock
+end
+
+function UnlockUtil:checkOtherLock(id,level)
+    local isUnlock = true
+    local config = self:getConfigByUnlockId(id)
+
+    if config == nil then return isUnlock end
+
+    if config:getLevel() ~= nil then 
+        isUnlock = level > config:getLevel()
+        if isUnlock == false then return false end
+    end
+
+    if config:getServerPhase() ~= nil then
+        isUnlock = self:checkServerPhaseUnlock(config:getServerPhase())
+        if isUnlock == false then return false end
+    end
+
+    return isUnlock
+end
+
+function UnlockUtil:getLockLevel(id)
+    local config = self:getConfigByUnlockId(id)
+    return config:getLevel()
+end
+
+return UnlockUtil

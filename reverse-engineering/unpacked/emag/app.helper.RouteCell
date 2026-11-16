@@ -1,0 +1,75 @@
+
+local RouteCell = class("RouteCell")
+
+RouteCell._m = nil
+RouteCell._n = nil
+RouteCell._g = nil
+RouteCell._h = nil
+RouteCell._parent = nil
+
+function RouteCell:ctor(m, n)
+    self._m = m
+    self._n = n
+    self._g = 0
+    self._h = 0
+    self._parent = nil
+end
+
+function RouteCell:reset()
+    self._m = 0
+    self._n = 0
+    self._g = 0
+    self._h = 0
+    self._parent = nil
+end
+
+function RouteCell:getKey()
+    return self._m + self._n * 10000
+end
+
+-- Setter && Getter
+function RouteCell:getF()
+    return self._g + self._h
+end
+
+function RouteCell:setM(m)
+    self._m = m
+end
+
+function RouteCell:getM()
+    return self._m
+end
+
+function RouteCell:setN(n)
+    self._n = n
+end
+
+function RouteCell:getN()
+    return self._n
+end
+
+function RouteCell:setG(g)
+    self._g = g
+end
+
+function RouteCell:getG()
+    return self._g
+end
+
+function RouteCell:setH(h)
+    self._h = h
+end
+
+function RouteCell:getH()
+    return self._h
+end
+
+function RouteCell:getParent()
+    return self._parent
+end
+
+function RouteCell:setParent(parent)
+    self._parent = parent
+end
+
+return RouteCell
