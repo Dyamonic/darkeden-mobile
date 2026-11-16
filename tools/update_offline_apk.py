@@ -10,6 +10,7 @@ import struct
 import zipfile
 import json
 from android_manifest import remove_device_log_permission
+from android_diagnostics import disable_device_log_collectors
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,6 +40,11 @@ def update(source, target):
                 manifest, removed = remove_device_log_permission(zin.read(name))
                 zout.writestr(name, manifest, compress_type=original.compress_type)
                 print('Removed device-log permissions:', removed)
+                continue
+            if name.startswith('classes') and name.endswith('.dex'):
+                dex, changes = disable_device_log_collectors(zin.read(name))
+                zout.writestr(name, dex, compress_type=original.compress_type)
+                if changes: print('Disabled device-log diagnostic methods:',len(changes))
                 continue
             if name in replacements:
                 zout.writestr(name, replacements[name].read_bytes(), compress_type=original.compress_type)

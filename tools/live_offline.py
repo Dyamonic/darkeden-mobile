@@ -1,7 +1,9 @@
 """Debug-only: run an offline source revision on the emulator's GL thread.
 
-Requires a matching frida-server running as the debuggable game's UID and a
+Requires a matching frida-server started with --ignore-crashes as the game's UID and a
 localhost adb forward on port 27042. Does not authenticate to any game server.
+Use start_game_debugger.py: the default native crash monitor can request Android
+device-log access even when the game does not declare READ_LOGS.
 """
 from pathlib import Path
 import json

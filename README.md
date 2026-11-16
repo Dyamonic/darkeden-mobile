@@ -60,3 +60,5 @@ Online quests, multiplayer and the original server economy are not implemented.
 NPC dialogue travel uses original bundled destinations, including Foley Colagas to Perona Northeast. Travel closes the original dialogue, loads the destination locally and saves the arrival.
 
 Stats, Bag and Gear are prepared during map loading and cached within the current scene for quick reopening. Original lifecycle callbacks and live-data refreshes are preserved.
+
+Device-log permission requests and bundled Bugly initialization/log collection are disabled. For emulator instrumentation, use `py tools/start_game_debugger.py`; it disables Frida's native crash/log monitor as well.

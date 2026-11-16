@@ -371,3 +371,19 @@ source comparisons passed for Bridge, EnglishUI, WndLayer, RoleInfo and Inventor
 Both build APK names, repository artifact and checksum are current. No offline
 runtime error file remained. Albion was closed at the user's request; tests target
 emulator-5554 explicitly and leave DarkEden running.
+
+## Device-log prompt removal
+
+The manifest already omitted READ_LOGS, so that alone did not prevent the reported
+Android log-access dialog. The APK updater now also disables six Bugly public
+initialization/enable/start entry points and its Java logcat collector. Decoded
+Smali mirrors these changes. DEX instruction boundaries, offsets and unrelated
+code remain intact; checksums/signatures are recomputed and patching is idempotent.
+The debugger launcher always uses --ignore-crashes, disabling Frida's native
+crash/log monitor, another possible source of app-UID log requests.
+
+The final installed APK passed a native Lua-to-Java call to the old collector
+(empty result), enableBugly(true) and startCrashReport() without error. Two cold
+launches and instrumentation attachment kept AppActivity foreground with no
+permission dialog or app-UID logcat process. Original gameplay/save data is kept.
+Static patch integrity checks and APK signature verification passed.

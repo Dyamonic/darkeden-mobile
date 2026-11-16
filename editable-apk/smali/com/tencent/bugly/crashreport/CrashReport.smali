@@ -209,10 +209,7 @@
 
 .method public static enableBugly(Z)V
     .locals 0
-
-    .line 52
-    sput-boolean p0, Lcom/tencent/bugly/proguard/p;->a:Z
-
+    # Offline build: diagnostic collection is disabled.
     return-void
 .end method
 
@@ -838,85 +835,26 @@
 .end method
 
 .method public static initCrashReport(Landroid/content/Context;)V
-    .locals 1
-
-    if-nez p0, :cond_0
-
-    return-void
-
-    .line 65
-    :cond_0
-    sput-object p0, Lcom/tencent/bugly/crashreport/CrashReport;->a:Landroid/content/Context;
-
-    .line 66
-    invoke-static {}, Lcom/tencent/bugly/CrashModule;->getInstance()Lcom/tencent/bugly/CrashModule;
-
-    move-result-object v0
-
-    invoke-static {v0}, Lcom/tencent/bugly/proguard/p;->a(Lcom/tencent/bugly/proguard/o;)V
-
-    .line 67
-    invoke-static {p0}, Lcom/tencent/bugly/proguard/p;->a(Landroid/content/Context;)V
-
+    .locals 0
+    # Offline build: diagnostic collection is disabled.
     return-void
 .end method
 
 .method public static initCrashReport(Landroid/content/Context;Lcom/tencent/bugly/crashreport/CrashReport$UserStrategy;)V
-    .locals 1
-
-    if-nez p0, :cond_0
-
-    return-void
-
-    .line 80
-    :cond_0
-    sput-object p0, Lcom/tencent/bugly/crashreport/CrashReport;->a:Landroid/content/Context;
-
-    .line 81
-    invoke-static {}, Lcom/tencent/bugly/CrashModule;->getInstance()Lcom/tencent/bugly/CrashModule;
-
-    move-result-object v0
-
-    invoke-static {v0}, Lcom/tencent/bugly/proguard/p;->a(Lcom/tencent/bugly/proguard/o;)V
-
-    .line 82
-    invoke-static {p0, p1}, Lcom/tencent/bugly/proguard/p;->a(Landroid/content/Context;Lcom/tencent/bugly/BuglyStrategy;)V
-
+    .locals 0
+    # Offline build: diagnostic collection is disabled.
     return-void
 .end method
 
 .method public static initCrashReport(Landroid/content/Context;Ljava/lang/String;Z)V
-    .locals 1
-
-    const/4 v0, 0x0
-
-    .line 94
-    invoke-static {p0, p1, p2, v0}, Lcom/tencent/bugly/crashreport/CrashReport;->initCrashReport(Landroid/content/Context;Ljava/lang/String;ZLcom/tencent/bugly/crashreport/CrashReport$UserStrategy;)V
-
+    .locals 0
+    # Offline build: diagnostic collection is disabled.
     return-void
 .end method
 
 .method public static initCrashReport(Landroid/content/Context;Ljava/lang/String;ZLcom/tencent/bugly/crashreport/CrashReport$UserStrategy;)V
-    .locals 1
-
-    if-nez p0, :cond_0
-
-    return-void
-
-    .line 110
-    :cond_0
-    sput-object p0, Lcom/tencent/bugly/crashreport/CrashReport;->a:Landroid/content/Context;
-
-    .line 111
-    invoke-static {}, Lcom/tencent/bugly/CrashModule;->getInstance()Lcom/tencent/bugly/CrashModule;
-
-    move-result-object v0
-
-    invoke-static {v0}, Lcom/tencent/bugly/proguard/p;->a(Lcom/tencent/bugly/proguard/o;)V
-
-    .line 112
-    invoke-static {p0, p1, p2, p3}, Lcom/tencent/bugly/proguard/p;->a(Landroid/content/Context;Ljava/lang/String;ZLcom/tencent/bugly/BuglyStrategy;)V
-
+    .locals 0
+    # Offline build: diagnostic collection is disabled.
     return-void
 .end method
 
@@ -3150,51 +3088,8 @@
 .end method
 
 .method public static startCrashReport()V
-    .locals 2
-
-    .line 317
-    sget-boolean v0, Lcom/tencent/bugly/proguard/p;->a:Z
-
-    if-nez v0, :cond_0
-
-    .line 318
-    sget-object v0, Lcom/tencent/bugly/proguard/al;->b:Ljava/lang/String;
-
-    const-string v1, "Can not start crash report because bugly is disable."
-
-    invoke-static {v0, v1}, Landroid/util/Log;->w(Ljava/lang/String;Ljava/lang/String;)I
-
-    return-void
-
-    .line 321
-    :cond_0
-    invoke-static {}, Lcom/tencent/bugly/CrashModule;->getInstance()Lcom/tencent/bugly/CrashModule;
-
-    move-result-object v0
-
-    invoke-virtual {v0}, Lcom/tencent/bugly/CrashModule;->hasInitialized()Z
-
-    move-result v0
-
-    if-nez v0, :cond_1
-
-    .line 322
-    sget-object v0, Lcom/tencent/bugly/proguard/al;->b:Ljava/lang/String;
-
-    const-string v1, "CrashReport has not been initialed! pls to call method \'initCrashReport\' first!"
-
-    invoke-static {v0, v1}, Landroid/util/Log;->w(Ljava/lang/String;Ljava/lang/String;)I
-
-    return-void
-
-    .line 326
-    :cond_1
-    invoke-static {}, Lcom/tencent/bugly/proguard/at;->a()Lcom/tencent/bugly/proguard/at;
-
-    move-result-object v0
-
-    invoke-virtual {v0}, Lcom/tencent/bugly/proguard/at;->b()V
-
+    .locals 0
+    # Offline build: diagnostic collection is disabled.
     return-void
 .end method
 

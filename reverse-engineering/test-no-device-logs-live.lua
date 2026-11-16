@@ -1,0 +1,8 @@
+local luaj=require("cocos.cocos2d.luaj")
+local ok,value=luaj.callStaticMethod("com/tencent/bugly/proguard/ap","a",{100,""},"(ILjava/lang/String;)Ljava/lang/String;")
+assert(ok and value=="", "Disabled collector must return an empty string")
+assert(luaj.callStaticMethod("com/tencent/bugly/crashreport/CrashReport","enableBugly",{true},"(Z)V"))
+assert(luaj.callStaticMethod("com/tencent/bugly/crashreport/CrashReport","startCrashReport",{},"()V"))
+local f=assert(io.open(cc.FileUtils:getInstance():getWritablePath().."no-device-logs-test.txt","w"))
+f:write("PASS: collector returns empty; diagnostic enable/start methods return safely\n")
+f:close()
