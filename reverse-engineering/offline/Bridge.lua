@@ -15,6 +15,7 @@ function Bridge:message(text)
     lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_MESSAGEBOX_SMALL,{content=text})
 end
 function Bridge:save()
+    if self.remote and self.state then return self.store:save(self.state) end
     if self.world then
         local agent=lt.AgentManager:getHeroAgent()
         if agent then self.world.state.x,self.world.state.y=agent:getPosition() end
@@ -28,10 +29,11 @@ function Bridge:roleList()
     local list={_bySelect=math.max(0,data.selected-1),_byRoleCount=#data.characters,_astRoleList={}}
     for slot,s in ipairs(data.characters) do
         local a=s.appearance or {}
+        local stats=s.stats or {};local levels=s.domainLevels or {Blade=s.level}
         list._astRoleList[slot]={_szRoleName=s.name,_byPos=slot,_byJob=a.byRace or 1,
             _bySex=a.bySex or 0,_byFaceShape=a.byFaceShape or 1,_byHairColor=a.byHairColor or 0,
-            _bySkinColor=a.bySkinColor or 0,_wSTR=a.wSTR or 20,_wDEX=a.wDEX or 20,_wINT=a.wINT or 20,
-            _wLevel=s.level,_wBladeLevel=s.level,_wSwordLevel=1,_wGunLevel=1,_wHealLevel=1,_wBlessLevel=1,
+            _bySkinColor=a.bySkinColor or 0,_wSTR=stats.str or a.wSTR or 20,_wDEX=stats.dex or a.wDEX or 20,_wINT=stats.int or a.wINT or 20,
+            _wLevel=s.level,_wBladeLevel=levels.Blade or 1,_wSwordLevel=levels.Sword or 1,_wGunLevel=levels.Gun or 1,_wHealLevel=levels.Heal or 1,_wBlessLevel=levels.Bless or 1,
             _dwRepute=0,_byGrade=0,_byAdvanced=0,_szWeaponAppr="0",_szShieldAppr="0",_szHelmetAppr="0",
             _szBodyAppr="0",_szTrousersAppr="0",_szDeleteTime="",_byDelete=0,_dwServerID=1,
             _szPlayerID="offline-"..slot,_szCreateTime=s.created or "2026-11-15 00:00:00"}
@@ -41,6 +43,11 @@ end
 function Bridge:heroProps()
     local s=self.state
     local a=s.appearance or {}
+    local stats=s.stats or {}
+    local added=s.allocated or {0,0,0}
+    local growth=s.growth or {0,0,0}
+    local levels=s.domainLevels or {Blade=s.level}
+    local domainXP=s.domainXP or {Blade=s.xp}
     local E=lt.ServerClientEnum
     local values={
         [E.ObjectValueDef.Attr_DisplayName]=s.name,
@@ -51,38 +58,49 @@ function Bridge:heroProps()
         [E.CreatureValueDef.Attr_HairColor]=a.byHairColor or 1,
         [E.CreatureValueDef.Attr_SkinColor]=a.bySkinColor or 1,
         [E.CreatureValueDef.Attr_Level]=s.level,
-        [E.CreatureValueDef.Attr_BladeLevel]=s.level,
-        [E.CreatureValueDef.Attr_SwordLevel]=1,
-        [E.CreatureValueDef.Attr_GunLevel]=1,
-        [E.CreatureValueDef.Attr_HealLevel]=1,
-        [E.CreatureValueDef.Attr_BlessLevel]=1,
-        [E.CreatureValueDef.Attr_TotalSTR]=a.wSTR or 20,
-        [E.CreatureValueDef.Attr_TotalDEX]=a.wDEX or 20,
-        [E.CreatureValueDef.Attr_TotalINT]=a.wINT or 20,
+        [E.CreatureValueDef.Attr_BladeLevel]=levels.Blade or 1,
+        [E.CreatureValueDef.Attr_SwordLevel]=levels.Sword or 1,
+        [E.CreatureValueDef.Attr_GunLevel]=levels.Gun or 1,
+        [E.CreatureValueDef.Attr_HealLevel]=levels.Heal or 1,
+        [E.CreatureValueDef.Attr_BlessLevel]=levels.Bless or 1,
+        [E.CreatureValueDef.Attr_TotalSTR]=stats.str or a.wSTR or 20,
+        [E.CreatureValueDef.Attr_TotalDEX]=stats.dex or a.wDEX or 20,
+        [E.CreatureValueDef.Attr_TotalINT]=stats.int or a.wINT or 20,
         [E.CreatureValueDef.Attr_CurHp]=s.hp,
-        [E.CreatureValueDef.Attr_HpMax]=100+s.level*20,
-        [E.CreatureValueDef.Attr_CurMp]=100,
-        [E.CreatureValueDef.Attr_MpMax]=100,
+        [E.CreatureValueDef.Attr_HpMax]=stats.maxHP or 100+s.level*20,
+        [E.CreatureValueDef.Attr_CurMp]=s.mp or 100,
+        [E.CreatureValueDef.Attr_MpMax]=stats.maxMP or 100,
         [E.CreatureValueDef.Attr_AttackSpeed]=100,
         [E.CreatureValueDef.Attr_MoveSpeedRate]=100,
         [E.CreatureValueDef.Attr_MoveMode]=2,
         [E.CreatureValueDef.Attr_AttackRange]=1,
         [E.CreatureValueDef.Attr_Sight]=14,
-        [E.CreatureValueDef.Attr_MinDamage]=20,
-        [E.CreatureValueDef.Attr_MaxDamage]=24,
-        [E.CreatureValueDef.Attr_Tohit]=100,
+        [E.CreatureValueDef.Attr_MinDamage]=stats.minDamage or 20,
+        [E.CreatureValueDef.Attr_MaxDamage]=stats.maxDamage or 24,
+        [E.CreatureValueDef.Attr_Tohit]=stats.hit or 100,
+        [E.CreatureValueDef.Attr_Defence]=stats.defense or 0,
+        [E.CreatureValueDef.Attr_Protection]=stats.protection or 0,
         [E.PlayerValueDef.Attr_PlayerID]="offline-"..self.store.data.selected,
         [E.PlayerValueDef.Attr_GuildName]="",
         [E.PlayerValueDef.Attr_JinBi]=s.gold,
         [E.PlayerValueDef.Attr_CurExp]=s.xp,
-        [E.PlayerValueDef.Attr_BladeExp]=s.xp,
+        [E.PlayerValueDef.Attr_BladeExp]=domainXP.Blade or 0,
+        [E.PlayerValueDef.Attr_SwordExp]=domainXP.Sword or 0,
+        [E.PlayerValueDef.Attr_GunExp]=domainXP.Gun or 0,
+        [E.PlayerValueDef.Attr_HealExp]=domainXP.Heal or 0,
+        [E.PlayerValueDef.Attr_BlessExp]=domainXP.Bless or 0,
         [E.PlayerValueDef.Attr_HistoryDomainTopLevel]=s.level,
-        [E.PlayerValueDef.Attr_PureSTR]=a.wSTR or 20,
-        [E.PlayerValueDef.Attr_PureDEX]=a.wDEX or 20,
-        [E.PlayerValueDef.Attr_PureINT]=a.wINT or 20,
-        [E.PlayerValueDef.Attr_InitSTR]=a.wSTR or 20,
-        [E.PlayerValueDef.Attr_InitDEX]=a.wDEX or 20,
-        [E.PlayerValueDef.Attr_InitINT]=a.wINT or 20,
+        [E.PlayerValueDef.Attr_PureSTR]=s.stats and added[1] or a.wSTR or 20,
+        [E.PlayerValueDef.Attr_PureDEX]=s.stats and added[2] or a.wDEX or 20,
+        [E.PlayerValueDef.Attr_PureINT]=s.stats and added[3] or a.wINT or 20,
+        [E.PlayerValueDef.Attr_CurSkillPoint]=s.points or 0,
+        [E.PlayerValueDef.Attr_SkillPoints]=s.skillPoints or 0,
+        [E.PlayerValueDef.Attr_STRExp]=s.attrXP and s.attrXP[1] or 0,
+        [E.PlayerValueDef.Attr_DEXExp]=s.attrXP and s.attrXP[2] or 0,
+        [E.PlayerValueDef.Attr_INTExp]=s.attrXP and s.attrXP[3] or 0,
+        [E.PlayerValueDef.Attr_InitSTR]=(a.wSTR or 20)+growth[1],
+        [E.PlayerValueDef.Attr_InitDEX]=(a.wDEX or 20)+growth[2],
+        [E.PlayerValueDef.Attr_InitINT]=(a.wINT or 20)+growth[3],
         [E.PlayerValueDef.Attr_PackagePositionHeight]=8,
         [E.PlayerValueDef.Attr_MaxStorage]=1,
         [E.PlayerValueDef.Attr_BeltSize]=6,
@@ -99,6 +117,7 @@ function Bridge.create()
         device.writablePath.."offline-save-v1.json")
     local status
     Bridge.state,status=Bridge.store:load()
+    Bridge.remote=require('app.offline.Remote').new(Bridge)
     assert(status~="damaged","Local character saves are damaged; originals were preserved.")
     local corrected=false
     for _,state in ipairs(Bridge.store.data.characters) do
@@ -111,7 +130,7 @@ function Bridge.create()
     lt.RoleModule:setPID("offline-1")
     lt.RoleModule:refreshData(Bridge:roleList())
     lt.SocketManager:setUserId("offline-1")
-    lt.SocketManager:setServerName("Single Player")
+    lt.SocketManager:setServerName(Bridge.remote and "Private Server" or "Single Player")
     lt.SocketManager:setServerId(1)
     _G_TOKEN="offline-local"
     local dispatcher=cc.Director:getInstance():getEventDispatcher()
@@ -123,6 +142,7 @@ function Bridge.create()
     end)
     dispatcher:addEventListenerWithFixedPriority(Bridge.background,-999)
     dispatcher:addEventListenerWithFixedPriority(Bridge.foreground,-999)
+    if Bridge.remote then later(function() Bridge.remote:refreshRoster() end) end
     return lt.RoleScene.new()
 end
 function Bridge:install()
@@ -163,16 +183,29 @@ function Bridge:install()
     lt.SocketManager.isAlive=function() return true end
     lt.SocketManager.updateBreakInfo=function() end
     lt.SocketApi.sendToGs=function(_,id,msg) bridge:request(id,msg) end
+    if self.remote then
+        lt.ChatModule.sendGMChat=function(_,command) bridge.remote:queue('gm',{command=command}) end
+    end
     lt.SocketApi.selectRoleReq=function(_,name)
         if bridge.entering or bridge.world then return end
         local state,err=bridge.store:select(name)
         if not state then bridge:message(err);return end
         bridge.state=state
-        later(function() bridge:enter() end)
+        later(function() if bridge.remote then bridge.remote:enter(name) else bridge:enter() end end)
     end
     lt.RoleModule.selectRoleReq=lt.SocketApi.selectRoleReq
     lt.RoleModule.createRoleReq=function(_,param)
         if bridge.world or bridge.entering then return end
+        if bridge.remote then
+            bridge.remote:create(param,function(state)
+                local ok,err=bridge.store:add(state)
+                if not ok then bridge:message(err);return end
+                bridge.state=state
+                lt.SocketApi:dispatchProto(lt.SocketApi._Event.CreateRole_ACK,{_byResult=lt.CliGgProto.PROTO_SUCCESS,
+                    _stReply={_stSucc=bridge:roleList()}})
+            end)
+            return
+        end
         local world=World.new()
         local state=world.state
         state.name=param.szRoleName
@@ -266,7 +299,7 @@ function Bridge:loadWorld()
     self.world.safe=safe
     local m,n=lt.MapUtil:calcMN(s.x,s.y)
     lt.GameModule:onObjAppear({param={objID=1,objType=lt.Constant.ObjType.OBJ_PLAYER,x=m,y=n,direction=0,objprops=self:heroProps(),bufferstatus={}}})
-    self.world:spawn(Locations.population(s.map,mobOpen))
+    if not self.remote then self.world:spawn(Locations.population(s.map,mobOpen)) end
     self:syncHero()
     self:spawnMonsters()
     self.world.isMoving=function(e)
@@ -315,13 +348,14 @@ function Bridge:loadWorld()
     -- Prepare the three frequently used windows once while the map loads.
     -- The scene owns their bounded cache; opening them still refreshes live data.
     display.getRunningScene():getLayerManager():getWndLayer():prepareCommonViews()
+    if self.remote then self.remote:worldReady() end
     if s.hp<=0 then self:showDeath() end
 end
 function Bridge:spawnMonsters(only)
     local E=lt.ServerClientEnum
-    for _,e in ipairs(self.world.enemies) do
+    for _,e in ipairs(only and {only} or self.world.enemies) do
       if not only or only==e then
-        e.objID=100+e.id
+        e.objID=e.objID or 100+e.id
         local m,n=lt.MapUtil:calcMN(e.x,e.y)
         e.x,e.y=lt.MapUtil:calcMNMid(m,n)
         e.homeX,e.homeY=e.x,e.y
@@ -337,8 +371,8 @@ function Bridge:spawnMonsters(only)
             {properCode=E.CreatureValueDef.Attr_Level,intValue=e.level or 2},
             {properCode=E.CreatureValueDef.Attr_MoveMode,intValue=2},
             {properCode=E.CreatureValueDef.Attr_MoveSpeedRate,intValue=100},
-            {properCode=E.MonsterValueDef.Attr_MoveInterval,intValue=700},
-            {properCode=E.MonsterValueDef.Attr_AttackInterval,intValue=1400},
+            {properCode=E.MonsterValueDef.Attr_MoveInterval,intValue=math.floor((e.moveInterval or .7)*1000)},
+            {properCode=E.MonsterValueDef.Attr_AttackInterval,intValue=math.floor((e.attackInterval or 1.4)*1000)},
         }
         lt.GameModule:onObjAppear({param={objID=e.objID,objType=lt.Constant.ObjType.OBJ_MONSTER,x=m,y=n,direction=0,objprops=props,bufferstatus={}}})
       end
@@ -385,7 +419,25 @@ function Bridge:syncInventory()
             {properCode=E.Attr_SaveType,intValue=1},
         }}
     end
-    lt.ItemModule:onItemDataInfoAck({param={pakageItem=bag,equipItem={},storageItem={}}})
+    local equip={}
+    if self.remote then
+        for index,item in ipairs(self.state.inventory or {}) do
+            item.bagIndex=index
+            local row={objID=item.objID,objprops=self:itemProps(item,item.slot and 2 or 1)}
+            if item.slot then equip[#equip+1]=row else bag[#bag+1]=row end
+        end
+    end
+    lt.ItemModule:onItemDataInfoAck({param={pakageItem=bag,equipItem=equip,storageItem={}}})
+end
+function Bridge:itemProps(item,saveType)
+    local E=lt.ServerClientEnum.ItemValueDef
+    local index=item.bagIndex or 1
+    return {
+        {properCode=E.Attr_ItemIdx,intValue=item.item},{properCode=E.Attr_ItemType,intValue=item.kind},
+        {properCode=E.Attr_SuperposeCount,intValue=item.count or 1},
+        {properCode=E.Attr_ItemPositionX,intValue=item.bagX or index%8},{properCode=E.Attr_ItemPositionY,intValue=item.bagY or math.floor(index/8)},
+        {properCode=E.Attr_SaveType,intValue=saveType},{properCode=E.Attr_SavePos,intValue=item.slot or 0}
+    }
 end
 function Bridge:syncHero()
     if not self.hero then return end
@@ -456,6 +508,10 @@ function Bridge:npcTravel(msg)
     self:changeMap(code,tm,tn)
 end
 function Bridge:request(id,msg)
+    if self.remote then
+        if not self.remote:handle(id,msg or {}) then print('SERVER unhandled request '..tostring(id)) end
+        return
+    end
     local C=lt.ClientCmdDef
     if id==C.CS_TRANSFER_REQ and self.world then self:transfer(msg.mapCode);return end
     if id==C.NpcOperation_JumpMap then self:npcTravel(msg);return end
@@ -479,6 +535,7 @@ function Bridge:request(id,msg)
 end
 function Bridge:update(dt)
     if not self.world or self.transferring then return end
+    if self.remote then self.remote:tick(dt);return end
     local heroAgent=lt.AgentManager:getHeroAgent()
     if not heroAgent then return end
     local s=self.state

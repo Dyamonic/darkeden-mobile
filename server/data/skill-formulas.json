@@ -1,0 +1,2645 @@
+{
+  "source_sha256": "6c39ee86bad1996100c6cf2dc87b330f2c8901ed37babf14fd74941542bb1f1d",
+  "skills": {
+    "1001": {
+      "name": "Single Blow",
+      "class": "SingleBlow",
+      "program": [
+        [
+          "output.Damage",
+          "1 + input.STR / 20 + input.SkillLevel / 20"
+        ],
+        [
+          "output.Delay",
+          "7"
+        ]
+      ]
+    },
+    "1002": {
+      "name": "Spiral Slay",
+      "class": "SpiralSlay",
+      "program": [
+        [
+          "output.Damage",
+          "4 + input.STR / 20 + input.SkillLevel / 15"
+        ],
+        [
+          "output.Delay",
+          "7"
+        ]
+      ]
+    },
+    "1004": {
+      "name": "Ghost Blade",
+      "class": "GhostBlade",
+      "program": [
+        [
+          "output.Damage",
+          "5 + input.SkillLevel / 10"
+        ],
+        [
+          "output.Duration",
+          "(30 + input.STR / 10 + input.SkillLevel / 2) * 10"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ]
+      ]
+    },
+    "1006": {
+      "name": "Triple Break",
+      "class": "TripleBreak",
+      "program": [
+        [
+          "output.Damage",
+          "3 + input.STR / 20 + input.SkillLevel / 10"
+        ],
+        [
+          "output.Delay",
+          "7"
+        ]
+      ]
+    },
+    "1008": {
+      "name": "Wild Smash",
+      "class": "WildSmash",
+      "program": [
+        [
+          "output.Damage",
+          "4 + input.STR / 15 + input.SkillLevel / 10"
+        ],
+        [
+          "output.Delay",
+          "8"
+        ]
+      ]
+    },
+    "1009": {
+      "name": "Shadow Walk",
+      "class": "ShadowWalk",
+      "program": [
+        [
+          "output.Range",
+          "max(2 + input.SkillLevel / 25, 2)"
+        ],
+        [
+          "output.Delay",
+          "(3 - input.SkillLevel / 50) * 10"
+        ]
+      ]
+    },
+    "1010": {
+      "name": "Potential Explosion",
+      "class": "PotentialExplosion",
+      "program": [
+        [
+          "output.Damage",
+          "1 + input.SkillLevel / 15"
+        ],
+        [
+          "output.Duration",
+          "(30 + input.SkillLevel / 2) * 10"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ]
+      ]
+    },
+    "1011": {
+      "name": "Hurricane Combo",
+      "class": "HurricaneCombo",
+      "program": [
+        [
+          "output.Damage",
+          "5 + input.STR / 12 + input.SkillLevel / 8"
+        ],
+        [
+          "output.Delay",
+          "10"
+        ]
+      ]
+    },
+    "1012": {
+      "name": "Tornado Sever",
+      "class": "TornadoSever",
+      "program": [
+        [
+          "output.Damage",
+          "10 + input.STR / 20 + input.SkillLevel / 8"
+        ],
+        [
+          "output.Delay",
+          "4"
+        ]
+      ]
+    },
+    "1013": {
+      "name": "Multi Amputate",
+      "class": "MultiAmputate",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 20 + input.SkillLevel / 10"
+        ],
+        [
+          "output.Range",
+          "2 + input.SkillLevel / 25"
+        ],
+        [
+          "output.Delay",
+          "(5 - input.SkillLevel / 25) * 10"
+        ]
+      ]
+    },
+    "1014": {
+      "name": "Charging Power",
+      "class": "ChargingPower",
+      "program": [
+        [
+          "output.Damage",
+          "5 + (input.SkillLevel / 20) + (input.DomainLevel / 30)"
+        ],
+        [
+          "output.Duration",
+          "(60 + input.SkillLevel * 3 / 2) * 10"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ]
+      ]
+    },
+    "1015": {
+      "name": "Moonlight Sever",
+      "class": "MoonlightSever",
+      "program": [
+        [
+          "output.Damage",
+          "15 + input.STR / 10 + input.SkillLevel / 8"
+        ],
+        [
+          "output.Delay",
+          "4"
+        ]
+      ]
+    },
+    "1016": {
+      "name": "Earthquake",
+      "class": "Earthquake",
+      "program": [
+        [
+          "output.Damage",
+          "5 + input.STR / 20 + input.SkillLevel / 10"
+        ],
+        [
+          "output.Range",
+          "7"
+        ],
+        [
+          "output.Delay",
+          "13"
+        ]
+      ]
+    },
+    "1017": {
+      "name": "Berserker",
+      "class": "Berserker",
+      "program": [
+        [
+          "output.Damage",
+          "(input.STR / 20) * (1 + input.SkillLevel / 25)"
+        ],
+        [
+          "output.ToHit",
+          "10 + (1 + input.SkillLevel / 12)"
+        ],
+        [
+          "output.Duration",
+          "(45 + input.SkillLevel / 1.5) * 10"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ]
+      ]
+    },
+    "1018": {
+      "name": "Shadow Dancing",
+      "class": "ShadowDancing",
+      "program": [
+        [
+          "output.Damage",
+          "30 + (15 * input.SkillLevel / 25)"
+        ],
+        [
+          "output.ToHit",
+          "10 + input.SkillLevel / 20"
+        ],
+        [
+          "output.Delay",
+          "(8 - input.SkillLevel / 20) * 10"
+        ]
+      ]
+    },
+    "1019": {
+      "name": "Typhoon",
+      "class": "Typhoon",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 10 + input.SkillLevel / 5"
+        ],
+        [
+          "output.Duration",
+          "(1 + input.SkillLevel / 100) * 10"
+        ],
+        [
+          "output.Delay",
+          "(3 - input.SkillLevel / 50) * 10"
+        ]
+      ]
+    },
+    "1021": {
+      "name": "Power Of Land",
+      "class": "PowerOfLand",
+      "program": [
+        [
+          "output.Delay",
+          "10"
+        ],
+        [
+          "output.Damage",
+          "(input.STR / 8) + (input.SkillLevel / 3)"
+        ],
+        [
+          "output.Duration",
+          "10"
+        ],
+        [
+          "output.Tick",
+          "10"
+        ]
+      ]
+    },
+    "1022": {
+      "name": "Blaze Walk",
+      "class": "BlazeWalk",
+      "program": [
+        [
+          "output.Delay",
+          "(5 - input.SkillLevel / 50) * 10"
+        ],
+        [
+          "output.Damage",
+          "2 * (1 + input.SkillLevel / 25)"
+        ]
+      ]
+    },
+    "1023": {
+      "name": "Wild Typhoon",
+      "class": "WildTyphoon",
+      "program": [
+        [
+          "output.Damage",
+          "(input.STR / 12) + (input.SkillLevel / 5)"
+        ],
+        [
+          "output.Delay",
+          "50 - input.SkillLevel * 10 / 25"
+        ],
+        [
+          "output.Range",
+          "1"
+        ]
+      ]
+    },
+    "1026": {
+      "name": "Spit Stream",
+      "class": "SpitStream",
+      "program": [
+        [
+          "output.Damage",
+          "30 + (input.STR / 10) + (input.SkillLevel / 5)"
+        ],
+        [
+          "output.Duration",
+          "4"
+        ],
+        [
+          "output.Delay",
+          "0"
+        ]
+      ]
+    },
+    "1028": {
+      "name": "Bomb Crash Walk",
+      "class": "BombCrashWalk",
+      "program": [
+        [
+          "output.Delay",
+          "10"
+        ],
+        [
+          "output.Damage",
+          "(input.STR / 8) + (input.SkillLevel / 3)"
+        ],
+        [
+          "output.Duration",
+          "7"
+        ],
+        [
+          "output.Tick",
+          "1"
+        ]
+      ]
+    },
+    "2001": {
+      "name": "Double Impact",
+      "class": "DoubleImpact",
+      "program": [
+        [
+          "output.Damage",
+          "1 + (input.STR / 20) + input.SkillLevel / 20"
+        ],
+        [
+          "output.Delay",
+          "8"
+        ]
+      ]
+    },
+    "2002": {
+      "name": "Triple Slasher",
+      "class": "TripleSlasher",
+      "program": [
+        [
+          "output.Damage",
+          "3 + (input.STR / 20) + (input.SkillLevel / 15)"
+        ],
+        [
+          "output.Delay",
+          "8"
+        ]
+      ]
+    },
+    "2004": {
+      "name": "Dancing Sword",
+      "class": "DancingSword",
+      "program": [
+        [
+          "output.Damage",
+          "1 + (input.DEX / 10) + (input.SkillLevel / 10)"
+        ],
+        [
+          "output.Duration",
+          "(30 + input.STR / 10 + input.SkillLevel / 2) * 10"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ]
+      ]
+    },
+    "2006": {
+      "name": "Thunder Spark",
+      "class": "ThunderSpark",
+      "program": [
+        [
+          "output.Damage",
+          "3 + input.STR / 20 + input.SkillLevel / 10"
+        ],
+        [
+          "output.Delay",
+          "7"
+        ]
+      ]
+    },
+    "2008": {
+      "name": "Cross Counter",
+      "class": "CrossCounter",
+      "program": [
+        [
+          "output.Duration",
+          "(10 + input.SkillLevel / 2) * 10"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ]
+      ]
+    },
+    "2009": {
+      "name": "Rainbow Slasher",
+      "class": "RainbowSlasher",
+      "program": [
+        [
+          "output.Damage",
+          "4 + input.STR / 15 + input.SkillLevel / 10"
+        ],
+        [
+          "output.Delay",
+          "8"
+        ]
+      ]
+    },
+    "2010": {
+      "name": "Flash Sliding",
+      "class": "FlashSliding",
+      "program": [
+        [
+          "output.Delay",
+          "max(3 - input.SkillLevel / 50, 1) * 10"
+        ],
+        [
+          "output.Duration",
+          "3 - input.SkillLevel / 50"
+        ]
+      ]
+    },
+    "2011": {
+      "name": "Snake Combo",
+      "class": "SnakeCombo",
+      "program": [
+        [
+          "output.Damage",
+          "5 + input.STR / 12 + input.SkillLevel / 8"
+        ],
+        [
+          "output.Delay",
+          "10"
+        ]
+      ]
+    },
+    "2012": {
+      "name": "Sword Wave",
+      "class": "SwordWave",
+      "program": [
+        [
+          "output.Damage",
+          "15 + input.SkillLevel / 20"
+        ],
+        [
+          "output.Delay",
+          "4"
+        ]
+      ]
+    },
+    "2013": {
+      "name": "Sword Ray",
+      "class": "SwordRay",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 25 + input.SkillLevel / 20"
+        ],
+        [
+          "output.Range",
+          "2 + input.SkillLevel / 33"
+        ],
+        [
+          "output.Delay",
+          "(5 - input.SkillLevel / 25) * 10"
+        ],
+        [
+          "output.Tick",
+          "5"
+        ],
+        [
+          "output.Duration",
+          "5"
+        ]
+      ]
+    },
+    "2014": {
+      "name": "Lightning Hand",
+      "class": "LightningHand",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 10 + input.SkillLevel / 10"
+        ],
+        [
+          "output.Delay",
+          "4"
+        ]
+      ]
+    },
+    "2015": {
+      "name": "Rediance",
+      "class": "Rediance",
+      "program": [
+        [
+          "output.Duration",
+          "(60 + input.SkillLevel * 3 / 2) * 10"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ],
+        [
+          "output.Damage",
+          "7 + input.SkillLevel / 20 + input.DomainLevel / 10"
+        ]
+      ]
+    },
+    "2016": {
+      "name": "Wind Divider",
+      "class": "WindDivider",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 14 + input.SkillLevel / 20"
+        ],
+        [
+          "output.Delay",
+          "13"
+        ]
+      ]
+    },
+    "2017": {
+      "name": "Expansion",
+      "class": "Expansion",
+      "program": [
+        [
+          "output.Damage",
+          "10 + input.SkillLevel / 2"
+        ],
+        [
+          "output.ToHit",
+          "5 + input.SkillLevel / 3"
+        ],
+        [
+          "output.Duration",
+          "(45 + input.STR / 10 + input.SkillLevel) * 10"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ]
+      ]
+    },
+    "2018": {
+      "name": "Thunder Bolt",
+      "class": "ThunderBolt",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 10 + input.SkillLevel / 10"
+        ],
+        [
+          "output.Delay",
+          "(3 - input.SkillLevel / 50) * 10"
+        ]
+      ]
+    },
+    "2019": {
+      "name": "Mental Sword",
+      "class": "MentalSword",
+      "program": [
+        [
+          "output.Damage",
+          "30 + (15 * input.SkillLevel / 50)"
+        ],
+        [
+          "output.Range",
+          "2 + input.SkillLevel / 33"
+        ],
+        [
+          "output.Delay",
+          "(8 - input.SkillLevel / 20) * 10"
+        ]
+      ]
+    },
+    "2020": {
+      "name": "Lar Slash",
+      "class": "LarSlash",
+      "program": [
+        [
+          "output.Delay",
+          "4"
+        ],
+        [
+          "output.Damage",
+          "5 + input.STR / 10 + input.SkillLevel / 8"
+        ]
+      ]
+    },
+    "2021": {
+      "name": "Thunder Storm",
+      "class": "ThunderStorm",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 10 + input.SkillLevel / 10"
+        ],
+        [
+          "output.Delay",
+          "(3 - input.SkillLevel / 50) * 10"
+        ]
+      ]
+    },
+    "2022": {
+      "name": "Sharp Shield",
+      "class": "SharpShield",
+      "program": [
+        [
+          "output.Duration",
+          "(10 + (input.SkillLevel / 2)) * 10"
+        ],
+        [
+          "output.Damage",
+          "(input.STR / 20) + (input.SkillLevel / 20)"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ]
+      ]
+    },
+    "2023": {
+      "name": "Wide Lightning",
+      "class": "WideLightning",
+      "program": [
+        [
+          "output.Delay",
+          "10"
+        ],
+        [
+          "output.Damage",
+          "(input.STR / 8) + (input.SkillLevel / 3)"
+        ],
+        [
+          "output.Duration",
+          "6"
+        ],
+        [
+          "output.Tick",
+          "6"
+        ]
+      ]
+    },
+    "2024": {
+      "name": "Blitz Sliding",
+      "class": "BlitzSliding",
+      "program": [
+        [
+          "output.Damage",
+          "4 * (1 + input.SkillLevel / 25)"
+        ],
+        [
+          "output.Delay",
+          "(4 - (input.SkillLevel / 50)) * 10"
+        ]
+      ]
+    },
+    "2025": {
+      "name": "Hit Convert",
+      "class": "HitConvert",
+      "program": [
+        [
+          "output.Delay",
+          "(8 - input.SkillLevel / 33) * 10"
+        ],
+        [
+          "output.Range",
+          "2 + input.SkillLevel / 33"
+        ]
+      ]
+    },
+    "2026": {
+      "name": "Sword Of Thor",
+      "class": "SwordOfThor",
+      "program": [
+        [
+          "output.Damage",
+          "80 + input.STR / 2 + input.SkillLevel / 2"
+        ],
+        [
+          "output.Delay",
+          "150"
+        ],
+        [
+          "output.Duration",
+          "150 + input.SkillLevel"
+        ]
+      ]
+    },
+    "2027": {
+      "name": "Infinity Thunderbolt",
+      "class": "InfinityThunderbolt",
+      "program": [
+        [
+          "output.Damage",
+          "10 + (input.SkillLevel / 5)"
+        ],
+        [
+          "output.Duration",
+          "0"
+        ],
+        [
+          "output.Delay",
+          "4"
+        ]
+      ]
+    },
+    "3002": {
+      "name": "Double Shot",
+      "class": "DoubleShot",
+      "program": [
+        [
+          "output.ToHit",
+          "-20 + input.SkillLevel / 5"
+        ],
+        [
+          "output.Damage",
+          "-50 + input.SkillLevel / 3"
+        ],
+        [
+          "output.Delay",
+          "2"
+        ]
+      ]
+    },
+    "3003": {
+      "name": "Heart Catalyst",
+      "class": "HeartCatalyst",
+      "program": [
+        [
+          "output.Damage",
+          "2 + input.SkillLevel / 20"
+        ],
+        [
+          "output.Tick",
+          "20"
+        ],
+        [
+          "output.Duration",
+          "(10 + input.SkillLevel / 2) * 10"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ]
+      ]
+    },
+    "3004": {
+      "name": "Triple Shot",
+      "class": "TripleShot",
+      "program": [
+        [
+          "output.ToHit",
+          "-20 + input.SkillLevel / 5"
+        ],
+        [
+          "output.Damage",
+          "-50 + input.SkillLevel / 3"
+        ],
+        [
+          "output.Delay",
+          "2"
+        ]
+      ]
+    },
+    "3008": {
+      "name": "Quick Fire",
+      "class": "QuickFire",
+      "program": [
+        [
+          "output.ToHit",
+          "-30 + input.DEX / 20 + input.SkillLevel / 5"
+        ],
+        [
+          "output.Damage",
+          "-30 + input.STR / 20 + input.SkillLevel / 5"
+        ],
+        [
+          "output.Delay",
+          "2"
+        ]
+      ]
+    },
+    "3009": {
+      "name": "Sniping",
+      "class": "Sniping",
+      "program": [
+        [
+          "output.Duration",
+          "(30 + input.SkillLevel / 5) * 10"
+        ],
+        [
+          "output.Delay",
+          "(10 - input.SkillLevel / 20) * 10"
+        ]
+      ]
+    },
+    "3011": {
+      "name": "Piercing",
+      "class": "Piercing",
+      "program": [
+        [
+          "output.ToHit",
+          "0"
+        ],
+        [
+          "output.Damage",
+          "2"
+        ],
+        [
+          "output.Delay",
+          "8"
+        ]
+      ]
+    },
+    "3014": {
+      "name": "Concealment",
+      "class": "Concealment",
+      "program": [
+        [
+          "output.Duration",
+          "(30 + (input.SkillLevel / 2)) * 10"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ]
+      ]
+    },
+    "3016": {
+      "name": "Trident",
+      "class": "Trident",
+      "program": [
+        [
+          "output.ToHit",
+          "-30 + input.DEX / 20 + input.SkillLevel / 4"
+        ],
+        [
+          "output.Damage",
+          "-30 + input.STR / 20 + input.SkillLevel / 4"
+        ],
+        [
+          "output.Delay",
+          "2"
+        ]
+      ]
+    },
+    "3020": {
+      "name": "Install Trap",
+      "class": "InstallTrap",
+      "program": [
+        [
+          "output.Duration",
+          "600"
+        ],
+        [
+          "output.Tick",
+          "(5 + (input.SkillLevel / 25)) * 10"
+        ],
+        [
+          "output.Delay",
+          "(60 - (input.SkillLevel / 2.5)) * 10"
+        ]
+      ]
+    },
+    "3021": {
+      "name": "Observing Eye",
+      "class": "ObservingEye",
+      "program": [
+        [
+          "output.Duration",
+          "(30 + input.SkillLevel / 3) * 10"
+        ],
+        [
+          "output.Damage",
+          "1 + input.SkillLevel / 50"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ]
+      ]
+    },
+    "3023": {
+      "name": "Bullet Of Light",
+      "class": "BulletOfLight",
+      "program": [
+        [
+          "output.Damage",
+          "-20 + (input.SkillLevel * 2 / 3)"
+        ],
+        [
+          "output.ToHit",
+          "-10 + (input.SkillLevel / 2)"
+        ],
+        [
+          "output.Delay",
+          "2"
+        ]
+      ]
+    },
+    "3024": {
+      "name": "Gun Shot Guidance",
+      "class": "GunShotGuidance",
+      "program": [
+        [
+          "output.Damage",
+          "50 + input.SkillLevel / 2"
+        ],
+        [
+          "output.Duration",
+          "10"
+        ],
+        [
+          "output.Delay",
+          "10"
+        ],
+        [
+          "output.Range",
+          "8"
+        ]
+      ]
+    },
+    "3026": {
+      "name": "Ultimate Blow",
+      "class": "UltimateBlow",
+      "program": [
+        [
+          "output.Delay",
+          "100 - input.SkillLevel * 10 / 25"
+        ],
+        [
+          "output.Range",
+          "1 + input.SkillLevel / 50"
+        ]
+      ]
+    },
+    "3027": {
+      "name": "Install Turret",
+      "class": "InstallTurret",
+      "program": [
+        [
+          "output.Damage",
+          "8 + (input.SkillLevel / 7)"
+        ],
+        [
+          "output.ToHit",
+          "40 + (input.SkillLevel / 10)"
+        ],
+        [
+          "output.Delay",
+          "100 - input.SkillLevel / 33 * 10"
+        ],
+        [
+          "output.Duration",
+          "900 + input.SkillLevel * 20"
+        ]
+      ]
+    },
+    "3028": {
+      "name": "Turret Fire",
+      "class": "TurretFire",
+      "program": [
+        [
+          "output.ToHit",
+          "0"
+        ],
+        [
+          "output.Damage",
+          "-10 + (input.SkillLevel / 5)"
+        ]
+      ]
+    },
+    "3031": {
+      "name": "Satellite Bomb",
+      "class": "SatelliteBomb",
+      "program": [
+        [
+          "output.Damage",
+          "150 + input.SkillLevel / 2"
+        ],
+        [
+          "output.Duration",
+          "6"
+        ],
+        [
+          "output.Delay",
+          "35 - input.SkillLevel * 10 / 33"
+        ],
+        [
+          "output.Range",
+          "8"
+        ]
+      ]
+    },
+    "3032": {
+      "name": "XRL Missile",
+      "class": "XRLMissile",
+      "program": [
+        [
+          "output.Damage",
+          "150 + input.SkillLevel / 2"
+        ],
+        [
+          "output.Duration",
+          "6"
+        ],
+        [
+          "output.Delay",
+          "35 - input.SkillLevel * 10 / 33"
+        ],
+        [
+          "output.Range",
+          "8"
+        ]
+      ]
+    },
+    "4002": {
+      "name": "Holy Arrow",
+      "class": "HolyArrow",
+      "program": [
+        [
+          "output.Damage",
+          "8 + (input.INTE / 20) + (input.SkillLevel / 10)"
+        ],
+        [
+          "output.Delay",
+          "10"
+        ],
+        [
+          "output.Range",
+          "2 + (input.SkillLevel / 25)"
+        ]
+      ]
+    },
+    "4003": {
+      "name": "Cure Poison",
+      "class": "CurePoison",
+      "program": [
+        [
+          "output.Delay",
+          "(4 - input.SkillLevel / 33) * 10"
+        ]
+      ]
+    },
+    "4005": {
+      "name": "Cause Light Wounds",
+      "class": "CauseLightWounds",
+      "program": [
+        [
+          "output.Damage",
+          "10 + input.INTE / 10 + input.SkillLevel / 10"
+        ],
+        [
+          "output.Delay",
+          "10"
+        ]
+      ]
+    },
+    "4007": {
+      "name": "Remove Curse",
+      "class": "RemoveCurse",
+      "program": [
+        [
+          "output.Delay",
+          "(5 - input.SkillLevel / 33) * 10"
+        ]
+      ]
+    },
+    "4009": {
+      "name": "Resurrect",
+      "class": "Resurrect",
+      "program": [
+        [
+          "output.Delay",
+          "20"
+        ]
+      ]
+    },
+    "4010": {
+      "name": "Cause Serious Wounds",
+      "class": "CauseSeriousWounds",
+      "program": [
+        [
+          "output.Damage",
+          "15 + input.INTE / 8 + input.SkillLevel / 5"
+        ],
+        [
+          "output.Delay",
+          "10"
+        ]
+      ]
+    },
+    "4011": {
+      "name": "Create Holy Potion",
+      "class": "CreateHolyPotion",
+      "program": [
+        [
+          "output.Delay",
+          "(5 - input.SkillLevel / 33) * 10"
+        ]
+      ]
+    },
+    "4015": {
+      "name": "Denial Magic",
+      "class": "DenialMagic",
+      "program": [
+        [
+          "output.Duration",
+          "(10 + (input.SkillLevel / 2)) * 10"
+        ],
+        [
+          "output.Delay",
+          "(8 - (input.SkillLevel / 20)) * 10"
+        ]
+      ]
+    },
+    "4017": {
+      "name": "Cause Critical Wounds",
+      "class": "CauseCriticalWounds",
+      "program": [
+        [
+          "output.Damage",
+          "5 + input.INTE / 10 + input.SkillLevel / 5"
+        ],
+        [
+          "output.Delay",
+          "(10 - input.SkillLevel / 33) * 10"
+        ],
+        [
+          "output.Duration",
+          "(3 + input.SkillLevel / 50) * 10"
+        ]
+      ]
+    },
+    "4020": {
+      "name": "Vigor Drop",
+      "class": "VigorDrop",
+      "program": [
+        [
+          "output.Damage",
+          "18 + input.INTE / 10 + input.SkillLevel / 3"
+        ],
+        [
+          "output.Delay",
+          "(5 - input.SkillLevel / 33) * 10"
+        ]
+      ]
+    },
+    "4021": {
+      "name": "Peace",
+      "class": "Peace",
+      "program": [
+        [
+          "output.Duration",
+          "(10 + input.INTE / 40 + input.SkillLevel / 20) * 10"
+        ],
+        [
+          "output.Delay",
+          "max(10 - input.INTE / 20, 5) * 10"
+        ]
+      ]
+    },
+    "4022": {
+      "name": "Eternity",
+      "class": "Eternity",
+      "program": [
+        [
+          "output.Damage",
+          "-50 + (input.SkillLevel / 2)"
+        ],
+        [
+          "output.Duration",
+          "50"
+        ]
+      ]
+    },
+    "4024": {
+      "name": "Regeneration",
+      "class": "Regeneration",
+      "program": [
+        [
+          "output.Damage",
+          "10 + (input.INTE / 40) + (input.SkillLevel / 10)"
+        ],
+        [
+          "output.Duration",
+          "(15 + (input.SkillLevel / 2)) * 10"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ],
+        [
+          "output.Tick",
+          "10"
+        ]
+      ]
+    },
+    "4025": {
+      "name": "Turn Undead",
+      "class": "TurnUndead",
+      "program": [
+        [
+          "output.Damage",
+          "20 + (input.INTE / 20) + (input.SkillLevel / 3)"
+        ],
+        [
+          "output.Delay",
+          "10"
+        ]
+      ]
+    },
+    "4027": {
+      "name": "Illendue",
+      "class": "Illendue",
+      "program": [
+        [
+          "output.Damage",
+          "(input.INTE / 10) * (1 + (input.SkillLevel / 33))"
+        ],
+        [
+          "output.Delay",
+          "50 - input.SkillLevel * 10 / 33"
+        ],
+        [
+          "output.Range",
+          "5"
+        ]
+      ]
+    },
+    "4028": {
+      "name": "Whitsuntide",
+      "class": "Whitsuntide",
+      "program": [
+        [
+          "output.Damage",
+          "50 + (input.SkillLevel / 2)"
+        ],
+        [
+          "output.Range",
+          "20 + (input.SkillLevel / 10)"
+        ],
+        [
+          "output.Delay",
+          "100 - input.SkillLevel / 5"
+        ],
+        [
+          "output.Duration",
+          "300"
+        ]
+      ]
+    },
+    "4029": {
+      "name": "Bombing Star",
+      "class": "BombingStar",
+      "program": [
+        [
+          "output.Damage",
+          "40 + (input.INTE / 5) + (input.SkillLevel / 2)"
+        ],
+        [
+          "output.Delay",
+          "20"
+        ]
+      ]
+    },
+    "4031": {
+      "name": "Illusion Inversion",
+      "class": "IllusionInversion",
+      "program": [
+        [
+          "output.Damage",
+          "max(200, ((input.INTE / 8) * (1 + (input.SkillLevel / 33))))"
+        ],
+        [
+          "output.Delay",
+          "170 - input.SkillLevel * 10 / 33"
+        ],
+        [
+          "output.Range",
+          "5"
+        ]
+      ]
+    },
+    "5001": {
+      "name": "Create Holy Water",
+      "class": "CreateHolyWater",
+      "program": [
+        [
+          "output.Delay",
+          "(5 - input.SkillLevel / 33) * 10"
+        ]
+      ]
+    },
+    "5002": {
+      "name": "Light Ball",
+      "class": "LightBall",
+      "program": [
+        [
+          "output.Damage",
+          "9 + (input.INTE / 20) + (input.SkillLevel / 10)"
+        ],
+        [
+          "output.Delay",
+          "10"
+        ],
+        [
+          "output.Range",
+          "2 + (input.SkillLevel / 25)"
+        ]
+      ]
+    },
+    "5005": {
+      "name": "Aura Ball",
+      "class": "AuraBall",
+      "program": [
+        [
+          "output.Damage",
+          "16 + (input.INTE / 10) + input.SkillLevel / 4"
+        ],
+        [
+          "output.Delay",
+          "10"
+        ]
+      ]
+    },
+    "5010": {
+      "name": "Mercy Ground",
+      "class": "MercyGround",
+      "program": [
+        [
+          "output.Duration",
+          "(15 + input.INTE / 15 + input.SkillLevel / 6) * 10"
+        ],
+        [
+          "output.Delay",
+          "(10 - input.SkillLevel / 33) * 10"
+        ]
+      ]
+    },
+    "5011": {
+      "name": "Aura Ring",
+      "class": "AuraRing",
+      "program": [
+        [
+          "output.Damage",
+          "15 + input.INTE / 10 + input.SkillLevel / 3"
+        ],
+        [
+          "output.Delay",
+          "max(1, 2 - (input.SkillLevel / 50)) * 10"
+        ]
+      ]
+    },
+    "5015": {
+      "name": "Requital",
+      "class": "Requital",
+      "program": [
+        [
+          "output.Duration",
+          "(10 + (input.SkillLevel / 2)) * 10"
+        ],
+        [
+          "output.Delay",
+          "(10 + (input.SkillLevel / 2)) * 10"
+        ],
+        [
+          "output.Damage",
+          "(input.INTE / 8) + (input.SkillLevel / 4)"
+        ]
+      ]
+    },
+    "5017": {
+      "name": "Visible",
+      "class": "Visible",
+      "program": [
+        [
+          "output.Delay",
+          "(5 - input.SkillLevel / 50) * 10"
+        ],
+        [
+          "output.Range",
+          "3 + (input.SkillLevel / 50)"
+        ]
+      ]
+    },
+    "5019": {
+      "name": "Sanctuary",
+      "class": "Sanctuary",
+      "program": [
+        [
+          "output.Damage",
+          "0"
+        ],
+        [
+          "output.Delay",
+          "5 - input.SkillLevel / 50"
+        ],
+        [
+          "output.Duration",
+          "(5 + input.SkillLevel / 20) * 10"
+        ]
+      ]
+    },
+    "5020": {
+      "name": "Holy Armor",
+      "class": "HolyArmor",
+      "program": [
+        [
+          "output.Duration",
+          "(30 + (input.SkillLevel / 2)) * 10"
+        ],
+        [
+          "output.Damage",
+          "10 + (input.INTE / 20) + (input.SkillLevel / 10)"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ]
+      ]
+    },
+    "5021": {
+      "name": "Rebuke",
+      "class": "Rebuke",
+      "program": [
+        [
+          "output.Duration",
+          "(8 + (input.SkillLevel / 20)) * 10"
+        ],
+        [
+          "output.Damage",
+          "10 + (input.INTE / 10) + (input.SkillLevel / 5)"
+        ],
+        [
+          "output.Delay",
+          "80"
+        ]
+      ]
+    },
+    "5022": {
+      "name": "Spirit Guard",
+      "class": "SpiritGuard",
+      "program": [
+        [
+          "output.Duration",
+          "(10 + (input.SkillLevel / 2)) * 10"
+        ],
+        [
+          "output.Damage",
+          "(input.INTE / 10) + (input.SkillLevel / 4)"
+        ],
+        [
+          "output.Delay",
+          "10"
+        ],
+        [
+          "output.Tick",
+          "10"
+        ]
+      ]
+    },
+    "5024": {
+      "name": "Lightness",
+      "class": "Lightness",
+      "program": [
+        [
+          "output.Duration",
+          "(15 + ((input.SkillLevel / 25) * 10)) * 10"
+        ],
+        [
+          "output.Delay",
+          "min(300, output.Duration)"
+        ]
+      ]
+    },
+    "5030": {
+      "name": "Heaven Ground",
+      "class": "HeavenGround",
+      "program": [
+        [
+          "output.Duration",
+          "(10 + input.INTE / 20 + input.SkillLevel / 6) * 9"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ],
+        [
+          "output.Damage",
+          "min(80, (input.INTE / 18) * (1 + (input.SkillLevel / 33)))"
+        ],
+        [
+          "output.Tick",
+          "20"
+        ]
+      ]
+    },
+    "6001": {
+      "name": "Poisonous Hands",
+      "class": "PoisonousHands",
+      "program": [
+        [
+          "output.Damage",
+          "min(20, 3 + (input.INTE - 20) / 3)"
+        ],
+        [
+          "output.Delay",
+          "6"
+        ]
+      ]
+    },
+    "6002": {
+      "name": "Green Poison",
+      "class": "GreenPoison",
+      "program": [
+        [
+          "output.Damage",
+          "min(15, 5 + (input.INTE - 20) / 10)"
+        ],
+        [
+          "output.Duration",
+          "min(20, 10 + (input.INTE - 20) / 10) * 10"
+        ],
+        [
+          "output.Delay",
+          "max(2, 5 - (input.INTE - 20) / 50) * 10"
+        ]
+      ]
+    },
+    "6003": {
+      "name": "Yellow Poison",
+      "class": "YellowPoison",
+      "program": [
+        [
+          "output.Duration",
+          "input.INTE / 4 * 10"
+        ],
+        [
+          "output.Delay",
+          "max(2, 10 - input.DEX / 30) * 10"
+        ]
+      ]
+    },
+    "6004": {
+      "name": "Green Stalker",
+      "class": "GreenStalker",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 20 + input.INTE / 10"
+        ],
+        [
+          "output.Tick",
+          "40"
+        ],
+        [
+          "output.Duration",
+          "(input.DEX / 5 + input.INTE / 5) * 10"
+        ],
+        [
+          "output.Delay",
+          "max(1, 5 - input.DEX / 40) * 10"
+        ]
+      ]
+    },
+    "6005": {
+      "name": "Darkblue Poison",
+      "class": "DarkBluePoison",
+      "program": [
+        [
+          "output.Damage",
+          "min(20, 5 + (input.INTE - 20) / 10)"
+        ],
+        [
+          "output.Duration",
+          "min(45, 21 + (input.INTE - 20) / 5) * 10"
+        ],
+        [
+          "output.Tick",
+          "30"
+        ],
+        [
+          "output.Delay",
+          "max(3, 5 - (input.INTE - 20) / 10) * 10"
+        ]
+      ]
+    },
+    "6006": {
+      "name": "Poison Strike",
+      "class": "PoisonStrike",
+      "program": [
+        [
+          "output.Damage",
+          "min(65, input.STR / 10 + input.INTE * 2 / 9)"
+        ],
+        [
+          "output.Delay",
+          "max(1, 5 - input.DEX / 50) * 10"
+        ]
+      ]
+    },
+    "6007": {
+      "name": "Poison Storm",
+      "class": "PoisonStorm",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 30 + input.INTE / 4"
+        ],
+        [
+          "output.Delay",
+          "max((8 - input.DEX / 50) * 10, 20)"
+        ],
+        [
+          "output.Range",
+          "min(6, 3 + (input.SkillLevel - 40) / 8)"
+        ]
+      ]
+    },
+    "7001": {
+      "name": "Acid Touch",
+      "class": "AcidTouch",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 6 + input.INTE / 15"
+        ],
+        [
+          "output.Delay",
+          "6"
+        ]
+      ]
+    },
+    "7002": {
+      "name": "Acid Bolt",
+      "class": "AcidBolt",
+      "program": [
+        [
+          "output.Damage",
+          "min(40, input.STR / 20 + input.INTE / 5)"
+        ],
+        [
+          "output.Delay",
+          "max(1, 3 - (input.DEX / 50) - (input.INTE / 50)) * 10"
+        ]
+      ]
+    },
+    "7003": {
+      "name": "Acid Ball",
+      "class": "AcidBall",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 15 + input.INTE / 5"
+        ],
+        [
+          "output.Delay",
+          "max(1, 3 - input.DEX / 50 - input.INTE / 50) * 10"
+        ]
+      ]
+    },
+    "7004": {
+      "name": "Acid Strike",
+      "class": "AcidStrike",
+      "program": [
+        [
+          "output.Damage",
+          "min(75, input.STR / 8 + input.INTE / 4)"
+        ],
+        [
+          "output.Delay",
+          "max(1, 5 - input.DEX / 50) * 10"
+        ]
+      ]
+    },
+    "7005": {
+      "name": "Acid Swamp",
+      "class": "AcidSwamp",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 15 + input.INTE / 4"
+        ],
+        [
+          "output.Duration",
+          "max(40, ((input.DEX - 40 + input.INTE - 40) / 6) * 10)"
+        ],
+        [
+          "output.Tick",
+          "15"
+        ],
+        [
+          "output.Delay",
+          "max(2, 6 - input.DEX / 40) * 10"
+        ]
+      ]
+    },
+    "7006": {
+      "name": "Acid Storm",
+      "class": "AcidStorm",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 25 + input.INTE * 2 / 7"
+        ],
+        [
+          "output.Delay",
+          "max((9 - input.DEX / 50) * 10, 20)"
+        ]
+      ]
+    },
+    "7007": {
+      "name": "Acid Eruption",
+      "class": "AcidEruption",
+      "program": [
+        [
+          "output.Damage",
+          "min(180, (input.STR / 6) + (input.INTE / 2) + (input.DEX / 10))"
+        ],
+        [
+          "output.Delay",
+          "max(3, 6 - (input.DEX / 50)) * 10"
+        ]
+      ]
+    },
+    "8001": {
+      "name": "Paralyze",
+      "class": "Paralyze",
+      "program": [
+        [
+          "output.Damage",
+          "min(40, 25 + (input.INTE - 20) / 20)"
+        ],
+        [
+          "output.Duration",
+          "(3 + input.INTE / 15) * 10"
+        ],
+        [
+          "output.Delay",
+          "max(3, (6 - input.DEX / 50)) * 10"
+        ]
+      ]
+    },
+    "8002": {
+      "name": "Doom",
+      "class": "Doom",
+      "program": [
+        [
+          "output.Damage",
+          "min(30, 20 + (input.INTE - 20) / 20)"
+        ],
+        [
+          "output.Duration",
+          "min(30, 10 + (input.INTE - 20) / 10) * 10"
+        ],
+        [
+          "output.Delay",
+          "max(3, 5 - (input.INTE - 20) / 10) * 10"
+        ]
+      ]
+    },
+    "8003": {
+      "name": "Seduction",
+      "class": "Seduction",
+      "program": [
+        [
+          "output.Damage",
+          "min(30, 10 + (input.INTE - 20) / 10)"
+        ],
+        [
+          "output.Duration",
+          "min(50, 20 + (input.INTE - 20) / 5) * 10"
+        ],
+        [
+          "output.Delay",
+          "max(3, 5 - (input.INTE - 20) / 10) * 10"
+        ]
+      ]
+    },
+    "8004": {
+      "name": "Death",
+      "class": "Death",
+      "program": [
+        [
+          "output.Damage",
+          "min(input.INTE / 5 + input.STR / 12, 80)"
+        ],
+        [
+          "output.Duration",
+          "(input.INTE / 5) * 10"
+        ],
+        [
+          "output.Delay",
+          "max(2, 5 - input.DEX / 50) * 10"
+        ]
+      ]
+    },
+    "8005": {
+      "name": "Hallucination",
+      "class": "Hallucination",
+      "program": [
+        [
+          "output.Duration",
+          "(20 + (input.STR / 65) + (input.DEX / 85) + (input.INTE / 40)) * 10"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ]
+      ]
+    },
+    "9001": {
+      "name": "Summon Casket",
+      "class": "SummonCasket",
+      "program": [
+        [
+          "output.Delay",
+          "10"
+        ]
+      ]
+    },
+    "9003": {
+      "name": "Summon Gore Gland",
+      "class": "SummonGoreGland",
+      "program": [
+        [
+          "output.Duration",
+          "input.INTE * 10 / 25 + 50"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ]
+      ]
+    },
+    "9004": {
+      "name": "Noose Of Wraith",
+      "class": "NooseOfWraith",
+      "program": [
+        [
+          "output.Damage",
+          "min(30 + (input.INTE / 3), 200)"
+        ],
+        [
+          "output.Delay",
+          "18"
+        ],
+        [
+          "output.Range",
+          "7"
+        ]
+      ]
+    },
+    "10001": {
+      "name": "Bloody Tunnel",
+      "class": "BloodyTunnel",
+      "program": [
+        [
+          "output.Delay",
+          "30"
+        ]
+      ]
+    },
+    "10003": {
+      "name": "Transfusion",
+      "class": "Transfusion",
+      "program": [
+        [
+          "output.Delay",
+          "max(3, 6 - (input.INTE - 20) / 50) * 10"
+        ]
+      ]
+    },
+    "10004": {
+      "name": "Bloody Nail",
+      "class": "BloodyNail",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 8 + input.DEX / 10 + input.INTE / 30"
+        ],
+        [
+          "output.Delay",
+          "6"
+        ]
+      ]
+    },
+    "10005": {
+      "name": "Bloody Knife",
+      "class": "BloodyKnife",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 10 + input.INTE / 5 + input.DEX / 10"
+        ],
+        [
+          "output.Delay",
+          "max(2, 6 - (input.DEX / 50) - (input.INTE / 50))"
+        ]
+      ]
+    },
+    "10006": {
+      "name": "Bloody Wave",
+      "class": "BloodyWave",
+      "program": [
+        [
+          "output.Damage",
+          "input.INTE / 6 + input.STR / 7 + input.DEX / 7"
+        ],
+        [
+          "output.Delay",
+          "max(1, 3 - input.DEX / 50) * 10"
+        ],
+        [
+          "output.ToHit",
+          "50"
+        ]
+      ]
+    },
+    "10007": {
+      "name": "Bloody Strike",
+      "class": "BloodyStrike",
+      "program": [
+        [
+          "output.Damage",
+          "min(90, input.STR / 8 + input.INTE * 10 / 23)"
+        ],
+        [
+          "output.Delay",
+          "max(2, 6 - input.DEX / 50) * 10"
+        ]
+      ]
+    },
+    "10008": {
+      "name": "Bloody Ball",
+      "class": "BloodyBall",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 8 + input.INTE / 4 + input.DEX / 8"
+        ],
+        [
+          "output.Delay",
+          "30"
+        ]
+      ]
+    },
+    "10009": {
+      "name": "Bloody Spear",
+      "class": "BloodySpear",
+      "program": [
+        [
+          "output.Damage",
+          "min(180, input.STR / 6 + input.INTE / 2 + input.DEX / 12)"
+        ],
+        [
+          "output.Delay",
+          "max(2, 6 - input.DEX / 50) * 10"
+        ]
+      ]
+    },
+    "10010": {
+      "name": "Bloody Wall",
+      "class": "BloodyWall",
+      "program": [
+        [
+          "output.Damage",
+          "input.INTE / 5 + input.STR / 10"
+        ],
+        [
+          "output.Duration",
+          "(input.DEX / 15 + input.INTE / 10) * 10"
+        ],
+        [
+          "output.Delay",
+          "max(2, 5 - input.DEX / 50) * 10"
+        ],
+        [
+          "output.Tick",
+          "10"
+        ]
+      ]
+    },
+    "10011": {
+      "name": "Bloody Breaker",
+      "class": "BloodyBreaker",
+      "program": [
+        [
+          "output.Damage",
+          "input.INTE / 4 + input.STR / 5 + input.DEX / 5"
+        ],
+        [
+          "output.Delay",
+          "max(1, 3 - input.DEX / 50) * 10"
+        ],
+        [
+          "output.ToHit",
+          "50"
+        ]
+      ]
+    },
+    "10012": {
+      "name": "Bloody Zenith",
+      "class": "BloodyZenith",
+      "program": [
+        [
+          "output.Delay",
+          "(7 - (input.STR / 100 + input.DEX / 220 + input.INTE / 330)) * 10"
+        ],
+        [
+          "output.Delay",
+          "max(30, output.Delay)"
+        ],
+        [
+          "output.Damage",
+          "min(150, 30 + input.STR / 3 + input.DEX / 10 + input.INTE / 20)"
+        ]
+      ]
+    },
+    "11002": {
+      "name": "Hands Of Wisdom",
+      "class": "HandsOfWisdom",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 15 + input.INTE / 8"
+        ],
+        [
+          "output.Delay",
+          "6"
+        ]
+      ]
+    },
+    "11003": {
+      "name": "Darkness",
+      "class": "Darkness",
+      "program": [
+        [
+          "output.Duration",
+          "(10 + input.INTE / 6) * 10"
+        ],
+        [
+          "output.Delay",
+          "max(2, 10 - input.DEX / 30) * 10"
+        ],
+        [
+          "output.Range",
+          "(3 + (input.SkillLevel - 15) / 25)"
+        ]
+      ]
+    },
+    "11004": {
+      "name": "Transform To Bat",
+      "class": "TransformToBat",
+      "program": [
+        [
+          "output.Delay",
+          "30"
+        ]
+      ]
+    },
+    "11005": {
+      "name": "Transform To Wolf",
+      "class": "TransformToWolf",
+      "program": [
+        [
+          "output.Delay",
+          "30"
+        ]
+      ]
+    },
+    "11006": {
+      "name": "Howl",
+      "class": "Howl",
+      "program": [
+        [
+          "output.Duration",
+          "min(120, 30 + input.STR / 4 + input.DEX / 3 + input.INTE / 6) * 10"
+        ],
+        [
+          "output.Range",
+          "min(100, 60 + input.DEX / 20)"
+        ]
+      ]
+    },
+    "11007": {
+      "name": "Invisibility",
+      "class": "Invisibility",
+      "program": [
+        [
+          "output.Delay",
+          "30"
+        ]
+      ]
+    },
+    "11008": {
+      "name": "Rapid Gliding",
+      "class": "RapidGliding",
+      "program": [
+        [
+          "output.Range",
+          "min(6, 2 + (input.DEX / 50))"
+        ],
+        [
+          "output.Delay",
+          "max(1, 5 - (input.DEX / 60)) * 10"
+        ]
+      ]
+    },
+    "11011": {
+      "name": "Stone Skin",
+      "class": "StoneSkin",
+      "program": [
+        [
+          "output.Duration",
+          "min(60, 10 + input.STR / 10 + input.INTE / 6) * 10"
+        ],
+        [
+          "output.Delay",
+          "min(60, 10 + input.STR / 10 + input.INTE / 6) * 10"
+        ],
+        [
+          "output.Damage",
+          "min(30, 20 + input.INTE / 20)"
+        ]
+      ]
+    },
+    "11012": {
+      "name": "Transform To WerWolf",
+      "class": "TransformToWerwolf",
+      "program": [
+        [
+          "output.Delay",
+          "50"
+        ]
+      ]
+    },
+    "11013": {
+      "name": "Gray Darkness",
+      "class": "GrayDarkness",
+      "program": [
+        [
+          "output.Duration",
+          "(10 + input.INTE / 8) * 10"
+        ],
+        [
+          "output.Delay",
+          "max(3, 10 - input.DEX / 50) * 10"
+        ]
+      ]
+    },
+    "11014": {
+      "name": "Talon Of Crow",
+      "class": "TalonOfCrow",
+      "program": [
+        [
+          "output.Delay",
+          "6"
+        ],
+        [
+          "output.Damage",
+          "input.STR / 6 + input.INTE / 30"
+        ]
+      ]
+    },
+    "11016": {
+      "name": "Violent Phantom",
+      "class": "ViolentPhantom",
+      "program": [
+        [
+          "output.Damage",
+          "5 + input.STR / 30 + input.DEX / 60"
+        ],
+        [
+          "output.Delay",
+          "0"
+        ]
+      ]
+    },
+    "11017": {
+      "name": "Set Afire",
+      "class": "SetAfire",
+      "program": [
+        [
+          "output.Delay",
+          "0"
+        ],
+        [
+          "output.Damage",
+          "20 + (input.STR / 6) + (input.DEX / 10)"
+        ]
+      ]
+    },
+    "13006": {
+      "name": "Teleport",
+      "class": "Teleport",
+      "program": [
+        [
+          "output.Range",
+          "min(6, 3 + input.SkillLevel / 10)"
+        ],
+        [
+          "output.Delay",
+          "max(1, 5 - (input.DEX / 60) - (input.INTE / 60)) * 10"
+        ]
+      ]
+    },
+    "13011": {
+      "name": "Back Stab",
+      "class": "BackStab",
+      "program": []
+    },
+    "15007": {
+      "name": "Liberty",
+      "class": "Liberty",
+      "program": [
+        [
+          "output.Delay",
+          "(8 - (input.SkillLevel / 10)) * 10"
+        ]
+      ]
+    },
+    "16009": {
+      "name": "Summon Ground Elemental",
+      "class": "SummonGroundElemental",
+      "program": [
+        [
+          "output.Duration",
+          "(10 + input.INTE / 8 + input.SkillLevel) * 10"
+        ],
+        [
+          "output.Delay",
+          "output.Duration"
+        ]
+      ]
+    },
+    "17003": {
+      "name": "Soul Chain",
+      "class": "SoulChain",
+      "program": [
+        [
+          "output.Duration",
+          "100"
+        ],
+        [
+          "output.Delay",
+          "1200"
+        ]
+      ]
+    },
+    "18005": {
+      "name": "Armageddon",
+      "class": "Armageddon",
+      "program": [
+        [
+          "output.Damage",
+          "(input.STR / 8) + (input.INTE / 6)"
+        ],
+        [
+          "output.Delay",
+          "10"
+        ],
+        [
+          "output.Duration",
+          "((input.DEX / 10) + (input.INTE / 20)) * 10"
+        ],
+        [
+          "output.Tick",
+          "10"
+        ]
+      ]
+    },
+    "18006": {
+      "name": "Bloody Storm",
+      "class": "BloodyStorm",
+      "program": [
+        [
+          "output.Damage",
+          "input.STR / 25 + input.INTE / 6"
+        ],
+        [
+          "output.Duration",
+          "(input.DEX / 100 + input.INTE / 100) * 10"
+        ],
+        [
+          "output.Delay",
+          "max((9 - input.DEX / 50) * 10, 20)"
+        ]
+      ]
+    },
+    "18008": {
+      "name": "Open Casket",
+      "class": "OpenCasket",
+      "program": [
+        [
+          "output.Delay",
+          "30"
+        ]
+      ]
+    },
+    "18009": {
+      "name": "Summon Monsters",
+      "class": "SummonMonsters",
+      "program": [
+        [
+          "output.Damage",
+          "0"
+        ],
+        [
+          "output.Delay",
+          "20"
+        ]
+      ]
+    },
+    "18010": {
+      "name": "Ground Attack",
+      "class": "GroundAttack",
+      "program": [
+        [
+          "output.Damage",
+          "min(100, 30 + (input.INTE - 20) / 5)"
+        ],
+        [
+          "output.Duration",
+          "20"
+        ],
+        [
+          "output.Tick",
+          "15"
+        ],
+        [
+          "output.Delay",
+          "max(3, 6 - (input.INTE - 20) / 50) * 10"
+        ]
+      ]
+    },
+    "18012": {
+      "name": "Bloody Master Wave",
+      "class": "BloodyMasterWave",
+      "program": [
+        [
+          "output.Damage",
+          "min(80, 40 + (input.INTE - 20) / 4)"
+        ],
+        [
+          "output.Delay",
+          "30"
+        ],
+        [
+          "output.ToHit",
+          "min(55, 30 + (input.INTE / 10))"
+        ]
+      ]
+    },
+    "18013": {
+      "name": "Bloody Warp",
+      "class": "BloodyWarp",
+      "program": [
+        [
+          "output.Damage",
+          "min(70, 30 + (input.INTE - 20) / 4)"
+        ],
+        [
+          "output.Delay",
+          "30"
+        ],
+        [
+          "output.ToHit",
+          "min(35, 10 + (input.INTE / 10))"
+        ]
+      ]
+    },
+    "18014": {
+      "name": "Bloody Snake",
+      "class": "BloodySnake",
+      "program": [
+        [
+          "output.Damage",
+          "min(35, 10 + (input.INTE - 20) / 9)"
+        ],
+        [
+          "output.Duration",
+          "(1 + (input.INTE - 20) / 80) * 10"
+        ],
+        [
+          "output.Delay",
+          "max(3, 6 - (input.INTE - 20) / 50) * 10"
+        ],
+        [
+          "output.Tick",
+          "3"
+        ]
+      ]
+    },
+    "18015": {
+      "name": "Wide Ice Field",
+      "class": "WideIceField",
+      "program": [
+        [
+          "output.Duration",
+          "200"
+        ],
+        [
+          "output.Range",
+          "200"
+        ],
+        [
+          "output.Tick",
+          "5"
+        ]
+      ]
+    },
+    "18016": {
+      "name": "Glacier 1",
+      "class": "Glacier1",
+      "program": [
+        [
+          "output.Duration",
+          "50"
+        ]
+      ]
+    },
+    "18017": {
+      "name": "Glacier 2",
+      "class": "Glacier2",
+      "program": [
+        [
+          "output.Duration",
+          "100"
+        ]
+      ]
+    },
+    "18018": {
+      "name": "Ice Auger",
+      "class": "IceAuger",
+      "program": [
+        [
+          "output.Damage",
+          "300"
+        ],
+        [
+          "output.Delay",
+          "10"
+        ]
+      ]
+    },
+    "18019": {
+      "name": "Ice Hail",
+      "class": "IceHail",
+      "program": [
+        [
+          "output.Duration",
+          "30"
+        ],
+        [
+          "output.Damage",
+          "50"
+        ],
+        [
+          "output.Tick",
+          "5"
+        ]
+      ]
+    },
+    "18020": {
+      "name": "Wide Ice Hail",
+      "class": "WideIceHail",
+      "program": [
+        [
+          "output.Duration",
+          "50"
+        ],
+        [
+          "output.Damage",
+          "50"
+        ],
+        [
+          "output.Tick",
+          "5"
+        ]
+      ]
+    },
+    "18021": {
+      "name": "Ice Wave",
+      "class": "IceWave",
+      "program": [
+        [
+          "output.Damage",
+          "320"
+        ],
+        [
+          "output.Delay",
+          "10"
+        ]
+      ]
+    },
+    "18022": {
+      "name": "Land Mine Explosion",
+      "class": "LandMineExplosion",
+      "program": [
+        [
+          "output.Damage",
+          "320"
+        ],
+        [
+          "output.Delay",
+          "10"
+        ]
+      ]
+    },
+    "18023": {
+      "name": "Claymore Explosion",
+      "class": "ClaymoreExplosion",
+      "program": [
+        [
+          "output.Damage",
+          "320"
+        ],
+        [
+          "output.Delay",
+          "10"
+        ]
+      ]
+    },
+    "18024": {
+      "name": "Pleasure Explosion",
+      "class": "PleasureExplosion",
+      "program": []
+    },
+    "18025": {
+      "name": "Gore Gland Fire",
+      "class": "GoreGlandFire",
+      "program": [
+        [
+          "output.Damage",
+          "20 + input.INTE / 10"
+        ],
+        [
+          "output.Damage",
+          "min(80, output.Damage)"
+        ]
+      ]
+    },
+    "18030": {
+      "name": "Playing With Fire",
+      "class": "PlayingWithFire",
+      "program": [
+        [
+          "output.Damage",
+          "400"
+        ],
+        [
+          "output.Duration",
+          "20"
+        ],
+        [
+          "output.Delay",
+          "0"
+        ]
+      ]
+    },
+    "18034": {
+      "name": "AR Attack",
+      "class": "ARAttack",
+      "program": [
+        [
+          "output.Delay",
+          "0"
+        ],
+        [
+          "output.Damage",
+          "0"
+        ]
+      ]
+    },
+    "18035": {
+      "name": "SMG Attack",
+      "class": "SMGAttack",
+      "program": [
+        [
+          "output.Delay",
+          "0"
+        ],
+        [
+          "output.Damage",
+          "0"
+        ]
+      ]
+    },
+    "18036": {
+      "name": "Grenade Attack",
+      "class": "GrenadeAttack",
+      "program": [
+        [
+          "output.Duration",
+          "10"
+        ],
+        [
+          "output.Damage",
+          "80"
+        ]
+      ]
+    }
+  }
+}

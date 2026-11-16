@@ -12,12 +12,24 @@ Recovered evidence: **635 PC monster rows, 148 zones, 3,278 population entries,
 249 fully decoded treasure binaries**, and 130 same-ID/dimension map candidates.
 Exported gameplay data is in `reverse-engineering/data-audit/pc-server/`.
 
-These systems are now **available as PC reference implementations**, but remain
-unimplemented in the mobile offline backend. Earlier “not recovered” statements
-below describe the Android client alone. Exact mobile-authoritative balance and
-cross-version mob/map/item mappings are still unresolved. For example, Turning
-Dead is level 1 / sprite 8 in the PC seed, versus level 2 / model 6 in mobile.
-Nothing was imported into live gameplay or saves by this reference audit.
+## Mobile server integration (2026-11-16)
+
+The private server in [`server/`](server/README.md) now implements mapped V2
+populations/stats/loot, progression, inventory/equipment, basic main missions,
+supported skills and local administrator-controlled GM permissions. It backs up
+and imports the original roster once, then persists progress in external SQLite.
+The native game retains its original UI, fonts, maps and effects.
+
+These are version-aware adaptations, not proof of the publisher's exact mobile
+balance. See [current support and remaining gaps](server/PORT_STATUS.md).
+Option affixes/luck, advanced skill effects, complete event encounters, banking,
+trading, guilds, shared multiplayer and production accounts remain unfinished.
+Unsupported actions return errors rather than simulated success.
+
+The sections below retain the original **Android-client-only audit**. Earlier
+statements that data was not recovered or implemented describe that earlier
+backend. The support matrix above supersedes those implementation statements.
+The external V2 source folder has not been modified.
 
 Audit date: 2026-11-16. This records findings in the recovered Android client,
 its bundled SQLite database, and the current offline implementation. It is an

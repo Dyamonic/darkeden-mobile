@@ -20,7 +20,7 @@ function Store:valid(s)
     end
     return s.x>=0 and s.y<=0 and s.level>=1 and s.level<=1000 and s.xp>=0
         and s.gold>=0 and s.potions>=0 and s.kills>=0 and s.elapsed>=0
-        and s.hp>=0 and s.hp<=100+s.level*20
+        and s.hp>=0 and s.hp<=(s.serverVersion==1 and type(s.stats)=='table' and type(s.stats.maxHP)=='number' and math.min(60000,s.stats.maxHP) or 100+s.level*20)
 end
 function Store:read(path)
     local f=io.open(path,"rb");if not f then return nil end

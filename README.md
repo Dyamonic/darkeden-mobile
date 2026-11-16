@@ -7,6 +7,15 @@ The offline build retains the original UI and fonts, supports three local
 characters, automatic saves, race-specific starting areas, local combat, original
 death/revival UI, race-specific level-up effects and tested map passages. It starts without an updater or login.
 
+## Private mobile server
+
+A local server now owns characters, mapped V2 mobs/loot, combat, progression,
+inventory, basic missions and supported skills through the original mobile UI.
+Run `server/start-server.cmd` before playing. Setup has backed up and imported
+the existing characters. See [server instructions](server/README.md) and
+[port status / remaining systems](server/PORT_STATUS.md). Public accounts and a
+shared multiplayer world remain future work.
+
 ## Repository contents
 
 - `artifacts/single-player-english.apk`: latest signed development build.

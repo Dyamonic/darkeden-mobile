@@ -53,7 +53,7 @@ def pack():
             entries['main'] = (ROOT / 'reverse-engineering/offline/bootstrap.lua').read_bytes()
         elif name == 'emag':
             for p in (ROOT / 'reverse-engineering/offline').glob('*.lua'):
-                if p.stem in {'Bridge', 'Store', 'World', 'Navigation', 'StartScene', 'Roster', 'EnglishUI', 'Locations', 'WorldData'}:
+                if p.stem in {'Bridge', 'Store', 'World', 'Navigation', 'StartScene', 'Roster', 'EnglishUI', 'Locations', 'WorldData', 'Remote'}:
                     entries['app.offline.' + p.stem] = p.read_bytes()
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
