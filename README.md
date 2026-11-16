@@ -5,7 +5,7 @@ source, original-UI offline gameplay, English localization and research.
 
 The offline build retains the original UI and fonts, supports three local
 characters, automatic saves, race-specific starting areas, local combat, original
-death/revival UI and tested map passages. It starts without an updater or login.
+death/revival UI, race-specific level-up effects and tested map passages. It starts without an updater or login.
 
 ## Repository contents
 

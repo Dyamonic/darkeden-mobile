@@ -408,3 +408,22 @@ format restores the visible size. Role-info refresh reapplies the fixed caption.
 The final installed APK passed repeated refresh and close/reopen checks for font
 equality, no shrink and no overflow; visual evidence: tools/exp-matches-level.png.
 Original font/localization integrity and APK signature checks passed.
+
+## Original level-up animation
+
+HeroAgent:showLevelupEffect already implements the native race-specific action
+and process effects (Slayer 976, Vampire 975, Ousters 974), then calls
+HeroActor:showLevelUpSpine using the bundled shengji skeleton. Offline Bridge
+previously updated the displayed level without entering that animation path.
+It now consumes actual World level events, syncs the new hero stats, and calls
+the original effect once per event batch. Ordinary sync/load calls do not do so.
+
+The installed APK passed test-level-up-live.lua: a temporary cloned simulation
+earned XP from an attack, crossed a level threshold and invoked the native
+effect once. The real hero actor created the original Spine; further sync/update
+calls did not replay it. Visual evidence shows the Vampire effect in
+tools/original-level-up-effect.png. Original character/world/save references
+were restored automatically; no test level or rewards were saved. No runtime
+error file remained. All three original race animation names exist in the
+bundled skeleton; only the current Vampire character was used for live playback.
+Lua syntax, combat/rewards/leveling/save regression tests passed.

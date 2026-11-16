@@ -504,6 +504,7 @@ function Bridge:update(dt)
         end
     end
     local dirty=false
+    local levelChanged=false
     for _,event in ipairs(self.world.events) do
         if event.kind=="damage" then
             local e=event.enemy
@@ -516,10 +517,15 @@ function Bridge:update(dt)
             end
         elseif event.kind=="death" then
             self:showDeath();dirty=true
-        elseif event.kind=="hurt" or event.kind=="potion" or event.kind=="reward" or event.kind=="level" or event.kind=="revive" then dirty=true end
+        elseif event.kind=="level" then
+            dirty=true;levelChanged=true
+        elseif event.kind=="hurt" or event.kind=="potion" or event.kind=="reward" or event.kind=="revive" then dirty=true end
     end
     self.world.events={}
     self:syncHero()
+    -- Reuse the original race-specific skill effects and level-up Spine.
+    -- Only earned level events trigger it; loading/syncing a saved level does not.
+    if levelChanged then heroAgent:showLevelupEffect() end
     if dirty then self:syncInventory() end
     self.saveElapsed=(self.saveElapsed or 0)+dt
     if dirty or self.saveElapsed>3 then self:save();self.saveElapsed=0 end

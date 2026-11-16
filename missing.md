@@ -240,7 +240,8 @@ Sources:
 
 Original UI/font, English localization, three isolated character saves,
 race-specific birth maps, basic local movement/combat, death/revive, selected
-portal/NPC travel and common-window caching already exist. They should not be
+portal/NPC travel, original race-specific level-up effects and common-window
+caching already exist. They should not be
 mistakenly marked missing or removed while implementing the gaps above.
 
 For original-server accuracy, the main missing inputs are matching server combat
