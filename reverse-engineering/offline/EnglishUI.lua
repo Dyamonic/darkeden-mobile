@@ -87,6 +87,45 @@ end
 function EnglishUI.fitCountdown(object)
     centerLabel(object,nil,0,-66,140,56,42)
 end
+function EnglishUI.fitStateMapTile(tile)
+    local title=tile:getChild("name")
+    if not title then return end
+    local size=tile:getSize()
+    local caption=title:getText()
+    local directions={Northwest="NW",Northeast="NE",Southwest="SW",Southeast="SE",North="N",South="S",East="E",West="W"}
+    for full,short in pairs(directions) do
+        local base=caption:match("^(.-) "..full.."$")
+        if base then caption=base.."\n"..short;break end
+    end
+    -- Keep two readable lines inside the tile, below the level badge.
+    label(title,caption,4,size.height-37,size.width-8,34,size.width<90 and 12 or 14)
+    title:setSingleLine(false)
+    local level=tile:getChild("lvl")
+    if level then
+        local text=level:getText():gsub("Lv(%d+)%-Lv(%d+)","Lv %1-%2")
+        label(level,text,3,1,math.min(size.width-6,84),18,13)
+    end
+end
+function EnglishUI.fitStateMap(window)
+    local captions={"Your location","Party members","Quest markers","Dungeon entries","Zone names","Level range"}
+    for i,text in ipairs(captions) do
+        local object=window:getChild("n"..(73+i))
+        if object then
+            local y=object:getY()-(object:isPivotAsAnchor() and object:getSize().height*object:getPivot().y or 0)
+            label(object,text,275,y,145,26,18)
+        end
+    end
+    for name,text in pairs({curMap="Local Map",underground="Underground",ground="Surface"}) do
+        local button=window:getChild(name)
+        if button then
+            button:setX(790);button:setSize(150,42);button:setText(text)
+            if button:getTextField() then button:getTextField():setFontSize(20) end
+            EnglishUI.fit(button)
+        end
+    end
+    local title=window:getChild("n88")
+    if title then centerLabel(title,title:getText():gsub(" %(state%)$"," Region"),566,57,620,30,24) end
+end
 function EnglishUI.fitSetting(component,meta)
     local kind,index=meta:getSettingClass(),meta:getIdx()
     local width=component:getSize().width

@@ -269,6 +269,21 @@ def patch():
     src=src.replace('    self._reviveBtn:setText(data.name)','    self._reviveBtn:setText(data.name)\n    require("app.offline.EnglishUI").fitRevive(self)')
     src=src.replace('self._lastLabel:setText(self._remainTs.."s")','self._lastLabel:setText(self._remainTs.."s")\n        require("app.offline.EnglishUI").fitCountdown(self._lastLabel)')
     target.write_text(src,encoding='utf-8')
+    # State-map names are assigned by the original tile refresh, after creation.
+    module='app.scene.widget.component.UICompStateMap'
+    target=overlays/'emag'/module
+    src=target.read_text(encoding='utf-8') if target.exists() else (ROOT/'reverse-engineering/unpacked/emag'/module).read_text(encoding='utf-8')
+    needle='    local mCount = mapMeta:isSmallMap() and smallSize or bigSize'
+    assert needle in src
+    src=src.replace(needle,'    require("app.offline.EnglishUI").fitStateMapTile(child)\n'+needle)
+    target.write_text(src,encoding='utf-8')
+    module='app.scene.widget.window.UIWndStateMap'
+    target=overlays/'emag'/module
+    src=(ROOT/'reverse-engineering/unpacked/emag'/module).read_text(encoding='utf-8')
+    needle='    self._stateMap:refreshStateMapInfo(self._isUnderground)'
+    assert needle in src
+    src=src.replace(needle,needle+'\n    require("app.offline.EnglishUI").fitStateMap(self)')
+    target.write_text(src,encoding='utf-8')
     print('Patched DB fields',updates,'FGUI packages',len(changed)-1,flush=True)
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('action',choices=['extract','translate','patch']);args=parser.parse_args()

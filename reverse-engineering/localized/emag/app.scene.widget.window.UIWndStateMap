@@ -1,0 +1,185 @@
+---@州界面
+---@class UIWndStateMap:UIWindowBase
+local UIWndStateMap = class("UIWndStateMap", lt.UIWindowBase)
+
+local NtfManager = lt.NtfManager
+local Constant = lt.Constant
+local TeamModule = lt.TeamModule
+local MapModule = lt.MapModule
+
+-- Constant.StateSelect = {
+--     Pos = 1,
+--     Team = 2,
+--     Task = 3,
+--     Entrance = 4,
+--     MapName = 5,
+--     Level = 6,
+-- }
+
+local btnCfg = {
+    { name = "pointPos", type = Constant.StateSelect.Pos},
+    { name = "pointTeam", type = Constant.StateSelect.Team},
+    { name = "pointTask", type = Constant.StateSelect.Task},
+    { name = "pointEntrance", type = Constant.StateSelect.Entrance},
+    { name = "pointMapName", type = Constant.StateSelect.MapName},
+    { name = "poinLevel", type = Constant.StateSelect.Level},
+}
+
+function UIWndStateMap:ctor(param)
+    self:registerComponent("UICompStateMap")
+    UIWndStateMap.super.ctor(self, param)
+
+    self._stateMap = nil
+    self._isUnderground = false
+end
+
+function UIWndStateMap:onClear()
+    self:unregisterAllComponent()
+    self._stateMap = nil
+    self._isUnderground = nil
+
+    UIWndStateMap.super.onClear(self)
+end
+
+function UIWndStateMap:onInit()
+    UIWndStateMap.super.onInit(self, _GURL.GetMiniMapStateMap)
+
+    local stateMap = self:getChild("stateMap")
+    stateMap:insertObjectToFactory(self)
+    
+    self:initUI()
+end
+
+function UIWndStateMap:onShown()
+    lt.NtfManager:addNtfListener(lt.NtfManager.NTF.NTF_CHANGE_MAP, handler(self, self.refreshStateMapInfo), "UIWndStateMap:NTF_CHANGE_MAP")
+    lt.NtfManager:addNtfListener(lt.NtfManager.NTF.NTF_MINIMAP_CHANGE_MN, handler(self, self.refreshStateMapInfo), "UIWndStateMap:NTF_MINIMAP_CHANGE_MN")
+    lt.NtfManager:addNtfListener(lt.NtfManager.NTF.NTF_TEAM_MATE_INFO, handler(self, self.onTeamMeteInfo) , "UIWndStateMap:NTF_TEAM_MATE_INFO")
+    lt.NtfManager:addNtfListener(lt.NtfManager.NTF.NTF_QUERY_TEAM_MATE_POS, handler(self, self.onTeamMeteInfo) , "UIWndStateMap:NTF_QUERY_TEAM_MATE_POS")
+
+    if self:getContentPane() then
+        self:refreshStateMapInfo()
+    end
+
+    self:addBtnClick()
+
+    UIWndStateMap.super.onShown(self)
+end
+
+function UIWndStateMap:onHide()
+    lt.NtfManager:removeNtfListenerByTag("UIWndStateMap:NTF_CHANGE_MAP")
+    lt.NtfManager:removeNtfListenerByTag("UIWndStateMap:NTF_MINIMAP_CHANGE_MN")
+    lt.NtfManager:removeNtfListenerByTag("UIWndStateMap:NTF_TEAM_MATE_INFO")
+    lt.NtfManager:removeNtfListenerByTag("UIWndStateMap:NTF_QUERY_TEAM_MATE_POS")
+
+    self:clearBtnClick()
+
+    UIWndStateMap.super.onHide(self)
+end
+
+function UIWndStateMap:addBtnClick()
+    local curMap = self:getChild("curMap")
+    curMap:addClickListener(handler(self, function()
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndStateMap", close = true})
+        NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndCurrentMap"})
+    end))
+
+    -- 筛选过滤按钮
+    for _,v in pairs(btnCfg) do
+        local btn = self:getChild(v.name)
+        btn.index = v.type
+        btn:addClickListener(handler(self, self.btnSelect))
+    end
+
+    -- 地上按钮
+    local ground = self:getChild("ground")
+    ground:addClickListener(handler(self, function()
+        self._isUnderground = false
+        self:refreshStateMapInfo()
+    end))
+
+    -- 地下按钮
+    local underground = self:getChild("underground")
+    underground:addClickListener(handler(self, function()
+        self._isUnderground = true
+        self:refreshStateMapInfo()
+    end))
+
+end
+
+function UIWndStateMap:clearBtnClick()
+    self:getChild("curMap"):removeClickListener()
+
+    -- 筛选过滤按钮
+    for _,v in pairs(btnCfg) do
+        local btn = self:getChild(v.name)
+        btn:removeClickListener()
+    end
+
+    -- 地上按钮
+    self:getChild("ground"):removeClickListener()
+
+    -- 地下按钮
+    self:getChild("underground"):removeClickListener()
+
+end
+
+function UIWndStateMap:initUI()
+
+    self._stateMap = self:getChild("stateMap")
+
+    self:refreshStateMapInfo()
+
+    -- 小人颜色
+    local race = lt.GameModule:getHeroRace()
+    local myIcon = self:getChild("myIcon")
+    myIcon:setURL(string.format(_GURL.GetMinMapPlayer,(Constant.RaceSkinRes[race] or "_o")))
+end
+
+function UIWndStateMap:btnSelect(context)
+    local sender = context:getSender()
+    MapModule:setStateSelectTable(sender.index, sender:isSelected())
+    if sender.index == Constant.StateSelect.Entrance then
+        self._stateMap:showEntrance(sender:isSelected())
+    else
+        self:refreshStateMapInfo()
+    end
+end
+
+function UIWndStateMap:refreshStateMapInfo()
+    local ground = self:getChild("ground")
+    local underground = self:getChild("underground")
+    if self._isUnderground then
+        ground:setVisible(true)
+        underground:setVisible(false)
+    else
+        ground:setVisible(false)
+        underground:setVisible(true)
+    end
+
+    local selectTable = {}
+    for _,v in pairs(btnCfg) do
+        local btn = self:getChild(v.name)
+        btn:setSelected(MapModule:getStateSelectTable(v.type))
+    end
+
+    self._stateMap:refreshStateMapInfo(self._isUnderground)
+    require("app.offline.EnglishUI").fitStateMap(self)
+
+    --打开界面查询队友位置
+    local playerIdList = TeamModule:getTeamMatePlayerId()
+    if #playerIdList > 0 then
+        MapModule:sendQueryTeamMatePos(playerIdList)
+    end
+end
+
+--队友位置信息
+function UIWndStateMap:onTeamMeteInfo(event)
+    local param = event.param
+    self._stateMap:onTeamMeteInfo(param)
+end
+
+function UIWndStateMap:onLayerClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, { class = "UIWndStateMap", close = true })
+end
+
+return UIWndStateMap

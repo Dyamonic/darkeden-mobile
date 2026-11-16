@@ -19,7 +19,7 @@ English cache so a previously installed Chinese database cannot override it.
   deliberately preserved as functional data.
 - All 53 FairyGUI packages checked, with 47 changed. No Chinese remains in
   their string tables. Internal non-language strings and indices are preserved.
-- 122 original Lua modules localized/updated, syntax checked. Source comments
+- 123 original Lua modules localized/updated, syntax checked. Source comments
   are not player-facing text and remain intact in the recovered originals.
 - 3,993 PNGs (3,609 game assets and 384 native resources) scanned with Chinese OCR. Atlas sprite rectangles were read
   from the original UI packages before editing, preventing text edits from
@@ -87,3 +87,5 @@ lettering edits to preserve the existing artwork and font.
 The APK updater also removes android.permission.READ_LOGS from the compiled manifest using tools/android_manifest.py, preventing device-wide log-access permission prompts. This applies even when rebuilding from the older offline base APK.
 
 English layout follow-up: `ui-copy-polish.json` records 35 concise UI captions in the translation cache. Settings use explicit label/value/selector/refill regions; Help entries fit after rendering; revival labels use two lines with separate cost/action areas. Button padding and centered countdowns are measured using the original fangzheng font. Native control artwork and font files are retained.
+
+Region-map labels are fitted after native refreshes: zone names and compass directions use two lines with inner padding, the legend clears lower tiles, and Local Map/Underground/Surface buttons have wider frames. Original metadata names, tile coordinates and marker/navigation behavior are retained.

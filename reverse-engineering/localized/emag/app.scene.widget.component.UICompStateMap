@@ -111,6 +111,7 @@ function UICompStateMap:refreshTargetInfo(child)
         end
     end
 
+    require("app.offline.EnglishUI").fitStateMapTile(child)
     local mCount = mapMeta:isSmallMap() and smallSize or bigSize
     local nCount = bigSize
     self._mWidth = Constant.MAP_BLOCK_WIDTH * mCount

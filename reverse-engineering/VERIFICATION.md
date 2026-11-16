@@ -270,3 +270,28 @@ tools/settings-dropdown-final.png, tools/help-readable-final.png,
 tools/quests-readable-final.png, tools/mail-readable-final.png and
 tools/death-readable-final.png. Tests drive original windows on the GL thread;
 the final installed-build checks do not replace gameplay/backend implementations.
+
+## Region-map spacing - 2026-11-16
+
+Reproduced legend overlap and tile-label clipping in the original region map.
+The new native-widget regression failed on the previous legend bounds. Added
+post-refresh hooks for UICompStateMap and UIWndStateMap. Zone names use two padded
+lines with standard compass abbreviations; the small Perona tiles use readable
+12-point captions. Level badges have their own top strip. Legend labels occupy a
+fixed column that ends before the lower map tiles. Map navigation buttons are
+wider, with concise Local Map, Underground and Surface captions.
+
+The signed APK was installed and tested after a cold launch without replacing
+its Lua modules at runtime. All 29 native map tiles passed bounds/font checks.
+Turning names off and back on, switching surface/underground repeatedly, and
+repeated fitting retained padding and restored the user's filter state. A screen
+tap on Local Map opened the original UIWndCurrentMap. No offline runtime error
+file remained. Original fonts, artwork, tile positions and metadata names remain.
+Evidence: tools/state-map-before.png and tools/state-map-readable-final.png.
+
+Localization checks passed for 123 Lua overlays, 53 UI packages, 21,509 database
+fields and 39 images. Offline simulation, locations, roster and movement/death
+suites passed. Localization hooks are reproducible. APK signature verification
+passed and the encrypted archive matches all current localization overlays and
+EnglishUI. Both build APK filenames and the repository artifact/checksum were
+refreshed.
