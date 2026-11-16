@@ -1,0 +1,1 @@
+PASS native test character bound Murphy, died on map 12, revived to Perona map 61 tile 102,220 with full HP and cleared death UI

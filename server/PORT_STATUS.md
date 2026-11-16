@@ -41,4 +41,4 @@ Backend tests do not establish that every mission, skill, vendor or GM operation
 has been exercised through native UI. The remaining systems above are unfinished;
 importing reference data does not implement them automatically.
 
-Resurrection tests cover NPC/race/proximity/death validation, forged destination rejection, persistence, same-map and cross-map respawn, all racial defaults and living-character retry safety. Native validation covers the original NPC request reaching the adapter. A complete native death-to-another-map playthrough remains unverified.
+Resurrection tests cover NPC/race/proximity/death validation, forged destination rejection, persistence, same-map and cross-map respawn, all racial defaults and living-character retry safety. Native validation covers the original NPC request reaching the adapter. Native playtest with a temporary character: bound Murphy, died on map 12, and revived to map 61 at X102 Y220 with full HP and cleared death UI.
