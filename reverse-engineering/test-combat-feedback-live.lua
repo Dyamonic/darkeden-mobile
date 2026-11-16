@@ -2,9 +2,37 @@
 local real=_G_OFFLINE_BRIDGE;local world=lt.AgentManager:getWorldAgent()
 local hero=lt.AgentManager:getHeroAgent();local x,y=hero:getPosition();local id=990001
 if world:getAgent(id) then world:deleteAgent(id) end
+local map=world:getMapAgent();local hm,hn=hero:getMN();local meta=map:getMapMeta()
+local areas=lt.CacheManager:getSafeAreaArray(real.state.map,true)
+local function inPolygon(points,m,n)
+    local hit=false
+    for i,a in ipairs(points) do
+        local b=points[i%#points+1]
+        local cross=(b[1]-a[1])*(n-a[2])-(b[2]-a[2])*(m-a[1])
+        if cross==0 and m>=math.min(a[1],b[1]) and m<=math.max(a[1],b[1]) and n>=math.min(a[2],b[2]) and n<=math.max(a[2],b[2]) then return true end
+        if (a[2]>n)~=(b[2]>n) and m<(b[1]-a[1])*(n-a[2])/(b[2]-a[2])+a[1] then hit=not hit end
+    end
+    return hit
+end
+local function sanctuary(m,n)
+    if map:getWholeMapSafe() or map:getSafeRect(m,n) then return true end
+    for _,area in ipairs(areas) do if inPolygon(area:getSafeArea(),m,n) then return true end end
+    return false
+end
+local spot
+for radius=2,40 do
+    for dm=-radius,radius do for _,dn in ipairs({-radius,radius}) do
+        local m,n=hm+dm,hn+dn
+        if not spot and m>=0 and n>=0 and m<meta:getWidth() and n<meta:getHeight() and not sanctuary(m,n) and not map:isMapBlocked(m,n) and not map:getPortalSector(m,n) then
+            spot={lt.MapUtil:calcMNMid(m,n)}
+        end
+    end end
+    if spot then break end
+end
+assert(spot,'No legal test location outside the green area')
 local function clone(t)return (json.decode(json.encode(t))) end
 local mob={objID=id,id=970001,monster=7,model=5,name='Combat verification',level=5,
-    x=x+192,y=y+96,hp=10,maxHP=10,moveInterval=.7,attackInterval=.775}
+    x=spot[1],y=spot[2],hp=10,maxHP=10,moveInterval=.7,attackInterval=.775}
 real:spawnMonsters(mob)
 local actor=assert(world:getAgent(id));actor:changeState(lt.MonsterStateIdle.new(actor))
 local state=clone(real.state);state.x,state.y=x,y

@@ -4,6 +4,7 @@ import collections,csv,gzip,hashlib,heapq,json,math,random,re,secrets,sqlite3,st
 from quests import Quests
 from skills import Skills
 from resurrection import Resurrection
+from spawn_rules import exclusion_mask
 
 ROOT=Path(__file__).resolve().parents[1]
 def parse(value,default=None):
@@ -27,6 +28,9 @@ class Catalog:
         self.root=root
         db=sqlite3.connect(root/'editable-apk/assets/win32/res/data/data.bin');db.row_factory=sqlite3.Row
         self.maps={str(r['MapCode']):dict(r) for r in db.execute('SELECT * FROM Map')}
+        self.safe_polygons=collections.defaultdict(list)
+        for row in db.execute('SELECT * FROM SafeArea'):
+            if int(row['Race'])&0x17:self.safe_polygons[str(row['MapCode'])].append(parse(row['SafeArea'],[]))
         self.monsters={r['ID']:dict(r) for r in db.execute('SELECT * FROM MonsterInfo')}
         self.items={(kind,r['ItemIdx']):dict(r) for table,kind in [('Item',1),('Equip',2)] for r in db.execute('SELECT * FROM '+table)}
         self.levels={r['Level']:dict(r) for r in db.execute('SELECT * FROM LevelExpInfo')}
@@ -70,6 +74,11 @@ class Catalog:
             mip=root/'editable-apk/assets/win32/res/map/mip'/meta['RectJson']
             self.mips[code]=parse(mip.read_text(encoding='utf-8'),{}) if mip.is_file() else {}
         db.close()
+        self.no_monsters={};self._spawn_tiles={}
+        for code,(width,height,_) in self.grids.items():
+            mip=self.mips[code]
+            self.no_monsters[code]=exclusion_mask(width,height,mip.get('SafeRects',[]),self.safe_polygons[code],
+                mip.get('MPortals',[]),bool(self.maps[code]['WholeMapSafe']))
 
     def open(self,code,m,n):
         grid=self.grids.get(str(code))
@@ -84,7 +93,16 @@ class Catalog:
         return result
     def portal(self,code,m,n):
         return any(r['Left']<=m<=r['Right'] and r['Top']<=n<=r['Bottom'] for r in self.mips.get(str(code),{}).get('MPortals',[]))
-    def spawn_open(self,code,race,m,n):return self.open(code,m,n) and not self.safe(code,race,m,n) and not self.portal(code,m,n)
+    def spawn_open(self,code,race,m,n):
+        # A monster cannot spawn in another race's sanctuary either.
+        code=str(code)
+        return self.open(code,m,n) and not self.no_monsters[code][m*self.grids[code][1]+n]
+    def spawn_tiles(self,code):
+        code=str(code)
+        if code not in self._spawn_tiles:
+            w,h,_=self.grids[code];margin=15 if min(w,h)>64 else 0
+            self._spawn_tiles[code]=tuple((m,n) for n in range(margin,h-margin) for m in range(margin,w-margin) if self.spawn_open(code,1,m,n))
+        return self._spawn_tiles[code]
     def goal(self,state):return int(self.levels.get(min(state['level'],150),{'Exp':10**9})['Exp'])
 
     def stats(self,s):
@@ -227,10 +245,7 @@ class Engine:
         session['event']+=1;session['events'].append({'seq':session['event'],'kind':kind,**data});session['events']=session['events'][-256:]
     def populate(self,session):
         s=session['state'];code=s['map'];race=s['appearance']['byRace'];session['mobs']=[];session['drops']=[]
-        candidates=[];grid=self.data.grids[code];w,h=grid[:2];margin=15 if min(w,h)>64 else 0
-        for n in range(margin,h-margin):
-            for m in range(margin,w-margin):
-                if self.data.spawn_open(code,race,m,n):candidates.append((m,n))
+        candidates=self.data.spawn_tiles(code)
         if not candidates:return
         rows=self.data.pop.get(code,[])
         for row in rows:
@@ -257,6 +272,10 @@ class Engine:
                 for mob in session['mobs']:
                     if mob['hp']<=0:
                         if now>=mob['respawnAt']:
+                            if not self.data.spawn_open(s['map'],s['appearance']['byRace'],mob['homeM'],mob['homeN']):
+                                candidates=self.data.spawn_tiles(s['map'])
+                                if not candidates:mob['respawnAt']=now+5;continue
+                                mob['homeM'],mob['homeN']=self.rng.choice(candidates)
                             mob['hp']=mob['maxHP'];mob['x'],mob['y']=pixel(mob['homeM'],mob['homeN']);mob.pop('consumed',None)
                         continue
                     d=distance(mob,s)

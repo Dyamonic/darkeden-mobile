@@ -155,9 +155,45 @@ class AuthorityTests(unittest.TestCase):
         for _ in range(1000):self.e.roll_loot(self.session,mob)
         self.assertGreater(len(self.session['drops']),0)
         self.assertTrue(all((d['kind'],d['item']) in self.catalog.items for d in self.session['drops']))
-        mob.update(hp=0,consumed=True,respawnAt=self.time,homeM=62,homeN=64)
+        self.s['map']='12';m,n=self.catalog.spawn_tiles('12')[0]
+        mob.update(hp=0,consumed=True,respawnAt=self.time,homeM=m,homeN=n)
         self.session['mobs']=[mob];self.e.tick(.1)
         self.assertEqual(mob['hp'],mob['maxHP']);self.assertNotIn('consumed',mob)
+    def test_monsters_excluded_from_other_races_sanctuaries(self):
+        self.assertTrue(self.catalog.safe('61',2,102,220))
+        self.assertFalse(self.catalog.safe('61',1,102,220),'Player protection must remain race-specific')
+        for race in [1,2,3]:
+            self.assertFalse(self.catalog.spawn_open('61',race,102,220))
+            self.assertFalse(self.catalog.spawn_open('12',race,117,146))
+            self.assertFalse(self.catalog.spawn_open('1311',race,33,75))
+        self.s['map']='61';self.e.populate(self.session)
+        self.assertGreater(len(self.session['mobs']),0)
+        from spawn_rules import contains_polygon
+        from engine import tile
+        for mob in self.session['mobs']:
+            m,n=tile(mob['x'],mob['y'])
+            self.assertTrue(self.catalog.spawn_open('61',1,m,n))
+            self.assertFalse(any(contains_polygon(poly,m,n) for poly in self.catalog.safe_polygons['61']))
+    def test_respawn_relocates_a_forbidden_home_and_gm_cannot_spawn_in_town(self):
+        self.s['map']='61';self.s['x'],self.s['y']=pixel(102,220)
+        mob=dict(self.catalog.mob(5),hp=0,respawnAt=self.time,homeM=102,homeN=220,x=self.s['x'],y=self.s['y'])
+        self.session['mobs']=[mob];self.e.tick(.1)
+        self.assertEqual(mob['hp'],mob['maxHP'])
+        self.assertTrue(self.catalog.spawn_open('61',2,mob['homeM'],mob['homeN']))
+        self.e.db.execute('UPDATE characters SET gm=1');self.e.db.commit()
+        with self.assertRaises(ValueError):self.e.command(self.session,'gm',{'command':'@mon 5 1'})
+        self.assertEqual(len(self.session['mobs']),1)
+        self.s['map']='1003';mob.update(hp=0,respawnAt=self.time,homeM=62,homeN=64)
+        self.e.tick(.1);self.assertEqual(mob['hp'],0,'A fully safe village must not respawn monsters')
+    def test_spawn_polygon_edges_combined_flags_and_portals(self):
+        from spawn_rules import exclusion_mask,contains_polygon
+        polygon=[[1,1],[4,1],[4,2],[2,2],[2,4],[1,4]]
+        self.assertTrue(contains_polygon(polygon,1,2));self.assertFalse(contains_polygon(polygon,3,3))
+        mask=exclusion_mask(8,8,[{'Flag':19,'Left':6,'Right':6,'Top':6,'Bottom':6}],
+            [polygon],[{'Left':7,'Right':7,'Top':7,'Bottom':7}])
+        for m,n in [(1,1),(4,1),(2,4),(6,6),(7,7)]:self.assertTrue(mask[m*8+n])
+        self.assertFalse(mask[3*8+3]);self.assertEqual(len(mask),64)
+        self.assertEqual(sum(exclusion_mask(8,8,None,[],None)),0)
     def test_skill_damage_resource_and_cooldown(self):
         candidates=[sid for sid in self.catalog.skills if self.e.skills.category(sid)=='damage' and self.catalog.skills[sid]['Race']&2]
         self.assertTrue(candidates)

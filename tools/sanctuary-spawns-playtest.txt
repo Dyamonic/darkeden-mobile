@@ -1,0 +1,1 @@
+PASS 7 nearby living server mobs are outside native safe tiles and green minimap polygons on map 61

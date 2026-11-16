@@ -21,7 +21,7 @@ External source is unchanged. Audit: `reverse-engineering/PC-SERVER-REFERENCE.md
 
 ## Evidence and limits
 
-- 22 isolated authority tests cover forged stats/teleport, movement budget,
+- 25 isolated authority tests cover forged stats/teleport, movement budget,
   command retries, native empty-argument encodings, points/progression, saves,
   collision/populations, death/revive, pickup, quest reward-once, GM permissions,
   equipment, stack rollback and basic skill validation.
@@ -44,3 +44,7 @@ importing reference data does not implement them automatically.
 Resurrection tests cover NPC/race/proximity/death validation, forged destination rejection, persistence, same-map and cross-map respawn, all racial defaults and living-character retry safety. Native validation covers the original NPC request reaching the adapter. Native playtest with a temporary character: bound Murphy, died on map 12, and revived to map 61 at X102 Y220 with full HP and cleared death UI.
 
 Combat presentation fix: server hit events now use the original GameModule HP/effect path, with complete cast targets, zero-damage miss feedback, HP-bar refresh, final-hit-before-death ordering and retry of stalled idle movement. Native fixture verified HP 10 -> 6 -> 0, original bitmap damage label, completed hit reaction and death animation without changing player/server progress.
+
+Monster spawn exclusions now combine every race sanctuary in MIP rectangles, all 104 minimap SafeArea polygons (including borders), portals and wholly safe maps. Player safety remains race-specific. Population placement, pursuit and GM creation share the exclusion mask; respawns revalidate their home tile and relocate or stay dormant if no legal tile exists. Native combat fixtures also select a location outside safe areas.
+
+Native cold-launch check after installing the rebuilt APK: all 7 nearby living mobs on Perona map 61 were outside the client safe tiles and green minimap polygons. No client errors were recorded.
