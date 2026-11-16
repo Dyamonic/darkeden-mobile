@@ -193,6 +193,7 @@ function RoleLayerTL:openDlgMainView(event)
     if view then
         view:setParam(param)
         view:show()
+            require("app.offline.EnglishUI").fit(view)
         view:setSelfPos()
         if not param then param = {} end 
         param.layerName = layerName
@@ -207,6 +208,7 @@ function RoleLayerTL:openDlgMainView(event)
         end
         view:setDialogSystem(self)
         view:show()
+            require("app.offline.EnglishUI").fit(view)
         view:setSelfPos()
         table.insert(self._viewOpenArray, view)
         table.insert(self._viewArray, view)

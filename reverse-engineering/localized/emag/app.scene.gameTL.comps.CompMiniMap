@@ -1,0 +1,541 @@
+---@class CompMiniMap 小地图
+local CompMiniMap = class("CompMiniMap",lt.UIGButtonBase, lt.UICompChangeSkin)
+
+CompMiniMap.ChangeSkinConf = {
+   ["Main"] = {
+        ["bgSize1"] = "bg_zjm_xiaoditu_01",
+        ["bgSize2"] = "bg_zjm_xiaoditu_02",
+        ["bgSize3"] = "bg_zjm_xiaoditu_03",
+   } 
+}
+
+local NtfManager = lt.NtfManager
+local Constant = lt.Constant
+local GameModule = lt.GameModule
+local CacheManager = lt.CacheManager
+local AgentManager = lt.AgentManager
+local CommonFunc = lt.CommonFunc
+local TaskModule = lt.TaskModule
+local MapModule = lt.MapModule
+local AutoFightManager = lt.AutoFightManager
+
+local MAX_RANGE = 4  --4格范围可以点击到npc
+
+function CompMiniMap:ctor()
+    CompMiniMap.super.ctor(self)
+    self._miniscale = 1
+    self._mapIcon = nil
+    self._mapXY = nil
+    self._mapName = nil
+    self._mapStyleControl = nil
+    self._nameList = nil
+    self._isMapNameAction = false
+    self._mapCode = nil
+    self._objlist = {}
+    self._teamlist = {}
+    self._showNpc = true
+    self._showDungeon = true
+    self._showTransmit = true
+    self._showMission = true
+end
+
+function CompMiniMap:onClear()
+    self._mapIcon = nil
+    self._mapXY = nil
+    self._mapName = nil
+    self._mapStyleControl = nil
+    self._nameList = nil
+    self._mapCode = nil
+    CompMiniMap.super.onClear(self)
+end
+
+function CompMiniMap:onConstruct()
+    self._mapIcon = self:getChild("mapIcon")
+    self._mapXY = self:getChild("mapXY")
+    self._mapXY:setText("")
+    self._mapName = self:getChild("mapName")
+    self._mapStyleControl = self:getController("mapStyle")
+    self._blackBg1 = self:getChild("n18")
+    self._blackBg2 = self:getChild("n19")
+    self:setVisible(false)
+    self:startSkin()
+    self:setBGOpacity()
+end
+
+
+function CompMiniMap:onEnter()
+    CompMiniMap.super.onEnter(self)
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CHANGE_MAP, handler(self, self.loadMiniMap), "CompMiniMap:NTF_CHANGE_MAP")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_MINIMAP_CHANGE_MN, handler(self, self.onNtfChangeSprite), "CompMiniMap:NTF_MINIMAP_CHANGE_MN")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_DRAW_SAFE, handler(self, self.drawSafeArea), "CompMiniMap:NTF_DRAW_SAFE")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_MINIMAP_ADD_MN, handler(self, self.onNtfAddSprite), "CompMiniMap:NTF_MINIMAP_ADD_MN")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_MINIMAP_DEL_MN, handler(self, self.onNtfDelSprite), "CompMiniMap:NTF_MINIMAP_DEL_MN")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_MINIMAP_SELECT, handler(self, self.onMiniMapSelect) , "CompMiniMap:NTF_MINIMAP_SELECT")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_TEAM_MATE_INFO, handler(self, self.onTeamMeteInfo) , "CompMiniMap:NTF_TEAM_MATE_INFO")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_QUERY_TEAM_MATE_POS, handler(self, self.onTeamMeteInfo) , "CompMiniMap:NTF_QUERY_TEAM_MATE_POS")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_MINIMAP_ROUTE_NOTICE, handler(self, self.onNtfRoutePos) , "CompMiniMap:NTF_MINIMAP_ROUTE_NOTICE")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CHANGE_SETTINGS, handler(self, self.changeSettings), "CompMiniMap:NTF_CHANGE_SETTINGS")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_NPC_DISAPPEAR, handler(self, self.onNpcDisappear), "CompMiniMap:NTF_NPC_DISAPPEAR")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_NPC_SHOW_IN_MINI, handler(self, self.onNpcShow), "CompMiniMap:onNpcShow")
+    self._mapIcon:addClickListener(handler(self, self.onMapIconClick))
+end
+
+function CompMiniMap:onExit()
+    self._mapIcon:removeClickListener()
+    NtfManager:removeNtfListenerByTag("CompMiniMap:NTF_CHANGE_MAP")
+    NtfManager:removeNtfListenerByTag("CompMiniMap:NTF_MINIMAP_CHANGE_MN")
+    NtfManager:removeNtfListenerByTag("CompMiniMap:NTF_DRAW_SAFE")
+    NtfManager:removeNtfListenerByTag("CompMiniMap:NTF_MINIMAP_ADD_MN")
+    NtfManager:removeNtfListenerByTag("CompMiniMap:NTF_MINIMAP_DEL_MN")
+    NtfManager:removeNtfListenerByTag("CompMiniMap:NTF_MINIMAP_SELECT")
+    NtfManager:removeNtfListenerByTag("CompMiniMap:NTF_TEAM_MATE_INFO")
+    NtfManager:removeNtfListenerByTag("CompMiniMap:NTF_QUERY_TEAM_MATE_POS")
+    NtfManager:removeNtfListenerByTag("CompMiniMap:NTF_MINIMAP_ROUTE_NOTICE")
+    NtfManager:removeNtfListenerByTag("CompMiniMap:NTF_CHANGE_SETTINGS")
+    NtfManager:removeNtfListenerByTag("CompMiniMap:NTF_NPC_DISAPPEAR")
+    NtfManager:removeNtfListenerByTag("CompMiniMap:onNpcShow")
+    CompMiniMap.super.onExit(self)
+end
+
+function CompMiniMap:loadMiniMap(event)
+    self._mapMeta = event.param.mapMeta
+
+    -- 地图icon
+    local minMapResPath = string.format(_GURL.GetMiniMap, self._mapMeta:getMinimapId())
+    self._mapIcon:setURL(minMapResPath)
+    self:setVisible(true)
+
+    -- 地图样式选择
+    local spriteRect = display.newSprite(minMapResPath)
+    local spriteRectSize = spriteRect:getContentSize()
+    self._disHeight = 0
+    if spriteRectSize.width/spriteRectSize.height == 1 then
+        self._mapStyleControl:setSelectedIndex(0)
+    else
+        self._mapStyleControl:setSelectedIndex(2)
+        if spriteRectSize.width/spriteRectSize.height > 2 then
+            local scaleX = spriteRectSize.width/spriteRectSize.height/2
+            self._disHeight = self._mapIcon:getSize().height*(1-1/scaleX)
+        end
+    end
+
+    -- 地图名
+    local mapName = self._mapMeta:getMapName()
+    if self._mapMeta:getMapCode() == Constant.MAP_CODE.MIRROROFABYSS then
+        local race = GameModule:getHeroRace()
+        local missionMeta = CacheManager:getMissionMeta(Constant["ADVANCE_TASK"..race].COLUMN)
+        local target = missionMeta:getMissionTarget()[1][2]
+        local meta = CacheManager:getMirrorOfAbyssMeta(target)
+        mapName = meta:getMapName()[race]
+    end
+    self._mapName:setText(mapName)
+    require("app.offline.EnglishUI").fitHeader(self._mapName,28)
+
+    -- 加载地图信息
+    if self._mapCode ~= self._mapMeta:getMapCode() then
+        --清除所有标记
+        for i = 1, #self._objlist do
+            self._objlist[i]:removeFromParent()
+        end
+        self._objlist = {}
+        self._teamlist = {}
+        
+        self._mapCode = self._mapMeta:getMapCode()
+        local worldAgent = AgentManager:getWorldAgent()
+        local mapIconSize = self:getMapIconSize()
+
+        --加载npc(包括魔灵柱)
+        local race = GameModule:getHeroRace()
+        local npclist = worldAgent:getNpcPositionList()
+        for k, v in pairs(npclist) do
+            local isTransmit = v.npcType == Constant.NPC_TYPE.TRANSMIT
+            --只有魔族显示魔灵柱
+            if v.isDisplay == 0 and ((isTransmit and race == Constant.RaceType.Ousters) or not isTransmit) then
+                local parentNode = isTransmit and self:getChild("transmitNode") or self:getChild("npcNode")
+                local scale = isTransmit and 0.5 or 1
+                local npcObj = fgui.UIPackage:createObject("MiniMap", isTransmit and "TransmitBig" or "NpcBig")
+                parentNode:addChild(npcObj)
+                local posX, posY = self:posToMapPos(mapIconSize, v.npcX, v.npcY)
+                posX, posY = self:changePos(posX, posY)
+                npcObj:setPosition(posX, posY)
+                npcObj:getChild("icon"):setScale(scale, scale)
+                npcObj:setVisible(isTransmit and self._showTransmit or self._showNpc)
+                npcObj.npcName = k
+                table.insert(self._objlist, npcObj)
+            end
+        end
+
+        --加载地牢
+        local dungeonEntraMeta = CacheManager:getMapTransferMeta(self._mapCode)
+        for i = 1, #dungeonEntraMeta do
+            local meta = dungeonEntraMeta[i]
+            if #meta:getLandMark() == 3 then
+                local dungeonObj = fgui.UIPackage:createObject("MiniMap", "DungeonBig")
+                self:getChild("dungeonNode"):addChild(dungeonObj)
+                local posX, posY = self:posToMapPos(mapIconSize, meta:getLandMark()[2] or 0, meta:getLandMark()[3] or 0)
+                posX, posY = self:changePos(posX, posY)
+                dungeonObj:setPosition(posX, posY)
+                dungeonObj:setVisible(self._showDungeon)
+                table.insert(self._objlist, dungeonObj)
+            end
+        end
+
+        --加载任务点
+        if self._mapCode == Constant.MAP_CODE.ALTAROFBLOOD then
+            --解救人质单独处理
+            local taskData = TaskModule:getTaskById(Constant["ADVANCE_TASK"..race].HOSTAGE)
+            local isComplete = TaskModule:checkTaskComplete(taskData)
+            if not isComplete then
+                local altarBloodNpc = MapModule:getAltarBloodNpc()
+                for k, v in pairs(npclist) do
+                    local isFinish = CommonFunc:isInArray(altarBloodNpc, tostring(v.npcId))
+                    if v.isDisplay == race and not isFinish then
+                        local parentNode = self:getChild("missionNode")
+                        local scale = 1
+                        local npcObj = fgui.UIPackage:createObject("MiniMap", "MissionBig")
+                        parentNode:addChild(npcObj)
+                        local posX, posY = self:posToMapPos(mapIconSize, v.npcX, v.npcY)
+                        posX, posY = self:changePos(posX, posY)
+                        npcObj.npcId = v.npcId
+                        npcObj:setPosition(posX, posY)
+                        npcObj:getChild("icon"):setScale(scale, scale)
+                        npcObj:setVisible(self._showMission)
+                        table.insert(self._objlist, npcObj)
+                    end
+                end
+            end
+        end
+    end
+end
+
+function CompMiniMap:posToMapPos(mapSize,posX,posY)
+    local mapData = AgentManager:getWorldAgent():getMapAgent():getMapData()
+    local mCount = mapData:getMCount()
+    local nCount = mapData:getNCount()
+    local mWidth = Constant.MAP_BLOCK_WIDTH * mCount
+    local nHeight = Constant.MAP_BLOCK_HEIGHT * nCount
+
+    local posX = posX*Constant.MAP_BLOCK_WIDTH*mapSize.width/mWidth
+    local posY = posY*Constant.MAP_BLOCK_HEIGHT*mapSize.height/nHeight
+
+    return posX, posY
+end
+
+function CompMiniMap:posToMapPos2(mapSize,posX,posY)
+    local mapData = AgentManager:getWorldAgent():getMapAgent():getMapData()
+    local mCount = mapData:getMCount()
+    local nCount = mapData:getNCount()
+    local mWidth = Constant.MAP_BLOCK_WIDTH * mCount
+    local nHeight = Constant.MAP_BLOCK_HEIGHT * nCount
+
+    local posX = posX*Constant.MAP_BLOCK_WIDTH*mapSize.width/mWidth - mapSize.width
+    if mapSize.width == 120 then
+        posX = posX - 60
+    end
+    local posY = Constant.MAP_BLOCK_HEIGHT*mapSize.height/nHeight - posY*Constant.MAP_BLOCK_HEIGHT*mapSize.height/nHeight
+
+    return posX, posY
+end
+
+function CompMiniMap:changePos(posX, posY)
+    local pos = self._mapIcon:getPosition()
+    local posX = posX + pos.x
+    local posY = posY + pos.y
+    if self._disHeight > 0 then
+        posY = posY/2 + self._disHeight - 10
+    end
+
+    return posX, posY
+end
+
+function CompMiniMap:refreshMyPos(m,n)
+    local my = self:getChild("my")
+    local race = GameModule:getHeroRace()
+    my:setURL(string.format(_GURL.GetMinMapPlayer,(Constant.RaceSkinRes[race] or "_o")))
+    local myPos = lt.MapModule:getMyPosData()
+    local mapIconSize = self:getMapIconSize()
+
+    local posX, posY = self:posToMapPos(mapIconSize, myPos[2] or 0, myPos[3] or 0)
+    posX, posY = self:changePos(posX, posY)
+    my:setPosition(posX, posY)
+    my:setVisible(true)
+
+    self._mapXY:setText(string.format("X:%s Y:%s",m, n))
+end
+
+function CompMiniMap:onNtfAddSprite(event)
+    if type(event.param) == "table" then
+        for _, value in ipairs(event.param) do
+            self:_addSprite(value)
+        end
+    end
+end
+
+function CompMiniMap:onNtfDelSprite(event)
+    if type(event.param) == "table" then
+        for _, value in ipairs(event.param) do
+            -- self:_delSprite(value)
+        end
+    end
+end
+
+function CompMiniMap:_changeSprite(value)
+    if not value then
+        return
+    end
+    local agentId = value.agentId
+    local m = value.m
+    local n = value.n
+    local isSelf = value.isSelf
+    local mapCode = value.mapCode
+
+    if isSelf then
+        -- self._mapXY:setText(string.format("X:%s Y:%s",m, n))
+        if self._mapMeta:getMapCode() == mapCode then
+            local datas = {self._mapMeta:getMapCode(),m,n}
+            lt.MapModule:setMyPosData(datas)
+            self:refreshMyPos(m,n)
+        end
+    end
+end
+
+function CompMiniMap:onNtfChangeSprite(event)
+    if type(event.param) == "table" then
+        for _, value in ipairs(event.param) do
+            self:_changeSprite(value)
+        end
+    end
+end
+
+function CompMiniMap:_addSprite(value)
+    local agentId = value.agentId
+    local m = value.m
+    local n = value.n
+    local colorType = value.colorType
+    local isSelf = value.isSelf
+    if isSelf then
+        -- self._mapXY:setText(string.format("X:%s Y:%s",m, n))
+        local datas = {self._mapMeta:getMapCode(),m,n}
+        lt.MapModule:setMyPosData(datas)
+        
+        self:refreshMyPos(m,n)
+    end
+end
+
+--小地图筛选按钮点击
+function CompMiniMap:onMiniMapSelect(event)
+    local param = event.param
+    if param.index == Constant.MiniMapSelect.Npc then
+        self:showNpc(param.select)
+    elseif param.index == Constant.MiniMapSelect.Pos then
+        self:showDungeon(param.select)
+    elseif param.index == Constant.MiniMapSelect.Delivery then
+        self:showTransmit(param.select)
+    elseif param.index == Constant.MiniMapSelect.Task then
+        self:showMission(param.select)
+    elseif param.index == Constant.MiniMapSelect.Team then
+        self:showTeamMate(param.select)
+    end
+end
+
+--显示NPC
+function CompMiniMap:showNpc(showNpc)
+    self._showNpc = showNpc
+    self:getChild("npcNode"):setVisible(self._showNpc)
+end
+
+--显示地牢
+function CompMiniMap:showDungeon(showDungeon)
+    self._showDungeon = showDungeon
+    self:getChild("dungeonNode"):setVisible(self._showDungeon)
+end
+
+--显示魔灵传送柱
+function CompMiniMap:showTransmit(showTransmit)
+    self._showTransmit = showTransmit
+    self:getChild("transmitNode"):setVisible(self._showTransmit)
+end
+
+--显示队友位置
+function CompMiniMap:showMission(showMission)
+    self._showMission = showMission
+    self:getChild("missionNode"):setVisible(self._showMission)
+end
+
+--显示队友位置
+function CompMiniMap:showTeamMate(showTeamMate)
+    self._showTeamMate = showTeamMate
+    self:getChild("teamNode"):setVisible(self._showTeamMate)
+end
+
+--画安全区
+function CompMiniMap:drawSafeArea()
+    local race = lt.GameModule:getHeroRace()
+    local parentNode = self:getChild("safeAreaNode"):displayObject()
+    parentNode:removeAllChildren()
+    local mapIconSize = self:getMapIconSize()
+    local safeAreaMeta = CacheManager:getSafeAreaArray(self._mapCode, true)
+    if #safeAreaMeta > 0 then
+        for i = 1, #safeAreaMeta do
+            local points = {}
+            local safeRect = safeAreaMeta[i]:getSafeArea()
+            for j = 1, #safeRect do
+                local posX, posY = self:posToMapPos2(mapIconSize,safeRect[j][1], safeRect[j][2])
+                table.insert(points, cc.p(posX, posY))
+            end
+            if #points > 0 then
+                local drawNode = cc.DrawNode:create()
+                parentNode:addChild(drawNode)
+                local isOwn = safeAreaMeta[i]:getRace() == Constant.SAFE_RACE[race] or safeAreaMeta[i]:getRace() == 4
+                local color = isOwn and cc.c4b(0x00/255, 50/255, 0x00/255, 0.7) or cc.c4b(0xFF/255, 0x00/255, 0x00/255, 0.3)
+                drawNode:drawPolygon(points, #points, color, 0, color)
+            end
+        end
+    end
+end
+
+--队友位置信息
+function CompMiniMap:onTeamMeteInfo(event)
+    local param = event.param
+    --没队伍隐藏所有
+    if param.playerId == nil then
+        for k, v in pairs(self._teamlist) do
+            v:setVisible(false)
+        end
+        return
+    end
+    --自己剔除
+    local playerId = GameModule:getHeroData():getPlayerId()
+    if playerId == param.playerId then return end
+    if self._mapCode == param.mapCode then
+        if self._teamlist[param.playerId] == nil then
+            local teamObj = fgui.UIPackage:createObject("MiniMap", "TeamMatePoint")
+            self:getChild("teamNode"):addChild(teamObj)
+            self._teamlist[param.playerId] = teamObj
+            table.insert(self._objlist, teamObj)
+        end
+        local mapIconSize = self:getMapIconSize()
+        local posX, posY = self:posToMapPos(mapIconSize, param.Xpos, param.Ypos)
+        posX, posY = self:changePos(posX, posY)
+        self._teamlist[param.playerId]:setPosition(posX, posY)
+    end
+    if self._teamlist[param.playerId] then
+        self._teamlist[param.playerId]:setVisible(self._mapCode == param.mapCode)
+    end
+end
+
+function CompMiniMap:onMapIconClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndCurrentMap"})
+end
+
+function CompMiniMap:setBGOpacity()
+    local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.MAP_OPACITY)
+    self.isBGOpacity = editTable.switch == 1
+    if self.isBGOpacity then
+        editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.WINDOW_OPACITY)
+        local value = editTable.value < 50 and 50 or editTable.value
+        self._blackBg1:setAlpha(value/100)
+        self._blackBg2:setAlpha(value/100)
+        self._mapIcon:setAlpha(value/100)
+    else
+        self._blackBg1:setAlpha(1)
+        self._blackBg2:setAlpha(1)
+        self._mapIcon:setAlpha(1)
+    end
+end
+
+--设置改变
+function CompMiniMap:changeSettings(params)
+    local param = params.param
+    if param.index == Constant.SETTINGS_TYPES.MAP_OPACITY or param.index == Constant.SETTINGS_TYPES.WINDOW_OPACITY then
+        local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.MAP_OPACITY)
+        self.isBGOpacity = editTable.switch == 1
+        if self.isBGOpacity then
+            editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.WINDOW_OPACITY)
+            local value = editTable.value < 50 and 50 or editTable.value
+            self._blackBg1:setAlpha(value/100)
+            self._blackBg2:setAlpha(value/100)
+            self._mapIcon:setAlpha(value/100)
+        else
+            self._blackBg1:setAlpha(1)
+            self._blackBg2:setAlpha(1)
+            self._mapIcon:setAlpha(1)
+        end
+    end
+
+    if param.index == Constant.SETTINGS_TYPES.MAP_SCALE then
+        local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.MAP_SCALE)
+        local worldAgent = lt.AgentManager:getWorldAgent()
+        if not worldAgent then
+            return 
+        end
+        local mapAgent = worldAgent:getMapAgent()
+        if not mapAgent then
+            return
+        end
+        local scale = editTable.value / 100
+        mapAgent:setScale(scale)
+    end
+end
+
+function CompMiniMap:onNpcDisappear(event)
+    local param = event.param
+    for k, v in pairs(self._objlist) do
+        if v.npcId == param.npcId then
+            v:setVisible(false)
+        end
+    end
+end
+
+function CompMiniMap:onNpcShow(event)
+    local param = event.param
+    if not param then
+        return
+    end
+    local show = param.show
+    local npcName = param.npcName
+    for k, v in pairs(self._objlist) do
+        if v.npcName == npcName then
+            v:setVisible(show)
+        end
+    end
+end
+
+function CompMiniMap:onNtfRoutePos(event)
+    local param = event.param
+    if param.routeMNArray == nil then
+        --寻路结束如果是NPC调用
+        local routeData = GameModule:getLastRouteData()
+        if routeData and routeData.npcId then
+            local heroAgent = lt.AgentManager:getHeroAgent()
+            local mHero, nHero = heroAgent:getMNExactly()
+            local disX = mHero - routeData.posX
+            local disY = nHero - routeData.posY
+            if math.sqrt(disX * disX + disY * disY) <= MAX_RANGE then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndCurrentMap", close = true})
+                local npcMeta = lt.CacheManager:queryNpc(routeData.npcId)
+                if npcMeta:getNpcType() == Constant.NPC_TYPE.TRANSMIT then
+                    local heroData = GameModule:getHeroData()
+                    if not heroData:isOusters() then
+                        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = GReadText.KEY_NPC_NOTRACE_TIPS})
+                        return
+                    end
+                    if not heroData:getSignContract() then
+                        NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_NPC_SKILL_TIPS9})
+                        return
+                    end
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndOustersTransmitMap"})
+                else
+                    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndTalkNpc", reopen = true, npcId = routeData.npcId})
+                end
+            end
+        end
+        GameModule:setLastRouteData(nil)
+    end
+end
+
+function CompMiniMap:getMapIconSize()
+    return self._mapIcon:getSize()
+end
+
+return CompMiniMap

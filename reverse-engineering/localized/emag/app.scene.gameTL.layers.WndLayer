@@ -136,6 +136,7 @@ function WndLayer:openView(layerName, param)
             if not param then param = {} end 
             param.layerName = layerName
             view:show()
+            require("app.offline.EnglishUI").fit(view)
             view:checkRedTips()
             self:setOffset(view, false)
             table.insert(self._viewOpenArray, view)
@@ -154,6 +155,7 @@ function WndLayer:openView(layerName, param)
                 return
             end
             view:show()
+            require("app.offline.EnglishUI").fit(view)
             view:checkRedTips()
             self:setOffset(view, false)
             table.insert(self._viewOpenArray, view)

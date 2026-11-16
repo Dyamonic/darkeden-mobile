@@ -5,7 +5,10 @@ The installed build is `../android-studio-project/app/build/outputs/apk/apktool/
 This pass translates the game's displayed database content, original Lua text,
 FairyGUI string tables and recognized Chinese lettering in bitmap UI assets.
 It retains the original UI layout, character slots, saves and fonts. English
-button labels are fitted to their existing controls; narrow side tabs are
+button labels are fitted to their existing controls. Dynamic windows and
+character rows are fitted after text updates, with separate caption/value
+space and reset native shrink state. Long zone names reserve the minimap
+arrow area. Original level unlock rules are unchanged. Narrow side tabs are
 rotated for readable English. The configuration database uses a content-addressed
 English cache so a previously installed Chinese database cannot override it.
 
@@ -16,7 +19,7 @@ English cache so a previously installed Chinese database cannot override it.
   deliberately preserved as functional data.
 - All 53 FairyGUI packages checked, with 47 changed. No Chinese remains in
   their string tables. Internal non-language strings and indices are preserved.
-- 117 original Lua modules localized/updated, syntax checked. Source comments
+- 119 original Lua modules localized/updated, syntax checked. Source comments
   are not player-facing text and remain intact in the recovered originals.
 - 3,993 PNGs (3,609 game assets and 384 native resources) scanned with Chinese OCR. Atlas sprite rectangles were read
   from the original UI packages before editing, preventing text edits from

@@ -1,0 +1,1361 @@
+---@角色信息
+---@class UIWndRoleInfo:UIWindowBase
+local UIWndRoleInfo = class("UIWndRoleInfo", lt.UIWindowBase)
+
+local NtfManager = lt.NtfManager
+local RaceSkinRes = lt.Constant.RaceSkinRes
+local RaceType = lt.Constant.RaceType
+local GameModule = lt.GameModule
+local Constant = lt.Constant
+local SkillModule = lt.SkillModule
+local RankEXPInfoDao = lt.RankEXPInfoDao
+local btnType = Constant.RoleInfoBtnType
+local WndLockManager = lt.WndLockManager
+local CacheManager = lt.CacheManager
+local CommonFunc = lt.CommonFunc
+local GuideModule = lt.GuideModule
+local AutoFightManager = lt.AutoFightManager
+
+UIWndRoleInfo.ChangeSkinConf = {
+    ["RoleInfo"] = {
+        ["opacityDi"] = "bg_jsxx_dikuang02",
+        ["opacityBg"] = "bg_dikuang_01",
+        ["bg"] = "bg_dikuang_02",
+    },
+}
+
+UIWndRoleInfo.ChangeSkinOffset = {
+   [RaceType.Slayer] = {
+        ["frame"] = {
+            closeButton1 = {x= -3,y = -5}
+        },
+   },
+   [RaceType.Vampire] = {
+        ["frame"] = {
+            closeButton1 = {x= -5,y = -5}
+        },
+   },
+   [RaceType.Ousters] = {}
+}
+
+local roleInfoTips = {
+    StringTips1 = "KEY_ROLE_INFO_TIPS1",
+    StringTips2 = "KEY_ROLE_INFO_TIPS2",
+    StringTips3 = "KEY_ROLE_INFO_TIPS3",
+    StringTips4 = "KEY_ROLE_INFO_TIPS4",
+    StringTips5  = "KEY_ROLE_INFO_TIPS5",
+    StringTips6 = "KEY_ROLE_INFO_TIPS6",
+    StringTips7 = "KEY_ROLE_INFO_TIPS7",
+    StringTips9 = "KEY_ROLE_INFO_TIPS9",
+    StringTips10 = "KEY_ROLE_INFO_TIPS10",
+    StringTips11 = "KEY_ROLE_INFO_TIPS11",
+    StringTips12 = "KEY_ROLE_INFO_TIPS12",
+    StringTips13 = "KEY_ROLE_INFO_TIPS13",
+    StringTips14 = "KEY_ROLE_INFO_TIPS14",
+    StringTips15 = "KEY_ROLE_INFO_TIPS15",
+    StringTips16 = "KEY_ROLE_INFO_TIPS16",
+    StringTips17 = "KEY_ROLE_INFO_TIPS17",
+    StringTips18 = "KEY_ROLE_INFO_TIPS18",
+    StringTips19 = "KEY_ROLE_INFO_TIPS19",
+    StringTips20 = "KEY_ROLE_INFO_TIPS20",
+    StringTips21 = "KEY_ROLE_INFO_TIPS21",
+    StringTips22 = "KEY_ROLE_INFO_TIPS22",
+    StringTips23 = "KEY_ROLE_INFO_TIPS23",
+    StringTips24 = "KEY_ROLE_INFO_TIPS24",
+    StringTips25 = "KEY_ROLE_INFO_TIPS25",
+    StringTips26 = "KEY_ROLE_INFO_TIPS26",
+    StringTips27 = "KEY_ROLE_INFO_TIPS27",
+    StringTips28 = "KEY_ROLE_INFO_TIPS28",
+    StringTips29 = "KEY_ROLE_INFO_TIPS29",
+    StringTips30 = "KEY_ROLE_INFO_TIPS30",
+    StringTips31 = "KEY_ROLE_INFO_TIPS31",
+    StringTips32 = "KEY_ROLE_INFO_TIPS32",
+    StringTips33 = "KEY_ROLE_INFO_TIPS33",
+    StringTips34 = "KEY_ROLE_INFO_TIPS34",
+    StringTips35 = "KEY_ROLE_INFO_TIPS35",
+    StringTips36 = "KEY_ROLE_INFO_TIPS36",
+    StringTips37 = "KEY_ROLE_INFO_TIPS37",
+    StringTips38 = "KEY_ROLE_INFO_TIPS38",
+    StringTips39 = "KEY_ROLE_INFO_TIPS39",
+    StringTips40 = "KEY_ROLE_INFO_TIPS40",
+    StringTips41 = "KEY_ROLE_INFO_TIPS41",
+    StringTips42 = "KEY_ROLE_INFO_TIPS42",
+    StringTips43 = "KEY_ROLE_INFO_TIPS43",
+    StringTips44 = "KEY_ROLE_INFO_TIPS44",
+}
+
+-- 读取文本配置
+for k,v in pairs(roleInfoTips) do
+    roleInfoTips[k] = GReadText[v]
+end
+
+local btnInfo = {
+    [btnType.role] = {btnName = "role", name = roleInfoTips.StringTips34},
+    [btnType.magic] = {btnName = "magic", name = roleInfoTips.StringTips35},
+    [btnType.lowCls] = {btnName = "lowCls", name = roleInfoTips.StringTips36},
+    [btnType.superCls] = {btnName = "superCls", name = roleInfoTips.StringTips37},
+    [btnType.transfer] = {btnName = "transfer", name = roleInfoTips.StringTips38},
+}
+
+local topOrder = 100
+
+function UIWndRoleInfo:ctor(param)
+    self:registerComponent("UICompRoleSkill","UICompTransfer","UICompMagicO","UICompMagicS","UICompMagicV","UICompSkillTips")
+    UIWndRoleInfo.super.ctor(self, param)
+    self._selectIndex = nil
+
+    self._clsCom = nil
+    self._magicCom = nil
+    self._transferCom = nil
+
+    self._attrListLeft = nil
+    self._attrItemListLeft = nil
+end
+
+function UIWndRoleInfo:onClear()
+    self:unregisterAllComponent()
+    UIWndRoleInfo.super.onClear(self)
+    self._selectIndex = nil
+
+    self._clsCom = nil
+    self._magicCom = nil
+    self._transferCom = nil
+
+    self._attrListLeft = nil
+    self._attrItemListLeft = nil
+    self._localZorder = nil
+end
+
+function UIWndRoleInfo:onEnter()
+    --判断是否清洗技能
+    local param = self:getParam().param or {}
+    self._type = param.tabId or 1
+    self._selectIndex = self._type == Constant.ENTER_TYPES.FORGET and Constant.ENTER_TYPES.LEARN or self._type
+end
+
+function UIWndRoleInfo:onShown()
+    UIWndRoleInfo.super.onShown(self)
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_HERO_EVENT, handler(self, self.refreshHeroInfo), "UIWndRoleInfo:refreshHeroInfo")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_INIT_PASSIVE_SKILL_LIST, handler(self, self.onRefreshClsList), "UIWndRoleInfo:onRefreshClsList")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_INIT_SKILL_LIST, handler(self, self.onRefreshSkillList), "UIWndRoleInfo:onRefreshSkillList")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_UPDATE_HPMP_EVENT, handler(self, self.refreshAttrLeft), "UIWndRoleInfo:refreshAttrLeft")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_CHANGE_SETTINGS, handler(self, self.changeSettings), "UIWndRoleInfo:changeSettings")
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_RED_DOT_EVENT, handler(self, self.uptRedDotEvt), "UIWndRoleInfo:uptRedDotEvt")
+
+    for i = 1, #self.btnList do
+        self.btnList[i]:setVisible(self._type ~= Constant.ENTER_TYPES.FORGET) 
+    end
+    self:refreshBtnState()
+    self:showCurPanel()
+    self:refreshHeroInfo()
+    self:setBGOpacity()
+    --刷新技能红点
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_RED_DOT_EVENT,{name = "SkillRedTips"})
+
+    self:refreshCloseBtn()
+    self:addAllBtnClik()
+    self:addInfoAttrClick()
+    self:addAttrLeftClick()
+    self:fixReview()
+end
+
+function UIWndRoleInfo:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndRoleInfo:refreshHeroInfo")
+    NtfManager:removeNtfListenerByTag("UIWndRoleInfo:onRefreshClsList")
+    NtfManager:removeNtfListenerByTag("UIWndRoleInfo:onRefreshSkillList")
+    NtfManager:removeNtfListenerByTag("UIWndRoleInfo:refreshAttrLeft")
+    NtfManager:removeNtfListenerByTag("UIWndRoleInfo:changeSettings")
+    NtfManager:removeNtfListenerByTag("UIWndRoleInfo:uptRedDotEvt")
+
+    local race = GameModule:getHeroRace()
+    --清除魔法类型缓存
+    if self._magicCom and race == RaceType.Ousters then
+        self._magicCom:setType(nil)
+    end
+
+    local closeBtn = self:getChild("frame"):getChild("closeButton1")
+    closeBtn:removeClickListener()
+
+    self:clearAllBtnClik()
+    self:clearInfoAttrClick()
+    self:clearAttrLeftClick()
+    UIWndRoleInfo.super.onHide(self)
+end
+
+function UIWndRoleInfo:resetZOrder()
+    local localZorder = self._localZorder or self:getLocalZOrder() - 1
+    self:setLocalZOrder(localZorder)
+    -- print("UIWndRoleInfo 重置因reopen而叠加上来的zorder:",localZorder)
+    self._localZorder = localZorder
+end
+
+-- function UIWndRoleInfo:onUpdate()
+--     if self.getLocalZOrder then
+--         local z = self:getLocalZOrder()
+--         print("UIWndRoleInfo onUpdate zorder:",z)
+--     end
+-- end
+
+function UIWndRoleInfo:onRefreshSkillList()
+    -- 人族鬼族技能列表刷新
+    if self._magicCom and self._magicCom:isVisible() and self._selectIndex == btnType.magic and self._magicCom.refreshCurInfo then
+        self._magicCom:refreshCurInfo()
+    end
+
+    -- 转职技能列表刷新
+    if self._transferCom and self._transferCom:isVisible() and self._selectIndex == btnType.transfer and self._transferCom.refreshCurInfo then
+        self._transferCom:refreshCurInfo()
+    end
+
+    -- 魔族族技能列表刷新
+    if self._magicCom and self._magicCom:isVisible() and self._selectIndex == btnType.magic and self._magicCom.refreshCurInfo then
+        self._magicCom:refreshCurInfo()
+    end
+end
+
+function UIWndRoleInfo:refreshHeroInfo(event)
+    self:refreshRoleInfo()-- 上面人物信息
+    self:refreshAttrLeft()-- 左边属性
+    self:refreshAttrRight()-- 右边属性
+
+    -- 阶级技能界面刷新
+    self:onRefreshClsList()
+
+    -- 人族鬼族技能列表刷新
+    if self._magicCom and self._magicCom:isVisible() and self._selectIndex == btnType.magic and self._magicCom.refreshCurInfo then
+        self._magicCom:refreshCurInfo()
+    end
+
+    -- 转职技能列表刷新
+    if self._transferCom and self._transferCom:isVisible() and self._selectIndex == btnType.transfer and self._transferCom.refreshCurInfo then
+        self._transferCom:refreshCurInfo()
+    end
+end
+
+function UIWndRoleInfo:onRefreshClsList()
+    if self._clsCom and self._clsCom:isVisible() and (self._selectIndex == btnType.lowCls or self._selectIndex == btnType.superCls) then
+        self._clsCom:refreshPanelByCls(self._selectIndex)
+    end
+end
+
+function UIWndRoleInfo:onInit()
+    UIWndRoleInfo.super.onInit(self, _GURL.CompRoleInfo)
+    
+    self._bg = self:getChild("bg")
+    self._bgOpacity = self:getChild("opacityBg")
+    self._diOpacity = self:getChild("opacityDi")
+    self._addPointBtn = self:getChild("btn_addPoint")
+
+    self:initUI()
+end
+
+function UIWndRoleInfo:initUI()
+    -- 关闭按钮多窗口逻辑
+    -- self:refreshCloseBtn()
+
+    -- 初始化按钮
+    self:initAllBtn()
+    self:refreshBtnState() -- 刷新按钮状态
+    self:showCurPanel()
+
+    ---------------------------------------------
+    -- 角色信息界面
+    self:refreshHeroInfo()
+    ---------------------------------------------
+end
+
+function UIWndRoleInfo:refreshCloseBtn()
+    local closeBtn = self:getChild("frame"):getChild("closeButton1")
+    closeBtn:addClickListener(function()
+        if WndLockManager:getWndLockType() == Constant.WndLockType.SkillTips then
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndLock", close = true})
+        else
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndRoleInfo", close = true})
+        end
+    end)
+end
+
+function UIWndRoleInfo:setBGOpacity()
+    local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.INFO_OPACITY)
+    self.isBGOpacity = editTable.switch == 1
+    if self.isBGOpacity then
+        editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.WINDOW_OPACITY)
+        self._diOpacity:setAlpha(editTable.value/100)
+    else
+        self._diOpacity:setAlpha(1)
+    end
+    self._bg:setVisible(not self.isBGOpacity)
+    self._bgOpacity:setVisible(self.isBGOpacity)
+    self._diOpacity:setVisible(self.isBGOpacity)
+end
+
+function UIWndRoleInfo:showCurPanel()
+    -- 角色界面
+    local infoCom = self:getChild("infoCom")
+    infoCom:setVisible(self._selectIndex == btnType.role)
+
+    -- 阶级技能界面
+    if not self._clsCom then
+        self._clsCom = fgui.UIPackage:createObject("RoleInfo", "ClsCom");--self:getChild("clsCom")
+        self._clsCom:setPosition(46,33)
+        self._clsCom:initUI()
+        self._clsCom:insertObjectToFactory(self)
+        self:addChild(self._clsCom)
+    end
+    if self._selectIndex == btnType.lowCls or self._selectIndex == btnType.superCls then
+        self._clsCom:setVisible(true)
+        self._clsCom:refreshPanelByCls(self._selectIndex,true)
+    else
+        self._clsCom:setVisible(false)
+    end
+
+    -- 转职界面
+    if not self._transferCom then
+        self._transferCom = fgui.UIPackage:createObject("RoleInfo", "TransferCom");--self:getChild("clsCom")
+        self._transferCom:setPosition(46,33)
+        self._transferCom:initUI()
+        self._transferCom:insertObjectToFactory(self)
+        self:addChild(self._transferCom)
+    end
+    self._transferCom:setVisible(self._selectIndex == btnType.transfer)
+    if self._transferCom:isVisible() then
+        self._transferCom:refreshCurInfo(true)
+    end
+
+    local race = GameModule:getHeroRace()
+    -- 魔法界面
+    if not self._magicCom then
+        local magicComName = nil
+        if race == RaceType.Ousters then
+            magicComName = "MagicOCom"
+        elseif race == RaceType.Slayer then
+            magicComName = "MagicSCom"
+        else
+            magicComName = "MagicVCom"
+        end
+        self._magicCom = fgui.UIPackage:createObject("RoleInfo", magicComName);--self:getChild("clsCom")
+        self._magicCom:setPosition(46,33)
+        self._magicCom:initUI()
+        self._magicCom:insertObjectToFactory(self)
+        self:addChild(self._magicCom)
+    end
+    self._magicCom:setVisible(self._selectIndex == btnType.magic)
+    if self._magicCom:isVisible() then
+        if race == RaceType.Ousters then
+            if self._type == 1 then
+                self._type = Constant.ENTER_TYPES.LEARN
+            end
+            self._magicCom:setType(self._type)
+            self._magicCom:refreshCurInfo()
+        else
+            self._magicCom:refreshCurInfo(true)
+        end
+    end
+
+    -- local superClsCom = self:getChild("lowClsCom")
+    -- superClsCom:setVisible(self._selectIndex == btnType.superCls)
+end
+
+
+function UIWndRoleInfo:fixReview()
+    if _G_IS_EXAMINE then
+        self.btnList[btnType.transfer]:setVisible(false)
+    end
+end
+
+function UIWndRoleInfo:initAllBtn()
+    self.btnList = {}
+    local race = GameModule:getHeroRace()
+    local btnOffsetY = -5
+    if race == RaceType.Ousters then
+        btnOffsetY = -15
+    end
+    for i,v in ipairs(btnInfo) do
+        local btnItem = fgui.UIPackage:createObject("RoleInfo", "TitleBtn2")
+        btnItem.index = i
+        self.btnList[btnItem.index] = btnItem
+        local size = btnItem:getSize()
+        local name = v.name
+
+        local nameText = ccui.Text:create()
+        nameText:setFontName(Constant.FONT_4)
+        nameText:setFontSize(20)
+        nameText:setTextColor(cc.c3b(255, 254, 254))
+        nameText:enableShadow(cc.c3b(255, 254, 254), cc.size(0, 0), 3)
+        nameText:setPosition(cc.p(59, 18))
+        btnItem.nameText = nameText
+        btnItem:displayObject():addChild(nameText)
+        nameText:setString(name)
+
+        local nameSelect = ccui.Text:create()
+        nameSelect:setFontName(Constant.FONT_4)
+        nameSelect:setFontSize(20)
+        nameSelect:setTextColor(cc.c3b(149, 150, 149))
+        nameSelect:setPosition(cc.p(59, 18))
+        btnItem.nameSelect = nameSelect
+        btnItem:displayObject():addChild(nameSelect)
+        nameSelect:setString(name)
+
+        btnItem:setPosition(50+10+(i-1)*(size.width-10),btnOffsetY-15)
+        btnItem:setSortingOrder(topOrder-i)
+        local isRed = SkillModule:getRedPoint(i)
+        btnItem:getChild("reddot"):setVisible(isRed)
+        self:addChild(btnItem)
+    end
+end
+
+function UIWndRoleInfo:addAllBtnClik()
+    local function btnClik(context)
+        local btnItem = context:getSender()
+        if btnItem.index == btnType.role then
+            -- print("role")
+            self._selectIndex = btnItem.index
+        elseif btnItem.index == btnType.lowCls then
+            -- print("lowCls")
+            local open,tips = lt.FunctionToggleModule:checkOpen(lt.FunctionToggleModule.FunctionHelpId.ClassSkill) 
+            if not open then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = tips})
+                return
+            end
+            self._selectIndex = btnItem.index
+        elseif btnItem.index == btnType.superCls then
+            -- print("superCls")
+            local open,tips = lt.FunctionToggleModule:checkOpen(lt.FunctionToggleModule.FunctionHelpId.AdvancedClassSkill) 
+            if not open then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = tips})
+                return
+            end
+            self._selectIndex = btnItem.index
+        elseif btnItem.index == btnType.transfer then
+            -- print("transfer")
+            local open,tips = lt.FunctionToggleModule:checkOpen(lt.FunctionToggleModule.FunctionHelpId.TransferSkill) 
+            if not open then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = tips})
+                return
+            end
+            local heroData = GameModule:getHeroData()
+            local advState = heroData:getAdvanceState()
+            if advState == Constant.AdvState.NotAdv then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = roleInfoTips.StringTips40})
+                return
+            end
+            self._selectIndex = btnItem.index
+        elseif btnItem.index == btnType.magic then
+            -- print("magic")
+            local open,tips = lt.FunctionToggleModule:checkOpen(lt.FunctionToggleModule.FunctionHelpId.Skill) 
+            if not open then
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, {content = tips})
+                return
+            end
+            self._selectIndex = btnItem.index
+        else
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = roleInfoTips.StringTips1})
+            return
+            -- print("功能尚未开放")
+        end
+
+        self:refreshBtnState()
+        self:showCurPanel()
+
+        -- 魔族切换按钮关闭右边技能显示界面
+        if GameModule:getHeroRace() == RaceType.Ousters and btnItem.index ~= btnType.magic then
+            WndLockManager:closeIgnoreRoleInfo()
+            self:resetZOrder()
+        end
+        return true
+    end
+    for k,btnItem in pairs(self.btnList or {}) do
+        btnItem:addClickListener(btnClik)
+    end
+end
+
+function UIWndRoleInfo:clearAllBtnClik()
+    for k,btnItem in pairs(self.btnList or {}) do
+        btnItem:removeClickListener()
+    end
+end
+
+function UIWndRoleInfo:refreshBtnState()
+    local race = GameModule:getHeroRace()
+    local index = self._selectIndex or 1
+    for k,v in pairs(self.btnList) do
+        local icon = self.btnList[k]:getChild("icon")
+        local name = self.btnList[k].nameText
+        local nameSelect = self.btnList[k].nameSelect
+        if k == index then
+            local imageName = string.format("bg_xuanzhong_01%s",RaceSkinRes[race])
+            icon:setURL(string.format(_GURL.GetCompRoleInfo,imageName))
+            name:setVisible(true)
+            nameSelect:setVisible(false)
+            self.btnList[k]:setSortingOrder(topOrder)
+        else
+            local imageName = string.format("bg_weixuanzhong_01%s",RaceSkinRes[race])
+            icon:setURL(string.format(_GURL.GetCompRoleInfo,imageName))
+            name:setVisible(false)
+            nameSelect:setVisible(true)
+            self.btnList[k]:setSortingOrder(topOrder-k)
+        end
+    end
+end
+
+-----------------------------------------------------------------------------
+---角色信息界面
+function UIWndRoleInfo:refreshRoleInfo()
+    local heroData = GameModule:getHeroData()
+    local race = GameModule:getHeroRace()
+    local infoCom = self:getChild("infoCom")
+    for k,v in ipairs(Constant.RaceToJobPanel) do
+        if infoCom:getChild(v) then
+            infoCom:getChild(v):setVisible(k == race)
+        end
+    end
+
+    -- 刷新人物头像
+    local head = infoCom:getChild("head")
+    head:setURL(heroData:getHeadUrl())
+
+    -- 刷新人物信息
+    local curJobPanel = infoCom:getChild(Constant.RaceToJobPanel[race])
+    if not curJobPanel then
+        return
+    end
+
+    local infoAttrs = self:getInfoAttrsData()
+    for k,v in pairs(infoAttrs) do
+        local infoAttr = curJobPanel:getChild(k)
+        if infoAttr then
+            infoAttr:getChild("name"):setText(v.name or "")
+            if v.value then
+                infoAttr:getChild("value"):setText(v.value() or "")
+            else
+                infoAttr:getChild("value"):setText("")
+            end
+
+            -- 背景换色
+            require("app.offline.EnglishUI").fitRow(infoAttr)
+            local bgNameTable = {
+                [1] = "bg_neirongkuang_01",
+                [2] = "bg_neirongkuang_02",
+                [3] = "bg_neirongkuang_03",
+                [4] = "bg_neirongkuang_04",
+                [5] = "bg_neirongkuang_05",
+            }
+            
+            local curBg = nil
+            for k,v in pairs(bgNameTable) do
+                if infoAttr:getChild("bg" .. k) then
+                    curBg = infoAttr:getChild("bg" .. k)
+
+                    local imageName = string.format("%s%s",v,RaceSkinRes[race])
+                    curBg:setURL(string.format(_GURL.GetCompRoleInfo,imageName))
+                    break
+                end
+            end
+
+            -- icon相关
+            local icon = infoAttr:getChild("icon")
+            if v.icon and icon then
+                icon:setVisible(true)
+                local iconValue = v.icon
+                if type(iconValue) == "function" then
+                    iconValue = iconValue()
+                end
+                icon:setURL(iconValue)
+                if curBg then
+                    local pos = curBg:getPosition()
+                    local size = curBg:getSize()
+                    icon:setPosition(pos.x + size.width + 2,0)
+                end
+            elseif icon then
+                icon:setVisible(false)
+            end
+
+            -- 进度条相关
+            if v.percent and infoAttr:getChild("bar") then
+                local percent = v.percent()
+                infoAttr:getChild("bar"):setFillAmount(percent)
+                local imageName = string.format("bg_jindutiao%s",RaceSkinRes[race])
+                infoAttr:getChild("bar"):setURL(string.format(_GURL.GetCompRoleInfo,imageName))
+            end
+
+            if v.isHide and v.isHide() then
+                infoAttr:setVisible(false)
+            else
+                infoAttr:setVisible(true)
+            end
+        end
+    end
+end
+
+function UIWndRoleInfo:addInfoAttrClick()
+    local race = GameModule:getHeroRace()
+    local infoCom = self:getChild("infoCom")
+    local curJobPanel = infoCom:getChild(Constant.RaceToJobPanel[race])
+    if not curJobPanel then
+        return
+    end
+
+    local infoAttrs = self:getInfoAttrsData()
+    for k,v in pairs(infoAttrs) do
+        local infoAttr = curJobPanel:getChild(k)
+        if infoAttr then
+            if not infoAttr.addClick then
+                infoAttr:addClickListener(handler(self,function()
+                    local itemSize = infoAttr:getSize()
+                    local point = infoAttr:localToGlobal({x=itemSize.width/2,y=0})
+                    -- print("click---->" .. v.name)
+                    local content = v.name
+                    if v.textTips then
+                        content = v.textTips()
+                    end
+                    lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_SHOW_TEXT_TIPS, 
+                    {
+                        content = content,
+                        pt = point
+                    })
+                end))
+                infoAttr.addClick = true
+            end
+        end
+    end
+end
+
+function UIWndRoleInfo:clearInfoAttrClick()
+    local race = GameModule:getHeroRace()
+    local infoCom = self:getChild("infoCom")
+    local curJobPanel = infoCom:getChild(Constant.RaceToJobPanel[race])
+    if not curJobPanel then
+        return
+    end
+
+    local infoAttrs = self:getInfoAttrsData()
+    for k,v in pairs(infoAttrs) do
+        local infoAttr = curJobPanel:getChild(k)
+        if infoAttr then
+            infoAttr:removeClickListener()
+            infoAttr.addClick = nil
+        end
+    end
+end
+
+function UIWndRoleInfo:refreshAttrLeft()
+    local infoCom = self:getChild("infoCom")
+    if not self._attrItemListLeft then
+        self._attrItemListLeft = {}
+    end
+
+    local race = GameModule:getHeroRace()
+    -- 吸血鬼没有魔法值
+    self._attrListLeft = self:getAttrListLeftData()
+    if race == RaceType.Vampire then
+        table.remove(self._attrListLeft, 5)
+    end
+
+    for i = 1, #self._attrListLeft do
+        if not self._attrItemListLeft[i] then
+            self._attrItemListLeft[i] = fgui.UIPackage:createObject("RoleInfo", "AttrInfo")
+            self._attrItemListLeft[i]:setPosition(14, 183+(i-1)*35)
+            infoCom:addChild(self._attrItemListLeft[i])
+        end
+        -- 刷新属性
+        self:renderListLeftItem(i, self._attrItemListLeft[i])
+    end
+end
+
+function UIWndRoleInfo:addAttrLeftClick()
+    for i = 1, #self._attrListLeft do
+        self._attrItemListLeft[i]:getChild("addBtn"):addClickListener(function()
+            local heroData = GameModule:getHeroData()
+            NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {
+                class = "UIWndUsePoints",
+                confirmCallback = function(attPointTable)
+                    if table.nums(attPointTable) > 0 then
+                        GameModule:assignAttributePoint(attPointTable[1] or 0,attPointTable[2] or 0,attPointTable[3] or 0)
+                    end
+                end,
+                param = {
+                    totalPoints = heroData:getCurSkillPoint(),
+                    attrList = {
+                        [1] = {name = roleInfoTips.StringTips12, originalValue = heroData:getTotalSTR(),initAddValue = heroData:getAddSTR()},
+                        [2] = {name = roleInfoTips.StringTips13, originalValue = heroData:getTotalDEX(),initAddValue = heroData:getAddDEX()},
+                        [3] = {name = roleInfoTips.StringTips14, originalValue = heroData:getTotalINT(),initAddValue = heroData:getAddINT()},
+                    },
+                    needHideAddPointBtn = true,
+                }
+            })
+            return true
+            end
+        )
+        
+        if not self._attrItemListLeft[i].addClick then
+            self._attrItemListLeft[i]:getChild("btn"):addClickListener(handler(self,function()
+                local itemSize = self._attrItemListLeft[i]:getSize()
+                local point = self._attrItemListLeft[i]:localToGlobal({x=itemSize.width/2,y=0})
+                -- print("click---->" .. v.name)
+                local content = self._attrListLeft[i].name
+                if self._attrListLeft[i].textTips then
+                    content = self._attrListLeft[i].textTips()
+                end
+                lt.NtfManager:dispatchNtf(lt.NtfManager.NTF.NTF_SHOW_TEXT_TIPS, 
+                {
+                    content = content,
+                    pt = point,
+                    width = 186
+                })
+            end))
+            self._attrItemListLeft[i].addClick = true
+        end
+    end
+end
+
+function UIWndRoleInfo:clearAttrLeftClick()
+    for i = 1, #self._attrListLeft do
+        self._attrItemListLeft[i]:getChild("addBtn"):removeClickListener()
+        self._attrItemListLeft[i]:getChild("btn"):removeClickListener()
+        self._attrItemListLeft[i].addClick = false
+    end
+end
+
+function UIWndRoleInfo:renderListLeftItem(index, item)
+    local heroData = GameModule:getHeroData()
+    local race = GameModule:getHeroRace()
+    local data = self._attrListLeft[index] or {}
+    item:getChild("name"):setText(data.name or "")
+    if data.value then
+        item:getChild("value"):setText(data.value() or "")
+    else
+        item:getChild("value"):setText("")
+    end
+    
+    -- 无分配点数隐藏按钮
+    local points = heroData:getCurSkillPoint()
+    -- local visible = points > 0
+    item:getChild("addBtn"):setVisible((index <= 3) and true)
+    if index <= 3 then
+        item:getChild("addBtn"):getChild("n1"):setVisible(points > 0)
+        if points == 0 and race == RaceType.Slayer and heroData:getAdvanceState() == 0 then
+            item:getChild("addBtn"):setVisible(false)
+        end
+    end
+
+    local imageName = string.format("bg_neirongkuang_01%s",RaceSkinRes[race])
+    item:getChild("bg"):setURL(string.format(_GURL.GetCompRoleInfo,imageName))
+    if race == RaceType.Slayer and index <= 3 then
+        item:getChild("bg2"):setVisible(true)
+        item:getChild("bar"):setVisible(true)
+        item:getChild("bg"):setVisible(false)
+
+        local percent = heroData:calculationPercent(index)
+        item:getChild("bar"):setFillAmount(percent)
+    else
+        item:getChild("bg2"):setVisible(false)
+        item:getChild("bar"):setVisible(false)
+        item:getChild("bg"):setVisible(true)
+    end
+end
+
+function UIWndRoleInfo:refreshAttrRight()
+    local infoCom = self:getChild("infoCom")
+    local listRight = infoCom:getChild("list2")
+    local content = listRight:getChildAt(0)
+    local race = GameModule:getHeroRace()
+    -- 主体内容
+    local contentStr = ""
+    local textTable = {}
+    local attrListRight = self:getAttrListRightData()
+    for k,v in ipairs(attrListRight) do
+        local isHide = (not (race == RaceType.Ousters) and (k == 7 or k == 8 or k == 9)) --  只有魔族才会显示水火土属性
+        if not isHide then
+            if v.color then
+                table.insert( textTable, "[color=")
+                table.insert( textTable, v.color)
+                table.insert( textTable, "]")
+            end
+
+            table.insert(textTable, v.name or "")
+            table.insert(textTable, " : ")
+            table.insert(textTable, v.value() or "")
+            table.insert( textTable, "\n")
+
+            if v.color then
+                table.insert( textTable, "[/color]")
+            end
+        end
+    end
+    contentStr = table.concat(textTable)
+ 
+    ------------------------------------------------------------------------------------------------------
+
+    local detailT = content:getChild("detail")
+    detailT:setText(contentStr)
+    
+    -- 设置数据后重构大小
+    local detailTSize = detailT:getSize()
+    local height = detailTSize.height 
+    local showHeight = height
+    if showHeight > 229 then
+        showHeight = 229
+    end
+
+    content:setSize(290,height)
+    -- listRight:setItemRenderer(handler(self, self.renderListLeftItem))
+    -- listRight:addEventListener(fgui.UIEventType.ClickItem, handler(self, self.onClickLeftItem))
+end
+
+--设置改变
+function UIWndRoleInfo:changeSettings(params)
+    local param = params.param
+    if param.index == Constant.SETTINGS_TYPES.INFO_OPACITY or param.index == Constant.SETTINGS_TYPES.WINDOW_OPACITY then
+        local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.INFO_OPACITY)
+        self.isBGOpacity = editTable.switch == 1
+        if self.isBGOpacity then
+            editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.WINDOW_OPACITY)
+            self._diOpacity:setAlpha(editTable.value/100)
+        else
+            self._diOpacity:setAlpha(1)
+        end
+        self._bg:setVisible(not self.isBGOpacity)
+        self._bgOpacity:setVisible(self.isBGOpacity)
+        self._diOpacity:setVisible(self.isBGOpacity)
+    end
+end
+
+function UIWndRoleInfo:uptRedDotEvt(event)
+    local param = event.param
+    if string.find(param.name, "SkillRedTips") == nil then
+        return
+    end
+    for i, v in ipairs(self.btnList) do
+        local isRed = SkillModule:getRedPoint(i)
+        self.btnList[i]:getChild("reddot"):setVisible(isRed)
+    end
+    --魔法界面
+    if self._magicCom then
+        self._magicCom:uptRedDotEvt()
+    end
+    --阶级技能界面
+    if self._clsCom then
+        self._clsCom:uptRedDotEvt()
+    end
+end
+
+function UIWndRoleInfo:getInfoAttrsData()
+    local heroData = GameModule:getHeroData()
+    local infoAttrs = {
+        name = {
+            name = roleInfoTips.StringTips2,
+            value = function (...)
+                return lt.RoleModule:getCurRoleName()
+            end,
+            textTips = function()
+                local content = roleInfoTips.StringTips42 .. lt.RoleModule:getCurRoleName()
+                return content
+            end
+        },
+        level = {
+            name = roleInfoTips.StringTips3,
+            value = function (...)
+                local level = heroData:getLevel()
+                local advState = heroData:getAdvanceState()
+                if advState == Constant.AdvState.Adv then
+                    level = heroData:getAdvanceLevelName()
+                end
+                return level
+            end,
+            isHide = function (...)
+                local race = heroData:getRace()
+                local advState = heroData:getAdvanceState()
+                if race == Constant.RaceType.Slayer and advState == 0 then
+                    return true
+                end
+            end,
+            textTips = function()
+                local level = heroData:getLevel()
+                local advState = heroData:getAdvanceState()
+                if advState == Constant.AdvState.Adv then
+                    level = heroData:getAdvanceLevelName()
+                end
+                local content = roleInfoTips.StringTips43 .. level
+                return content
+            end
+        },
+        tendency = {
+            name = roleInfoTips.StringTips4,
+            value = function (...)
+                local tendency = heroData:getTendencies()
+
+                return CacheManager:getTendencyNameByValue(tendency)--tendencyName[getTendencies(tendency)]
+            end,
+            textTips = function()
+                local tendency = heroData:getTendencies()
+                local content = roleInfoTips.StringTips33 .. "\n"
+                tendency = tendency > 0 and "+"..tendency or tendency
+                content = table.concat({content , "[color=#c6c3ff](" , tendency , ")[/color]"})
+                return content
+            end
+        },
+        exp = {
+            name = roleInfoTips.StringTips5,
+            value = function (...)
+                -- 经验显示区分转职之前和之后
+                local advState = heroData:getAdvanceState()
+                local curAdvLvl = heroData:getAdvanceLevel()
+                local exp = 0
+                if advState == Constant.AdvState.Adv and curAdvLvl > 0 then
+                    local advLevelInfo = CacheManager:getAdvLevelExpInfoMeta(curAdvLvl)
+                    local maxExp = advLevelInfo:getExp() or 1
+                    local advanceExp = heroData:getAdvanceExp()
+                    exp = maxExp - advanceExp
+                else
+                    local level = heroData:getLevel()
+                    local expMeta = CacheManager:getLevelExpInfoMeta(level) or {}
+                    local maxExp = expMeta:getExp() or 1
+                    local curExp = heroData:getExp()
+                    exp = maxExp - curExp
+                end
+                return CommonFunc:changeNumberShow(exp)
+            end,
+            percent = function (...)
+                local precent = 0
+                -- local level = heroData:getLevel()
+                -- local expMeta = CacheManager:getLevelExpInfoMeta(level)
+                -- local curMaxExp = expMeta:getExp()
+                -- if curMaxExp ~= 0 then
+                --     precent = heroData:getCurExp()/curMaxExp
+                -- end
+
+                local level = heroData:getLevel()
+                local curExp = heroData:getExp()
+
+                -- 转职相关
+                local advState = heroData:getAdvanceState()
+                local curAdvLvl = heroData:getAdvanceLevel()
+                local advanceExp = heroData:getAdvanceExp()
+                if advState == Constant.AdvState.Adv and curAdvLvl > 0 then
+                    local advLevelInfo = CacheManager:getAdvLevelExpInfoMeta(curAdvLvl)
+                    local maxExp = advLevelInfo:getExp() or 1
+                    precent = advanceExp/maxExp
+                else
+                    local expMeta = CacheManager:getLevelExpInfoMeta(level) or {}
+                    local maxExp = expMeta:getExp() or 1
+                    precent = curExp/maxExp
+                end
+
+                if precent > 1 then
+                    precent = 1
+                end
+
+                return precent
+            end,
+            textTips = function()
+                -- 经验显示区分转职之前和之后
+                local advState = heroData:getAdvanceState()
+                local curAdvLvl = heroData:getAdvanceLevel()
+                local exp = 0
+                local precent = 0
+                if advState == Constant.AdvState.Adv and curAdvLvl > 0 then
+                    local advLevelInfo = CacheManager:getAdvLevelExpInfoMeta(curAdvLvl)
+                    local maxExp = advLevelInfo:getExp() or 1
+                    local advanceExp = heroData:getAdvanceExp()
+                    exp = CommonFunc:changeNumberShow(maxExp - advanceExp)
+                    precent = advanceExp/maxExp
+                else
+                    local level = heroData:getLevel()
+                    local expMeta = CacheManager:getLevelExpInfoMeta(level) or {}
+                    local maxExp = expMeta:getExp() or 1
+                    local curExp = heroData:getExp()
+                    exp = CommonFunc:changeNumberShow(maxExp - curExp)
+                    precent = curExp/maxExp
+                end
+                local content = table.concat({
+                    roleInfoTips.StringTips41 , exp , "(" , math.floor(precent*100) , "%)"
+                })
+                return content
+            end
+        },
+        cls = {
+            name = roleInfoTips.StringTips6,
+            icon = function (...)
+                local race = GameModule:getHeroRace()
+                local grade = heroData:getGrade()
+                local rankData = CacheManager:getRoleRankByRaceAndLvl(race,grade)
+                if not rankData then
+                   return "" 
+                end
+                return string.format(_GURL.GetGradePath,rankData:getIconId())
+            end,
+            value = function ()
+                local race = GameModule:getHeroRace()
+                local grade = heroData:getGrade()
+                local rankData = CacheManager:getRoleRankByRaceAndLvl(race,grade)
+                if not rankData then
+                    return ""
+                end
+                return rankData:getName() or ""
+            end,
+            textTips = function()
+                local race = GameModule:getHeroRace()
+                local grade = heroData:getGrade()
+                local rankData = CacheManager:getRoleRankByRaceAndLvl(race,grade)
+                if not rankData then
+                    return ""
+                end
+                local rankExpCfg = RankEXPInfoDao:query(grade)
+                local gradeExp = heroData:getGradeExp()
+                local needExp = rankExpCfg:getGoalEXP()
+                local bar2Percent = gradeExp/needExp
+                -- local content = roleInfoTips.StringTips30 .. rankData:getName() .. "\n"
+                -- content = content .. roleInfoTips.StringTips31 .. grade .. "\n"
+                -- content = content .. roleInfoTips.StringTips32 .. gradeExp .. "(" .. math.floor(bar2Percent*100) .. "%)"
+                local content = table.concat({
+                    roleInfoTips.StringTips30 , rankData:getName() , "\n",
+                    roleInfoTips.StringTips31 , grade , "\n",
+                    roleInfoTips.StringTips41 , CommonFunc:changeNumberShow(needExp-gradeExp) , "(" , math.floor(bar2Percent*100) , "%)"
+                })
+                return content
+            end
+        },
+        reputation = {
+            name = roleInfoTips.StringTips7,
+            value = function (...)
+                return heroData:getRepute()
+            end,
+            textTips = function()
+                content = table.concat({roleInfoTips.StringTips7 , "\n[color=#c6c3ff]" , heroData:getRepute() , "[/color]"})
+                return content
+            end
+        },
+        guild = {
+            name = roleInfoTips.StringTips9,
+            icon = "ui://RoleInfo/GuildMark_478",
+            value = function (...)
+                local guildName = heroData:getGuildName()
+                if guildName == "" then
+                    guildName = roleInfoTips.StringTips10
+                end
+                return guildName
+            end,
+            isHide = function (...)
+                local myGuildId = heroData:getGuildId()
+                return myGuildId == 0 or myGuildId == "0"
+            end,
+        },
+        points = {
+            name = roleInfoTips.StringTips11,
+            value = function (...)
+                return heroData:getCurSkillPoint()
+            end,
+            isHide = function (...)
+                -- 技能点为0时不显示
+                return heroData:getCurSkillPoint() <= 0
+            end
+        },
+    }
+
+    return infoAttrs
+end
+
+function UIWndRoleInfo:getAttrListLeftData()
+    local heroData = GameModule:getHeroData()
+    local attrListLeft = {
+        [1] = {name = roleInfoTips.StringTips12,
+        value = function (...)
+            if heroData:getRace() == Constant.RaceType.Slayer then
+                return heroData:getTotalSTR() .. "/" .. (heroData:getTotalSTR() - heroData:getAddSTR())
+            else
+                return heroData:getTotalSTR() .. "/" .. heroData:getTotalSTR()
+            end
+        end,
+        textTips = function()
+            local content = roleInfoTips.StringTips12 .. "\n"
+            if heroData:getRace() == Constant.RaceType.Slayer then
+                content = content .. "[color=#c6c3ff]" .. heroData:getTotalSTR() .. "/" .. (heroData:getTotalSTR() - heroData:getAddSTR()) .. "[/color]"
+            else
+                content = content .. "[color=#c6c3ff]" .. heroData:getTotalSTR() .. "/" .. heroData:getTotalSTR() .. "[/color]"
+            end
+            content = content .. "\n" .. GReadText.KEY_ROLE_ATTR_TIPS1
+            --剩余经验值
+            if heroData:getRace() == Constant.RaceType.Slayer then
+                local percent = math.floor(heroData:calculationPercent(1)*100)
+                local lastExp = heroData:calculationPercent(1, true)
+                local expStr = CommonFunc:changeNumberShow(lastExp)
+                expStr = expStr .. "("..percent.."%)"
+                content = content .. "\n" .. GReadText.KEY_ROLE_INFO_TIPS32..expStr
+            end
+            return content
+        end},
+        [2] = {name = roleInfoTips.StringTips13,
+        value = function (...)
+            if heroData:getRace() == Constant.RaceType.Slayer then
+                return heroData:getTotalDEX() .. "/" .. (heroData:getTotalDEX() - heroData:getAddDEX())
+            else
+                return heroData:getTotalDEX() .. "/" .. heroData:getTotalDEX()
+            end
+        end,
+        textTips = function()
+            local content = roleInfoTips.StringTips13 .. "\n"
+            if heroData:getRace() == Constant.RaceType.Slayer then
+                content = content .. "[color=#c6c3ff]" .. heroData:getTotalDEX() .. "/" .. (heroData:getTotalDEX() - heroData:getAddDEX()) .. "[/color]"
+            else
+                content = content .. "[color=#c6c3ff]" .. heroData:getTotalDEX() .. "/" .. heroData:getTotalDEX() .. "[/color]"
+            end
+            content = content .. "\n" .. GReadText.KEY_ROLE_ATTR_TIPS2
+            --剩余经验值
+            if heroData:getRace() == Constant.RaceType.Slayer then
+                local percent = math.floor(heroData:calculationPercent(2)*100)
+                local lastExp = heroData:calculationPercent(2, true)
+                local expStr = CommonFunc:changeNumberShow(lastExp)
+                expStr = expStr .. "("..percent.."%)"
+                content = content .. "\n" .. GReadText.KEY_ROLE_INFO_TIPS32..expStr
+            end
+            return content
+        end},
+        [3] = {name = roleInfoTips.StringTips14,
+        value = function (...)
+            if heroData:getRace() == Constant.RaceType.Slayer then
+                return heroData:getTotalINT() .. "/" .. (heroData:getTotalINT() - heroData:getAddINT())
+            else
+                return heroData:getTotalINT() .. "/" .. heroData:getTotalINT()
+            end
+        end,
+        textTips = function()
+            local content = roleInfoTips.StringTips14 .. "\n"
+            if heroData:getRace() == RaceType.Slayer then
+                content = content .. "[color=#c6c3ff]" .. heroData:getTotalINT() .. "/" .. (heroData:getTotalINT() - heroData:getAddINT()) .. "[/color]"
+            else
+                content = content .. "[color=#c6c3ff]" .. heroData:getTotalINT() .. "/" .. heroData:getTotalINT() .. "[/color]"
+            end
+            content = content .. "\n" .. GReadText.KEY_ROLE_ATTR_TIPS3
+            --剩余经验值
+            if heroData:getRace() == Constant.RaceType.Slayer then
+                local percent = math.floor(heroData:calculationPercent(3)*100)
+                local lastExp = heroData:calculationPercent(3, true)
+                local expStr = CommonFunc:changeNumberShow(lastExp)
+                expStr = expStr .. "("..percent.."%)"
+                content = content .. "\n" .. GReadText.KEY_ROLE_INFO_TIPS32..expStr
+            end
+            return content
+        end},
+        [4] = {name = roleInfoTips.StringTips15,
+        value = function (...)
+            return heroData:getCurHp() .. "/" .. heroData:getHpMax()
+        end,
+        textTips = function()
+            local content = roleInfoTips.StringTips15 .. "\n"
+            content = content .. "[color=#c6c3ff]" .. heroData:getCurHp() .. "/" .. heroData:getHpMax() .. "[/color]"
+            content = content .. "\n" .. GReadText.KEY_ROLE_ATTR_TIPS4
+            return content
+        end},
+        [5] = {name = roleInfoTips.StringTips16,
+        value = function (...)
+            return heroData:getCurMp() .. "/" .. heroData:getMpMax()
+        end,
+        textTips = function()
+            if heroData:getRace() == RaceType.Ousters then
+                local content = GReadText.KEY_ROLE_ATTR_TIPS10 .. "\n"
+                content = content .. "[color=#c6c3ff]" .. heroData:getCurMp() .. "/" .. heroData:getMpMax() .. "[/color]"
+                content = content .. "\n" .. GReadText.KEY_ROLE_ATTR_TIPS11
+                return content
+            else
+                local content = roleInfoTips.StringTips16 .. "\n"
+                content = content .. "[color=#c6c3ff]" .. heroData:getCurMp() .. "/" .. heroData:getMpMax() .. "[/color]"
+                content = content .. "\n" .. GReadText.KEY_ROLE_ATTR_TIPS5
+                return content
+            end
+        end},
+        [6] = {name = roleInfoTips.StringTips17,
+        value = function (...)
+            return heroData:getTohit()
+        end,
+        textTips = function()
+            local content = roleInfoTips.StringTips17 .. "\n"
+            content = content .. "[color=#c6c3ff]" .. heroData:getTohit() .. "[/color]"
+            content = content .. "\n" .. GReadText.KEY_ROLE_ATTR_TIPS6
+            return content
+        end},
+        [7] = {name = roleInfoTips.StringTips18,
+        value = function (...)
+            return heroData:getMinDamage() .. "~" .. heroData:getMaxDamage()
+        end,
+        textTips = function()
+            local content = roleInfoTips.StringTips18 .. "\n"
+            content = content .. "[color=#c6c3ff]" .. heroData:getMinDamage() .. "~" .. heroData:getMaxDamage() .. "[/color]"
+            content = content .. "\n" .. GReadText.KEY_ROLE_ATTR_TIPS7
+            return content
+        end},
+        [8] = {name = roleInfoTips.StringTips19,
+        value = function (...)
+            return heroData:getDefence()
+        end,
+        textTips = function()
+            local content = roleInfoTips.StringTips19 .. "\n"
+            content = content .. "[color=#c6c3ff]" .. heroData:getDefence() .. "[/color]"
+            content = content .. "\n" .. GReadText.KEY_ROLE_ATTR_TIPS8
+            return content
+        end},
+        [9] = {name = roleInfoTips.StringTips20,
+        value = function (...)
+            return heroData:getProtection()
+        end,
+        textTips = function()
+            local content = roleInfoTips.StringTips20 .. "\n"
+            content = content .. "[color=#c6c3ff]" .. heroData:getProtection() .. "[/color]"
+            content = content .. "\n" .. GReadText.KEY_ROLE_ATTR_TIPS9
+            return content
+        end},
+    }
+
+    return attrListLeft
+end
+
+function UIWndRoleInfo:getAttrListRightData()
+    local heroData = GameModule:getHeroData()
+    local attrListRight = {
+        [1] = {name = roleInfoTips.StringTips21, value = function (...)
+            return heroData:getPureSTR()
+        end},
+        [2] = {name = roleInfoTips.StringTips22, value = function (...)
+            return heroData:getPureDEX()
+        end},
+        [3] = {name = roleInfoTips.StringTips23, value = function (...)
+            return heroData:getPureINT()
+        end},
+        [4] = {name = roleInfoTips.StringTips24, value = function (...)
+            return heroData:getPureSTR() + heroData:getPureDEX() + heroData:getPureINT()
+        end},
+        [5] = {name = roleInfoTips.StringTips25, value = function (...)
+            return heroData:getTotalSTR() + heroData:getTotalDEX() + heroData:getTotalINT()
+        end},
+        [6] = {name = roleInfoTips.StringTips26, value = function (...)
+            local speedName = GameModule:getCurSpeedNameBySpeed(heroData:getAttackSpeed())
+            return table.concat( {speedName , "[" , heroData:getAttackSpeed() , "]"})
+        end},
+        [7] = {name = roleInfoTips.StringTips27, color="#ff6563", value = function (...)
+            return heroData:getFireSpiritLevel()
+        end},
+        [8] = {name = roleInfoTips.StringTips28, color="#6365ff", value = function (...)
+            return heroData:getWaterSpiritLevel()
+        end},
+        [9] = {name = roleInfoTips.StringTips29, color="#ffb663", value = function (...)
+            return heroData:getEarthSpiritLevel()
+        end},
+    }
+
+    -- 生命力（HP）吸收        KEY_ROLE_INFO_TIPS47             Attr_HpStealAmount= 128, // 生命力（HP）吸收
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS47, value = function (...)
+        return heroData:getHpStealAmount()
+    end})
+
+    -- 生命力（HP）再生        KEY_ROLE_INFO_TIPS48             Attr_HPRGN = 154,    // 生命力（HP）再生
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS48, value = function (...)
+        return heroData:getHpRgn()
+    end})
+
+    local race = GameModule:getHeroRace()
+    if race ~= RaceType.Vampire then
+        -- 魔法力（MP或EP）吸收    KEY_ROLE_INFO_TIPS49             Attr_MpStealAmount = 129, // 魔法力（MP或EP）吸收
+        table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS49, value = function (...)
+            return heroData:getMpStealAmount()
+        end})
+
+        -- 魔法力（MP或EP）再生    KEY_ROLE_INFO_TIPS50             Attr_MPRGN = 155,    // 魔法力（MP或EP）再生
+        table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS50, value = function (...)
+            return heroData:getMpRgn()
+        end})
+    end
+
+    -- 有效打击               KEY_ROLE_INFO_TIPS56             Attr_CriticalRatio = 127, //有效打击(暴击概率)
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS56, value = function (...)
+        return heroData:getCriticalRatio()
+    end})
+
+    -- 有效打击抵抗力          KEY_ROLE_INFO_TIPS57             Attr_CriticalRatioReduce = 157, // 有效打击(暴击概率)抵抗
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS57, value = function (...)
+        return heroData:getCriticalRatioReduce()
+    end})
+
+    -- 幸运                   KEY_ROLE_INFO_TIPS58            Attr_Lucky = 166, // 幸運值
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS58, value = function (...)
+        return heroData:getLucky()
+    end})
+
+    -- 视野                   KEY_ROLE_INFO_TIPS55             Attr_SightAdd = 156, // 视野加成
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS55, value = function (...)
+        return heroData:getSightAdd()
+    end})
+
+    -- 毒魔法抵抗力            KEY_ROLE_INFO_TIPS51            Attr_VampirePoisonResist = 134, //鬼族毒领域抵抗
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS51, value = function (...)
+        return heroData:getPoisonResist()
+    end})
+
+    -- 酸魔法抵抗力            KEY_ROLE_INFO_TIPS52            Attr_VampireAcidResist = 135, //鬼族酸领域抵抗
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS52, value = function (...)
+        return heroData:getAcidResist()
+    end})
+
+    -- 诅咒魔法抵抗力          KEY_ROLE_INFO_TIPS53            Attr_VampireCurseResist = 136, //鬼族诅咒领域抵抗
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS53, value = function (...)
+        return heroData:getCurseResist()
+    end})
+
+    -- 血魔法抵抗力            KEY_ROLE_INFO_TIPS54            Attr_VampireBloodResist = 137, //鬼族血领域抵抗
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS54, value = function (...)
+        return heroData:getBloodResist()
+    end})
+
+    -- 对玩家增伤（万分比）     KEY_ROLE_INFO_TIPS68            Attr_PlayerDamageBonus = 275,// 对玩家增伤（万分比）
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS68, value = function (...)
+        return (heroData:getPlayerDamageBonus() / 100) .. "%"
+    end})
+
+    -- 物理攻击加成            KEY_ROLE_INFO_TIPS65            Attr_PDAMPer = 162, // 物理伤害加成百分比
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS65, value = function (...)
+        return (heroData:getPhysicalAttackPer()) .. "%"
+    end})
+
+    -- 物理防御加成            KEY_ROLE_INFO_TIPS66            Attr_PPROPer = 164, // 物理防御加成百分比
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS66, value = function (...)
+        return (heroData:getPhysicalDefensePer()) .. "%"
+    end})
+
+    -- 魔法攻击加成            KEY_ROLE_INFO_TIPS61             Attr_MDAMPer = 163, // 魔法伤害加成百分比
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS61, value = function (...)
+        return (heroData:getMagicAttackPer()) .. "%"
+    end})
+
+    -- 魔法防御加成            KEY_ROLE_INFO_TIPS62             Attr_MPROPer = 165, // 魔法防御加成百分比
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS62, value = function (...)
+        return (heroData:getMagicDefensePer()) .. "%"
+    end})
+
+    -- 魔法攻击力              KEY_ROLE_INFO_TIPS59             Attr_MDAM = 159, // 魔法伤害加成
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS59, value = function (...)
+        return heroData:getMagicAttack()
+    end})
+
+    -- 魔法防御力              KEY_ROLE_INFO_TIPS60             Attr_MPRO = 161, // 魔法防御加成
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS60, value = function (...)
+        return heroData:getMagicDefense()
+    end})
+
+    -- 物理攻击力              KEY_ROLE_INFO_TIPS63             Attr_PDAM = 158, // 物理伤害加成
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS63, value = function (...)
+        return heroData:getPhysicalAttack()
+    end})
+
+    -- 物理防御力              KEY_ROLE_INFO_TIPS64            Attr_PPRO = 160, // 物理防御加成
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS64, value = function (...)
+        return heroData:getPhysicalDefense()
+    end})
+
+    -- 对怪物增伤（万分比）     KEY_ROLE_INFO_TIPS67            Attr_MonsterDamageBonus = 274,// 对怪物增伤（万分比）
+    table.insert(attrListRight, { name = GReadText.KEY_ROLE_INFO_TIPS67, value = function (...)
+        return (heroData:getMonsterDamageBonus() / 100) .. "%"
+    end})
+
+    return attrListRight
+end
+-----------------------------------------------------------------------------
+
+return UIWndRoleInfo

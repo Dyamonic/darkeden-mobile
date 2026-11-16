@@ -194,6 +194,33 @@ skill/equipment progression, economy, account services and multiplayer have not
 been recreated or verified. Original window implementations remain, but their
 server-dependent actions may be incomplete.
 
+## English layout fitting - 2026-11-16
+
+Late-populated character labels now fit after their values are assigned. Horizontal
+stat captions reserve space before the value frame, Experience uses EXP, and long
+values shrink inside their existing cells. Resetting the native shrink state
+before fitting prevents a short replacement label from staying tiny. Window
+show/reopen hooks fit translated controls, and long minimap zone names reserve
+space for the expand arrow. Original font files and artwork remain unchanged.
+
+The signed APK was installed and tested from a fresh launch without replacing
+its Lua modules at runtime. The native-widget regression passed for all three
+race panels and 20 horizontal rows, including late captions, long numeric values,
+frame clearance, repeated fitting and a long zone header. Actual stats, gear and
+inventory windows were opened. No offline runtime error file was generated.
+Evidence: tools/overlap-stats-before.png, tools/overlap-stats-after.png,
+tools/layout-gear-final.png and tools/layout-inventory-final.png.
+
+Original unlock rules are retained: Shop is hidden below level 10; Events,
+Rankings and VIP are hidden below level 15. The runtime regression tested both
+sides of each threshold using temporary module cache values, restored them, and
+confirmed all four controls hidden for the current level-2 character.
+
+Localization, offline simulation, locations, roster and movement/death suites
+passed. APK signature verification passed, and the encrypted APK archive matches
+the current EnglishUI module and all four dynamic layout hooks. Both build APK
+filenames and the repository artifact/checksum were refreshed.
+
 ## Hidden chat panel - 2026-11-16
 
 The offline Bridge hides the original comChat component, including its background, message list and click target. Original component code and UI assets remain available for future reuse. The rebuilt signed APK was installed and entered through Start and the original character selection. The panel is absent in gameplay (tools/chat-hidden.png), with no runtime error file. Lua syntax/simulation/save checks and APK signature verification passed. The embedded Bridge was compared with current source. Both single-player APK filenames are updated.

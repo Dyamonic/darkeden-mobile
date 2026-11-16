@@ -215,6 +215,31 @@ def patch():
     src=src.replace('self._nameEnT:setString(string.format("(%s)",itemEnName))',
         'self._nameEnT:setString(itemEnName==itemName and "" or string.format("(%s)",itemEnName))')
     target.write_text(src,encoding='utf-8')
+    # Dynamic captions are assigned after the package factory has finished.
+    # Fit complete windows after their original show handler populates them.
+    for module in ['app.scene.gameTL.layers.WndLayer','app.scene.role.RoleLayerTL']:
+        target=overlays/'emag'/module
+        src=target.read_text(encoding='utf-8') if target.exists() else (ROOT/'reverse-engineering/unpacked/emag'/module).read_text(encoding='utf-8')
+        src=src.replace('view:show()', 'view:show()\n            require("app.offline.EnglishUI").fit(view)')
+        src=src.replace('view:onShown() --', 'view:onShown()\n                    require("app.offline.EnglishUI").fit(view) --')
+        target.write_text(src,encoding='utf-8')
+    # Character rows refresh independently while the window remains open.
+    module='app.scene.widget.window.UIWndRoleInfo'
+    target=overlays/'emag'/module
+    src=(ROOT/'reverse-engineering/unpacked/emag'/module).read_text(encoding='utf-8')
+    needle='            local bgNameTable = {'
+    assert needle in src
+    src=src.replace(needle,'            require("app.offline.EnglishUI").fitRow(infoAttr)\n'+needle)
+    target.write_text(src,encoding='utf-8')
+    # Zone names also arrive after the HUD package is constructed. Reserve the
+    # original minimap expand-arrow area even for longer English zone names.
+    module='app.scene.gameTL.comps.CompMiniMap'
+    target=overlays/'emag'/module
+    src=(ROOT/'reverse-engineering/unpacked/emag'/module).read_text(encoding='utf-8')
+    needle='self._mapName:setText(mapName)'
+    assert needle in src
+    src=src.replace(needle,needle+'\n    require("app.offline.EnglishUI").fitHeader(self._mapName,28)')
+    target.write_text(src,encoding='utf-8')
     print('Patched DB fields',updates,'FGUI packages',len(changed)-1,flush=True)
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('action',choices=['extract','translate','patch']);args=parser.parse_args()
