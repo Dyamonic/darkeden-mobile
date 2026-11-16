@@ -53,6 +53,7 @@ py server/admin.py gm "Character Name" --revoke
 
 Only this local tool grants roles. Snapshots refresh permission and show the
 original GM console button. Imported characters remain ordinary players.
+The purple **GM** button sits immediately left of **Bag**, below the minimap.
 Supported commands: `@make kind mobileItemID count`, `@mon mobileMonsterID count`,
 `@goto mapID tileX tileY`, `@skillpoint count`, and `@test setprop` fields
 108 level, 123 HP, 201/202/203 allocated STR/DEX/INT, 212 attribute points,

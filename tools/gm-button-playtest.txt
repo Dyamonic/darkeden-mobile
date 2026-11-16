@@ -1,0 +1,1 @@
+PASS opaque GM button is left of Bag and its actual screen tap opens the original GM console

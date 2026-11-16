@@ -265,7 +265,18 @@ function Remote:apply(result,initial)
     end
     self.after=result.eventSeq
     local main=display.getRunningScene():getLayerManager():getMainUILayer()
-    if main._btnGMNew then main._btnGMNew:setVisible(not not b.state.gm) end
+    if main._btnGMNew then
+        local button=main._btnGMNew
+        button:setVisible(not not b.state.gm)
+        if b.state.gm then
+            -- The original debug button has alpha=0 and sits under the HP HUD.
+            button:setAlpha(1);button:setTouchable(true)
+            if main._btnBag then
+                local bag=main._btnBag;local size=button:getSize();local bagSize=bag:getSize()
+                button:setPosition(bag:getX()-size.width-12,bag:getY()+(bagSize.height-size.height)/2)
+            end
+        end
+    end
     if main._btnGM then main._btnGM:setVisible(false) end
     local pointsSignature=tostring(b.state.points)..':'..tostring(b.state.stats.str)..':'..tostring(b.state.stats.dex)..':'..tostring(b.state.stats.int)
     if self.pointsSignature~=pointsSignature then
