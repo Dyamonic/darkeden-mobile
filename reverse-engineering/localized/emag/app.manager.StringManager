@@ -1937,7 +1937,7 @@ function StringManager:init()
     self._stringTable[StringManager.KEY_BTN_KEEP]            = "Save"
     self._stringTable[StringManager.KEY_BTN_CLOSE]           = "Close"
     self._stringTable[StringManager.KEY_BTN_DELETE]          = "Delete"
-    self._stringTable[StringManager.KEY_BTN_APPLICATION]     = "Application"
+    self._stringTable[StringManager.KEY_BTN_APPLICATION]     = "Apply"
     self._stringTable[StringManager.KEY_BTN_BUY]             = "Purchase"
     self._stringTable[StringManager.KEY_BTN_RECHARGE]        = "Recharge"
     self._stringTable[StringManager.KEY_BTN_BUY_NOW]         = "Buy now"
@@ -2345,7 +2345,7 @@ function StringManager:init()
     self._stringTable[StringManager.KEY_TRADING_INFO_21]     = "Item quantity:"
     self._stringTable[StringManager.KEY_TRADING_INFO_22]     = "Remove"
     self._stringTable[StringManager.KEY_TRADING_INFO_23]     = "Receive"
-    self._stringTable[StringManager.KEY_TRADING_INFO_24]     = "One-click collection"
+    self._stringTable[StringManager.KEY_TRADING_INFO_24]     = "Claim All"
     self._stringTable[StringManager.KEY_TRADING_INFO_25]     = "Click on the item on the left to put it in"
     self._stringTable[StringManager.KEY_TRADING_INFO_26]     = "There are currently no related products on the shelves."
     self._stringTable[StringManager.KEY_TRADING_INFO_27]     = "unit price limit:%dYuanbao"
@@ -2964,7 +2964,7 @@ function StringManager:init()
 
 
     self._stringTable[StringManager.KEY_MAIL_TITLE]          = "Email"
-    self._stringTable[StringManager.KEY_MAIL_AUTO_RECV]      = "One-click collection"
+    self._stringTable[StringManager.KEY_MAIL_AUTO_RECV]      = "Claim All"
     self._stringTable[StringManager.KEY_MAIL_AUTO_READ]      = "Read with one click"
     self._stringTable[StringManager.KEY_MAIL_AUTO_DEL]       = "One-click deletion"
     self._stringTable[StringManager.KEY_MAIL_DEL]            = "Delete"

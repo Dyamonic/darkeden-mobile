@@ -239,7 +239,7 @@ function UIWndDungeon:onRefreshUI()
         local mapInfo = self:onGetDungeonByMapCode(mapCode)
         self._curTimeStamp = mapInfo.timeStamp
         local _intervalTick = 6--服务器需要6秒做副本的释放【确保数据的同步】
-        self._lblEnterCount:setText(mapInfo.curPlayerNum .. "/" .. self._meta:getMaxEnterNum() .. "people")
+        self._lblEnterCount:setText(mapInfo.curPlayerNum .. "/" .. self._meta:getMaxEnterNum() .. "players")
         if mapInfo and mapInfo.vampireState == lt.CommonModule:GetNetCmdEnum("NPCVAMPIRELAIRSTATE_NPCVAMPIRELAIRSTATE_PREPARATION_ENUM") then
             self._txtTimeDesc:setText(GReadText.KEY_DUNGEON_ENTERTIME_TIPS)
             self._lblState:setColor(Constant.COLOR_GREEN_H)

@@ -34,7 +34,7 @@ function CompReviveItem:setInfo(data)
     self._data = data
     self._icon:setURL(data.icon)
     self._title:setText(data.name)
-    require("app.offline.EnglishUI").fit(self._title)
+    require("app.offline.EnglishUI").fitReviveItem(self)
     self._cdBg:setVisible(not data.enable)
 end
 

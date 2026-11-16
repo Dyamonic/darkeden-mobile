@@ -203,7 +203,7 @@ def patch():
     target=overlays/'emag/app.scene.gameTL.comps.CompReviveItem'
     src=(ROOT/'reverse-engineering/unpacked/emag/app.scene.gameTL.comps.CompReviveItem').read_text(encoding='utf-8')
     src=src.replace('self._title:setText(data.name)',
-        'self._title:setText(data.name)\n    require("app.offline.EnglishUI").fit(self._title)')
+        'self._title:setText(data.name)\n    require("app.offline.EnglishUI").fitReviveItem(self)')
     target.write_text(src,encoding='utf-8')
     # The original tooltip reads server potion values from the bundled metadata.
     # Only the local supply object uses the offline world's shared 65-HP effect.
@@ -239,6 +239,35 @@ def patch():
     needle='self._mapName:setText(mapName)'
     assert needle in src
     src=src.replace(needle,needle+'\n    require("app.offline.EnglishUI").fitHeader(self._mapName,28)')
+    target.write_text(src,encoding='utf-8')
+    # English needs complete row layouts where Chinese used sentence fragments.
+    module='app.scene.widget.window.UIWndSetting'
+    target=overlays/'emag'/module
+    src=(ROOT/'reverse-engineering/unpacked/emag'/module).read_text(encoding='utf-8')
+    needle='end\n\n\nfunction UIWndSetting:refreshComponet'
+    assert needle in src
+    src=src.replace(needle,'    require("app.offline.EnglishUI").fitSetting(component,meta)\n'+needle)
+    needle='    NtfManager:dispatchNtf(NtfManager.NTF.NTF_CHANGE_SETTINGS, {index = index})'
+    assert needle in src
+    src=src.replace(needle,'    require("app.offline.EnglishUI").fitSetting(component,meta)\n'+needle)
+    # Place the popup below the relocated selector in window-local coordinates.
+    needle='local pos = comboBox:localToGlobal(comboBox:getPosition())\n            self._chooselist:setY(pos.y - 30)'
+    assert needle in src
+    src=src.replace(needle,'local pos = self:globalToLocal(comboBox:localToGlobal(cc.p(0,comboBox:getSize().height)))\n            self._chooselist:setPivot(0,0,false)\n            self._chooselist:setSize(220,self._chooselist:getSize().height)\n            self._chooselist:setPosition(pos.x,pos.y+4)')
+    src=src.replace('self._chooselist:setNumItems(#self._settinglist)','self._chooselist:setNumItems(#self._settinglist)\n            self._chooselist:resizeToFit(#self._settinglist,0)\n            for _,choice in ipairs(self._chooselist:getChildren()) do require("app.offline.EnglishUI").fitPotionChoice(choice) end')
+    src=src.replace('    obj.itemMeta = itemMeta','    require("app.offline.EnglishUI").fit(obj)\n    obj.itemMeta = itemMeta')
+    target.write_text(src,encoding='utf-8')
+    module='app.scene.widget.component.UICompHelpMenuCell'
+    target=overlays/'emag'/module
+    src=(ROOT/'reverse-engineering/unpacked/emag'/module).read_text(encoding='utf-8')
+    src=src.replace('    self._helpList = helpList','    require("app.offline.EnglishUI").fitHelpMenu(self)\n    self._helpList = helpList')
+    src=src.replace('    obj.index = index','    require("app.offline.EnglishUI").fitHelpItem(obj)\n    obj.index = index')
+    target.write_text(src,encoding='utf-8')
+    module='app.scene.gameTL.comps.CompRevive'
+    target=overlays/'emag'/module
+    src=(ROOT/'reverse-engineering/unpacked/emag'/module).read_text(encoding='utf-8')
+    src=src.replace('    self._reviveBtn:setText(data.name)','    self._reviveBtn:setText(data.name)\n    require("app.offline.EnglishUI").fitRevive(self)')
+    src=src.replace('self._lastLabel:setText(self._remainTs.."s")','self._lastLabel:setText(self._remainTs.."s")\n        require("app.offline.EnglishUI").fitCountdown(self._lastLabel)')
     target.write_text(src,encoding='utf-8')
     print('Patched DB fields',updates,'FGUI packages',len(changed)-1,flush=True)
 if __name__=='__main__':

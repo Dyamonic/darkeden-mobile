@@ -1,0 +1,626 @@
+--- 设置界面
+---@class UIWndSetting:UIWindowBase
+local UIWndSetting = class("UIWndSetting", lt.UIWindowBase)
+
+local NtfManager = lt.NtfManager
+local CacheManager = lt.CacheManager
+local GameModule = lt.GameModule
+local Constant = lt.Constant
+local AgentManager = lt.AgentManager
+local AutoFightManager = lt.AutoFightManager
+local SettingModule = lt.SettingModule
+local SocketManager = lt.SocketManager
+local PrefManager = lt.PrefManager
+local VipModule = lt.VipModule
+
+local FITER_TYPES = {
+    GAME = 1,       --游戏设置
+    VIEW = 2,       --界面设置
+    SOUND = 3,      --声音设置
+}
+
+UIWndSetting.ChangeSkinConf = {
+    ["Setting"] = {
+        ["frame"] = {n1 = "bg_xtsz_tanchuang"},
+        ["bg"] = "bg_xtsz_neishezhi",
+        ["btnFiter1"] = {n0 = "bth_xtsz_wxz", n1 = "bth_xtsz_xz", n2 = "bth_xtsz_xz", n3 = "bth_xtsz_xz"},
+        ["btnFiter2"] ={n0 = "bth_xtsz_wxz", n1 = "bth_xtsz_xz", n2 = "bth_xtsz_xz", n3 = "bth_xtsz_xz"},
+        ["btnFiter3"] ={n0 = "bth_xtsz_wxz", n1 = "bth_xtsz_xz", n2 = "bth_xtsz_xz", n3 = "bth_xtsz_xz"},
+        ["btnFiter4"] ={n0 = "bth_xtsz_wxz", n1 = "bth_xtsz_xz", n2 = "bth_xtsz_xz", n3 = "bth_xtsz_xz"},
+
+    },
+    ["CommonTL"] = {
+        ["closeButton"] = {bg  = "bg_beibao_anniu01", bgup  = "bg_beibao_anniu02"},
+        ["btn_apply"] = {bg  = "sort"},
+        ["btn_default"] = {bg  = "sort"},
+    }
+}
+
+function UIWndSetting:ctor(param)
+    UIWndSetting.super.ctor(self, param)
+    self._index = nil
+    self._panellist = nil
+    self._maintabs = nil
+    self._touchLayer = nil
+    self._chooselist = nil
+    self._chooseText = nil
+    self._reddot = nil
+    self._applyBtn = nil
+    self._defaultBtn = nil
+    self._settinglist = nil
+    self._controlTab = nil
+end
+
+function UIWndSetting:onClear()
+    self._index = nil
+    self._panellist = nil
+    self._maintabs = nil
+    self._touchLayer = nil
+    self._chooseText = nil
+    self._reddot = nil
+    self._applyBtn = nil
+    self._defaultBtn = nil
+    self._settinglist = nil
+    self._controlTab = nil
+    if self._chooselist then
+        self._chooselist:removeChildrenToPool()
+        self._chooselist:removeItemRenderer()
+        self._chooselist = nil
+    end
+    UIWndSetting.super.onClear(self)
+end
+
+function UIWndSetting:onInit()
+    UIWndSetting.super.onInit(self, _GURL.WndSetting)
+    self._panellist = {}
+    self._maintabs = self:getController("tabs")
+    local race = GameModule:getHeroRace()
+    for i = 1, table.nums(FITER_TYPES) do
+        local meta = CacheManager:getSettingMeta(i)
+        local list = self:getChild("list_"..i)
+        for j = 1, #meta do
+            if meta[j]:getOccupation() == 0 or meta[j]:getOccupation() == race then
+                local component = fgui.UIPackage:createObject("Setting", "setting_game"..meta[j]:getSettingClass())
+                self:setComponet(component, meta[j])
+                list:addChild(component)
+                self._panellist[tostring(meta[j]:getIdx())] = component
+            end
+        end
+    end
+
+    self._touchLayer = self:getChild("touchLayer")
+    self._chooselist = self:getChild("list_choose")
+    self._chooselist:setItemRenderer(handler(self, self.renderChooseItem))
+    self._applyBtn = self:getChild("btn_apply")
+    self._defaultBtn = self:getChild("btn_default")
+    self._reddot = self._applyBtn:getChild("reddot")
+    self._textClientVer = self:getChild('text_client_ver')
+    self._textServerVer = self:getChild("text_server_ver")
+    self._textPlayerId = self:getChild("text_playerId")
+end
+
+function UIWndSetting:onShown()
+    SettingModule:sendServerVersionReq()
+    self:setVisible(true)
+    
+    local closeButton = self:getChild("closeButton")
+    closeButton:addClickListener(handler(self, self.onCloseBtnClick))
+
+    if self._touchLayer then
+        self._touchLayer:addClickListener(handler(self, self.hideSelectView))
+    end
+
+    self._chooselist:addEventListener(fgui.UIEventType.ClickItem, function(context)
+        local meta = context:getData().itemMeta
+        self._chooseText:setText(meta:getName())
+        self:hideSelectView()
+        AutoFightManager:setEditConfByIndex(self._index, "selectId", meta:getItemId())
+        -- AutoFightManager:setAutoUsePotion(self._index)
+        self._reddot:setVisible(true)
+    end)
+
+    self._applyBtn:addClickListener(handler(self, self.onApplyBtnClick))
+    self._defaultBtn:addClickListener(handler(self, self.onDefaultBtnClick))
+
+    self:addComponetEvents()
+    self:refreshServerVersion()
+    NtfManager:addNtfListener(NtfManager.NTF.NTF_SERVER_VERSION_REFRESH, handler(self, self.refreshServerVersion),
+        "UIWndSetting:refreshServerVersion")
+end
+
+function UIWndSetting:onHide()
+    NtfManager:removeNtfListenerByTag("UIWndSetting:refreshServerVersion")
+
+    local closeButton = self:getChild("closeButton")
+    closeButton:removeClickListener()
+
+    if self._touchLayer then
+        self._touchLayer:removeClickListener()
+    end
+    self._chooselist:removeEventListener(fgui.UIEventType.ClickItem)
+
+    self._applyBtn:removeClickListener()
+    self._defaultBtn:removeClickListener()
+
+    self:removeComponetEvents()
+
+    self._maintabs:setSelectedIndex(0)
+    local heroData = GameModule:getHeroData()
+    if heroData then
+        local playerId = GameModule:getHeroData():getPlayerId()
+        local race = GameModule:getHeroRace()
+        AutoFightManager:reloadConfig(playerId, race)
+    end
+    
+    UIWndSetting.super.onHide(self)
+end
+
+--注册事件
+function UIWndSetting:addComponetEvents()
+    local race = GameModule:getHeroRace()
+    for i = 1, table.nums(FITER_TYPES) do
+        local meta = CacheManager:getSettingMeta(i)
+        for j = 1, #meta do
+            if meta[j]:getOccupation() == 0 or meta[j]:getOccupation() == race then
+                local component = self._panellist[tostring(meta[j]:getIdx())]
+                self:addComponetEvent(component, meta[j])
+            end
+        end
+    end
+end
+
+function UIWndSetting:addComponetEvent(component, meta)
+    local index = meta:getIdx()
+    if meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE1 then
+        local slider = component:getChild("bar_percent")
+        slider:addEventListener(fgui.UIEventType.Changed, function(context)
+            local value = slider:getValue()
+            component:getChild("text_percent"):setText(value.."%")
+            AutoFightManager:setEditConfByIndex(index, "value", value)
+            self._reddot:setVisible(true)
+        end)
+
+        local selectBtn = component:getChild("btn_select")
+        selectBtn:addClickListener(function()
+            local editTable = AutoFightManager:getEditConfByIndex(index)
+            local switch = editTable.switch == 1 and 0 or 1
+            AutoFightManager:setEditConfByIndex(index, "switch", switch)
+            self._reddot:setVisible(true)
+        end)
+
+        local comboBox = component:getChild("comboBox")
+        local settinglist = meta:getSettingList()
+        local controlTab = comboBox:getController("c1")
+        local chooseText = comboBox:getChild("text_choose")
+        comboBox:getChild("btn_choose"):addClickListener(function()
+            self._settinglist = settinglist
+            self._controlTab = controlTab
+            self._chooseText = chooseText
+            self._index = index
+            self._controlTab:setSelectedIndex(1)
+            local pos = self:globalToLocal(comboBox:localToGlobal(cc.p(0,comboBox:getSize().height)))
+            self._chooselist:setPivot(0,0,false)
+            self._chooselist:setSize(220,self._chooselist:getSize().height)
+            self._chooselist:setPosition(pos.x,pos.y+4)
+            self._chooselist:setNumItems(#self._settinglist)
+            self._chooselist:resizeToFit(#self._settinglist,0)
+            for _,choice in ipairs(self._chooselist:getChildren()) do require("app.offline.EnglishUI").fitPotionChoice(choice) end
+            self._chooselist:setVisible(true)
+            self._touchLayer:setVisible(true)
+            self._reddot:setVisible(true)
+        end)
+
+        local buySelectBtn = component:getChild("btn_buy")
+        buySelectBtn:addClickListener(function()
+            -- 自动买药功能需求VIP开启等级
+            local autoMedicationLv = VipModule:getVipAutoMedicationLv()
+            local vipLv = VipModule:getCurVipLv()
+            if (vipLv < tonumber(autoMedicationLv)) then
+                local content = string.format(GReadText.KEY_AUTO_TIPS1, autoMedicationLv)
+                NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP, { content = content })
+                buySelectBtn:setSelected(false)
+                return
+            end
+
+            local editTable = AutoFightManager:getEditConfByIndex(index)
+            local isAutoBuy = editTable.isAutoBuy == 1 and 0 or 1
+            AutoFightManager:setEditConfByIndex(index, "isAutoBuy", isAutoBuy)
+            self._reddot:setVisible(true)
+        end)
+
+        local bgInput = component:getChild("bgInput")
+        if bgInput.input then
+            bgInput.input:registerScriptEditBoxHandler(function(eventType, sender)
+                if eventType == "began" then
+                elseif eventType == "ended" then
+                    local autoBuyCount = sender:getText()
+                    local count = tonumber(autoBuyCount) or 0
+                    if count <= 0 then
+                        count = 1
+                    end
+                    local editTable = AutoFightManager:getEditConfByIndex(index)
+                    local autoBuyCount = editTable.autoBuyCount
+                    AutoFightManager:setEditConfByIndex(index, "autoBuyCount", count)
+                    sender:setText(count)
+                    if tonumber(autoBuyCount) ~= tonumber(count) then
+                        self._reddot:setVisible(true)
+                    end
+                elseif eventType == "changed" then
+                    local str = sender:getText()
+                    str = string.gsub(str, "[^0-9]", "")
+                    local count = string.len(str)
+                    local reCount = 0
+                    local beginIndex = -1
+                    local reString = ""
+                    for i = 1, count do
+                        local s = string.sub(str, i, i)
+                        local t = string.byte(s)
+                        if t < 128 then
+                            reCount = reCount + 1 --1字节文字，长度加1
+                        elseif t >= 192 then
+                            reCount = reCount + 2 --1字节以上文字，长度加2
+                        end
+                        if reCount > 2 then
+                            beginIndex = i - 1
+                            break
+                        end
+                        beginIndex = i
+                    end
+                    reString = string.sub(str, 1, beginIndex)
+                    sender:setText(reString)
+                elseif eventType == "return" then
+                end
+            end)
+        end
+    elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE2 then
+        local slider = component:getChild("bar_percent")
+        slider:addEventListener(fgui.UIEventType.Changed, function(context)
+            local value = slider:getValue()
+            component:getChild("text_percent"):setText(value)
+            AutoFightManager:setEditConfByIndex(index, "value", value)
+            self._reddot:setVisible(true)
+        end)
+    elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE3 then
+        component:getChild("text1"):setText(meta:getName())
+        local selectBtn = component:getChild("btn_select")
+        selectBtn:addClickListener(function()
+            local editTable = AutoFightManager:getEditConfByIndex(index)
+            local switch = editTable.switch == 1 and 0 or 1
+            AutoFightManager:setEditConfByIndex(index, "switch", switch)
+            self._reddot:setVisible(true)
+        end)
+    elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE4 or 
+        meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE6 then
+        local slider = component:getChild("bar_percent")
+        slider:addEventListener(fgui.UIEventType.Changed, function(context)
+            local value = slider:getValue()
+            component:getChild("text_percent"):setText(value.."%")
+            AutoFightManager:setEditConfByIndex(index, "value", value)
+            self._reddot:setVisible(true)
+        end)
+    elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE5 then
+        local slider = component:getChild("bar_percent")
+        slider:addEventListener(fgui.UIEventType.Changed, function(context)
+            local value = slider:getValue()
+            component:getChild("text_percent"):setText(value.."%")
+            AutoFightManager:setEditConfByIndex(index, "value", value)
+            self._reddot:setVisible(true)
+        end)
+        local selectBtn = component:getChild("btn_select")
+        selectBtn:addClickListener(function()
+            local editTable = AutoFightManager:getEditConfByIndex(index)
+            local switch = editTable.switch == 1 and 0 or 1
+            AutoFightManager:setEditConfByIndex(index, "switch", switch)
+            self._reddot:setVisible(true)
+        end)
+    end
+end
+
+--移除事件
+function UIWndSetting:removeComponetEvents()
+    local race = GameModule:getHeroRace()
+    for i = 1, table.nums(FITER_TYPES) do
+        local meta = CacheManager:getSettingMeta(i)
+        for j = 1, #meta do
+            if meta[j]:getOccupation() == 0 or meta[j]:getOccupation() == race then
+                local component = self._panellist[tostring(meta[j]:getIdx())]
+                self:removeComponetEvent(component, meta[j])
+            end
+        end
+    end
+end
+
+function UIWndSetting:removeComponetEvent(component, meta)
+    if not component then return end
+    if meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE1 then
+        local slider = component:getChild("bar_percent")
+        slider:removeEventListener(fgui.UIEventType.Changed)
+
+        local selectBtn = component:getChild("btn_select")
+        selectBtn:removeClickListener()
+
+        local comboBox = component:getChild("comboBox")
+        comboBox:getChild("btn_choose"):removeClickListener()
+
+        local buySelectBtn = component:getChild("btn_buy")
+        buySelectBtn:removeClickListener()
+
+        local bgInput = component:getChild("bgInput")
+        if bgInput.input then
+            bgInput.input:removeEditHandler()
+        end
+    elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE2 then
+        local slider = component:getChild("bar_percent")
+        slider:removeEventListener(fgui.UIEventType.Changed)
+    elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE3 then
+        component:getChild("text1"):setText(meta:getName())
+        local selectBtn = component:getChild("btn_select")
+        selectBtn:removeClickListener()
+    elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE4 or 
+        meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE6 then
+        local slider = component:getChild("bar_percent")
+        slider:removeEventListener(fgui.UIEventType.Changed)
+    elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE5 then
+        local slider = component:getChild("bar_percent")
+        slider:removeEventListener(fgui.UIEventType.Changed)
+
+        local selectBtn = component:getChild("btn_select")
+        selectBtn:removeClickListener()
+    end
+end
+function UIWndSetting:initCocosInputUI()
+    local input = ccui.EditBox:create(cc.size(64, 22), "", ccui.TextureResType.localType)
+    input:setAnchorPoint(cc.p(0, 0))
+    input:setPosition(cc.p(0, 0))
+    input:setFontName(lt.Constant.FONT_4)
+    input:setFontSize(20)
+    input:setReturnType(cc.KEYBOARD_RETURNTYPE_SEND)
+    input:setInputMode(cc.EDITBOX_INPUT_MODE_SINGLELINE)
+    input:setTextHorizontalAlignment(cc.TEXT_ALIGNMENT_LEFT)
+    
+    return input    
+end
+
+function UIWndSetting:setComponet(component, meta)
+    if not component then return end
+    local race = GameModule:getHeroRace()
+    local index = meta:getIdx()
+    local editTable = AutoFightManager:getEditConfByIndex(index)
+    if meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE1 then
+        component:getChild("text1"):setText(string.split(meta:getName() ,"({value})%")[1])
+        local slider = component:getChild("bar_percent")
+        slider:setMin(meta:getValueRange()[1])
+        slider:setMax(meta:getValueRange()[2])
+        slider:setValue(tonumber(editTable.value) or 0)
+        component:getChild("text_percent"):setText(slider:getValue().."%")
+
+        local selectBtn = component:getChild("btn_select")
+        selectBtn:setSelected(editTable.switch == 1)
+
+        local comboBox = component:getChild("comboBox")
+        comboBox:getChild("loader_choose1"):setURL(string.format(_GURL.GetImageSetting, "icon_xtsz_sjx"..Constant.RaceSkinRes[race]))
+        comboBox:getChild("loader_choose2"):setURL(string.format(_GURL.GetImageSetting, "icon_xtsz_sjx"..Constant.RaceSkinRes[race]))
+        local chooseText = comboBox:getChild("text_choose")
+        local itemMeta = CacheManager:getItemMeta(editTable.selectId)
+        chooseText:setText(itemMeta:getName())
+
+        -- 自动购买
+        local buySelectBtn = component:getChild("btn_buy")
+        buySelectBtn:setSelected(editTable.isAutoBuy == 1)
+        -- cocos input
+
+        local bgInput = component:getChild("bgInput")
+        if not bgInput.input then
+            local input  = self:initCocosInputUI()
+            input:setText(editTable.autoBuyCount)
+            bgInput:displayObject():addChild(input)
+            bgInput.input = input
+        else
+            bgInput.input:setText(editTable.autoBuyCount)
+        end
+    elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE2 then
+        local slider = component:getChild("bar_percent")
+        slider:setMin(meta:getValueRange()[1])
+        slider:setMax(meta:getValueRange()[2])
+        slider:setValue(editTable.value)
+        component:getChild("text_percent"):setText(slider:getValue())
+    elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE3 then
+        component:getChild("text1"):setText(meta:getName())
+        local selectBtn = component:getChild("btn_select")
+        if self:isSoulChain(meta) then
+            local soulChainSet = self:getCurSoulChain()
+            selectBtn:setSelected(soulChainSet == 0)
+        elseif self:isLuaJit(meta) then
+            selectBtn:setSelected(self:getLuaJit())
+        else
+            selectBtn:setSelected(editTable.switch == 1)
+        end
+    elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE4 or 
+        meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE6 then
+        component:getChild("text1"):setText(meta:getName())
+        local slider = component:getChild("bar_percent")
+        slider:setMin(meta:getValueRange()[1])
+        slider:setMax(meta:getValueRange()[2])
+        slider:setValue(editTable.value)
+        component:getChild("text_percent"):setText(slider:getValue().."%")
+    elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE5 then
+        component:getChild("text1"):setText(meta:getName())
+        local slider = component:getChild("bar_percent")
+        slider:setMin(meta:getValueRange()[1])
+        slider:setMax(meta:getValueRange()[2])
+        slider:setValue(editTable.value)
+        component:getChild("text_percent"):setText(slider:getValue().."%")
+
+        local selectBtn = component:getChild("btn_select")
+        selectBtn:setSelected(editTable.switch == 1)
+    end
+    require("app.offline.EnglishUI").fitSetting(component,meta)
+end
+
+
+function UIWndSetting:refreshComponet(component, meta)
+    local race = GameModule:getHeroRace()
+    local index = meta:getIdx()
+    local editTable = AutoFightManager:getEditConfByIndex(index)
+    if meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE1 then
+        component:getChild("text1"):setText(string.split(meta:getName() ,"({value})%")[1])
+        local slider = component:getChild("bar_percent")
+        slider:setMin(meta:getValueRange()[1])
+        slider:setMax(meta:getValueRange()[2])
+        slider:setValue(editTable.value)
+        component:getChild("text_percent"):setText(slider:getValue().."%")
+        local selectBtn = component:getChild("btn_select")
+        selectBtn:setSelected(editTable.switch == 1)
+        local comboBox = component:getChild("comboBox")
+        comboBox:getChild("loader_choose1"):setURL(string.format(_GURL.GetImageSetting, "icon_xtsz_sjx"..Constant.RaceSkinRes[race]))
+        comboBox:getChild("loader_choose2"):setURL(string.format(_GURL.GetImageSetting, "icon_xtsz_sjx"..Constant.RaceSkinRes[race]))
+        local chooseText = comboBox:getChild("text_choose")
+        local itemMeta = CacheManager:getItemMeta(editTable.selectId)
+        chooseText:setText(itemMeta:getName())
+
+        -- 自动购买
+        local buySelectBtn = component:getChild("btn_buy")
+        buySelectBtn:setSelected(editTable.isAutoBuy == 1)
+        local bgInput = component:getChild("bgInput")
+        if bgInput.input then
+            bgInput.input:setText(editTable.autoBuyCount)
+        end
+    elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE2 then
+        local slider = component:getChild("bar_percent")
+        slider:setMin(meta:getValueRange()[1])
+        slider:setMax(meta:getValueRange()[2])
+        slider:setValue(editTable.value)
+        component:getChild("text_percent"):setText(slider:getValue())
+    elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE3 then
+        component:getChild("text1"):setText(meta:getName())
+        local selectBtn = component:getChild("btn_select")
+        if self:isSoulChain(meta) then
+            local soulChainSet = self:getCurSoulChain()
+            selectBtn:setSelected(soulChainSet == 0)
+        elseif self:isLuaJit(meta) then
+            selectBtn:setSelected(self:getLuaJit())
+        else
+            selectBtn:setSelected(editTable.switch == 1)
+        end
+    elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE4 
+        or meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE6 then
+        component:getChild("text1"):setText(meta:getName())
+        local slider = component:getChild("bar_percent")
+        slider:setMin(meta:getValueRange()[1])
+        slider:setMax(meta:getValueRange()[2])
+        slider:setValue(editTable.value)
+        component:getChild("text_percent"):setText(slider:getValue().."%")
+    elseif meta:getSettingClass() == Constant.COMPONENT_TYPES.TYPE5 then
+        component:getChild("text1"):setText(meta:getName())
+        local slider = component:getChild("bar_percent")
+        slider:setMin(meta:getValueRange()[1])
+        slider:setMax(meta:getValueRange()[2])
+        slider:setValue(editTable.value)
+        component:getChild("text_percent"):setText(slider:getValue().."%")
+        local selectBtn = component:getChild("btn_select")
+        selectBtn:setSelected(editTable.switch == 1)
+    end
+    require("app.offline.EnglishUI").fitSetting(component,meta)
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_CHANGE_SETTINGS, {index = index})
+end
+
+function UIWndSetting:onCloseBtnClick()
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_DLG_MAIN_VIEW, {class = "UIWndSetting", close = true})
+end
+
+function UIWndSetting:onApplyBtnClick()
+    local playerId = GameModule:getHeroData():getPlayerId()
+    AutoFightManager:saveEditConf(playerId)
+
+    --灵魂锁链
+    local msg = lt.netcmd_pb.CS_SetDenyTraceReq()
+    local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.ALLOW_TRACE)
+    local latestSet = editTable.switch == 1 and 0 or 1
+    msg.val = latestSet == 1
+    lt.SocketApi:sendToGs(lt.CommonModule:GetNetCmdEnum(lt.ClientCmdDef.CS_SET_DENY_TRACE_REQ), msg)
+
+    --luajit
+    local editTable = AutoFightManager:getEditConfByIndex(Constant.SETTINGS_TYPES.LUA_JIT_JIT)
+    local luaJit = editTable.switch == 1
+    self:setLuaJit(luaJit)
+
+    NtfManager:dispatchNtf(NtfManager.NTF.NTF_FLOAT_TIP,{content = GReadText.KEY_SETTING_SAVE_TIPS})
+    self._reddot:setVisible(false)
+end
+
+function UIWndSetting:onDefaultBtnClick()
+    AutoFightManager:setDefaultConf()
+    self:refreshView()
+end
+
+--刷新界面
+function UIWndSetting:refreshView()
+    local race = GameModule:getHeroRace()
+    for i = 1, table.nums(FITER_TYPES) do
+        local meta = CacheManager:getSettingMeta(i)
+        local list = self:getChild("list_"..i)
+        for j = 1, #meta do
+            if meta[j]:getOccupation() == 0 or meta[j]:getOccupation() == race then
+                local component = self._panellist[tostring(meta[j]:getIdx())]
+                self:refreshComponet(component, meta[j])
+            end
+        end
+    end
+end
+
+function UIWndSetting:renderChooseItem(index, obj)
+    local itemId = self._settinglist[index+1][2]
+    local itemMeta = CacheManager:getItemMeta(itemId)
+    local name = self._chooseText:getText()
+    local controlTab = obj:getController("button")
+    controlTab:setSelectedIndex(name == itemMeta:getName() and 1 or 0)
+    obj:setText(itemMeta:getName())
+    require("app.offline.EnglishUI").fit(obj)
+    obj.itemMeta = itemMeta
+end
+
+function UIWndSetting:hideSelectView()
+    self._controlTab:setSelectedIndex(0)
+    self._touchLayer:setVisible(false)
+    self._chooselist:setVisible(false)
+end
+
+--灵魂锁链
+function UIWndSetting:isSoulChain(meta)
+    return meta:getIdx() == Constant.SETTINGS_TYPES.ALLOW_TRACE
+end
+
+function UIWndSetting:getCurSoulChain()
+    local herodata = GameModule:getHeroData()
+    if herodata then
+        return tonumber(herodata:getSoulChain())
+    end
+    return 0
+end
+
+--luajit
+function UIWndSetting:isLuaJit(meta)
+    return meta:getIdx() == Constant.SETTINGS_TYPES.LUA_JIT_JIT
+end
+
+function UIWndSetting:setLuaJit(luaJit)
+    yflog:Info("luaJit %s", luaJit)
+    PrefManager:setLocalLuajit(luaJit)
+    if _G_Game then
+        _G_Game:executeLuajit()
+    end
+    
+end
+
+function UIWndSetting:getLuaJit()
+    local luaJit = PrefManager:getLocalLuajit()
+    return luaJit
+end
+
+function UIWndSetting:refreshServerVersion()
+    self._textClientVer:setText(SocketManager:getClientVer())
+    self._textServerVer:setText(SettingModule:getServerVer())
+    self._textPlayerId:setText(GameModule:getHeroPlayerId())
+end
+
+return UIWndSetting

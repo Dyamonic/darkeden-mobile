@@ -228,3 +228,45 @@ The offline Bridge hides the original comChat component, including its backgroun
 ## Removed device-log access prompt - 2026-11-16
 
 Removed READ_LOGS from the decoded Android manifest and added a reproducible compiled-manifest filter to the APK updater. aapt2 permissions comparison confirms READ_LOGS is the only permission removed; package/launcher and English app label are retained. Binary filtering is idempotent. Signature verification and update installation passed. Android dumpsys confirms the installed package no longer requests READ_LOGS. Cold launch, Start, character selection and gameplay completed without the log-access dialog or a runtime error file. Evidence: tools/no-log-access-start.png and tools/no-log-access-game.png. Both distributed APK filenames are current.
+
+## Readable English spacing and layout - 2026-11-16
+
+Reproduced the supplied Settings problem: Chinese sentence fragments were joined
+around fixed numeric and dropdown controls, while translated English changed word
+order and exceeded those regions. The previous layout regression failed on real
+Settings row 2 before the fix. Settings now use separate caption, numeric value,
+slider, potion selector and refill-input regions. Dropdowns are wider and open
+under their selector using window-local coordinates. Native popup background
+loaders have automatic image sizing disabled so they actually fill the wider rows.
+
+Polished 35 short UI strings, including Inventory, Equipment, Character, Storage,
+Main/Side quest tabs, Claim All, Game/Display/Audio tabs, Apply and Defaults. These
+are recorded in ui-copy-polish.json and pinned in manual.json. Help-menu captions
+fit after their original renderers populate them. Shared button captions reserve
+padding inside the decorative borders and use measured English widths for centering.
+Original font files and artwork are retained.
+
+The death panel has two-line scroll labels, a centered title and countdown, and
+separate method, item-cost and action areas. The native zero-HP panel passed
+geometry checks and countdown changes at 60, 10 and 9 seconds. Revival restored
+the alive state. The test character's progress, race and map position are retained.
+
+Installed-build checks: 22 real Settings rows and 26 native fixtures spanning all
+race settings passed readable-font, bounds, spacing and repeated-fit checks. The
+native potion selector was opened by a screen tap; popup bounds, option widths,
+background-loader widths and font size 18 passed. Original help, quest and mail
+windows were opened, including the Claim All button. The prior 3-race/20-row stats
+and minimap regression also passed, including original level-unlock thresholds.
+No offline runtime error file remained after the final clean walkthrough.
+
+Localization checks passed for 21,509 database fields, 53 UI packages, 122 Lua
+overlays and 39 edited images. Offline simulation, locations, roster and
+movement/death suites passed. Signature verification passed; APK archive contents
+were compared with current localized modules, EnglishUI, database and changed UI
+packages. Both build APK filenames and repository artifact/checksum were refreshed.
+
+Visual evidence: tools/settings-before.png, tools/settings-readable-final.png,
+tools/settings-dropdown-final.png, tools/help-readable-final.png,
+tools/quests-readable-final.png, tools/mail-readable-final.png and
+tools/death-readable-final.png. Tests drive original windows on the GL thread;
+the final installed-build checks do not replace gameplay/backend implementations.

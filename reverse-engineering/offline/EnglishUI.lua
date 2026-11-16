@@ -55,6 +55,143 @@ function EnglishUI.fitHeader(object,rightInset)
     object:setSingleLine(true)
     constrain(object,4,parent:getSize().width-(rightInset or 4)-4)
 end
+-- Explicit row layouts keep English prose out of native input/dropdown areas.
+local function label(object,text,x,y,width,height,font)
+    if not textField(object) then return end
+    if text then object:setText(text) end
+    object:setPivot(0,0,false)
+    object:setPosition(x,y)
+    object:setAutoSize(fgui.AutoSizeType.NONE)
+    object:setSize(width,height,true)
+    object:setFontSize(font or 20)
+    object:setSingleLine(true)
+    object:applyTextFormat()
+    object:setAutoSize(fgui.AutoSizeType.SHRINK)
+end
+local measuredWidths={}
+local function textWidth(text,font)
+    local key=font..":"..text
+    if not measuredWidths[key] then
+        local measured=cc.Label:createWithTTF(text,lt.Constant.FONT_4,font)
+        measuredWidths[key]=math.max(8,measured:getContentSize().width+4)
+    end
+    return measuredWidths[key]
+end
+local function centerLabel(object,text,center,y,width,height,font,multiline)
+    label(object,text,0,y,width,height,font)
+    object:setSingleLine(not multiline)
+    local natural=textWidth(object:getText(),font)
+    constrain(object,center-math.min(width,natural)/2,math.min(width,natural))
+    object:setSize(math.min(width,natural),height,true)
+end
+function EnglishUI.fitCountdown(object)
+    centerLabel(object,nil,0,-66,140,56,42)
+end
+function EnglishUI.fitSetting(component,meta)
+    local kind,index=meta:getSettingClass(),meta:getIdx()
+    local width=component:getSize().width
+    local title=component:getChild("text1")
+    local percent=component:getChild("text_percent")
+    if kind==1 then
+        local captions={[1]="Auto-heal below",[2]="Auto-heal below",[3]="Auto-heal below",[4]="Restore MP below",[5]="Restore spirit below"}
+        label(title,captions[index],36,8,width-152,26)
+        label(percent,nil,width-100,8,88,26)
+        for _,child in ipairs(component:getChildren()) do
+            if tolua.type(child)=="fgui.GImage" and child~=component:getChild("bgInput") then
+                child:setPosition(width-104,8);child:setSize(96,26)
+            end
+        end
+        -- Give potion names a wider selector and keep its arrow/hit target aligned.
+        local combo=component:getChild("comboBox")
+        combo:setPosition(88,92);combo:setSize(180,22)
+        for _,child in ipairs(combo:getChildren()) do
+            if tolua.type(child)=="fgui.GImage" then child:setSize(156,22) end
+        end
+        combo:getChild("loader_choose1"):setX(158)
+        combo:getChild("loader_choose2"):setX(180)
+        combo:getChild("btn_choose"):setSize(180,41)
+        label(combo:getChild("text_choose"),nil,2,0,152,22,18)
+        label(component:getChild("text2"),"Use",36,90,48,26,18)
+        component:getChild("btn_buy"):setPosition(282,78)
+        component:getChild("btn_buy"):setSize(width-282,46)
+        label(component:getChild("text3"),"Refill",318,90,47,26,18)
+        component:getChild("bgInput"):setPosition(width-68,92)
+    elseif kind==2 then
+        label(title,"Nearby players",8,10,width-132,26)
+        label(percent,nil,width-104,10,90,26)
+        for _,child in ipairs(component:getChildren()) do
+            if tolua.type(child)=="fgui.GImage" then child:setPosition(width-108,10);child:setSize(98,26) end
+        end
+        label(component:getChild("text2"),"",0,0,8,26)
+    elseif kind==3 then
+        local captions={
+            [8]="Confirm before discarding items",[9]="Allow Soul Chain tracking",
+            [10]="Transparent inventory",[11]="Transparent equipment",
+            [12]="Transparent character window",[13]="Transparent quest window",
+            [14]="Transparent party window",[15]="Transparent minimap",
+            [16]="Transparent chat",[17]="Transparent quick slots",
+            [22]="Auto-equip items",[25]="High performance mode",
+            [26]="Auto-loot during auto combat",[27]="Show network latency"}
+        label(title,captions[index],36,6,width-48,28)
+    else
+        local captions={[18]="Opacity",[19]="Sound effects",[20]="Music",[21]="Field of view",[23]="Left edge padding",[24]="Right edge padding"}
+        local x=(kind==5 and 36 or 8)
+        label(title,captions[index],x,10,width-x-108,26)
+        label(percent,nil,width-98,10,86,26)
+    end
+end
+function EnglishUI.fitHelpMenu(object)
+    local title=object:getChild("text_choose")
+    local arrow=object:getChild("btn_choose")
+    if title and arrow then
+        label(title,nil,10,8,object:getSize().width-48,28,18)
+    end
+end
+function EnglishUI.fitHelpItem(object)
+    label(object:getChild("title"),nil,10,8,object:getSize().width-20,28,18)
+end
+function EnglishUI.fitPotionChoice(object)
+    object:setSize(220,object:getSize().height)
+    for _,child in ipairs(object:getChildren()) do
+        local size=child:getSize()
+        if not textField(child) and size.width>=80 and size.height>=20 then
+            if tolua.type(child)=="fgui.GLoader" then
+                child:setAutoSize(false)
+                child:setFill(fgui.LoaderFillType.SCALE_FREE)
+            end
+            child:setSize(220,size.height,true)
+            child:setX(child:isPivotAsAnchor() and 220*child:getPivot().x or 0)
+        end
+    end
+    label(object:getChild("title"),nil,10,2,200,object:getSize().height-4,18)
+end
+function EnglishUI.fitRevive(object)
+    local title=object:getChild("label_title")
+    local timer=object:getChild("label_last")
+    if title and timer then
+        -- This original component has a zero-sized origin at screen center.
+        -- Its children intentionally use negative coordinates around that origin.
+        centerLabel(title,nil,0,-100,440,30,24)
+        EnglishUI.fitCountdown(timer)
+        local state=object:getChild("label_state")
+        centerLabel(state,nil,0,164,400,28,20)
+        -- Item-based revival has a full item icon below the method labels.
+        object:getChild("node_item"):setY(174)
+        object:getChild("img_item"):setY(174)
+        local button=object:getChild("btn_revive")
+        if button then button:setY(216);EnglishUI.fit(button) end
+        local list=object:getChild("list_revive")
+        list:setSize(list:getSize().width,90)
+    end
+end
+function EnglishUI.fitReviveItem(object)
+    local title=object:getChild("title")
+    local caption=title:getText()
+    if caption=="Resurrection Scroll" then caption="Revive\nScroll"
+    elseif caption=="Elixir Scroll" then caption="Elixir\nScroll" end
+    centerLabel(title,caption,object:getSize().width/2,46,object:getSize().width-4,40,16,true)
+    object:setSize(object:getSize().width,90)
+end
 function EnglishUI.fit(object)
     if not object then return end
     local kind=tolua.type(object)
@@ -80,14 +217,15 @@ function EnglishUI.fit(object)
                 local parent=object:getParent()
                 if parent and tolua.type(parent)=="fgui.GButton" then
                     local bounds=parent:getSize()
-                    local limit=bounds.width-4
+                    local limit=bounds.width-20
                     if bounds.width>=48 and bounds.width<=80 and object:getY()>bounds.height*.55 then
                         limit=bounds.width-12
                         if text=="Resurrection Scroll" then object:setText("Res. Scroll")
                         elseif text=="Elixir Scroll" then object:setText("Elixir") end
                     end
                     if parent:getTextField()==object or size.width>=limit then
-                        constrain(object,(bounds.width-limit)/2,math.max(10,limit))
+                        local width=math.min(math.max(10,limit),textWidth(object:getText(),object:getFontSize()))
+                        constrain(object,(bounds.width-width)/2,width)
                     end
                 end
                 object:setAutoSize(fgui.AutoSizeType.SHRINK)
@@ -98,6 +236,7 @@ function EnglishUI.fit(object)
         for _,child in ipairs(object:getChildren()) do EnglishUI.fit(child) end
     end
     EnglishUI.fitRow(object)
+    if object.getChild and object:getChild("label_last") and object:getChild("list_revive") then EnglishUI.fitRevive(object) end
 end
 function EnglishUI.install()
     if EnglishUI.installed then return end
