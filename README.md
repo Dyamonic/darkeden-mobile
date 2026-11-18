@@ -1,5 +1,19 @@
 ﻿# DarkEden Mobile
 
+## Screenshots
+
+**Gameplay**
+
+![DarkEden Mobile gameplay in Perona Northeast](android-studio-project/screenshots/gameplay.png)
+
+**Character selection**
+
+![DarkEden Mobile character selection screen](android-studio-project/screenshots/characters.png)
+
+**Character stats**
+
+![DarkEden Mobile character stats window](android-studio-project/screenshots/character-stats.png)
+
 ## Play
 
 You need Python 3, Android SDK platform-tools, and a running Android emulator.
