@@ -1,1 +1,0 @@
-PASS level-5 Turning Soul / real Remote snapshots: native HP 10 -> 6 -> 0, original -4 bitmap label, completed hit reaction, and native death animation; fixture removed; no player/server progress changed

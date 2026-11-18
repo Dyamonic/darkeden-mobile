@@ -1,5 +1,0 @@
-local f=cc.FileUtils:getInstance()
-local o=io.open(f:getWritablePath()..'english-paths.txt','a')
-local m=display.getRunningScene():getLayerManager():getMainUILayer()
-o:write('ICON ',tostring(m._btnSwitch:getIcon()),'\n')
-o:close()

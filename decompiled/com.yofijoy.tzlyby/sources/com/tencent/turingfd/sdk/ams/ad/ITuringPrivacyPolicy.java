@@ -1,7 +1,0 @@
-package com.tencent.turingfd.sdk.ams.ad;
-
-/* loaded from: classes2.dex */
-public interface ITuringPrivacyPolicy extends Cassiopeia {
-    @Override // com.tencent.turingfd.sdk.ams.ad.Cassiopeia
-    boolean userAgreement();
-}

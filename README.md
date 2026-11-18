@@ -1,73 +1,50 @@
-# DarkEden offline Android project
+﻿# DarkEden Mobile
 
-Private development backup of the original Android game files, recovered client
-source, original-UI offline gameplay, English localization and research.
+## Play
 
-The offline build retains the original UI and fonts, supports three local
-characters, automatic saves, race-specific starting areas, local combat, original
-death/revival UI, race-specific level-up effects and tested map passages. It starts without an updater or login.
+You need Python 3, Android SDK platform-tools, and a running Android emulator.
+The server uses Python's built-in libraries; no pip packages are needed.
 
-## Private mobile server
+1. Install `android-studio-project/app/build/outputs/apk/apktool/single-player-english.apk` in your emulator if it is not already installed.
+2. Double-click `server/start-server.bat`.
+3. Wait for **Private server ready** and **Connected emulator-5554**.
+4. Open the game, press **Start**, and select a character.
 
-A local server now owns characters, mapped V2 mobs/loot, combat, progression,
-inventory, basic missions and supported skills through the original mobile UI.
-Run `server/start-server.cmd` before playing. Setup has backed up and imported
-the existing characters. See [server instructions](server/README.md) and
-[port status / remaining systems](server/PORT_STATUS.md). Public accounts and a
-shared multiplayer world remain future work.
+The server runs in the background. Closing the launcher window does not stop it.
 
-## Repository contents
+## Stop or check the server
 
-- `artifacts/single-player-english.apk`: latest signed development build.
-- `artifacts/offline-launcher-unsigned.apk`: compiled base for fast repackaging.
-- `com.yofijoy.tzlyby.apk`: original input APK.
-- `editable-apk/`: decoded Android resources, assets and modified Smali.
-- `decompiled/`: original decompiled client for reference.
-- `reverse-engineering/offline/`: current offline implementation.
-- `reverse-engineering/unpacked/`: recovered original Lua modules.
-- `reverse-engineering/localized/`: reproducible localized source overlays.
-- `game-translation/`: glossary, translations, asset audits and original backups.
-- `tools/`: archive/localization/build tools, tests and emulator verification evidence.
-- `android-studio-project/`: source browsing and APK rebuild project.
-
-Generated Gradle/build caches, duplicate intermediate APKs, machine-specific
-settings, credentials and signing keys are excluded. Game saves remain in the
-emulator's private app storage; test characters were removed after verification.
-The bundled `.cert.pem` files are original public certificates, not signing keys.
-
-## Clone and restore
-
-Install Git LFS before fetching the large binary assets:
+Open a terminal in this main folder:
 
 ```powershell
-git lfs install
-git clone https://github.com/Dyamonic/darkeden-offline-mobile.git
-cd darkeden-offline-mobile
-git lfs pull
+py server/server.py stop
+py server/server.py status
 ```
 
-Restore the compiled base to the path used in existing build instructions:
+If your emulator has a different device ID, connect it with:
 
 ```powershell
-New-Item -ItemType Directory -Force android-studio-project/app/build/outputs/apk/apktool
-Copy-Item artifacts/offline-launcher-unsigned.apk android-studio-project/app/build/outputs/apk/apktool/
+py server/server.py start --serial YOUR_DEVICE_ID
 ```
 
-The signed APK can be installed directly with `adb install -r
-artifacts/single-player-english.apk`. Signing keys are kept outside this repository;
-rebuilding/signing on another machine requires a key you control.
+The launcher expects ADB at `%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe`.
 
-See [the Android project instructions](android-studio-project/README.md),
-[localization/reproduction notes](game-translation/README.md),
-[spawn research](reverse-engineering/MOB-DATA.md) and
-[verification report](reverse-engineering/VERIFICATION.md).
+## Saves
 
-Regular mob locations use recovered quest destinations as local population
-centers. Exact original server populations and combat balance were not recovered.
-Online quests, multiplayer and the original server economy are not implemented.
+Server saves and logs are in `%LOCALAPPDATA%\DarkEdenMobileServer\`.
+Stop the server before backing up `world.sqlite3`.
 
-NPC dialogue travel uses original bundled destinations, including Foley Colagas to Perona Northeast. Travel closes the original dialogue, loads the destination locally and saves the arrival.
+To import existing offline characters on a new setup, run this once with the game installed and emulator running:
 
-Stats, Bag and Gear are prepared during map loading and cached within the current scene for quick reopening. Original lifecycle callbacks and live-data refreshes are preserved.
+```powershell
+py server/server.py setup
+```
 
-Device-log permission requests and bundled Bugly initialization/log collection are disabled. For emulator instrumentation, use `py tools/start_game_debugger.py`; it disables Frida's native crash/log monitor as well.
+## Edit or rebuild the app
+
+Open `android-studio-project` in Android Studio. See the [build instructions](android-studio-project/README.md).
+
+After cloning from GitHub, install Git LFS and run `git lfs pull` to download the game assets and APK.
+
+Keep `android-studio-project/`, `server/`, and `server/data/` together; the server needs the game's assets.
+See [missing.md](missing.md) for remaining work.

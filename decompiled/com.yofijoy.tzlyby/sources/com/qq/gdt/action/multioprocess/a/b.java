@@ -1,6 +1,0 @@
-package com.qq.gdt.action.multioprocess.a;
-
-/* loaded from: classes.dex */
-public interface b {
-    String a();
-}

@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <array name="entries_private_sms">
-        <item>我正在开会，一会联系你</item>
-        <item>我在路上，晚些联系你</item>
-        <item>我现在不方便，稍后回电话</item>
-        <item>我马上就到</item>
-    </array>
-</resources>

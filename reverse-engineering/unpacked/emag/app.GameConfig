@@ -1,8 +1,0 @@
-
-local GameConfig = {}
-
-GameConfig.DB_KEY = "9340a622733e9b7d"
-
-GameConfig.LANG = "chs"
-
-return GameConfig

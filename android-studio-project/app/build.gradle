@@ -24,14 +24,14 @@ android {
     // folders are attached for browsing in Android Studio but are not Java input.
     sourceSets {
         main {
-            manifest.srcFile '../../editable-apk/AndroidManifest.xml'
+            manifest.srcFile '../editable-apk/AndroidManifest.xml'
             java.srcDirs = [
-                '../../editable-apk/smali',
-                '../../editable-apk/smali_classes2',
-                '../../editable-apk/smali_classes3'
+                '../editable-apk/smali',
+                '../editable-apk/smali_classes2',
+                '../editable-apk/smali_classes3'
             ]
-            res.srcDirs = ['../../editable-apk/res']
-            assets.srcDirs = ['../../editable-apk/assets']
+            res.srcDirs = ['../editable-apk/res']
+            assets.srcDirs = ['../editable-apk/assets']
         }
     }
 }
@@ -41,8 +41,8 @@ android {
 tasks.register('rebuildWithApktool', Exec) {
     group = 'build'
     description = 'Rebuild the edited APKTool project as an unsigned APK.'
-    def apktoolJar = file('../../tools/apktool_3.0.3.jar')
-    def decodedProject = file('../../editable-apk')
+    def apktoolJar = file('../tools/apktool_3.0.3.jar')
+    def decodedProject = file('../editable-apk')
     def outputApk = file("$buildDir/outputs/apk/apktool/rebuilt-unsigned.apk")
     outputs.file(outputApk)
     doFirst {

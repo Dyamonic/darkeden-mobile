@@ -1,6 +1,0 @@
-local MonsterEnum = {}
-MonsterEnum.TUG_LEGGER			        = 778   -- 黑色瘸腿（渲染特殊）
-MonsterEnum.NORMAL_RANGE			    = 266   -- 夜啸鬼(夜啸鬼移动加残影)
-
-
-return MonsterEnum

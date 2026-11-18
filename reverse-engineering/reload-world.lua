@@ -1,6 +1,0 @@
-local ok,err=xpcall(function()
- lt.CacheManager:clear()
- lt.ActionManager:clear()
- lt.AutoFightManager:reloadConfig("offline-1",_G_OFFLINE_BRIDGE.hero:getRace())
- _G_OFFLINE_BRIDGE:loadWorld()
-end,__G__TRACKBACK__)

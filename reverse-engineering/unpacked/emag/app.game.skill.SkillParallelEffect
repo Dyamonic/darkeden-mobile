@@ -1,7 +1,0 @@
-
-local SkillParallelEffect = {}
-
-function SkillParallelEffect:setEffectDirection()
-end
-
-return SkillParallelEffect
